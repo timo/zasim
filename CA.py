@@ -4,7 +4,7 @@ import random
 import sys
 import os
 from multiprocessing import Process, Pipe
-import histogram 
+import Histogram 
 
 class sandpile():
     INIT_ZERO = 0
@@ -26,7 +26,11 @@ class sandpile():
 
 #        pygame.display.set_caption("CASimulator - Sandpile - Info" )
 
-    def __init__( self, sizeX, sizeY, initConf ):
+    # available histograms, concatenated by '|'
+    HistVBars = 1
+    HistTickerlines = 2
+
+    def __init__( self, sizeX, sizeY, initConf, masterQueue, histograms ):
 
         self.sizeX = sizeX
         self.sizeY = sizeY
@@ -46,9 +50,20 @@ class sandpile():
                     self.currConf[ x, y ] = c
                     self.histogram[ c ] += 1
             self.nextConf = self.currConf.copy()
+            
+        self.masterQueue = masterQueue
 
-        self.vertHisto = histogram.VBars( 8, self.sizeX*self.sizeY, self.palette )
-
+        self.HistWindows = []
+        if histograms & self.HistVBars:
+            self.vertHisto = Histogram.VBars( 8, self.sizeX*self.sizeY, self.palette )
+            self.HistWindows.append( self.vertHisto ) 
+        if histograms & self.HistTickerlines:
+            self.TickerlinesHisto = Histogram.HTickerlines( 8, self.sizeX*self.sizeY, self.palette )
+            self.HistWindows.append( self.TickerlinesHisto )
+        
+    def closeHistograms( self ):
+        for h in self.HistWindows:
+            h.close()
 
     def makeHistogram( self ):
         for i in range( 8 ):
@@ -69,8 +84,11 @@ class sandpile():
 
         self.currConf = self.nextConf.copy()
         self.makeHistogram()
-        self.vertHisto.update( self.histogram )
+        self.sendHistogram()
 
+    def sendHistogram( self ):
+        for h in self.HistWindows:
+            h.update( self.histogram )
 
     def step( self ):
         self.updateAllCells()

@@ -1,5 +1,5 @@
 import pygame
-from multiprocessing import Process, Pipe
+from multiprocessing import Process, Pipe, Queue
 import random
 import sys
 import time
@@ -27,6 +27,8 @@ palette8 = [blue, white, yellow, darkred, grey, pink, green, red]
 palettes = ( palette1, palette2, palette3, palette4, 
              palette5, palette6, palette7, palette8 )
 
+
+## abstract superclass, dont use this one ##
 class Histogram():
     def __init__ ( self, N, maxVal, palette ):
         if N > 8:
@@ -49,15 +51,48 @@ class Histogram():
                     print "Warning: You have provided BLACK as your color no.", i
                     print "You wont see the black bar on a black background... "
             self.activePalette = palette
+        
+        self.eventQueue = Queue()
+        self.QUIT = 0
+        self.SHOW = 1
+        self.HIDE = 2
 
         self.conn1, self.conn2 = Pipe()
         self.p = Process( target=self.runProcess, args=( self.conn1, ))
         self.p.start()
         
+    def show ( self ):
+        self.eventQueue.put( self.SHOW )
+
+    def hide ( self ):
+        self.eventQueue.put( self.HIDE )
+
+    def close ( self ):
+        self.eventQueue.put( self.QUIT )
+        
+    def handleNonPygameEvents( self ):
+        while not(self.eventQueue.empty()):
+            e = self.eventQueue.get()
+            if e == self.QUIT:
+                pygame.quit()
+                sys.exit(1)
+            if ( e == self.SHOW ) & ( not( pygame.display.get_init() ) ):
+                pygame.display.set_mode ( self.histWindowSize, 0 )
+            if ( e == self.HIDE ) & ( pygame.display.get_init() ):
+                pygame.display.set_mode( (1,1), pygame.NOFRAME )
+                
+        
     def set_title ( self, title ):
         pygame.display.set_caption( str(title) )
 
+    def update( self, hist ):
+        if len(hist) != self.N:
+            print "Not the correct number of elements for the histogram!"
+            return
+        else:
+            self.conn2.send( hist )
 
+## use these! ##
 class VBars(Histogram):
     def runProcess( self, conn ):
         pygame.init()
@@ -82,11 +117,11 @@ class VBars(Histogram):
                        (15, self.histWindowSize[1]*0.887) )
 
         while 1:
+            self.handleNonPygameEvents()
             for e in pygame.event.get():
-                if e.type == pygame.KEYDOWN:
-                    if e.key == pygame.K_q:
-                        sys.exit(1)
-                
+               if e.type == pygame.KEYDOWN:
+                   if e.key == pygame.K_m:
+                       self.hide()
             
             hist = conn.recv()
             for i in range(len(hist)):
@@ -99,52 +134,45 @@ class VBars(Histogram):
                 pygame.draw.rect(self.surf, self.activePalette[i], rect, 0 )
                 pygame.display.update()
 
-    def __init__ ( self, N, maxVal, palette ):
-        Histogram.__init__( self, N, maxVal, palette )
         
-    def update( self, hist ):
-        if len(hist) != self.N:
-            print "Not the correct number of elements for the histogram!"
-            return
-        else:
-            self.conn2.send( hist )
-    
-    def finish( self ):
-        self.p.terminate()
 
-
-
-class HTickerlines(Histogram):
+class HContinuouslines( Histogram ):
     def runProcess( self, conn ):
         pygame.init()
         self.histWindowSize = ( 500, 200 )
         self.offsetX = 70
-        self.surf = pygame.display.set_mode( (self.histWindowSize[0]+self.offsetX,
-                                              self.histWindowSize[1]) )
-        pygame.display.set_caption( "HTickerline-Histogram" )
-        history = np.zeros( ( self.N, 2 ), int )
-        for i in range(self.N):
-            history[i] = ( self.offsetX, self.histWindowSize[1]/2)
+        self.parent = pygame.display.set_mode( (self.histWindowSize[0] + self.offsetX, 
+                                              self.histWindowSize[1]) ) 
+        self.lineSurf = self.parent.subsurface( ( self.offsetX, 0, 
+                                                  self.histWindowSize[0], 
+                                                  self.histWindowSize[1]) )
+        pygame.display.set_caption( "HContinuouslines-Histogram" )
 
-        posX = 0
-        pygame.draw.line( self.surf, white, (50,self.histWindowSize[1]*0.05), 
+        pygame.draw.line( self.parent, white, (50,self.histWindowSize[1]*0.05), 
                           (50,self.histWindowSize[1]*0.95), 2 )
-        pygame.draw.line( self.surf, white, (45,self.histWindowSize[1]*0.05), 
+        pygame.draw.line( self.parent, white, (45,self.histWindowSize[1]*0.05), 
                           (55,self.histWindowSize[1]*0.05), 2 )
-        pygame.draw.line( self.surf, white, (45,self.histWindowSize[1]/2), 
+        pygame.draw.line( self.parent, white, (45,self.histWindowSize[1]/2), 
                           (55,self.histWindowSize[1]/2), 2 )
-        pygame.draw.line( self.surf, white, (45,self.histWindowSize[1]*0.95), 
+        pygame.draw.line( self.parent, white, (45,self.histWindowSize[1]*0.95), 
                           (55,self.histWindowSize[1]*0.95), 2 )
         fontsize = 20
         myfont = pygame.font.SysFont( "None", fontsize )
-        self.surf.blit(myfont.render( str(self.maxVal), 0, white), (15, 15) )
-        self.surf.blit(myfont.render( str(self.maxVal/2), 0, white), 
+        self.parent.blit(myfont.render( str(self.maxVal), 0, white), 
+                         (15, self.histWindowSize[1]*0.075) )
+        self.parent.blit(myfont.render( str(self.maxVal/2), 0, white), 
                        (15,self.histWindowSize[1]/2-5 ) )
-        self.surf.blit(myfont.render( "0", 0, white), (15, self.histWindowSize[1]-25) )
+        self.parent.blit(myfont.render( "0", 0, white), (15, self.histWindowSize[1]-25) )
         
         showFlags = np.ones( 8, bool )
+        history = np.zeros( (self.N, 2), int )
+        posX = self.histWindowSize[0]-20
+        for i in range(self.N):
+            history[i] = (posX, self.histWindowSize[1]/2)
+        posX = self.histWindowSize[0]-20
 
         while 1:
+            self.handleNonPygameEvents()
             for e in pygame.event.get():
                 if e.type == pygame.KEYDOWN:
                     if e.key == pygame.K_0:
@@ -163,9 +191,79 @@ class HTickerlines(Histogram):
                         showFlags[6] = not(showFlags[6])
                     if e.key == pygame.K_7:
                         showFlags[7] = not(showFlags[7])
-
                     if e.key == pygame.K_q:
-                        sys.exit(1)
+                        self.close()
+                    if e.key == pygame.K_h:
+                        self.hide()
+            
+            hist = conn.recv()
+            self.lineSurf.scroll(-2,0)
+
+            for i in range(len(hist)):
+                posY = ( self.histWindowSize[1]*0.95 - 
+                         (self.histWindowSize[1]* 0.9 * hist[i]) / self.maxVal )
+                if showFlags[i] == True:
+                    pygame.draw.line( self.lineSurf, self.activePalette[i], 
+                                      history[i], (posX,posY), 2 )
+                history[i] = (posX,posY)
+
+            pygame.display.update()
+
+
+
+
+class HTickerlines( Histogram ):
+    def runProcess( self, conn ):
+        pygame.init()
+        self.histWindowSize = ( 500, 200 )
+        self.offsetX = 70
+        self.surf = pygame.display.set_mode( (self.histWindowSize[0] + self.offsetX,
+                                              self.histWindowSize[1]) )
+        pygame.display.set_caption( "HTickerlines-Histogram" )
+        history = np.zeros( ( self.N, 2 ), int )
+        for i in range(self.N):
+            history[i] = ( self.offsetX, self.histWindowSize[1]/2)
+
+        posX = 0
+        pygame.draw.line( self.surf, white, (50,self.histWindowSize[1]*0.05), 
+                          (50,self.histWindowSize[1]*0.95), 2 )
+        pygame.draw.line( self.surf, white, (45,self.histWindowSize[1]*0.05), 
+                          (55,self.histWindowSize[1]*0.05), 2 )
+        pygame.draw.line( self.surf, white, (45,self.histWindowSize[1]/2), 
+                          (55,self.histWindowSize[1]/2), 2 )
+        pygame.draw.line( self.surf, white, (45,self.histWindowSize[1]*0.95), 
+                          (55,self.histWindowSize[1]*0.95), 2 )
+        fontsize = 20
+        myfont = pygame.font.SysFont( "None", fontsize )
+        self.surf.blit(myfont.render( str(self.maxVal), 0, white), (15, self.histWindowSize[1]*0.075) )
+        self.surf.blit(myfont.render( str(self.maxVal/2), 0, white), 
+                       (15,self.histWindowSize[1]/2-5 ) )
+        self.surf.blit(myfont.render( "0", 0, white), (15, self.histWindowSize[1]-25) )
+        
+        showFlags = np.ones( 8, bool )
+
+        while 1:
+            self.handleNonPygameEvents()
+            for e in pygame.event.get():
+                if e.type == pygame.KEYDOWN:
+                    if e.key == pygame.K_0:
+                        showFlags[0] = not(showFlags[0])
+                    if e.key == pygame.K_1:
+                        showFlags[1] = not(showFlags[1])
+                    if e.key == pygame.K_2:
+                        showFlags[2] = not(showFlags[2])
+                    if e.key == pygame.K_3:
+                        showFlags[3] = not(showFlags[3])
+                    if e.key == pygame.K_4:
+                        showFlags[4] = not(showFlags[4])
+                    if e.key == pygame.K_5:
+                        showFlags[5] = not(showFlags[5])
+                    if e.key == pygame.K_6:
+                        showFlags[6] = not(showFlags[6])
+                    if e.key == pygame.K_7:
+                        showFlags[7] = not(showFlags[7])
+                    if e.key == pygame.K_h:
+                        self.hide()
 
 
             hist = conn.recv()
@@ -191,26 +289,17 @@ class HTickerlines(Histogram):
             
             posX += 5 #if you change this, remember (*)
 
-                
-
-    def __init__( self, N, maxVal, palette ):
-        Histogram.__init__( self, N, maxVal, palette )
-
-    def update( self, hist ):
-        if len(hist) != self.N:
-            print "Not the correct number of elements for the histogram!"
-            return
-        else:
-            self.conn2.send( hist )
-    
 
 
 if __name__ == "__main__":
-    pygame.init()
     maxi = 1254
-    h = HTickerlines( 4, maxi, ())
-    v = VBars( 4, maxi, () )
-    while 1:
+#    h = HTickerlines( 4, maxi, ())
+#    v = VBars( 4, maxi, () )
+    c = HContinuouslines( 4, maxi, () )
+    i = 0
+    while i < 2000:
+        i = i+1
+#        print i
         j = random.randint( 1, maxi )
         if j < maxi:
             k = random.randint( 1, maxi-j)
@@ -221,10 +310,13 @@ if __name__ == "__main__":
         else:
             l = 0
         m = maxi - j - k - l
-        tuple =(j,k,l,m)
-        h.update( tuple )
-        v.update( tuple )
-
+        t =(j,k,l,m)
+        c.update( t )
+#        h.update( t )
+#        v.update( t )
+    c.close()
+#    h.close()
+#    v.close()
 
 
     

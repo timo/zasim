@@ -3,6 +3,7 @@
 import pygame
 import numpy as np
 import sys
+from multiprocessing import Queue
 from CA import sandpile
 
 
@@ -13,7 +14,9 @@ screenSize = int( sizeX * scale ), int( sizeY * scale )
 screenXMin = 0
 screenYMin = 0
 
-ca = sandpile( sizeX, sizeY, sandpile.INIT_RAND )
+simQueue = Queue()
+
+ca = sandpile( sizeX, sizeY, sandpile.INIT_RAND, simQueue, sandpile.HistVBars | sandpile.HistTickerlines )
 
 
 pygame.init()
@@ -53,7 +56,10 @@ def sim():
                         
             if e.type == pygame.KEYDOWN:
                 if e.key == pygame.K_q:
+                    pygame.quit()
+                    ca.closeHistograms()
                     sys.exit(1)
+
                 if e.key == pygame.K_PLUS:
                     resize(1.1)
                 if e.key == pygame.K_MINUS:
@@ -72,6 +78,7 @@ def sim():
                     screenYMin -= 1
                 if e.key == pygame.K_DOWN:
                     screenYMin += 1
+                
 
         ca.addGrainRandomly()
         ca.step()
