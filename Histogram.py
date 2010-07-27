@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import pygame
 from multiprocessing import Process, Pipe, Queue
 import random
@@ -30,7 +32,7 @@ palettes = ( palette1, palette2, palette3, palette4,
 
 ## abstract superclass, dont use this one ##
 class Histogram():
-    def __init__ ( self, N, maxVal, palette ):
+    def __init__ ( self, N, maxVal, palette, info ):
         if N > 8:
             print "maximum N is 8 at the moment :("
             sys.exit(1)
@@ -56,6 +58,11 @@ class Histogram():
         self.QUIT = 0
         self.SHOW = 1
         self.HIDE = 2
+        
+        self.info = info
+        if len( info ) != self.N:
+            print "You didn't provide the correct number of info-elements"
+            sys.exit(1)
 
         self.conn1, self.conn2 = Pipe()
         self.p = Process( target=self.runProcess, args=( self.conn1, ))
@@ -92,12 +99,40 @@ class Histogram():
         else:
             self.conn2.send( hist )
 
+    def getInfoPositions( self, spaceX ):
+        fontsize = 20
+        myfont = pygame.font.SysFont( "None", fontsize)
+        infoPositions = []
+        
+        self.colorRectSize = 15
+        pos = X, Y = 20,10
+        for i in self.info:
+            #sizes.append( (str(i), myfont.size(str(i))))
+            if (X + self.colorRectSize + 10 + myfont.size(str(i))[0]) > self.histWindowSize[0]:
+                Y += 20
+                X = 20
+            pos = X, Y
+            infoPositions.append( (str(i), pos) )
+            X += self.colorRectSize + 10 + myfont.size(str(i))[0] + 20
+
+        Y += 30
+        pos = X,Y
+        infoPositions.append( ("eof", pos) )
+            
+        return infoPositions
+
+
 ## use these! ##
 class VBars(Histogram):
     def runProcess( self, conn ):
         pygame.init()
-        self.histWindowSize = ( ((self.N*20)+((self.N-1)*30)+130)+50 , 100 )
-        self.surf = pygame.display.set_mode( self.histWindowSize )
+        self.histWindowSize = ( ((self.N*20)+((self.N-1)*30)+130) , 100 )
+        self.offsetX = 50
+        infoPos = self.getInfoPositions( self.histWindowSize[0]+self.offsetX )
+        self.offsetY = infoPos[len(infoPos)-1][1][1] + 20
+        self.surf = pygame.display.set_mode( (self.histWindowSize[0] + self.offsetX,
+                                             self.histWindowSize[1] + self.offsetY) )
+        
         pygame.display.set_caption( "VBar-Histogram" )
         pygame.draw.line( self.surf, white, (50,self.histWindowSize[1]*0.1), 
                           (50,self.histWindowSize[1]*0.9), 2 )
@@ -114,8 +149,23 @@ class VBars(Histogram):
         self.surf.blit(myfont.render( str(self.maxVal/2), 0, white), 
                        (15, self.histWindowSize[1]/2-5) )
         self.surf.blit(myfont.render("0", 0, white), 
-                       (15, self.histWindowSize[1]*0.887) )
+                       (15, self.histWindowSize[1]-20) )
 
+        # bottom information
+        pygame.draw.line( self.surf, white, ( 0, self.histWindowSize[1] ), 
+                          (self.histWindowSize[0] + self.offsetX, self.histWindowSize[1]), 2 )
+        
+        self.infoSurface = self.surf.subsurface( (0, self.histWindowSize[1] + 20,
+                                                  self.histWindowSize[0] + self.offsetX,
+                                                  self.offsetY-20 ) )
+
+        for i in range( self.N ):
+            pygame.draw.rect( self.infoSurface, self.activePalette[i], 
+                              ( infoPos[i][1][0], infoPos[i][1][1] , 
+                                self.colorRectSize, self.colorRectSize), 
+                              0 )
+            self.infoSurface.blit( myfont.render( infoPos[i][0], 0, white ), ( infoPos[i][1][0] + self.colorRectSize + 10, infoPos[i][1][1]) )
+            
         while 1:
             self.handleNonPygameEvents()
             for e in pygame.event.get():
@@ -141,28 +191,48 @@ class HContinuouslines( Histogram ):
         pygame.init()
         self.histWindowSize = ( 500, 200 )
         self.offsetX = 70
-        self.parent = pygame.display.set_mode( (self.histWindowSize[0] + self.offsetX, 
-                                              self.histWindowSize[1]) ) 
-        self.lineSurf = self.parent.subsurface( ( self.offsetX, 0, 
+
+        infoPos = self.getInfoPositions( self.histWindowSize[0] + self.offsetX )
+                
+        self.offsetY = infoPos[len(infoPos)-1][1][1]
+        self.surf = pygame.display.set_mode( (self.histWindowSize[0] + self.offsetX, 
+                                                self.histWindowSize[1] + self.offsetY ) ) 
+        self.lineSurf = self.surf.subsurface( ( self.offsetX, 0, 
                                                   self.histWindowSize[0], 
                                                   self.histWindowSize[1]) )
         pygame.display.set_caption( "HContinuouslines-Histogram" )
 
-        pygame.draw.line( self.parent, white, (50,self.histWindowSize[1]*0.05), 
+        # left scale
+        pygame.draw.line( self.surf, white, (50,self.histWindowSize[1]*0.05), 
                           (50,self.histWindowSize[1]*0.95), 2 )
-        pygame.draw.line( self.parent, white, (45,self.histWindowSize[1]*0.05), 
+        pygame.draw.line( self.surf, white, (45,self.histWindowSize[1]*0.05), 
                           (55,self.histWindowSize[1]*0.05), 2 )
-        pygame.draw.line( self.parent, white, (45,self.histWindowSize[1]/2), 
+        pygame.draw.line( self.surf, white, (45,self.histWindowSize[1]/2), 
                           (55,self.histWindowSize[1]/2), 2 )
-        pygame.draw.line( self.parent, white, (45,self.histWindowSize[1]*0.95), 
+        pygame.draw.line( self.surf, white, (45,self.histWindowSize[1]*0.95), 
                           (55,self.histWindowSize[1]*0.95), 2 )
         fontsize = 20
         myfont = pygame.font.SysFont( "None", fontsize )
-        self.parent.blit(myfont.render( str(self.maxVal), 0, white), 
+        self.surf.blit(myfont.render( str(self.maxVal), 0, white), 
                          (15, self.histWindowSize[1]*0.075) )
-        self.parent.blit(myfont.render( str(self.maxVal/2), 0, white), 
+        self.surf.blit(myfont.render( str(self.maxVal/2), 0, white), 
                        (15,self.histWindowSize[1]/2-5 ) )
-        self.parent.blit(myfont.render( "0", 0, white), (15, self.histWindowSize[1]-25) )
+        self.surf.blit(myfont.render( "0", 0, white), (15, self.histWindowSize[1]-25) )
+        
+        # bottom information
+        pygame.draw.line( self.surf, white, ( 0, self.histWindowSize[1] ), 
+                          (self.histWindowSize[0] + self.offsetX, self.histWindowSize[1]), 2 )
+        
+        self.infoSurface = self.surf.subsurface( (0, self.histWindowSize[1],
+                                                    self.histWindowSize[0] + self.offsetX,
+                                                    self.offsetY ) )
+
+        for i in range( self.N ):
+            pygame.draw.rect( self.infoSurface, self.activePalette[i], 
+                              ( infoPos[i][1][0], infoPos[i][1][1] , 
+                                self.colorRectSize, self.colorRectSize), 
+                              0 )
+            self.infoSurface.blit( myfont.render( infoPos[i][0], 0, white ), ( infoPos[i][1][0] + self.colorRectSize + 10, infoPos[i][1][1]) )
         
         showFlags = np.ones( 8, bool )
         history = np.zeros( (self.N, 2), int )
@@ -217,8 +287,11 @@ class HTickerlines( Histogram ):
         pygame.init()
         self.histWindowSize = ( 500, 200 )
         self.offsetX = 70
+        infoPos = self.getInfoPositions( self.histWindowSize[0] + self.offsetX )
+        self.offsetY = infoPos[len(infoPos)-1][1][1]
+
         self.surf = pygame.display.set_mode( (self.histWindowSize[0] + self.offsetX,
-                                              self.histWindowSize[1]) )
+                                              self.histWindowSize[1] + self.offsetY) )
         pygame.display.set_caption( "HTickerlines-Histogram" )
         history = np.zeros( ( self.N, 2 ), int )
         for i in range(self.N):
@@ -239,6 +312,21 @@ class HTickerlines( Histogram ):
         self.surf.blit(myfont.render( str(self.maxVal/2), 0, white), 
                        (15,self.histWindowSize[1]/2-5 ) )
         self.surf.blit(myfont.render( "0", 0, white), (15, self.histWindowSize[1]-25) )
+
+        # bottom info
+        pygame.draw.line( self.surf, white, ( 0, self.histWindowSize[1] ), 
+                          (self.histWindowSize[0] + self.offsetX, self.histWindowSize[1]), 2 )
+        
+        self.infoSurface = self.surf.subsurface( (0, self.histWindowSize[1],
+                                                  self.histWindowSize[0] + self.offsetX,
+                                                  self.offsetY ) )
+        
+        for i in range( self.N ):
+            pygame.draw.rect( self.infoSurface, self.activePalette[i], 
+                              ( infoPos[i][1][0], infoPos[i][1][1] , 
+                                self.colorRectSize, self.colorRectSize), 
+                              0 )
+            self.infoSurface.blit( myfont.render( infoPos[i][0], 0, white ), ( infoPos[i][1][0] + self.colorRectSize + 10, infoPos[i][1][1]) )
         
         showFlags = np.ones( 8, bool )
 
@@ -293,9 +381,9 @@ class HTickerlines( Histogram ):
 
 if __name__ == "__main__":
     maxi = 1254
-#    h = HTickerlines( 4, maxi, ())
-#    v = VBars( 4, maxi, () )
-    c = HContinuouslines( 4, maxi, () )
+    h = HTickerlines( 4, maxi, (), ("State 0", "State 1", "State 2", "State 3"))
+#    v = VBars( 4, maxi, (), ("State 0", "State 1", "State 2", "State 3") )
+    c = HContinuouslines( 4, maxi, (), ("State 0", "State 1", "State 2", "State 3") )
     i = 0
     while i < 2000:
         i = i+1
@@ -312,10 +400,10 @@ if __name__ == "__main__":
         m = maxi - j - k - l
         t =(j,k,l,m)
         c.update( t )
-#        h.update( t )
+        h.update( t )
 #        v.update( t )
     c.close()
-#    h.close()
+    h.close()
 #    v.close()
 
 
