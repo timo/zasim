@@ -9,7 +9,7 @@ from CA import sandpile, binRule
 
 
 #size = sizeX, sizeY = argv[2], argv[2]
-size = sizeX, sizeY = 30,30
+size = sizeX, sizeY = 300,300
 scale = 1.0
 screenSize = int( sizeX * scale ), int( sizeY * scale )
 screenXMin = 0
@@ -17,8 +17,8 @@ screenYMin = 0
 
 simQueue = Queue()
 
-ca = sandpile( sizeX, sizeY, sandpile.INIT_RAND, simQueue, sandpile.HistVBars | sandpile.HistTickerlines )
-#ca = binRule( 110, sizeX, sizeY, binRule.INIT_ONES )
+#ca = sandpile( sizeX, sizeY, sandpile.INIT_RAND, simQueue, sandpile.HistVBars | sandpile.HistTickerlines )
+ca = binRule( 110, sizeX, sizeY, binRule.INIT_ONES )
 pygame.init()
 
 class Blitter1D():
@@ -92,6 +92,7 @@ def resize( f ):
     pygame.display.set_mode( screenSize, 0, 8 )
 
 def sim():
+    looping = False
     while ( 1 ):
         clock.tick()
         pygame.display.set_caption( "CASimulator - " + ca.title() + " - " 
@@ -126,9 +127,10 @@ def sim():
                 if e.key == pygame.K_DOWN:
                     screenYMin += 1
 
-        ca.loopFunc()
-        ca.step()
-        draw( ca.conf() )
+        if looping == True:
+            ca.loopFunc()
+            ca.step()
+            draw( ca.conf() )
         pygame.display.update()
 
  

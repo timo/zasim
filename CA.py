@@ -18,7 +18,7 @@ class CA():
         return 0
 
     def __init__( self ):
-        pass
+        print "function __init__() not implemented yet"
 
     def step( self ):
         self.updateAllCells()
@@ -30,13 +30,13 @@ class CA():
         return ""
     
     def quit( self ):
-        pass
+        print "function quit() not implemented yet"
     
     def loopFunc( self ):
-        pass
+        print "function loopFunc() not implemented yet"
 
     def eventFunc( self, event ):
-        pass
+        print "function eventFunc() not implemented yet"
 
 
 class binRule( CA ):
