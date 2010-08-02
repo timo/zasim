@@ -202,10 +202,9 @@ class sandpile( CA ):
         return self.currConf
 
     def addGrain( self, x, y ):
-        if self.currConf[ x, y ] <= 7:
-            self.currConf[ x, y ] += 1
-        else:
-            print "You're trying to add a grain out of bounds!"
+        if not ( (x > self.sizeX - 1) or (y > self.sizeY - 1) ):
+            if self.currConf[ x, y ] <= 7:
+                self.currConf[ x, y ] += 1
 
     def setState( self, x, y, s ):
         if 0 < s < 8 & 0 < x < (self.sizeX-1) & 0 < y < (self.sizeY-1):

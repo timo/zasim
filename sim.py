@@ -9,54 +9,88 @@ from CA import sandpile, binRule
 
 
 #size = sizeX, sizeY = argv[2], argv[2]
-size = sizeX, sizeY = 300,300
-scale = 1.0
+size = sizeX, sizeY = 16,16
+scale = 10.0
 screenSize = int( sizeX * scale ), int( sizeY * scale )
-screenXMin = 0
-screenYMin = 0
 
 simQueue = Queue()
 
-#ca = sandpile( sizeX, sizeY, sandpile.INIT_RAND, simQueue, sandpile.HistVBars | sandpile.HistTickerlines )
-ca = binRule( 110, sizeX, sizeY, binRule.INIT_ONES )
+ca = sandpile( sizeX, sizeY, sandpile.INIT_RAND, simQueue,  sandpile.HistTickerlines )
+#ca = binRule( 110, sizeX, sizeY, binRule.INIT_ONES )
 pygame.init()
+pygame.display.set_caption( "CASimulator - " + ca.title() )
+clock = pygame.time.Clock()
 
-class Blitter1D():
+simScreen = pygame.display.set_mode( screenSize, 0, 8 )
+simScreen.set_palette( ca.palette )
+
+class Blitter():
     def __init__( self, size, palette ):
+        print "oiu"
+        self.screenXMin = 0
+        self.screenYMin = 0
+        self.zoomIdx = 0
+        self.zoomSizes = []
+        self.zoomSizes.append( size )
+        self.zoomSizes.append( (size[0]*3/4, size[1]*3/4 ) )
+        i = 2
+        while self.zoomSizes[len(self.zoomSizes)-1][0] != (size[0]/i) and self.zoomSizes[len(self.zoomSizes)-1][1] != (size[1]/i):
+            self.zoomSizes.append( (size[0]/i,size[1]/i) )
+            i += 1
         self.surface = pygame.surface.Surface( size, 0, 8 )
         self.surface.set_palette( palette )
+        self.subSurf = self.surface.subsurface( (0,0), size )
+
+    def getSurface( self ):
+        return self.surface
+
+    def getSubSurface( self ):
+        return self.subSurf
+
+    def scroll( self, key ):
+        if key == pygame.K_UP and self.screenYMin > 0:
+            self.screenYMin -= 1
+        if key == pygame.K_DOWN and ( self.screenYMin + self.subSurf.get_height() + 1 < sizeY - 1 ):
+            self.screenYMin += 1
+        if key == pygame.K_LEFT and self.screenXMin > 0:
+            self.screenXMin -= 1
+        if key == pygame.K_RIGHT and ( self.screenXMin + self.subSurf.get_width() + 1 < sizeX - 1 ):
+            self.screenXMin += 1
+    
+    def zoom( self, c ):
+        if c == "0":
+            self.zoomIdx = 0
+        elif c == "1" and self.zoomIdx < len(self.zoomSizes)-1:
+            self.zoomIdx += 1
+        elif c == "2" and self.zoomIdx > 0:
+            self.zoomIdx -= 1
+        self.subSurf = self.surface.subsurface( (0,0), self.zoomSizes[self.zoomIdx] )
+
+class Blitter1D(Blitter):
+    def __init__( self, size, palette ):
+        Blitter.__init__( self, size, palette )
         self.newlineSurface = self.surface.subsurface((0,size[1]-1,size[0],1))
         self.array = np.zeros( (1,size[0]), int )
-#        self.array = np.zeros( (size[0],1), int )
 
     def blitArray( self, data ):
         self.surface.scroll( 0, -1 )
-
-#verbessern!!!!!!!
         self.array[0] = ( data )
         pygame.surfarray.blit_array( self.newlineSurface, np.transpose(self.array) )
 
-#        for i in range( len(data) ):
-#            self.array[i,0] = data[i]
-#        pygame.surfarray.blit_array( self.newlineSurface, self.array )
-
-    def surface( self ):
-        return self.surface
-
-
-class Blitter2D():
+class Blitter2D(Blitter):
     def __init__( self, size, palette ):
-        self.surface = pygame.surface.Surface( size, 0, 8 )
-        self.surface.set_palette( palette )
-        
+        Blitter.__init__( self, size, palette )
+
     def blitArray( self, data ):
+        if self.screenXMin + self.subSurf.get_width() > sizeX or self.screenYMin + self.subSurf.get_height() > sizeY:
+            self.screenXMin = sizeX-self.subSurf.get_width()
+            self.screenYMin = sizeY-self.subSurf.get_height()
         pygame.surfarray.blit_array( 
-            self.surface, 
-            data#[screenXMin:x+screenXMin, screenYMin:y+screenYMin]
+            self.subSurf, 
+            data[self.screenXMin:self.screenXMin+self.subSurf.get_width(),
+                 self.screenYMin:self.screenYMin+self.subSurf.get_height()]
             )
         
-    def surface( self ):
-        return self.surface
 
         
 
@@ -66,23 +100,9 @@ elif ca.get_dim() == 2:
     blitter = Blitter2D( size, ca.palette )
                           
 
-pygame.display.set_caption( "CASimulator - " + ca.title() )
-
-simScreen = pygame.display.set_mode( screenSize, 0, 8 )
-simScreen.set_palette( ca.palette )
-
-clock = pygame.time.Clock()
-
-def zoom( f ):
-    print "zoom, ", f
-    pass
-
 def draw( data ):
-    x = simScreen.get_width()
-    y = simScreen.get_height()
     blitter.blitArray( data )
-#    pygame.surfarray.blit_array( simSurface, data[screenXMin:x+screenXMin, screenYMin:y+screenYMin] )
-    temp = pygame.transform.scale( blitter.surface, simScreen.get_size() )
+    temp = pygame.transform.scale( blitter.getSubSurface(), simScreen.get_size() )
     simScreen.blit( temp, (0,0) )
 
 def resize( f ):
@@ -102,35 +122,25 @@ def sim():
                 ca.eventFunc( e )
                         
             if e.type == pygame.KEYDOWN:
-                if e.key == pygame.K_q:
+                if e.unicode == "q":
                     pygame.quit()
                     ca.quit()
                     sys.exit(1)
 
                 # display-related functions
-                if e.key == pygame.K_PLUS:
+                if e.unicode == "+":
                     resize(1.1)
-                if e.key == pygame.K_MINUS:
+                if e.unicode == "-":
                     resize(0.9)
-                if e.key == pygame.K_0:
-                    zoom(0)
-                if e.key == pygame.K_1:
-                    zoom(1)
-                if e.key == pygame.K_2:
-                    zoom(2)
-                if e.key == pygame.K_RIGHT:
-                    screenXMin += 1
-                if e.key == pygame.K_LEFT:
-                    screenXMin -= 1
-                if e.key == pygame.K_UP:
-                    screenYMin -= 1
-                if e.key == pygame.K_DOWN:
-                    screenYMin += 1
+                if e.unicode == "0" or e.unicode == "1" or e.unicode == "2":
+                    blitter.zoom( e.unicode )
+                if e.key == pygame.K_RIGHT or e.key == pygame.K_LEFT or e.key == pygame.K_UP or e.key == pygame.K_DOWN :
+                    blitter.scroll( e.key )
 
-        if looping == True:
-            ca.loopFunc()
-            ca.step()
-            draw( ca.conf() )
+#        if looping == True:
+        ca.loopFunc()
+        ca.step()
+        draw( ca.conf() )
         pygame.display.update()
 
  

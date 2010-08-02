@@ -215,7 +215,7 @@ class VBars(Histogram):
                         20, rectHeight )
                 pygame.draw.rect(self.histSubSurf, black, blackrect, 0 )
                 pygame.draw.rect(self.histSubSurf, self.activePalette[i], rect, 0 )
-                pygame.display.update()
+            pygame.display.update()
 
         
 
@@ -432,7 +432,7 @@ class HTickerlines( Histogram ):
                                       history[i], pos, 2 )
                     
                 history[i] = pos
-                pygame.display.update()
+            pygame.display.update()
             
             posX += 5 #if you change this, remember (*)
 
