@@ -5,6 +5,8 @@ import sys
 import os
 from multiprocessing import Process, Pipe
 import Histogram 
+from scipy import weave
+from scipy.weave import converters
 
 class CA():
 
@@ -72,7 +74,7 @@ class binRule( CA ):
             if ( self.ruleNr & ( 1 << i ) ):
                 self.ruleIdx[i] = 1
 
-    def updateAllCells( self ):
+    def updateAllCells_py( self ):
         for i in range( 1, self.cells-1 ):
             state = self.currConf[i-1] << 2
             state += self.currConf[i] << 1
@@ -82,7 +84,7 @@ class binRule( CA ):
         self.currConf, self.nextConf = self.nextConf, self.currConf
 
     def step( self ):
-        self.updateAllCells()
+        self.updateAllCells_py()
 
     def conf( self ):
         return self.currConf
@@ -169,14 +171,37 @@ class sandpile( CA ):
         for h in self.HistWindows:
             h.close()
 
-    def makeHistogram( self ):
+    def makeHistogram_py( self ):
         for i in range( 8 ):
             self.histogram[i] = 0
         for x in range( 1, self.sizeX-1 ):
             for y in range( 1, self.sizeY-1 ):
                 self.histogram[ self.currConf[x,y] ] += 1
+#        (a,b ) = np.histogram( self.currConf, 8 )
+    
 
-    def updateAllCells( self ):
+    def makeHistogram_weaveInline( self ):
+        sandpileHistCode = """
+        int i; 
+        int j;
+        for ( i = 0; i < 8; i++ ) {
+          hist(i) = 0;
+        }
+        for ( i = 1; i < sizeX-1; i++ ) {
+          for ( j = 1; j < sizeY-1; j++ ) {
+            hist( cConf(i,j) )++;
+          }
+        }
+        """
+        sizeX = self.sizeX
+        sizeY = self.sizeY
+        cConf = self.currConf
+        hist = self.histogram
+        weave.inline( sandpileHistCode, ['cConf', 'hist', 'sizeX', 'sizeY'],
+                      type_converters = converters.blitz,
+                      compiler = 'gcc' )
+
+    def updateAllCells_py( self ):
         for x in range( 1, self.sizeX-1 ):
             for y in range( 1, self.sizeY-1 ):
                 if self.currConf[ x, y ] > 3:
@@ -187,15 +212,44 @@ class sandpile( CA ):
                     self.nextConf[ x, y-1 ] = self.currConf[ x, y-1 ] + 1
 
         self.currConf = self.nextConf.copy()
-        self.makeHistogram()
-        self.sendHistogram()
+        self.makeHistogram_py()
+ #       self.sendHistogram()
+
+    def updateAllCells_weaveInline( self ):
+        sandpileStepCode = """
+        int i;
+        int j;
+        for ( i = 1; i < sizeX-1; i++ ) {
+          for ( j = 1; j < sizeY-1; j++ ) {
+            if ( cConf(i,j) > 3 ) {
+              nConf(i,j) -= 4; 
+
+              nConf(i+1, j)++;
+              nConf(i-1, j)++;
+              nConf(i, j+1)++;
+              nConf(i, j-1)++;
+            }
+          }
+        }
+        """
+        sizeX = self.sizeX
+        sizeY = self.sizeY
+        cConf = self.currConf
+        nConf = self.nextConf
+        weave.inline( sandpileStepCode, ['sizeX', 'sizeY', 'cConf', 'nConf'],
+                      type_converters = converters.blitz,
+                      compiler = 'gcc' )
+        self.currConf = nConf.copy();
+        self.makeHistogram_weaveInline()
+#        self.sendHistogram()
 
     def sendHistogram( self ):
         for h in self.HistWindows:
             h.update( self.histogram )
 
     def step( self ):
-        self.updateAllCells()
+        self.updateAllCells_py()
+#       self.updateAllCells_weaveInline()
 
 
     def conf( self ):

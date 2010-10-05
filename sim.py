@@ -9,8 +9,8 @@ from CA import sandpile, binRule
 
 
 #size = sizeX, sizeY = argv[2], argv[2]
-size = sizeX, sizeY = 16,16
-scale = 10.0
+size = sizeX, sizeY = 2000,2000
+scale = 0.5
 screenSize = int( sizeX * scale ), int( sizeY * scale )
 
 simQueue = Queue()
@@ -26,7 +26,6 @@ simScreen.set_palette( ca.palette )
 
 class Blitter():
     def __init__( self, size, palette ):
-        print "oiu"
         self.screenXMin = 0
         self.screenYMin = 0
         self.zoomIdx = 0
