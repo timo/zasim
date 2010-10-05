@@ -32,7 +32,7 @@ palettes = ( palette1, palette2, palette3, palette4,
 
 ## abstract superclass, dont use this one ##
 class Histogram():
-    def __init__ ( self, N, maxVal, palette, info ):
+    def __init__ ( self, N, maxVal, palette, info=() ):
         if N > 8:
             print "maximum N is 8 at the moment :("
             sys.exit(1)
@@ -62,6 +62,7 @@ class Histogram():
         self.info = info
         if len( info ) != self.N:
             print "You didn't provide the correct number of info-elements"
+            print len(info), self.N
             sys.exit(1)
 
         self.conn1, self.conn2 = Pipe()
@@ -82,11 +83,12 @@ class Histogram():
             e = self.eventQueue.get()
             if e == self.QUIT:
                 pygame.quit()
-                sys.exit(1)
+                return -1
             if ( e == self.SHOW ) & ( not( pygame.display.get_init() ) ):
                 pygame.display.set_mode ( self.histWindowSize, 0 )
+                return 0
             if ( e == self.HIDE ) & ( pygame.display.get_init() ):
-                pygame.display.set_mode( (1,1), pygame.NOFRAME )
+                pygame.display.quit()
                 
         
     def set_title ( self, title ):
@@ -101,7 +103,7 @@ class Histogram():
 
     def getInfoPositions( self, spaceX ):
         fontsize = 20
-        myfont = pygame.font.SysFont( "None", fontsize)
+        myfont = pygame.font.SysFont( "None", fontsize )
         infoPositions = []
         self.infoColorRectSize = 15
         pos = X, Y = 20,10
@@ -200,7 +202,8 @@ class VBars(Histogram):
                                      infoPos[i][1][1]) )
         # main loop
         while 1:
-            self.handleNonPygameEvents()
+            if self.handleNonPygameEvents() == -1:
+                return
             for e in pygame.event.get():
                if e.type == pygame.KEYDOWN:
                    if e.key == pygame.K_m:
