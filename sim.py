@@ -1,5 +1,11 @@
 #!/usr/bin/python
 
+## @package sim.py
+# 
+# sim.py is the central simulating unit.
+# It handles displaying the simulated CA as well as userinput.
+
+
 CASimulatorHelp = """
 
 **********************
@@ -52,10 +58,19 @@ import sys
 import time
 from os import path
 
+## class Display() handles everything connected to displaying the configuration of a CA.
+#
+# It handles zooming, resizing, scrolling, handling 1D and 2D CA, 
+# the colors used for different states of a cell, user input like
+# file names and displaying short info messages and updating everything over and over again.
 class Display():
+    ## Constructor, initializes pretty everything
     def __init__( self, size, scale, palette, dim ):
+        ## Size of the showing CA
         self.size = self.sizeX, self.sizeY = X,Y = size
+        ## Factor by which a cell is scaled to show it bigger than one pixel on the screen
         self.scale = scale
+        ## Actual size of the simulation window
         self.screenSize = int(self.sizeX*self.scale),int(self.sizeY*self.scale)
 
         pygame.display.init()
@@ -63,14 +78,23 @@ class Display():
         pygame.display.set_mode( self.screenSize, 0, 8 )
         pygame.display.set_palette( palette )
         pygame.display.set_mode( self.screenSize, 0, 8 )
+
+        ## Pygame display object
         self.simScreen = pygame.display.get_surface()
 
+        ## Clock used to calculate fps rate
         self.clock = pygame.time.Clock()
 
+
         # initialize zoomscreenstuff
+
+        ## Index of the first cell displayed on the left
         self.screenXMin = 0
+        ## Index of the first cell displayed on the top
         self.screenYMin = 0
+        ## Iterator for zoomSize selection (see zoomSizes)
         self.zoomIdx = 0
+        ## Fixed zoom factors when zooming into the CA to view only a detail
         self.zoomSizes = []
         self.zoomSizes.append( (float(X), float(Y)) )
         self.zoomSizes.append( (float(X*3/4), float(Y*3/4) ) )
@@ -80,14 +104,18 @@ class Display():
             self.zoomSizes.append( (float(X/i),float(Y/i)) )
             i += 1
 
+        ## Toplevel pygame surface. All subsurfaces are children of this.
         self.surface = pygame.surface.Surface( self.size, 0, 8 )
         self.surface.set_palette( palette )
+        ## Do we need this?!!?!
         self.subSurf = self.surface.subsurface( (0,0), self.size )
 
+        ## A quick way to remember whether a 1D or 2D CA is simulated
         self.dim = dim
         if self.dim == 1:
-#            print "newinit:", X, Y
+            ## New configurations of a 1D CA are displayed only in the bottom line
             self.newlineSurface = self.surface.subsurface( (0,Y-1,X,1) )
+            ## Temporary array needed for blitting the conf of a 1D CA (see blitArray1D)
             self.array = np.zeros( (1,X), int )
             self.blitArray = self.blitArray1D
             self.scroll = self.scroll1D
@@ -102,10 +130,16 @@ class Display():
 
         # initialize showText-stuff
         pygame.font.init()
+        ## Fontsize used to display messages
         self.myfontSize = 20
+        ## Font used to display messages
         self.myfont = pygame.font.SysFont( "None", self.myfontSize )
+        ## Number of iterations of the main loop in Simulator::start() for how
+        ## long the messages are kept visible
         self.newTextLive = 50
+        ## How many iterations of the main loop left where message is visible
         self.textAlive = self.newTextLive
+        ## 'HeadsUpDisplay', the message that is being shown
         self.HUDText = "Start"
         self.filenameChars = ("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", 
                               "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", 
@@ -115,7 +149,8 @@ class Display():
                               "Y", "Z", "0", "1", "2", "3", "4", "5", "6", "7", 
                               "8", "9", "_", "-", "/", "." )
 
-                                                
+
+    ## Blitting function used for 1D CA
     def blitArray1D( self, data, scroll ):
         scroll = (int)(scroll)*(-1)
         self.surface.scroll( 0, scroll )
@@ -127,6 +162,7 @@ class Display():
             self.newlineSurface,                                      
             data[self.screenXMin:self.screenXMin+self.subSurf.get_width(),:] )
         
+    ## Blitting function used for 2D CA
     def blitArray2D( self, data, swap ):
         if self.screenXMin + self.subSurf.get_width() > self.sizeX \
                 or self.screenYMin + self.subSurf.get_height() > self.sizeY:
@@ -136,12 +172,14 @@ class Display():
             self.subSurf, 
             data[self.screenXMin:self.screenXMin+self.subSurf.get_width(),
                  self.screenYMin:self.screenYMin+self.subSurf.get_height()] )
-        
+
+    ## Draws the blitted data to the screen
     def drawConf( self, data, running ):
         self.blitArray( data, running )
         temp = pygame.transform.scale( self.subSurf, self.simScreen.get_size() )
         self.simScreen.blit( temp, (0,0) )
         
+    ## Get the coordinate of the cell that is clicked on in the display window
     def getCACoordinates( self, clickedCoords ):
         retX = clickedCoords[0] / self.scale
         retY = clickedCoords[1] / self.scale
@@ -151,9 +189,11 @@ class Display():
         retY += self.screenYMin
         return (int(retX),int(retY))
 
+    ## Get the size of the CA being displayed
     def getSize( self ):
         return self.size
 
+    ## A kind of commandline that is displayed as HUD
     def getUserInputKey( self, msg="$> ", default="" ):
         inStr = default
         self.simScreen.blit( self.myfont.render( msg + ": ", 0,
@@ -196,11 +236,16 @@ class Display():
     def quit( self ):
         pass
 
+    ## Make the display bigger or smaller
+    # @param f Factor by which the size is scaled
     def resize( self, f ):
         self.scale *= f
         self.screenSize = int(self.sizeX*self.scale),int(self.sizeY*self.scale)
         pygame.display.set_mode( self.screenSize, 0, 8 )
         
+    ## When zoomed, scrolling to the left and to the right in 1D CA
+    # In 1D CA scrolling up and down is not supported yet
+    # @param key Pygame.Key object containing the pressed key
     def scroll1D( self, key ):
         if key == pygame.K_LEFT and self.screenXMin > 0:
             self.screenXMin -= 1
@@ -208,6 +253,8 @@ class Display():
                 and ( self.screenXMin+self.subSurf.get_width() < self.sizeX ):
             self.screenXMin += 1
             
+    ## When zoomed, scrolling left, right, up and down in 2D CA
+    # @param key Pygame.Key object containing the pressed key
     def scroll2D( self, key ):
         if key == pygame.K_UP and self.screenYMin > 0:
             self.screenYMin -= 1
@@ -220,16 +267,26 @@ class Display():
                 and ( self.screenXMin+self.subSurf.get_width() < self.sizeX ):
             self.screenXMin += 1
             
+    ## Setting up text to show a message
+    # @param text The message that is going to be displayed
     def setText( self, text ):
         self.HUDText = text
         self.textAlive = self.newTextLive
 
+    ## Display a step counter
+    # Counter is displayed at the bottom left corner.
+    # It could have been displayed at the top left corner but it would interfere with
+    # messages displayed by Display::showText()
+    # @param c The stepcount
     def showCounter( self, c ):
         self.simScreen.blit( self.myfont.render( "Step " + str( c ), 
                                                  0, (255,255,255),
                                                  (0,0,0) ), 
                              (0,5+self.sizeY*self.scale-self.myfontSize) )
 
+    ## Display messages
+    # If textAlive > 0, i.e. if the message hasn't been visible for it's maximum
+    # time of visibility, the message is being displayed in the top left corner
     def showText( self ):
         if self.textAlive > 0:
             self.textAlive -= 1
@@ -238,12 +295,16 @@ class Display():
                                                      (0,0,0) ),
                                  (0,0) )
 
+    ## Updating the pygame display, setting window caption
     def update( self ):
         self.clock.tick()
         pygame.display.set_caption( "CASimulator - " 
                                     + str(int(self.clock.get_fps())) + "fps" )
         pygame.display.update()
 
+    ## Zooming into a 1D CA
+    # Here the initialized fixed zoomSizes from init() are used
+    # @param c User input indicating zooming in or zooming out
     def zoom1D( self, c ):
         if c == "0":
             self.zoomIdx = 0
@@ -251,8 +312,12 @@ class Display():
             self.zoomIdx += 1
         elif c == "2" and self.zoomIdx > 0:
             self.zoomIdx -= 1
+        # BUGGY!!!!!
         self.newlineSurface = self.surface.subsurface( (0,0), (int(self.zoomSizes[self.zoomIdx][0]),int(self.zoomSizes[self.zoomIdx][1])) )
-#elf.surface.subsurface( (0,Y-1,X,1) )
+
+    ## Zooming into a 2D CA
+    # Here the initialized fixed zoomSizes from init() are used
+    # @param c User input indicating zooming in or zooming out
     def zoom2D( self, c ):
         if c == "0":
             self.zoomIdx = 0
