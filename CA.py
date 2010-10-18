@@ -1,3 +1,5 @@
+#!/usr/bin/python
+
 import numpy as np
 import pygame
 import random
@@ -98,6 +100,9 @@ class CA():
     
     def getDim( self ):
         return 0
+
+    def getDisplayType( self ):
+        return self.displayType
 
     def getSize( self ):
         return self.size
@@ -259,9 +264,6 @@ class CA():
 class binRule( CA ):
     palette = [ (0,0,0), (255,255,255) ]
 
-    def getDim( self ):
-        return 1
-    
     def __init__ ( self, ruleNr, sizeX, sizeY, initConf, filename="" ):
 
         if not 0 <= ruleNr < 256:
@@ -272,6 +274,8 @@ class binRule( CA ):
         self.sizeX = sizeX
         self.sizeY = sizeY
         self.size = ( sizeX, sizeY )
+
+        self.displayType = "Squares"
 
         if initConf == self.INIT_ZERO:
 #            self.currConf = np.zeros( (sizeX), int )
@@ -305,6 +309,26 @@ class binRule( CA ):
             if ( self.ruleNr & ( 1 << i ) ):
                 self.ruleIdx[i] = 1
 
+    def eventFunc( self, event ):
+        pass
+
+    def getDim( self ):
+        return 1
+    
+    def getTitle( self ):
+        return "Rule" + str( self.ruleNr )
+    
+    def loopFunc( self ):
+        self.step()
+
+    def quit( self ):
+        pass
+    
+    def step( self ):
+        CA.step( self )
+#        self.updateAllCellsPy()
+        self.updateAllCellsWeaveInline()
+
     def updateAllCellsPy( self ):
         for i in range( 1, self.sizeX-1 ):
             state =  self.currConf[i-1] << 2
@@ -312,7 +336,6 @@ class binRule( CA ):
             state += self.currConf[i+1]
             self.nextConf[i] = self.ruleIdx[state]
         self.currConf, self.nextConf = self.nextConf, self.currConf
-
 
     def updateAllCellsWeaveInline( self ):
         binRuleCode = """
@@ -353,22 +376,6 @@ nconf(sizeX-1,0) = nconf(1,0);
                       compiler = 'gcc' )
         self.currConf = self.nextConf.copy()
 
-    def step( self ):
-        CA.step( self )
-#        self.updateAllCellsPy()
-        self.updateAllCellsWeaveInline()
-
-    def getTitle( self ):
-        return "Rule" + str( self.ruleNr )
-    
-    def quit( self ):
-        pass
-    
-    def loopFunc( self ):
-        self.step()
-
-    def eventFunc( self, event ):
-        pass
 
 
 
@@ -397,6 +404,8 @@ class sandpile( CA ):
     def __init__( self, sizeX, sizeY, initConf, filename="" ):
         self.size = self.sizeX,self.sizeY = sizeX,sizeY
 
+        self.displayType = "Squares"
+        
         self.histogram = np.zeros( 8, int ) 
         
         if initConf == self.INIT_ZERO:
@@ -558,17 +567,79 @@ class catpile( sandpile ):
         return "Catpile"
 
 
+class bigFish( CA ):
+    palette=[]
+    def __init__( self, sizeX, sizeY ):
+        self.size = self.sizeX, self.sizeY = sizeX, sizeY
+        self.displayType = "Images"
+        
+        pygame.init()
+        pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
+        
+        for filename in ( "images/ball_black.png", "images/ball_red.png", 
+                          "images/ball_blue.png", "images/ball_orange.png",
+                          "images/ball_green.png", "images/ball_pink.png", 
+                          "images/ball_grey.png", "images/ball_white.png" ):
+            img = pygame.image.load( filename ).convert()
+            self.palette.append( img )
+            
+        self.currConf = np.zeros( ( sizeX, sizeY ), int )
+        for x in range(self.sizeX):
+            for y in range( self.sizeY ):
+                self.currConf[x,y] = (x+y)%2
+        self.nextConf = np.zeros( ( sizeX, sizeY ), int )
+        self.nextConf = self.currConf.copy
+        #self.histogram[ 0 ] = self.sizeX * self.sizeY
+
+
+    def getDim( self ):
+        return 2
+
+    def loopFunc( self ):
+        pass
+
+    def step( self ):
+        pass
+
+    def updateAllCellsPyHistImpl( self ):
+        for x in range( 1, self.sizeX-1 ):
+            for y in range( 1, self.sizeY-1 ):
+                if self.currConf[ x, y ] > 3:
+                    self.nextConf[ x, y ] = self.currConf[ x, y ] - 4
+                    self.nextConf[ x+1, y ] = self.currConf[ x+1, y ] + 1
+                    self.nextConf[ x-1, y ] = self.currConf[ x-1, y ] + 1
+                    self.nextConf[ x, y+1 ] = self.currConf[ x, y+1 ] + 1
+                    self.nextConf[ x, y-1 ] = self.currConf[ x, y-1 ] + 1
+                else: 
+                    self.nextConf[ x, y ] = self.currConf[ x, y ]
+        self.currConf,self.nextConf = self.nextConf,self.currConf
+
+    def updateAllCellsPyHistExpl( self ):
+        for x in range( 1, self.sizeX-1 ):
+            for y in range( 1, self.sizeY-1 ):
+                if self.currConf[ x, y ] > 3:
+                    self.nextConf[ x, y ] = self.currConf[ x, y ] - 4
+                    self.nextConf[ x+1, y ] = self.currConf[ x+1, y ] + 1
+                    self.nextConf[ x-1, y ] = self.currConf[ x-1, y ] + 1
+                    self.nextConf[ x, y+1 ] = self.currConf[ x, y+1 ] + 1
+                    self.nextConf[ x, y-1 ] = self.currConf[ x, y-1 ] + 1
+        self.currConf = self.nextConf.copy()
 
 if __name__ == "__main__":
-    sizeX,sizeY = 20,20
-    ca = binRule( 110, sizeX, sizeY, 1 )
-    print ca.getTitle()
+    sizeX, sizeY = 10, 10
     pygame.init()
     screen = pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
     surf = pygame.surface.Surface( (sizeX, sizeY ), 0, 8 )
-    screen.set_palette( ((0,0,0),(255,255,255)) )
-    surf.set_palette( ((0,0,0),(255,255,255)) )
-    while 1:
-        screen.blit( surf, (0,0) )
-        pygame.display.update()
-        ca.step()
+    ca = bigFish( 10, 10 )
+    
+
+
+#    sizeX,sizeY = 20,20
+#    ca = binRule( 110, sizeX, sizeY, 1 )
+#    print ca.getTitle()
+#    screen.set_palette( ((0,0,0),(255,255,255)) )
+#    surf.set_palette( ((0,0,0),(255,255,255)) )
+#    while 1:
+#        screen.blit( surf, (0,0) )
+#        pygame.display.update()
+#        ca.step()

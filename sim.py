@@ -15,35 +15,36 @@ CASimulatorHelp = """
 Help
 ~~~~
 Mouseclicks:
-  leftclick   Sandpile: Add a grain
-  rightclick  Sandpile: Set state to 0
+  leftclick       Sandpile: Add a grain
+  rightclick      Sandpile: Set state to 0
 Display:
-  '+'         Scale up the window
-  '-'         Scale down the window
-  '0'         Set zoom to 1:1
-  '1'         Zoom in
-  '2'         Zoom out
-  'c'         Toggle display of step counter
-  ('f'        Toggle full screen DONT USE THIS)
+  '+'             Scale up the window
+  '-'             Scale down the window
+  '0'             Set zoom to 1:1
+  '1'             Zoom in
+  '2'             Zoom out
+  'c'             Toggle display of step counter
+  ('f'            Toggle full screen DONT USE THIS)
 Cursor (when zoomed in)
-  left        Move view left
-  right                 right
-  up                    up
-  down                  down
+  left            Move view left
+  right                     right
+  up                        up
+  down                      down
 Simulation:
-  '*'          Bigger delay
-  '/'          Smaller delay
-  '='          No delay
-  'm'          Mark configuration
-  's'          Do only one step and stop
-  SPACE        Start/Stop the simulation
-  TAB          Load next marked configuration
-  SHIFT-TAB    Load previous marked configuration
-  CTRL-TAB     Kill current marked configuration from buffer
-  CTRL-s       Save currently shown configuration to file
-  CTRL-o       Open configuration from file
-  'h'          Print this help
-  'q'          Quit
+  '*'             Bigger delay
+  '/'             Smaller delay
+  '='             No delay
+  'm'             Mark configuration
+  's'             Do only one step and stop
+  SPACE           Start/Stop the simulation
+  TAB             Load next marked configuration
+  SHIFT-TAB       Load previous marked configuration
+  CTRL-TAB        Kill current marked configuration from buffer
+  CTRL-SHIFT-TAB  Set a name for the most recently marked configuration
+  CTRL-s          Save currently shown configuration to file
+  CTRL-o          Open configuration from file
+  'h'             Print this help
+  'q'             Quit
 
 
 """
@@ -52,11 +53,12 @@ Simulation:
 import pygame
 import numpy as np
 from multiprocessing import Process, Pipe, Queue
-from CA import sandpile, catpile, binRule
+from CA import sandpile, catpile, binRule, bigFish
 import Histogram
 import sys 
 import time
 from os import path
+import optparse
 
 ## class Display() handles everything connected to displaying the configuration of a CA.
 #
@@ -65,18 +67,21 @@ from os import path
 # file names and displaying short info messages and updating everything over and over again.
 class Display():
     ## Constructor, initializes pretty everything
-    def __init__( self, size, scale, palette, dim ):
+    def __init__( self, size, scale, palette, CADisplayType, dim ):
         ## Size of the showing CA
         self.size = self.sizeX, self.sizeY = X,Y = size
         ## Factor by which a cell is scaled to show it bigger than one pixel on the screen
         self.scale = scale
         ## Actual size of the simulation window
         self.screenSize = int(self.sizeX*self.scale),int(self.sizeY*self.scale)
+        self.CADisplayType = CADisplayType
+        self.palette = palette
 
         pygame.display.init()
         pygame.display.set_caption( "CASimulator - " )
         pygame.display.set_mode( self.screenSize, 0, 8 )
-        pygame.display.set_palette( palette )
+        if CADisplayType == "Squares":
+            pygame.display.set_palette( palette )
         pygame.display.set_mode( self.screenSize, 0, 8 )
 
         ## Pygame display object
@@ -106,9 +111,15 @@ class Display():
 
         ## Toplevel pygame surface. All subsurfaces are children of this.
         self.surface = pygame.surface.Surface( self.size, 0, 8 )
-        self.surface.set_palette( palette )
-        ## Do we need this?!!?!
-        self.subSurf = self.surface.subsurface( (0,0), self.size )
+        if CADisplayType == "Squares":
+            self.surface.set_palette( palette )
+
+        if CADisplayType == "Images":
+            self.subSurf = self.surface.subsurface( (0,0), self.surface.get_size() )
+        elif CADisplayType == "Squares":
+            # subSurf is the surface where the unscaled 1x1-pixel-squares for each state
+            # are blitted to. Afterwards subSurf is scaled up to simScreenSize
+            self.subSurf = self.surface.subsurface( (0,0), self.size )
 
         ## A quick way to remember whether a 1D or 2D CA is simulated
         self.dim = dim
@@ -117,11 +128,29 @@ class Display():
             self.newlineSurface = self.surface.subsurface( (0,Y-1,X,1) )
             ## Temporary array needed for blitting the conf of a 1D CA (see blitArray1D)
             self.array = np.zeros( (1,X), int )
-            self.blitArray = self.blitArray1D
+            if CADisplayType == "Squares":
+                self.blitArray = self.blitArray1D
+            elif CADisplayType == "Images":
+                self.blitArray = self.blitImage1D
+                self.stateImages = []
+                for img in palette:
+                    self.stateImages.append( pygame.transform.scale( img, (scale,scale) ) )
+            else:
+                print "Wrong 1D-Displaytype found!"
+                sys.exit(1)
             self.scroll = self.scroll1D
             self.zoom = self.zoom1D
         elif self.dim == 2:
-            self.blitArray = self.blitArray2D
+            if CADisplayType == "Squares":
+                self.blitArray = self.blitArray2D
+            elif CADisplayType == "Images":
+                self.blitArray = self.blitImage2D
+                self.stateImages = []
+                for img in palette:
+                    self.stateImages.append( pygame.transform.scale( img, (int(scale),int(scale)) ) )
+            else:
+                print "Wrong 2D-Displaytype found!"
+                sys.exit(1)
             self.scroll = self.scroll2D
             self.zoom = self.zoom2D
         else:
@@ -131,9 +160,17 @@ class Display():
         # initialize showText-stuff
         pygame.font.init()
         ## Fontsize used to display messages
-        self.myfontSize = 20
+        self.myfontSize = 15
         ## Font used to display messages
-        self.myfont = pygame.font.SysFont( "None", self.myfontSize )
+        self.myfont = pygame.font.SysFont( "dejavuserif", self.myfontSize, True )
+        
+        # freemono bold
+        # dejavuserif bold
+        # mgopenmoderna
+        # to get all supported systemfonts:
+        # import pygame
+        # pygame.font.get_fonts()
+
         ## Number of iterations of the main loop in Simulator::start() for how
         ## long the messages are kept visible
         self.newTextLive = 50
@@ -161,6 +198,8 @@ class Display():
         pygame.surfarray.blit_array( 
             self.newlineSurface,                                      
             data[self.screenXMin:self.screenXMin+self.subSurf.get_width(),:] )
+        temp = pygame.transform.scale( self.subSurf, self.simScreen.get_size() )
+        self.simScreen.blit( temp, (0,0) )
         
     ## Blitting function used for 2D CA
     def blitArray2D( self, data, swap ):
@@ -172,12 +211,29 @@ class Display():
             self.subSurf, 
             data[self.screenXMin:self.screenXMin+self.subSurf.get_width(),
                  self.screenYMin:self.screenYMin+self.subSurf.get_height()] )
+        temp = pygame.transform.scale( self.subSurf, self.simScreen.get_size() )
+        self.simScreen.blit( temp, (0,0) )
+
+    def blitImage1D( self, data, swap ):
+        pass
+
+    def blitImage2D( self, data, swap ):
+        if self.screenXMin + self.subSurf.get_width() > self.sizeX \
+                or self.screenYMin + self.subSurf.get_height() > self.sizeY:
+            self.screenXMin = self.sizeX-self.subSurf.get_width()
+            self.screenYMin = self.sizeY-self.subSurf.get_height()
+
+        for x in range( self.screenXMin, self.screenXMin+int(self.zoomSizes[self.zoomIdx][0]) ):
+            for y in range( self.screenYMin, self.screenYMin+int(self.zoomSizes[self.zoomIdx][1]) ):
+                self.subSurf.blit( self.stateImages[data[x,y]], (x*self.scale,y*self.scale) )
+#        self.simScreen.blit( self.subSurf, (0,0))
+
+
+#int(self.zoomSizes[self.zoomIdx][0]),int(self.zoomSizes[self.zoomIdx][1])) 
 
     ## Draws the blitted data to the screen
     def drawConf( self, data, running ):
         self.blitArray( data, running )
-        temp = pygame.transform.scale( self.subSurf, self.simScreen.get_size() )
-        self.simScreen.blit( temp, (0,0) )
         
     ## Get the coordinate of the cell that is clicked on in the display window
     def getCACoordinates( self, clickedCoords ):
@@ -241,6 +297,10 @@ class Display():
     def resize( self, f ):
         self.scale *= f
         self.screenSize = int(self.sizeX*self.scale),int(self.sizeY*self.scale)
+        if self.CADisplayType == "Images":
+            self.stateImages = []
+            for img in self.palette:
+                self.stateImages.append( pygame.transform.scale( img, (int(self.scale),int(self.scale)) ) )
         pygame.display.set_mode( self.screenSize, 0, 8 )
         
     ## When zoomed, scrolling to the left and to the right in 1D CA
@@ -282,7 +342,7 @@ class Display():
         self.simScreen.blit( self.myfont.render( "Step " + str( c ), 
                                                  0, (255,255,255),
                                                  (0,0,0) ), 
-                             (0,5+self.sizeY*self.scale-self.myfontSize) )
+                             (0,self.sizeY*self.scale-1.5*self.myfontSize) )
 
     ## Display messages
     # If textAlive > 0, i.e. if the message hasn't been visible for it's maximum
@@ -329,9 +389,21 @@ class Display():
         
 
 class Simulator():
-    def __init__( self ):
-        self.ca = binRule( 110, 30, 30, binRule.INIT_RAND )
-#        self.ca = sandpile( 30,30, sandpile.INIT_ZERO )
+    def __init__( self, CAType, confFile, random, sizeX, sizeY ):
+        if CAType.upper() == "SANDPILE":
+            if random:
+                self.ca = sandpile( sizeX, sizeY, sandpile.INIT_RAND )
+            else:
+                self.ca = sandpile( sizeX, sizeY, sandpile.INIT_ZERO )
+                if confFile != "":
+                    self.ca.importConf( confFile )
+
+        elif CAType[0:7].upper() == "BINRULE":
+            self.ca = binRule( int(CAType[7:-1]), sizeX, sizeY, binRule.INIT_RAND )
+
+        elif CAType.upper() == "BIGFISH":
+            self.ca = bigFish( sizeX, sizeY )
+
 #        self.ca = catpile( 100, 100, sandpile.INIT_ZERO )
 
         self.histograms = []
@@ -339,8 +411,10 @@ class Simulator():
 
         self.display = Display( self.ca.getSize(), 20.0,
                                 self.ca.palette,
+                                self.ca.getDisplayType(),
                                 self.ca.getDim() )
         self.markedConfs = []
+        self.markedConfNames = []
         self.delayGranularity = 3
         self.currDelay = 0
 
@@ -351,6 +425,7 @@ class Simulator():
         stepCounter = 0
         markedConfIdx = 0
         self.markedConfs.append( self.ca.getConf().copy() )
+        self.markedConfNames.append( "init" )
         pygame.key.set_repeat( 700, 100 )
         while 1:
             # note:
@@ -414,6 +489,9 @@ class Simulator():
                         self.display.setText( "Marked configuration " + 
                                               str(len(self.markedConfs)) )
                         self.markedConfs.append( self.ca.getConf().copy() )
+                        confName = self.display.getUserInputKey(
+                            msg="Set name for marked conf:", default="" )
+                        self.markedConfNames.append( confName )
                         loop = False
                         
                     elif e.key == pygame.K_o:
@@ -461,6 +539,7 @@ class Simulator():
                                     self.display.__init__( self.ca.getSize(), 
                                                            self.display.scale, 
                                                            self.ca.palette, 
+                                                           self.ca.getDisplayType(),
                                                            self.display.dim )
                                 elif ret == self.ca.WRONGCA:
                                     print "WRONGCA"
@@ -537,22 +616,36 @@ class Simulator():
                     elif e.key == pygame.K_TAB:
                         loop = False
                         mod = pygame.key.get_mods()
-                        if mod & pygame.KMOD_SHIFT:
+                        if mod & pygame.KMOD_LCTRL and mod & pygame.KMOD_SHIFT:
+                            confName = self.display.getUserInputKey(
+                                msg = "Name this conf:", default=self.markedConfNames[markedConfIdx] )
+                            if confName != "":
+                                self.markedConfNames[markedConfIdx] = confName
+                        elif mod & pygame.KMOD_SHIFT:
                             markedConfIdx=(markedConfIdx-1)%len(self.markedConfs)
-                            self.display.setText( "Load marked conf " 
-                                                  + str(markedConfIdx) )
+                            if self.markedConfNames[markedConfIdx] == "":
+                                self.display.setText( "Load marked conf " 
+                                                      + str(markedConfIdx) )
+                            else:
+                                self.display.setText( "Load marked conf " 
+                                                      + self.markedConfNames[markedConfIdx] )
                             self.ca.setConf( self.markedConfs[markedConfIdx] )
                             confChanged = False
                         elif mod & pygame.KMOD_LCTRL:
                             if len(self.markedConfs) > 1 and not confChanged:
                                 self.markedConfs.pop(markedConfIdx)
+                                self.markedConfNames.pop(markedConfIdx)
                                 self.display.setText( "Kill conf " 
                                                      + str(markedConfIdx) )
                                 markedConfIdx=(markedConfIdx-1)%len(self.markedConfs)
                         else:
                             markedConfIdx=(markedConfIdx+1)%len(self.markedConfs)
-                            self.display.setText( "Load marked conf " 
-                                                  + str(markedConfIdx) )
+                            if self.markedConfNames[markedConfIdx] == "":
+                                self.display.setText( "Load marked conf " 
+                                                      + str(markedConfIdx) )
+                            else:
+                                self.display.setText( "Load marked conf " 
+                                                      + self.markedConfNames[markedConfIdx] )
                             self.ca.setConf( self.markedConfs[markedConfIdx] )
                             confChanged = False
                         if self.ca.getSize() != self.display.getSize():
@@ -560,6 +653,7 @@ class Simulator():
                             self.display.__init__( self.ca.getSize(), 
                                                    self.display.scale, 
                                                    self.ca.palette, 
+                                                   self.ca.getDisplayType(),
                                                    self.display.dim )
 
             
@@ -590,8 +684,8 @@ class Simulator():
     def stop( self ):
         pass
 
-def sim():
-    simulator = Simulator()
+def sim( CAType, confFile, random, sizeX, sizeY):
+    simulator = Simulator( CAType, confFile, random, sizeX, sizeY )
     simulator.start()
 
 
@@ -615,12 +709,41 @@ def quit():
     print "exiting..."
     sys.exit(0)
 
+
+def listCA():
+    print "Available CAs: Sandpile, Binrule"
+    sys.exit(0)
+
+if __name__ == "__main__":
+    # this Queue should be known to all subsequent processes...
+    globalEventQueue = Queue()
+
+    parser = optparse.OptionParser(version = "CASimulator 0.1")
+    parser.add_option( "-f", "--file", default="", dest="confFile", help="Load initial configuration from FILE" )
+    parser.add_option( "-l", "--list", action="store_true", default=False, dest="listCA", help="List types of supported CA" )
+    parser.add_option( "-r", "--random", action="store_true", default=False, dest="random", help="Set initial configuration to RANDOM" )
+    parser.add_option( "-t", "--type",  default="Sandpile", dest="CAType", help="Set type of CA (e.g. 'Sandpile' or 'Binrule110')" )
+    parser.add_option( "-x", "--sizeX", default=20, dest="sizeX", help="width of CA", type=int )
+    parser.add_option( "-y", "--sizeY", default=20, dest="sizeY", help="height of CA", type=int )  
+    (options, args) = parser.parse_args()
+
+    if options.listCA:
+        listCA()
+    if options.CAType[0:7].upper() == "BINRULE":
+        try:
+            binruleNumber = int(options.CAType[7:])
+        except ValueError:
+            print "You didn't set a correct binrule number"
+            sys.exit(1)
+        if not( 0 <= binruleNumber < 256):
+            print "The binrule number has to be in [0,255]"
+            sys.exit(0)
     
-### starting new process for sim ###
 
-#this Queue should be known to all subsequent processes...
-globalEventQueue = Queue()
-
-simProc = Process( target=sim, args=() )
-simProc.start()
+    simProc = Process( target=sim, args=( options.CAType, 
+                                          options.confFile, 
+                                          options.random,
+                                          options.sizeX,
+                                          options.sizeY) )
+    simProc.start()
 
