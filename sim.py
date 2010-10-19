@@ -57,7 +57,7 @@ from CA import sandpile, catpile, binRule, bigFish
 import Histogram
 import sys 
 import time
-from os import path
+from os import path, getcwd, chdir, listdir, path
 import optparse
 
 ## class Display() handles everything connected to displaying the configuration of a CA.
@@ -111,12 +111,9 @@ class Display():
 
         ## Toplevel pygame surface. All subsurfaces are children of this.
         self.surface = pygame.surface.Surface( self.size, 0, 8 )
+
         if CADisplayType == "Squares":
             self.surface.set_palette( palette )
-
-        if CADisplayType == "Images":
-            self.subSurf = self.surface.subsurface( (0,0), self.surface.get_size() )
-        elif CADisplayType == "Squares":
             # subSurf is the surface where the unscaled 1x1-pixel-squares for each state
             # are blitted to. Afterwards subSurf is scaled up to simScreenSize
             self.subSurf = self.surface.subsurface( (0,0), self.size )
@@ -124,17 +121,17 @@ class Display():
         ## A quick way to remember whether a 1D or 2D CA is simulated
         self.dim = dim
         if self.dim == 1:
-            ## New configurations of a 1D CA are displayed only in the bottom line
-            self.newlineSurface = self.surface.subsurface( (0,Y-1,X,1) )
-            ## Temporary array needed for blitting the conf of a 1D CA (see blitArray1D)
-            self.array = np.zeros( (1,X), int )
             if CADisplayType == "Squares":
                 self.blitArray = self.blitArray1D
+                # New configurations of a 1D CA are displayed only in the bottom line
+                self.newlineSurface = self.surface.subsurface( (0,Y-1,X,1) )
+                # Temporary array needed for blitting the conf of a 1D CA (see blitArray1D)
+                self.array = np.zeros( (1,X), int )
             elif CADisplayType == "Images":
                 self.blitArray = self.blitImage1D
                 self.stateImages = []
                 for img in palette:
-                    self.stateImages.append( pygame.transform.scale( img, (scale,scale) ) )
+                    self.stateImages.append( pygame.transform.scale( img, (int(scale),int(scale)) ) )
             else:
                 print "Wrong 1D-Displaytype found!"
                 sys.exit(1)
@@ -160,7 +157,7 @@ class Display():
         # initialize showText-stuff
         pygame.font.init()
         ## Fontsize used to display messages
-        self.myfontSize = 15
+        self.myfontSize = 12
         ## Font used to display messages
         self.myfont = pygame.font.SysFont( "dejavuserif", self.myfontSize, True )
         
@@ -218,14 +215,14 @@ class Display():
         pass
 
     def blitImage2D( self, data, swap ):
-        if self.screenXMin + self.subSurf.get_width() > self.sizeX \
-                or self.screenYMin + self.subSurf.get_height() > self.sizeY:
-            self.screenXMin = self.sizeX-self.subSurf.get_width()
-            self.screenYMin = self.sizeY-self.subSurf.get_height()
+        if self.screenXMin + int( self.simScreen.get_width() / self.scale) > self.sizeX \
+                or self.screenYMin + int( self.simScreen.get_height() / self.scale ) > self.sizeY:
+            self.screenXMin = self.sizeX-int(self.simScreen.get_width()/self.scale)
+            self.screenYMin = self.sizeY-int(self.simScreen.get_height()/self.scale)
 
-        for x in range( self.screenXMin, self.screenXMin+int(self.zoomSizes[self.zoomIdx][0]) ):
-            for y in range( self.screenYMin, self.screenYMin+int(self.zoomSizes[self.zoomIdx][1]) ):
-                self.subSurf.blit( self.stateImages[data[x,y]], (x*self.scale,y*self.scale) )
+        for x in range( int(self.simScreen.get_width()/self.scale)):
+            for y in range( int(self.simScreen.get_height()/self.scale)):
+                self.simScreen.blit( self.stateImages[data[x,y]], (self.screenXMin+int(x*self.scale),self.screenYMin+int(y*self.scale )))
 #        self.simScreen.blit( self.subSurf, (0,0))
 
 
@@ -250,7 +247,8 @@ class Display():
         return self.size
 
     ## A kind of commandline that is displayed as HUD
-    def getUserInputKey( self, msg="$> ", default="" ):
+    def getUserInputKey( self, msg="$> ", default="", fileHandling=False ):
+        self.simScreen.fill( (0,0,0) )
         inStr = default
         self.simScreen.blit( self.myfont.render( msg + ": ", 0,
                                                  (255,255,255), (0,0,0) ),
@@ -262,7 +260,11 @@ class Display():
                     if e.key == pygame.K_BACKSPACE:
                         # deleting either one or all character(s)
                         if mod & pygame.KMOD_LCTRL:
-                            inStr = "Conf_Rule110_20x20_1.cnf"
+#                            inStr = "Conf_Rule110_20x20_1.cnf"
+                            p1 = max(inStr.rfind( ".", 0, -1 )+1,0)
+                            p2 = max(inStr.rfind( "_", 0, -1 )+1,0)
+                            p = max(p1, p2)
+                            inStr = inStr[:p]
 #                            inStr = "Conf_Sandpile_20x20_3.cnf"
 #                            if inStr[0:5] == "Conf_":
 #                                inStr = "Conf_"
@@ -274,19 +276,90 @@ class Display():
                     elif e.key == pygame.K_RETURN:
                         # returning input
                         return inStr
-                    elif e.key == pygame.K_TAB:
+                    elif e.key == pygame.K_TAB and fileHandling:
                         # filename-completion
-                        #TODO!!!
-                        print "TODO: tabs in Display.getUserInputKey()"
+                        dirList = listdir( getcwd() )
+                        dirList.sort()
+                        files = []
+                        for f in dirList:
+                            if path.isdir(f) and f[0:1] != "." \
+                                    and inStr == f[0:len(inStr)]:
+                                files.append(f)
+                        for f in dirList:
+                            if path.isfile(f) and f[0:1] != "." \
+                                    and f[-1:] != "~" and inStr == f[0:len(inStr)]:
+                                files.append(f)
+                        if len(files) == 1:
+                            inStr = files[0]
+                        lineY = 4*int(self.myfontSize*4/3)
+                        pygame.draw.rect( self.simScreen, (0,0,0), 
+                                          (0, lineY, self.simScreen.get_width(), 
+                                           self.simScreen.get_height()-lineY ) )
+                        if path.isdir(inStr):
+                            chdir( inStr )
+                            inStr = ""
+                        else:
+                            # show directories first
+                            for f in files:
+                                if path.isdir(f) and f[0:1] != ".":
+                                    self.simScreen.blit( self.myfont.render( f, 0,
+                                                                             (70,110,255), (0,0,0) ),
+                                                         (0,lineY) )
+                                else:
+                                    self.simScreen.blit( self.myfont.render( f, 0,
+                                                                             (127,227,127), (0,0,0) ),
+                                                         (0,lineY) )
+    
+                                lineY += int(self.myfontSize*4/3)
+                                if lineY > self.simScreen.get_width()-2*int(self.myfontSize*4/3):
+                                    self.simScreen.blit( self.myfont.render( "<q> to quit, <SPACE> to continue...", 0,
+                                                                             (255,255,255), (0,0,0) ),
+                                                         (0,self.simScreen.get_width()-int(self.myfontSize*4/3)) )
+                                    pygame.display.update()
+                                    loop = 0
+                                    while loop == 0:
+                                        for e in pygame.event.get():
+                                            if e.type == pygame.KEYDOWN:
+                                                if e.unicode == "q":
+                                                    loop = 1
+                                                if e.key == pygame.K_SPACE:
+                                                    loop = 2
+                                    if loop == 1:
+                                        pygame.draw.rect( self.simScreen, (0,0,0), 
+                                                          (0,self.simScreen.get_height()-int(self.myfontSize*4/3), 
+                                                           self.simScreen.get_width(), int(self.myfontSize*4/3)) )
+
+                                        break
+                                    elif loop == 2:
+                                        lineY = 4*int(self.myfontSize*4/3)
+                                        pygame.draw.rect( self.simScreen, (0,0,0), 
+                                                          (0, lineY, self.simScreen.get_width(), self.simScreen.get_height()-lineY ) )
+                                    
+                                    
+                    elif e.key == pygame.K_PERIOD and fileHandling \
+                            and mod & pygame.KMOD_CTRL and mod & pygame.KMOD_SHIFT:
+                        chdir( ".." )
+                        pygame.draw.rect( self.simScreen, (0,0,0), 
+                                          ( (0, 2*int(self.myfontSize*4/3), self.simScreen.get_width(), int(self.myfontSize*4/3) ) ) )
                     elif e.unicode in self.filenameChars:
                         # adding characters to inStr
                         inStr += e.unicode
                 pygame.draw.rect( self.simScreen, (0,0,0), 
-                                  ( (0,self.myfontSize), 
-                                    (self.simScreen.get_width(),self.myfontSize )))
+                                  ( (0,int(self.myfontSize*4/3)),
+                                    (self.simScreen.get_width(),int(self.myfontSize*4/3) )))
                 self.simScreen.blit( self.myfont.render( inStr, 0,
-                                                         (255,255,255), (0,0,0) ),
-                                     (0,self.myfontSize) )
+                                                         (127,227,127), (0,0,0) ),
+                                     (0,int(self.myfontSize*4/3)) )
+                if fileHandling:
+                    self.simScreen.blit( self.myfont.render( "in ", 0,
+                                                             (255,255,255), (0,0,0) ),
+                                         (0,2*int(self.myfontSize*4/3)) )
+                    self.simScreen.blit( self.myfont.render( getcwd(), 0,
+                                                             (70,110,255), (0,0,0) ),
+                                         (20,2*int(self.myfontSize*4/3)) )
+                    self.simScreen.blit( self.myfont.render( "(CTRL-SHIFT-. to go to parent dir)", 0,
+                                                             (255,255,255), (0,0,0) ),
+                                         (0,3*int(self.myfontSize*4/3)) )
                 pygame.display.update()
             
     def quit( self ):
@@ -385,7 +458,10 @@ class Display():
             self.zoomIdx += 1
         elif c == "2" and self.zoomIdx > 0:
             self.zoomIdx -= 1
-        self.subSurf = self.surface.subsurface( (0,0), (int(self.zoomSizes[self.zoomIdx][0]),int(self.zoomSizes[self.zoomIdx][1])) )
+        if self.CADisplayType == "Squares":
+            self.subSurf = self.surface.subsurface( (0,0), (int(self.zoomSizes[self.zoomIdx][0]),int(self.zoomSizes[self.zoomIdx][1])) )
+        elif self.CADisplayType == "Images":
+            pass
         
 
 class Simulator():
@@ -520,12 +596,12 @@ class Simulator():
                             
                             #presenting the user with suggested filename
                             filename = self.display.getUserInputKey( 
-                                msg="Open conf from file", default=filename )
-                            while not path.exists( filename ):
+                                msg="Open conf from file", default=filename, fileHandling=True )
+                            while not path.exists( filename ) and filename != "":
                                 self.display.setText( "File does not exist" )
                                 time.sleep( 1 )
                                 filename = self.display.getUserInputKey( 
-                                    msg="Open conf from file", default=filename )
+                                    msg="Open conf from file", default=filename, fileHandling=True )
                                 if filename == "":
                                     break
                             if ( filename != "" and
@@ -581,7 +657,7 @@ class Simulator():
                             
                             #presenting the user with suggested filename
                             filename = self.display.getUserInputKey( 
-                                msg="Save conf to file", default=filename )
+                                msg="Save conf to file", default=filename, fileHandling=True )
 
                             if filename != "":
                                 self.ca.exportConf( filename )
@@ -599,6 +675,7 @@ class Simulator():
 
                         else:
                             self.ca.step()
+                            stepCounter += 1
                             self.display.drawConf( self.ca.getConf(), True )
                             self.display.setText( "Step" )
 
@@ -733,7 +810,7 @@ if __name__ == "__main__":
         try:
             binruleNumber = int(options.CAType[7:])
         except ValueError:
-            print "You didn't set a correct binrule number"
+            print "You didn't set a correct binrule number. Try something like: '-t binrule110'"
             sys.exit(1)
         if not( 0 <= binruleNumber < 256):
             print "The binrule number has to be in [0,255]"
