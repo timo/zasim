@@ -586,44 +586,40 @@ class bigFish( CA ):
         self.currConf = np.zeros( ( sizeX, sizeY ), int )
         for x in range(self.sizeX):
             for y in range( self.sizeY ):
-                self.currConf[x,y] = (x+y)%2
+                self.currConf[x,y] = (x+y)%8
         self.nextConf = np.zeros( ( sizeX, sizeY ), int )
-        self.nextConf = self.currConf.copy
-        #self.histogram[ 0 ] = self.sizeX * self.sizeY
-
+        self.nextConf = self.currConf.copy()
 
     def getDim( self ):
         return 2
 
     def loopFunc( self ):
-        pass
+        self.step()
 
     def step( self ):
-        pass
+        self.updateAllCellsWeaveInline()
 
-    def updateAllCellsPyHistImpl( self ):
-        for x in range( 1, self.sizeX-1 ):
-            for y in range( 1, self.sizeY-1 ):
-                if self.currConf[ x, y ] > 3:
-                    self.nextConf[ x, y ] = self.currConf[ x, y ] - 4
-                    self.nextConf[ x+1, y ] = self.currConf[ x+1, y ] + 1
-                    self.nextConf[ x-1, y ] = self.currConf[ x-1, y ] + 1
-                    self.nextConf[ x, y+1 ] = self.currConf[ x, y+1 ] + 1
-                    self.nextConf[ x, y-1 ] = self.currConf[ x, y-1 ] + 1
-                else: 
-                    self.nextConf[ x, y ] = self.currConf[ x, y ]
-        self.currConf,self.nextConf = self.nextConf,self.currConf
-
-    def updateAllCellsPyHistExpl( self ):
-        for x in range( 1, self.sizeX-1 ):
-            for y in range( 1, self.sizeY-1 ):
-                if self.currConf[ x, y ] > 3:
-                    self.nextConf[ x, y ] = self.currConf[ x, y ] - 4
-                    self.nextConf[ x+1, y ] = self.currConf[ x+1, y ] + 1
-                    self.nextConf[ x-1, y ] = self.currConf[ x-1, y ] + 1
-                    self.nextConf[ x, y+1 ] = self.currConf[ x, y+1 ] + 1
-                    self.nextConf[ x, y-1 ] = self.currConf[ x, y-1 ] + 1
+    def updateAllCellsWeaveInline( self ):
+        code = """
+#line 1 "CA.py"
+#include <math.h>
+int i, j;
+for ( i = 0; i < sizeX; i++ ) {
+  for ( j = 0; j < sizeY; j++ ) {
+    nconf(i,j) = (cconf(i,j) +1) % 8 ;
+    
+  }
+}
+"""
+        cconf = self.currConf
+        nconf = self.nextConf
+        sizeX = self.sizeX
+        sizeY = self.sizeY
+        weave.inline( code, ['cconf', 'nconf', 'sizeX', 'sizeY' ],
+                      type_converters = converters.blitz,
+                      compiler = 'gcc' )
         self.currConf = self.nextConf.copy()
+
 
 if __name__ == "__main__":
     sizeX, sizeY = 10, 10
