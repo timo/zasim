@@ -53,29 +53,38 @@ Simulation:
 import pygame
 import numpy as np
 from multiprocessing import Process, Pipe, Queue
-from CA import sandpile, catpile, binRule, bigFish
+from CA import sandpile, catpile, binRule, ballPile
 import Histogram
 import sys 
 import time
 from os import path, getcwd, chdir, listdir, path
 import optparse
-from Display import Display
+import Display
 
 
 class Simulator():
-    def __init__( self, CAType, confFile, random, sizeX, sizeY, scale ):
+    def __init__( self, CAType, confFile, random, sizeX, sizeY, scale, oneLiner ):
+        self.oneLiner = oneLiner
         if CAType.upper() == "SANDPILE":
             if random:
                 self.ca = sandpile( sizeX, sizeY, sandpile.INIT_RAND )
             else:
                 self.ca = sandpile( sizeX, sizeY, sandpile.INIT_ZERO )
+            self.display = Display.DisplaySquares2D( self.ca.getSize(), float(scale),
+                                                   self.ca.palette, self.ca.getDim() )
         elif CAType[0:7].upper() == "BINRULE":
             if random:
                 self.ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_RAND )
             else:
                 self.ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_ZERO )
-        elif CAType.upper() == "BIGFISH":
-            self.ca = bigFish( sizeX, sizeY )
+            self.display = Display.DisplaySquares1D( self.ca.getSize(), float(scale),
+                                                   self.ca.palette, self.ca.getDim(),
+                                                   self.oneLiner )
+
+        elif CAType.upper() == "BALLPILE":
+            self.ca = ballPile( sizeX, sizeY )
+            self.display = Display.DisplayImages( self.ca.getSize(), float(scale),
+                                                  self.ca.palette, self.ca.getDim() )
 
         if confFile != "":
             self.ca.importConf( confFile )
@@ -83,10 +92,7 @@ class Simulator():
         self.histograms = []
 #        self.histograms.append( Histogram.VBars( 8, 1600, self.ca.palette, self.ca.info ) )
 
-        self.display = Display( self.ca.getSize(), float(scale),
-                                self.ca.palette,
-                                self.ca.getDisplayType(),
-                                self.ca.getDim() )
+
         self.markedConfs = []
         self.markedConfNames = []
         self.delayGranularity = 3
@@ -212,11 +218,8 @@ class Simulator():
                                     self.display.setText( "Opened file" + filename )
                                 elif ret == self.ca.SIZECHANGED:
 #                                    print self.ca.getSize()
-                                    self.display.__init__( self.ca.getSize(), 
-                                                           self.display.scale, 
-                                                           self.ca.palette, 
-                                                           self.ca.getDisplayType(),
-                                                           self.display.dim )
+                                    self.display.__init__( self.ca.getSize(), self.display.scale, 
+                                                           self.ca.palette, self.display.dim )
                                 elif ret == self.ca.WRONGCA:
                                     print "WRONGCA"
                                     sys.exit(1)
@@ -289,7 +292,7 @@ class Simulator():
                         else:
                             self.ca.step()
                             stepCounter += 1
-                            self.display.drawConf( self.ca.getConf(), True )
+                            self.display.drawConf( self.ca.getConf(), not self.oneLiner )
                             self.display.setText( "Step" )
 
                     elif e.key == pygame.K_RIGHT or e.key == pygame.K_LEFT \
@@ -342,7 +345,6 @@ class Simulator():
                             self.display.__init__( self.ca.getSize(), 
                                                    self.display.scale, 
                                                    self.ca.palette, 
-                                                   self.ca.getDisplayType(),
                                                    self.display.dim )
 
             
@@ -354,11 +356,11 @@ class Simulator():
                 if self.currDelay > 0:
                     if delay % self.currDelay == 0:
                         self.step(1)
-                        self.display.drawConf( self.ca.getConf(), True )
+                        self.display.drawConf( self.ca.getConf(), not self.oneLiner )
                         stepCounter += 1
                 else:
                     self.step(1)
-                    self.display.drawConf( self.ca.getConf(), True )
+                    self.display.drawConf( self.ca.getConf(), not self.oneLiner )
                     stepCounter += 1
             delay += 1
 
@@ -374,8 +376,8 @@ class Simulator():
     def stop( self ):
         pass
 
-def sim( CAType, confFile, random, sizeX, sizeY, scale):
-    simulator = Simulator( CAType, confFile, random, sizeX, sizeY, scale )
+def sim( CAType, confFile, random, sizeX, sizeY, scale, oneLiner ):
+    simulator = Simulator( CAType, confFile, random, sizeX, sizeY, scale, oneLiner )
     simulator.start()
 
 
@@ -401,40 +403,64 @@ def quit():
 
 
 def listCA():
-    print "Available CAs: Sandpile, Binrule"
+    print "Available CA: Sandpile, BallPile, Binrule"
     sys.exit(0)
 
 if __name__ == "__main__":
     parser = optparse.OptionParser(version = "CASimulator 0.1")
-    parser.add_option( "-f", "--file", default="", dest="confFile", help="Load initial configuration from FILE" )
-    parser.add_option( "-l", "--list", action="store_true", default=False, dest="listCA", help="List types of supported CA" )
-    parser.add_option( "-r", "--random", action="store_true", default=False, dest="random", help="Set initial configuration to RANDOM" )
-    parser.add_option( "-s", "--scale", default=20.0, dest="scale", help="Set the measure by which a state's display is scaled", type=float ) 
-    parser.add_option( "-t", "--type",  default="Sandpile", dest="CAType", help="Set type of CA (e.g. 'Sandpile' or 'Binrule110')" )
+    parser.add_option( "-f", "--file", default="", dest="confFile", 
+                       help="Load initial configuration from FILE" )
+    parser.add_option( "-l", "--list", action="store_true", default=False, dest="listCA", 
+                       help="List types of supported CA" )
+    parser.add_option( "-n", "--binRuleNr", default=110, dest="binRuleNr",
+                       help="Define number of binary Rule", type=int )
+    parser.add_option( "-r", "--random", action="store_true", default=False, dest="random", 
+                       help="Set initial configuration to RANDOM" )
+    parser.add_option( "-s", "--scale", default=20.0, dest="scale", 
+                       help="Set the measure by which a state's display is scaled", type=float ) 
+    parser.add_option( "-t", "--type",  default="Sandpile", dest="CAType", 
+                       help="Set type of CA (e.g. 'Sandpile' or 'Binrule110')" )
     parser.add_option( "-x", "--sizeX", default=20, dest="sizeX", help="width of CA", type=int )
     parser.add_option( "-y", "--sizeY", default=20, dest="sizeY", help="height of CA", type=int )  
+    parser.add_option( "-1", "--oneLiner", action="store_true", default=False, dest="oneLiner", 
+                       help="Show only the current configuration (only useful for 1dimensional CA)" )
     (options, args) = parser.parse_args()
 
+    
     if options.listCA:
         listCA()
-    if options.CAType[0:7].upper() == "BINRULE":
-        try:
-            binruleNumber = int(options.CAType[7:])
-        except ValueError:
-            print "You didn't set a correct binrule number. Try something like: '-t binrule110'"
-            sys.exit(1)
-        if not( 0 <= binruleNumber < 256):
+        sys.exit(1)
+
+    if options.CAType.upper() == "BINRULE":
+        if not( 0 <= options.binRuleNr < 256):
             print "The binrule number has to be in [0,255]"
             sys.exit(0)
-    
+        else:
+            if options.random == False:
+                print "Initialized to all-zero! Try option '-r'"
+            modCAType = "BINRULE"+str(options.binRuleNr)
+
+    elif options.CAType.upper() not in ("SANDPILE", "BINRULE", "BALLPILE" ):
+        print "You didn't specify a correct type of cellular automaton."
+        print "You can get all supported types by passing the argument -l"
+        sys.exit(1)
+
+    # if only one line is displayed, space for displayed text messages is needed
+    if options.CAType.upper() in ( "BINRULE" ) and options.oneLiner == True:
+        options.sizeY = 2
+
+    if options.CAType.upper() != "BINRULE":
+        modCAType = options.CAType
+
     # this Queue should be known to all subsequent processes...
     globalEventQueue = Queue()
-    simProc = Process( target=sim, args=( options.CAType, 
-                                          options.confFile, 
+    simProc = Process( target=sim, args=( modCAType,
+                                          options.confFile,
                                           options.random,
                                           options.sizeX,
-                                          options.sizeY, 
-                                          options.scale) )
+                                          options.sizeY,
+                                          options.scale,
+                                          options.oneLiner) )
     simProc.start()
 
     

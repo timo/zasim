@@ -1,7 +1,6 @@
 import pygame
 import numpy as np
 from multiprocessing import Process, Pipe, Queue
-from CA import sandpile, catpile, binRule, bigFish
 import Histogram
 import sys 
 import time
@@ -16,21 +15,17 @@ import optparse
 # file names and displaying short info messages and updating everything over and over again.
 class Display():
     ## Constructor, initializes pretty everything
-    def __init__( self, size, scale, palette, CADisplayType, dim ):
+    def __init__( self, size, scale, palette, dim, oneLiner=False ):
         ## Size of the showing CA
         self.size = self.sizeX, self.sizeY = X,Y = size
         ## Factor by which a cell is scaled to show it bigger than one pixel on the screen
         self.scale = scale
         ## Actual size of the simulation window
         self.screenSize = int(self.sizeX*self.scale),int(self.sizeY*self.scale)
-        self.CADisplayType = CADisplayType
         self.palette = palette
 
         pygame.display.init()
         pygame.display.set_caption( "CASimulator - " )
-        pygame.display.set_mode( self.screenSize, 0, 8 )
-        if CADisplayType == "Squares":
-            pygame.display.set_palette( palette )
         pygame.display.set_mode( self.screenSize, 0, 8 )
 
         ## Pygame display object
@@ -38,7 +33,6 @@ class Display():
 
         ## Clock used to calculate fps rate
         self.clock = pygame.time.Clock()
-
 
         # initialize zoomscreenstuff
 
@@ -48,7 +42,8 @@ class Display():
         self.screenYMin = 0
         ## Iterator for zoomSize selection (see zoomSizes)
         self.zoomIdx = 0
-        ## Fixed zoom factors when zooming into the CA to view only a detail
+        ## Fixed number of cells displayed (width, height)
+        # e.g.: [(20.0,20.0), (15.0,15,0), ... ]
         self.zoomSizes = []
         self.zoomSizes.append( (float(X), float(Y)) )
         self.zoomSizes.append( (float(X*3/4), float(Y*3/4) ) )
@@ -60,50 +55,6 @@ class Display():
 
         ## Toplevel pygame surface. All subsurfaces are children of this.
         self.surface = pygame.surface.Surface( self.size, 0, 8 )
-
-        if CADisplayType == "Squares":
-            self.surface.set_palette( palette )
-            # subSurf is the surface where the unscaled 1x1-pixel-squares for each state
-            # are blitted to. Afterwards subSurf is scaled up to simScreenSize
-            self.subSurf = self.surface.subsurface( (0,0), self.size )
-        elif CADisplayType == "Images":
-            self.subSurf = self.simScreen.subsurface( (0,0), self.screenSize )
-
-        ## A quick way to remember whether a 1D or 2D CA is simulated
-        self.dim = dim
-        if self.dim == 1:
-            if CADisplayType == "Squares":
-                self.blitArray = self.blitArray1D
-                # New configurations of a 1D CA are displayed only in the bottom line
-                self.newlineSurface = self.surface.subsurface( (0,Y-1,X,1) )
-                # Temporary array needed for blitting the conf of a 1D CA (see blitArray1D)
-                self.array = np.zeros( (1,X), int )
-            elif CADisplayType == "Images":
-                self.blitArray = self.blitImage1D
-                self.stateImages = []
-                for img in palette:
-                    self.stateImages.append( pygame.transform.scale( img, (int(scale),int(scale)) ) )
-            else:
-                print "Wrong 1D-Displaytype found!"
-                sys.exit(1)
-            self.scroll = self.scroll1D
-            self.zoom = self.zoom1D
-        elif self.dim == 2:
-            if CADisplayType == "Squares":
-                self.blitArray = self.blitArray2D
-            elif CADisplayType == "Images":
-                self.blitArray = self.blitImage2D
-                self.stateImages = []
-                for img in palette:
-                    self.stateImages.append( pygame.transform.scale( img, (int(scale),int(scale)) ) )
-            else:
-                print "Wrong 2D-Displaytype found!"
-                sys.exit(1)
-            self.scroll = self.scroll2D
-            self.zoom = self.zoom2D
-        else:
-            print "There is no function Display.blitArray() for dim =", self.dim
-            sys.exit(1)
 
         # initialize showText-stuff
         pygame.font.init()
@@ -135,51 +86,9 @@ class Display():
                               "8", "9", "_", "-", "/", "." )
 
 
-    ## Blitting function used for 1D CA
-    def blitArray1D( self, data, scroll ):
-        scroll = (int)(scroll)*(-1)
-        self.surface.scroll( 0, scroll )
-
-        if self.screenXMin + self.subSurf.get_width() > self.sizeX:
-            self.screenXMin = self.sizeX - self.subSurf.get_width()
-
-        pygame.surfarray.blit_array( 
-            self.newlineSurface,                                      
-            data[self.screenXMin:self.screenXMin+self.subSurf.get_width(),:] )
-        temp = pygame.transform.scale( self.subSurf, self.simScreen.get_size() )
-        self.simScreen.blit( temp, (0,0) )
-        
-    ## Blitting function used for 2D CA
-    def blitArray2D( self, data, swap ):
-        if self.screenXMin + self.subSurf.get_width() > self.sizeX \
-                or self.screenYMin + self.subSurf.get_height() > self.sizeY:
-            self.screenXMin = self.sizeX-self.subSurf.get_width()
-            self.screenYMin = self.sizeY-self.subSurf.get_height()
-        pygame.surfarray.blit_array( 
-            self.subSurf, 
-            data[self.screenXMin:self.screenXMin+self.subSurf.get_width(),
-                 self.screenYMin:self.screenYMin+self.subSurf.get_height()] )
-        temp = pygame.transform.scale( self.subSurf, self.simScreen.get_size() )
-        self.simScreen.blit( temp, (0,0) )
-
-    def blitImage1D( self, data, swap ):
-        pass
-
-    def blitImage2D( self, data, swap ):
-        if self.screenXMin + int( self.simScreen.get_width() / self.scale) > self.sizeX \
-                or self.screenYMin + int( self.simScreen.get_height() / self.scale ) > self.sizeY:
-            self.screenXMin = self.sizeX-int(self.simScreen.get_width()/self.scale)
-            self.screenYMin = self.sizeY-int(self.simScreen.get_height()/self.scale)
-            
-        for x in range( self.screenXMin, int(self.screenXMin+self.zoomSizes[self.zoomIdx][0]) ):
-            for y in range( self.screenYMin, int(self.screenYMin+self.zoomSizes[self.zoomIdx][1]) ):
-                self.subSurf.blit( self.stateImages[data[x,y]], (self.screenXMin+int(x*self.scale),self.screenYMin+int(y*self.scale )))
-        temp = pygame.transform.scale( self.subSurf, self.simScreen.get_size() )
-        self.simScreen.blit( temp, (0,0) )
-
     ## Draws the blitted data to the screen
     def drawConf( self, data, running ):
-        self.blitArray( data, running )
+        pass
         
     ## Get the coordinate of the cell that is clicked on in the display window
     def getCACoordinates( self, clickedCoords ):
@@ -193,7 +102,7 @@ class Display():
 
     ## Get the size of the CA being displayed
     def getSize( self ):
-        return self.size
+        pass
 
     ## A kind of commandline that is displayed as HUD
     def getUserInputKey( self, msg="$> ", default="", fileHandling=False ):
@@ -327,48 +236,6 @@ class Display():
     def quit( self ):
         pass
 
-    ## Make the display bigger or smaller
-    # @param f Factor by which the size is scaled
-    def resize( self, f ):
-        if self.CADisplayType == "Images":
-            self.stateImages = []
-            for img in self.palette:
-                self.stateImages.append( pygame.transform.scale( img, (int(self.scale),int(self.scale)) ) )
-            if f > 1:
-                self.scale += 1
-            elif f < 1:
-                self.scale -= 1
-        elif self.CADisplayType == "Squares":
-            self.scale *= f
-        self.screenSize = int(self.sizeX*self.scale),int(self.sizeY*self.scale)
-        pygame.display.set_mode( self.screenSize, 0, 8 )
-        if self.CADisplayType == "Images":
-            self.subSurf = self.simScreen.subsurface( (0,0), self.screenSize )
-
-    ## When zoomed, scrolling to the left and to the right in 1D CA
-    # In 1D CA scrolling up and down is not supported yet
-    # @param key Pygame.Key object containing the pressed key
-    def scroll1D( self, key ):
-        if key == pygame.K_LEFT and self.screenXMin > 0:
-            self.screenXMin -= 1
-        if key == pygame.K_RIGHT \
-                and ( self.screenXMin+self.subSurf.get_width() < self.sizeX ):
-            self.screenXMin += 1
-            
-    ## When zoomed, scrolling left, right, up and down in 2D CA
-    # @param key Pygame.Key object containing the pressed key
-    def scroll2D( self, key ):
-        if key == pygame.K_UP and self.screenYMin > 0:
-            self.screenYMin -= 1
-        elif key == pygame.K_DOWN \
-                and self.screenYMin+self.subSurf.get_height() < self.sizeY:
-            self.screenYMin += 1
-        elif key == pygame.K_LEFT and self.screenXMin > 0:
-            self.screenXMin -= 1
-        elif key == pygame.K_RIGHT \
-                and ( self.screenXMin+self.subSurf.get_width() < self.sizeX ):
-            self.screenXMin += 1
-            
     ## Setting up text to show a message
     # @param text The message that is going to be displayed
     def setText( self, text ):
@@ -392,11 +259,11 @@ class Display():
     def showText( self ):
         if self.textAlive > 0:
             self.textAlive -= 1
-            pygame.draw.rect( self.simScreen, (0,0,0), (0,0,self.simScreen.get_width(), self.myfontSize+5))
+            pygame.draw.rect( self.simScreen, (0,0,0), (0,0,self.simScreen.get_width(), 
+                                                        self.myfontSize+5))
             self.simScreen.blit( self.myfont.render( str( self.HUDText ), 0, 
                                                      (255,255,255), 
-                                                     (0,0,0) ),
-                                 (0,0) )
+                                                     (0,0,0) ), (0,0) )
 
     ## Updating the pygame display, setting window caption
     def update( self ):
@@ -404,6 +271,269 @@ class Display():
         pygame.display.set_caption( "CASimulator - " 
                                     + str(int(self.clock.get_fps())) + "fps" )
         pygame.display.update()
+
+
+
+############################################
+## DISPLAYSQUARES 
+############################################
+class DisplaySquares( Display ):
+    ## Constructor, initializes pretty everything
+    def __init__( self, size, scale, palette, dim, oneLiner=False ):
+        Display.__init__( self, size, scale, palette, dim, oneLiner )
+        self.palette = palette
+
+        pygame.display.set_palette( palette )
+        pygame.display.set_mode( self.screenSize, 0, 8 )
+
+        self.surface.set_palette( palette )
+
+        self.dim = dim
+
+
+    def drawConf( self, data, running ):
+        self.blitArray( data, running )
+        
+
+    ## Get the size of the CA being displayed
+    def getSize( self ):
+        return self.size
+
+
+    ## Make the display bigger or smaller
+    # @param f Factor by which the size is scaled
+    def resize( self, f ):
+        self.scale *= f
+        self.screenSize = int(self.sizeX*self.scale),int(self.sizeY*self.scale)
+        pygame.display.set_mode( self.screenSize, 0, 8 )
+
+
+
+######################################
+## DISPLAYSQUARES - ONE DIMENSIONAL ##
+######################################
+class DisplaySquares1D( DisplaySquares ):
+    ## Constructor, initializes pretty everything
+    def __init__( self, size, scale, palette, dim, oneLiner=False ):
+        DisplaySquares.__init__( self, size, scale, palette, dim, oneLiner )
+
+        # New configurations of a 1D CA are displayed only in the bottom line
+        self.newlineSurface = self.surface.subsurface( (0,self.sizeY-1,self.sizeX,1) )
+ 
+    ## Blitting function used for 1D CA
+    def blitArray( self, data, scroll ):
+        scroll = (int)(scroll)*(-int(self.scale))
+        self.surface.scroll( 0, scroll )
+
+        if self.screenXMin + self.newlineSurface.get_width() > self.sizeX:
+            self.screenXMin = self.sizeX - self.newlineSurface.get_width()
+
+        pygame.surfarray.blit_array(
+            self.newlineSurface,                                      
+            data[self.screenXMin:self.screenXMin+int(self.zoomSizes[self.zoomIdx][0])] )
+        temp = pygame.transform.scale( self.newlineSurface, 
+                                       (self.simScreen.get_width(), 
+                                        int(self.simScreen.get_width()/
+                                            self.zoomSizes[self.zoomIdx][0])) )
+        self.surface.blit( temp, (0,self.simScreen.get_height()-int(self.scale)) )
+
+
+    ## When zoomed, scrolling to the left and to the right in 1D CA
+    # In 1D CA scrolling up and down is not supported yet
+    # @param key Pygame.Key object containing the pressed key
+    def scroll( self, key ):
+        if key == pygame.K_LEFT and self.screenXMin > 0:
+            self.screenXMin -= 1
+        if key == pygame.K_RIGHT:
+            self.screenXMin += 1
+            
+
+    ## Zooming into a 1D CA
+    # Here the initialized fixed zoomSizes from init() are used
+    # @param c User input indicating zooming in or zooming out
+    def zoom( self, c ):
+        if c == "0":
+            self.zoomIdx = 0
+        elif c == "1" and self.zoomIdx < len(self.zoomSizes)-1:
+            self.zoomIdx += 1
+        elif c == "2" and self.zoomIdx > 0:
+            self.zoomIdx -= 1
+        self.newlineSurface = self.surface.subsurface( (0,self.sizeY-1,
+                                                        int(self.zoomSizes[self.zoomIdx][0]),1) )
+
+
+######################################
+## DISPLAYSQUARES - TWO DIMENSIONAL ##
+######################################
+class DisplaySquares2D( DisplaySquares ):
+    ## Constructor, initializes pretty everything
+    def __init__( self, size, scale, palette, dim, oneLiner=False ):
+        DisplaySquares.__init__( self, size, scale, palette, dim, oneLiner )
+
+        # subSurf is the surface where the unscaled 1x1-pixel-squares for each state
+        # are blitted to. Afterwards subSurf is scaled up to simScreenSize
+        self.subSurf = self.surface.subsurface( (0,0), self.size )
+
+
+    ## Blitting function used for 2D CA
+    def blitArray( self, data, swap ):
+        if self.screenXMin + self.subSurf.get_width() > self.sizeX:
+            self.screenXMin = self.sizeX-self.subSurf.get_width()
+        if self.screenYMin + self.subSurf.get_height() > self.sizeY:
+            self.screenYMin = self.sizeY-self.subSurf.get_height()
+            
+        pygame.surfarray.blit_array( 
+            self.subSurf, 
+            data[self.screenXMin:self.screenXMin+self.subSurf.get_width(),
+                 self.screenYMin:self.screenYMin+self.subSurf.get_height()] )
+        temp = pygame.transform.scale( self.subSurf, self.simScreen.get_size() )
+        self.simScreen.blit( temp, (0,0) )
+
+            
+    ## When zoomed, scrolling left, right, up and down in 2D CA
+    # @param key Pygame.Key object containing the pressed key
+    def scroll( self, key ):
+        if key == pygame.K_UP and self.screenYMin > 0:
+            self.screenYMin -= 1
+        elif key == pygame.K_DOWN \
+                and self.screenYMin+self.subSurf.get_height() < self.sizeY:
+            self.screenYMin += 1
+        elif key == pygame.K_LEFT and self.screenXMin > 0:
+            self.screenXMin -= 1
+        elif key == pygame.K_RIGHT \
+                and ( self.screenXMin+self.subSurf.get_width() < self.sizeX ):
+            self.screenXMin += 1
+            
+
+    ## Zooming into a 2D CA
+    # Here the initialized fixed zoomSizes from init() are used
+    # @param c User input indicating zooming in or zooming out
+    def zoom( self, c ):
+        if c == "0":
+            self.zoomIdx = 0
+        elif c == "1" and self.zoomIdx < len(self.zoomSizes)-1:
+            self.zoomIdx += 1
+        elif c == "2" and self.zoomIdx > 0:
+            self.zoomIdx -= 1
+        self.subSurf = self.surface.subsurface( (0,0), 
+                                                (int(self.zoomSizes[self.zoomIdx][0]),
+                                                 int(self.zoomSizes[self.zoomIdx][1])) )
+
+
+
+#######################################################
+## DISPLAYIMAGES
+#######################################################
+class DisplayImages( Display ):
+    ## Constructor, initializes pretty everything
+    def __init__( self, size, scale, palette, dim, oneLiner=False ):
+        Display.__init__( self, size, scale, palette, dim, oneLiner )
+
+        ## Actual size of the simulation window
+        self.screenSize = int(self.sizeX*self.scale),int(self.sizeY*self.scale)
+
+        self.palette = palette
+
+        pygame.display.set_mode( self.screenSize, 0, 8 )
+
+        self.subSurf = self.simScreen.subsurface( (0,0), self.screenSize )
+
+        ## A quick way to remember whether a 1D or 2D CA is simulated
+        self.dim = dim
+        if self.dim == 1:
+            self.blitArray = self.blitImage1D
+            self.stateImages = []
+            for img in palette:
+                self.stateImages.append( pygame.transform.scale(img,(int(scale),int(scale))))
+        elif self.dim == 2:
+            self.blitArray = self.blitImage2D
+            self.stateImages = []
+            for img in palette:
+                self.stateImages.append( pygame.transform.scale(img,(int(scale),int(scale))))
+            self.scroll = self.scroll2D
+            self.zoom = self.zoom2D
+        else:
+            print "There is no function Display.blitArray() for dim =", self.dim
+            sys.exit(1)
+
+    def blitImage1D( self, data, swap ):
+        pass
+
+    def blitImage2D( self, data, swap ):
+        if self.screenXMin + self.zoomSizes[self.zoomIdx][0] > self.sizeX:
+            self.screenXMin = self.sizeX - self.zoomSizes[self.zoomIdx][0]
+        if self.screenYMin + self.zoomSizes[self.zoomIdx][1] > self.sizeY:
+            self.screenYMin = self.sizeY - self.zoomSizes[self.zoomIdx][1]
+        
+        imgSizeX = self.stateImages[0].get_width()
+        imgSizeY = self.stateImages[0].get_height()
+        for x in range(int(self.zoomSizes[self.zoomIdx][0])):
+            for y in range(int(self.zoomSizes[self.zoomIdx][1])):
+                self.subSurf.blit( self.stateImages[data[self.screenXMin+x,self.screenYMin+y]], 
+                                   (x*imgSizeX, y*imgSizeY) )
+
+        temp = pygame.transform.scale( 
+            self.subSurf.subsurface((0,0), (int(self.zoomSizes[self.zoomIdx][0]*imgSizeX), 
+                                            int(self.zoomSizes[self.zoomIdx][1]*imgSizeY)) ), 
+            self.simScreen.get_size() )
+        self.simScreen.blit( temp, (0,0) )
+
+    ## Draws the blitted data to the screen
+    def drawConf( self, data, running ):
+        self.blitArray( data, running )
+        
+
+    ## Get the size of the CA being displayed
+    def getSize( self ):
+        return self.size
+
+
+    def rescaleImages( self, size ):
+        self.stateImages = []
+        for img in self.palette:
+            self.stateImages.append( pygame.transform.scale( img, size ) )
+
+
+    ## Make the display bigger or smaller
+    # @param f Factor by which the size is scaled
+    def resize( self, f ):        
+        if f > 1:
+            self.scale += 1
+        elif f < 1:
+            self.scale -= 1
+        self.screenSize = int(self.sizeX*self.scale),int(self.sizeY*self.scale)
+        pygame.display.set_mode( self.screenSize, 0, 8 )
+
+        self.subSurf = self.simScreen.subsurface( (0,0), self.screenSize )
+
+        self.rescaleImages( (int(self.scale), int(self.scale) ) )
+
+
+    ## When zoomed, scrolling to the left and to the right in 1D CA
+    # In 1D CA scrolling up and down is not supported yet
+    # @param key Pygame.Key object containing the pressed key
+    def scroll1D( self, key ):
+        if key == pygame.K_LEFT and self.screenXMin > 0:
+            self.screenXMin -= 1
+        if key == pygame.K_RIGHT \
+                and ( self.screenXMin+self.subSurf.get_width() < self.sizeX ):
+            self.screenXMin += 1
+            
+    ## When zoomed, scrolling left, right, up and down in 2D CA
+    # @param key Pygame.Key object containing the pressed key
+    def scroll2D( self, key ):
+        if key == pygame.K_UP:
+            if self.screenYMin > 0:
+                self.screenYMin -= 1
+        elif key == pygame.K_DOWN \
+                and self.screenYMin+self.zoomSizes[self.zoomIdx][1] < self.sizeY:
+            self.screenYMin += 1
+        elif key == pygame.K_LEFT and self.screenXMin > 0:
+            self.screenXMin -= 1
+        elif key == pygame.K_RIGHT \
+                and ( self.screenXMin+self.zoomSizes[self.zoomIdx][0] < self.sizeX ):
+            self.screenXMin += 1
+            
 
     ## Zooming into a 1D CA
     # Here the initialized fixed zoomSizes from init() are used
@@ -416,7 +546,9 @@ class Display():
         elif c == "2" and self.zoomIdx > 0:
             self.zoomIdx -= 1
         # BUGGY!!!!!
-        self.newlineSurface = self.surface.subsurface( (0,0), (int(self.zoomSizes[self.zoomIdx][0]),int(self.zoomSizes[self.zoomIdx][1])) )
+        self.newlineSurface = self.surface.subsurface((0,0),
+                                                      (int(self.zoomSizes[self.zoomIdx][0]),
+                                                       int(self.zoomSizes[self.zoomIdx][1])) )
 
     ## Zooming into a 2D CA
     # Here the initialized fixed zoomSizes from init() are used
@@ -428,8 +560,7 @@ class Display():
             self.zoomIdx += 1
         elif c == "2" and self.zoomIdx > 0:
             self.zoomIdx -= 1
-        if self.CADisplayType == "Squares":
-            self.subSurf = self.surface.subsurface( (0,0), (int(self.zoomSizes[self.zoomIdx][0]),int(self.zoomSizes[self.zoomIdx][1])) )
-        elif self.CADisplayType == "Images":
-            self.subSurf = self.simScreen.subsurface( (0,0), self.screenSize )
-        
+        iX = int( self.screenSize[0] / self.zoomSizes[self.zoomIdx][0] )
+        iY = int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )
+        self.rescaleImages( (iX,iY) )
+

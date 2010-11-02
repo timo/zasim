@@ -101,9 +101,6 @@ class CA():
     def getDim( self ):
         return 0
 
-    def getDisplayType( self ):
-        return self.displayType
-
     def getSize( self ):
         return self.size
     
@@ -275,8 +272,6 @@ class binRule( CA ):
         self.sizeY = sizeY
         self.size = ( sizeX, sizeY )
 
-        self.displayType = "Squares"
-
         if initConf == self.INIT_ZERO:
 #            self.currConf = np.zeros( (sizeX), int )
 #            self.nextConf = np.zeros( (sizeX), int )
@@ -395,7 +390,8 @@ class sandpile( CA ):
     yellow = 255,240,0
     
 #    palette = [blue, white, yellow, darkred, grey, pink, green, red]
-    palette = [(0, 0, 0), (32, 32, 32), (64, 64, 64), (96, 96, 96), (128, 128, 128), (160, 160, 160), (192, 192, 192), (224, 224, 224)]
+    palette = [(0, 0, 0), (32, 32, 32), (64, 64, 64), (96, 96, 96), 
+               (128, 128, 128), (160, 160, 160), (192, 192, 192), (224, 224, 224)]
 
     
     info = ( "state 0", "state 1", "state 2", "state 3", 
@@ -404,8 +400,6 @@ class sandpile( CA ):
     def __init__( self, sizeX, sizeY, initConf, filename="" ):
         self.size = self.sizeX,self.sizeY = sizeX,sizeY
 
-        self.displayType = "Squares"
-        
         self.histogram = np.zeros( 8, int ) 
         
         if initConf == self.INIT_ZERO:
@@ -414,8 +408,8 @@ class sandpile( CA ):
             self.histogram[ 0 ] = self.sizeX * self.sizeY
         elif initConf == self.INIT_RAND:
             self.currConf = np.zeros( ( sizeX, sizeY ), int )
-            for x in range( sizeX ):
-                for y in range( sizeY ):
+            for x in range( 1, sizeX-1 ):
+                for y in range( 1, sizeY-1 ):
                     c = random.randint( 0, 3 )
                     self.currConf[ x, y ] = c
                     self.histogram[ c ] += 1
@@ -567,33 +561,43 @@ class catpile( sandpile ):
         return "Catpile"
 
 
-class bigFish( CA ):
+class ballPile( CA ):
     palette=[]
     def __init__( self, sizeX, sizeY ):
         self.size = self.sizeX, self.sizeY = sizeX, sizeY
-        self.displayType = "Images"
         
         pygame.init()
         pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
         
-        for filename in ( "images/ball_black.png", "images/ball_red.png", 
-                          "images/ball_blue.png", "images/ball_orange.png",
-                          "images/ball_green.png", "images/ball_pink.png", 
-                          "images/ball_grey.png", "images/ball_white.png" ):
+        for filename in ( "images/ball_black.png", "images/ball_red.png"   , 
+                          "images/ball_blue.png" , "images/ball_orange.png",
+                          "images/ball_green.png", "images/ball_pink.png"  , 
+                          "images/ball_grey.png" , "images/ball_white.png"  ):
             img = pygame.image.load( filename ).convert()
             self.palette.append( img )
             
         self.currConf = np.zeros( ( sizeX, sizeY ), int )
-        for x in range(self.sizeX):
-            for y in range( self.sizeY ):
-                self.currConf[x,y] = (x+y)%8
+#        for x in range(self.sizeX):
+#            for y in range( self.sizeY ):
+#                self.currConf[x,y] = (x+y)%8
         self.nextConf = np.zeros( ( sizeX, sizeY ), int )
-        self.nextConf = self.currConf.copy()
+#        self.nextConf = self.currConf.copy()
+
+
+    def addGrainRandomly( self ):
+        x = random.randint( 1, self.sizeX-1 )
+        y = random.randint( 1, self.sizeY-1 )
+        while self.currConf[ x, y ] >= 7:
+            x = random.randint( 1, self.sizeX-1 )
+            y = random.randint( 1, self.sizeY-1 )
+        self.currConf[ x, y ] += 1
+
 
     def getDim( self ):
         return 2
 
     def loopFunc( self ):
+        self.addGrainRandomly()
         self.step()
 
     def step( self ):
@@ -602,12 +606,14 @@ class bigFish( CA ):
     def updateAllCellsWeaveInline( self ):
         code = """
 #line 1 "CA.py"
-#include <math.h>
 int i, j;
-for ( i = 0; i < sizeX; i++ ) {
-  for ( j = 0; j < sizeY; j++ ) {
-    nconf(i,j) = (cconf(i,j) +1) % 8 ;
-    
+for ( i = 1; i < sizeX-1; i++ ) {
+  for ( j = 1; j < sizeY-1; j++ ) {
+    nconf(i,j)  = cconf(i,  j  ) & 3;
+    nconf(i,j) += cconf(i-1,j  ) >> 2;
+    nconf(i,j) += cconf(i+1,j  ) >> 2;
+    nconf(i,j) += cconf(i,  j-1) >> 2;
+    nconf(i,j) += cconf(i,  j+1) >> 2;
   }
 }
 """
@@ -626,16 +632,5 @@ if __name__ == "__main__":
     pygame.init()
     screen = pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
     surf = pygame.surface.Surface( (sizeX, sizeY ), 0, 8 )
-    ca = bigFish( 10, 10 )
-    
+    ca = ballPile( 10, 10 )
 
-
-#    sizeX,sizeY = 20,20
-#    ca = binRule( 110, sizeX, sizeY, 1 )
-#    print ca.getTitle()
-#    screen.set_palette( ((0,0,0),(255,255,255)) )
-#    surf.set_palette( ((0,0,0),(255,255,255)) )
-#    while 1:
-#        screen.blit( surf, (0,0) )
-#        pygame.display.update()
-#        ca.step()
