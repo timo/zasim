@@ -167,6 +167,7 @@ class Simulator():
                         confName = self.display.getUserInputKey(
                             msg="Set name for marked conf", default="" )
                         self.markedConfNames.append( confName )
+                        self.display.drawConf( self.ca.getConf(), True )
                         loop = False
                         
                     elif e.key == pygame.K_o:
@@ -225,7 +226,9 @@ class Simulator():
                                     sys.exit(1)
                                     pass
                             else:
+                                self.display.drawConf( self.ca.getConf(), True )
                                 self.display.setText( "Cancelled" )
+                                
 
                     elif e.unicode == "q":
                         sys.exit(1)
@@ -276,9 +279,11 @@ class Simulator():
                                             flag &= path.exists( filename )
                             
                             if filename == "":
+                                self.display.drawConf( self.ca.getConf(), True )
                                 self.display.setText( "Cancelled" )
                             else:
                                 self.ca.exportConf( filename )
+                                self.display.drawConf( self.ca.getConf(), True )
                                 self.display.setText( "Saved to " + filename )
 
                         else:
