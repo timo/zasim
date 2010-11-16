@@ -373,6 +373,20 @@ nconf(sizeX-1,0) = nconf(1,0);
 
 
 
+class ballRule( binRule ):
+    palette=[]
+    def __init__( self, ruleNr, sizeX, sizeY, initConf, filename="" ):
+        binRule.__init__( self, ruleNr, sizeX, sizeY, initConf, filename="" )
+
+        pygame.init()
+        pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
+        
+        palette = []
+        for filename in ( "images/ball_red.png" , "images/ball_blue.png" ): 
+            img = pygame.image.load( filename ).convert()
+            self.palette.append( img )
+
+
 
 ########## sandpile #############
 class sandpile( CA ):

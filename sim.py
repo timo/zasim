@@ -53,7 +53,7 @@ Simulation:
 import pygame
 import numpy as np
 from multiprocessing import Process, Pipe, Queue
-from CA import sandpile, catpile, binRule, ballPile
+from CA import sandpile, catpile, binRule, ballPile, ballRule
 import Histogram
 import sys 
 import time
@@ -80,11 +80,19 @@ class Simulator():
             self.display = Display.DisplaySquares1D( self.ca.getSize(), float(scale),
                                                    self.ca.palette, self.ca.getDim(),
                                                    self.oneLiner )
-
+        elif CAType[0:8].upper() == "BALLRULE":
+            if random:
+                self.ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_RAND )
+            else:
+                self.ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_ZERO )
+            self.display = Display.DisplayImages1D( self.ca.getSize(), float(scale),
+                                                    self.ca.palette, self.ca.getDim(),
+                                                    self.oneLiner )
+            
         elif CAType.upper() == "BALLPILE":
             self.ca = ballPile( sizeX, sizeY )
-            self.display = Display.DisplayImages( self.ca.getSize(), float(scale),
-                                                  self.ca.palette, self.ca.getDim() )
+            self.display = Display.DisplayImages2D( self.ca.getSize(), float(scale),
+                                                    self.ca.palette, self.ca.getDim() )
 
         if confFile != "":
             self.ca.importConf( confFile )
@@ -304,6 +312,8 @@ class Simulator():
                         msg = "Stop"
                         if loop: 
                             msg = "Start"
+                        if self.display.textAlive:
+                            self.display.drawConf( self.ca.getConf(), self.oneLiner )
                         self.display.setText( msg )
                         
                     elif e.key == pygame.K_TAB:
@@ -356,14 +366,13 @@ class Simulator():
                 if self.currDelay > 0:
                     if delay % self.currDelay == 0:
                         self.step(1)
-                        self.display.drawConf( self.ca.getConf(), not self.oneLiner )
                         stepCounter += 1
                 else:
                     self.step(1)
-                    self.display.drawConf( self.ca.getConf(), not self.oneLiner )
                     stepCounter += 1
             delay += 1
 
+            self.display.drawConf( self.ca.getConf(), not self.oneLiner and loop )
             self.display.showText()
             if showStepCount:
                 self.display.showCounter( stepCounter )
@@ -403,7 +412,7 @@ def quit():
 
 
 def listCA():
-    print "Available CA: Sandpile, BallPile, Binrule"
+    print "Available CA: Sandpile, BallPile, Binrule, Ballrule"
     sys.exit(0)
 
 if __name__ == "__main__":
@@ -413,17 +422,17 @@ if __name__ == "__main__":
     parser.add_option( "-l", "--list", action="store_true", default=False, dest="listCA", 
                        help="List types of supported CA" )
     parser.add_option( "-n", "--binRuleNr", default=110, dest="binRuleNr",
-                       help="Define number of binary Rule", type=int )
+                       help="Define number of binary rule [110]", type=int )
     parser.add_option( "-r", "--random", action="store_true", default=False, dest="random", 
-                       help="Set initial configuration to RANDOM" )
+                       help="Set initial configuration to RANDOM [False]" )
     parser.add_option( "-s", "--scale", default=20.0, dest="scale", 
-                       help="Set the measure by which a state's display is scaled", type=float ) 
+                       help="Set the measure by which a state's display is scaled [20.0]", type=float ) 
     parser.add_option( "-t", "--type",  default="Sandpile", dest="CAType", 
-                       help="Set type of CA (e.g. 'Sandpile' or 'Binrule110')" )
-    parser.add_option( "-x", "--sizeX", default=20, dest="sizeX", help="width of CA", type=int )
-    parser.add_option( "-y", "--sizeY", default=20, dest="sizeY", help="height of CA", type=int )  
+                       help="Set type of CA (e.g. 'Sandpile' or 'Binrule') [Sandpile]" )
+    parser.add_option( "-x", "--sizeX", default=20, dest="sizeX", help="width of CA [20]", type=int )
+    parser.add_option( "-y", "--sizeY", default=20, dest="sizeY", help="height of CA [20]", type=int )  
     parser.add_option( "-1", "--oneLiner", action="store_true", default=False, dest="oneLiner", 
-                       help="Show only the current configuration (only useful for 1dimensional CA)" )
+                       help="Show only the current configuration (only useful for 1dimensional CA) [False]" )
     (options, args) = parser.parse_args()
 
     
@@ -431,25 +440,25 @@ if __name__ == "__main__":
         listCA()
         sys.exit(1)
 
-    if options.CAType.upper() == "BINRULE":
+    if options.CAType.upper() in ( "BINRULE", "BALLRULE" ):
         if not( 0 <= options.binRuleNr < 256):
             print "The binrule number has to be in [0,255]"
             sys.exit(0)
         else:
             if options.random == False:
-                print "Initialized to all-zero! Try option '-r'"
-            modCAType = "BINRULE"+str(options.binRuleNr)
+                print "Initialized to all-zero! Try option '-r' for randomized initialization"
+            modCAType = options.CAType.upper()+str(options.binRuleNr)
 
-    elif options.CAType.upper() not in ("SANDPILE", "BINRULE", "BALLPILE" ):
+    elif options.CAType.upper() not in ("SANDPILE", "BINRULE", "BALLPILE", "BALLRULE" ):
         print "You didn't specify a correct type of cellular automaton."
         print "You can get all supported types by passing the argument -l"
         sys.exit(1)
 
     # if only one line is displayed, space for displayed text messages is needed
-    if options.CAType.upper() in ( "BINRULE" ) and options.oneLiner == True:
+    if options.CAType.upper() in ( "BINRULE", "BALLRULE" ) and options.oneLiner == True:
         options.sizeY = 2
 
-    if options.CAType.upper() != "BINRULE":
+    if options.CAType.upper() not in ( "BINRULE", "BALLRULE" ):
         modCAType = options.CAType
 
     # this Queue should be known to all subsequent processes...
@@ -462,8 +471,3 @@ if __name__ == "__main__":
                                           options.scale,
                                           options.oneLiner) )
     simProc.start()
-
-    
-
-
-    
