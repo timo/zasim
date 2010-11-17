@@ -53,6 +53,7 @@ class Display():
             self.zoomSizes.append( (float(X/i),float(Y/i)) )
             i += 1
 
+        self.oneLiner = oneLiner
         ## Toplevel pygame surface. All subsurfaces are children of this.
         self.surface = pygame.surface.Surface( self.size, 0, 8 )
 
@@ -323,7 +324,7 @@ class DisplaySquares1D( DisplaySquares ):
 
     ## Blitting function used for 1D CA
     def blitArray( self, data, scroll ):
-        scroll = (int)(scroll)*(-1)
+        scroll = (int)(scroll)*(-1)*self.oneLiner
         self.surface.scroll( 0, scroll )
 
         pygame.surfarray.blit_array( self.newlineSurface, data )
@@ -367,15 +368,10 @@ class DisplaySquares2D( DisplaySquares ):
     ## Constructor, initializes pretty everything
     def __init__( self, size, scale, palette, dim, oneLiner=False ):
         DisplaySquares.__init__( self, size, scale, palette, dim, oneLiner )
-
+        self.subSurf = self.surface.subsurface( (0,0), self.size)
 
     ## Blitting function used for 2D CA
     def blitArray( self, data, swap ):
-        if self.screenXMin + self.subSurf.get_width() > self.sizeX:
-            self.screenXMin = self.sizeX-self.subSurf.get_width()
-        if self.screenYMin + self.subSurf.get_height() > self.sizeY:
-            self.screenYMin = self.sizeY-self.subSurf.get_height()
-            
         pygame.surfarray.blit_array( 
             self.subSurf, 
             data[self.screenXMin:self.screenXMin+self.subSurf.get_width(),
@@ -417,6 +413,8 @@ class DisplaySquares2D( DisplaySquares ):
         self.subSurf = self.surface.subsurface( (0,0), 
                                                 (int(self.zoomSizes[self.zoomIdx][0]),
                                                  int(self.zoomSizes[self.zoomIdx][1])) )
+        self.screenXMin = min( self.screenXMin, self.sizeX-self.zoomSizes[self.zoomIdx][0] )
+        self.screenYMin = min( self.screenYMin, self.sizeY-self.zoomSizes[self.zoomIdx][1] )
 
 
 #################################
@@ -454,15 +452,17 @@ class DisplayImages( Display ):
         return self.size
 
 
-    def rescaleImages( self, size ):
-        if self.stateImageDict.has_key( size ):
-            self.stateImages = self.stateImageDict[size]
-        else:
-            
-            self.stateImages = []
-            for img in self.palette:
-                self.stateImages.append( pygame.transform.scale( img, size ) )
-            self.stateImageDict[size] = self.stateImages
+    def rescaleImages( self ):
+#        if self.stateImageDict.has_key( size ):
+#            self.stateImages = self.stateImageDict[size]
+#        else:
+        iX = int( self.screenSize[0] / self.zoomSizes[self.zoomIdx][0] )
+        iY = int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )
+        size = (iX,iY)
+        self.stateImages = []
+        for img in self.palette:
+            self.stateImages.append( pygame.transform.scale( img, size ) )
+        #self.stateImageDict[size] = self.stateImages
 
     ## Make the display bigger or smaller
     # @param f Factor by which the size is scaled
@@ -475,7 +475,7 @@ class DisplayImages( Display ):
         self.screenSize = int(self.sizeX*self.scale),int(self.sizeY*self.scale)
         pygame.display.set_mode( self.screenSize, 0, 8 )
 
-        self.rescaleImages( (int(self.scale), int(self.scale) ) )
+        self.rescaleImages()
 
 
 #####################################
@@ -485,29 +485,35 @@ class DisplayImages1D( DisplayImages ):
     ## Constructor, initializes pretty everything
     def __init__( self, size, scale, palette, dim, oneLiner=False ):
         DisplayImages.__init__( self, size, scale, palette, dim, oneLiner )
-        
-        self.subSurf = self.simScreen.subsurface( (0,0), self.screenSize )
-        self.newlineSurface = self.simScreen.subsurface( (0, self.screenSize[1]-int(self.scale), self.screenSize[0], int(self.scale) ) )
+        self.newlineSurface = self.simScreen.subsurface( 
+            (0,(self.screenSize[1]-self.stateImages[0].get_height()),
+             int(self.zoomSizes[self.zoomIdx][0])*self.stateImages[0].get_width(), 
+             self.stateImages[0].get_height() ) )
 
     def blitImages( self, data, scroll ):
-        scroll = int((scroll)*(-self.scale))
-        self.subSurf.scroll( 0, scroll )
         imSizeX = self.stateImages[0].get_width()
         imSizeY = self.stateImages[0].get_height()
+        scroll = int((scroll)*(-int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )))*self.oneLiner
+        self.simScreen.scroll( 0, scroll )
 
         for x in range(int(self.zoomSizes[self.zoomIdx][0])):
-            self.subSurf.blit( self.stateImages[data[self.screenXMin+x]],
-                               (x*imSizeX, self.subSurf.get_height() - imSizeY) )
+            self.newlineSurface.blit( self.stateImages[data[self.screenXMin+x]], (x*imSizeX, 0 ) )
         temp = pygame.transform.scale( 
-            self.subSurf.subsurface( ( 0, 0, self.zoomSizes[self.zoomIdx][0]*imSizeX, 
-                                      self.zoomSizes[self.zoomIdx][1]*imSizeY) ), 
-            self.simScreen.get_size() ) 
-        self.simScreen.blit( temp, (0,0) )
+            self.newlineSurface.subsurface(((0,0), 
+                                            (int(self.zoomSizes[self.zoomIdx][0]*imSizeX),imSizeY)) ),
+            ((self.simScreen.get_width(), int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )) ) )
+        self.simScreen.blit( 
+            temp, 
+            (0,self.simScreen.get_height()-int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )) )
 
 
     def resize( self, f ):
         DisplayImages.resize( self, f )
-        self.subSurf = self.simScreen.subsurface( (0,0, self.screenSize[0], self.screenSize[1]-int(self.scale) ) )
+        self.newlineSurface = self.simScreen.subsurface( 
+            (0,(self.screenSize[1]-self.stateImages[0].get_height()),
+             int(self.zoomSizes[self.zoomIdx][0])*self.stateImages[0].get_width(), 
+             self.stateImages[0].get_height() ) )
+
 
     ## When zoomed, scrolling to the left and to the right in 1D CA
     # In 1D CA scrolling up and down is not supported yet
@@ -516,7 +522,7 @@ class DisplayImages1D( DisplayImages ):
         if key == pygame.K_LEFT and self.screenXMin > 0:
             self.screenXMin -= 1
         if key == pygame.K_RIGHT \
-                and ( self.screenXMin+self.subSurf.get_width() < self.sizeX ):
+                and ( self.screenXMin+self.zoomSizes[self.zoomIdx][0] < self.sizeX ):
             self.screenXMin += 1
             
 
@@ -530,10 +536,14 @@ class DisplayImages1D( DisplayImages ):
             self.zoomIdx += 1
         elif c == "2" and self.zoomIdx > 0:
             self.zoomIdx -= 1
-        iX = int( self.screenSize[0] / self.zoomSizes[self.zoomIdx][0] )
-        iY = int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )
-        self.rescaleImages( (iX,iY) )
+        self.rescaleImages()
+        self.newlineSurface = self.simScreen.subsurface( 
+            (0,(self.screenSize[1]-self.stateImages[0].get_height()),
+             int(self.zoomSizes[self.zoomIdx][0])*self.stateImages[0].get_width(), 
+             self.stateImages[0].get_height() ) )
+        self.screenXMin = min( self.screenXMin, self.sizeX-self.zoomSizes[self.zoomIdx][0] )
 
+        
 
 #####################################
 ## DISPLAYIMAGES - TWO DIMENSIONAL ##
@@ -596,5 +606,7 @@ class DisplayImages2D( DisplayImages ):
             self.zoomIdx -= 1
         iX = int( self.screenSize[0] / self.zoomSizes[self.zoomIdx][0] )
         iY = int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )
-        self.rescaleImages( (iX,iY) )
+        self.rescaleImages()
+        self.screenXMin = min( self.screenXMin, self.sizeX-self.zoomSizes[self.zoomIdx][0] )
+        self.screenYMin = min( self.screenYMin, self.sizeY-self.zoomSizes[self.zoomIdx][1] )
 
