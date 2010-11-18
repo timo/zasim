@@ -11,7 +11,7 @@ import scipy
 from scipy import weave
 from scipy.weave import converters
 
-# for catpile
+# for catPile
 from scipy.misc.pilutil import *
 import Image
 
@@ -321,7 +321,6 @@ class binRule( CA ):
     
     def step( self ):
         CA.step( self )
-#        self.updateAllCellsPy()
         self.updateAllCellsWeaveInline()
 
     def updateAllCellsPy( self ):
@@ -333,21 +332,6 @@ class binRule( CA ):
         self.currConf, self.nextConf = self.nextConf, self.currConf
 
     def updateAllCellsWeaveInline( self ):
-        binRuleCode = """
-#include <stdio.h>
-#line 1 "CA.py"
-int i;
-int state;
-for ( i = 1; i < sizeX-1; i++ ) {
-  state = cconf(i-1) << 2;
-  state += cconf(i) << 1;
-  state += cconf(i+1);
-  nconf(i) = rule(state);
-}
-nconf(1) = nconf(sizeX-3);
-nconf(sizeX-2) = nconf(2);
-"""
-### just delete one of these!
         binRuleCode = """
 #include <stdio.h>
 #line 1 "CA.py"
@@ -382,14 +366,14 @@ class ballRule( binRule ):
         pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
         
         palette = []
-        for filename in ( "images/ball_red.png" , "images/ball_blue.png" ): 
+        for filename in ( "images/balls/ball_red.png" , "images/balls/ball_blue.png" ): 
             img = pygame.image.load( filename ).convert()
             self.palette.append( img )
 
 
 
-########## sandpile #############
-class sandpile( CA ):
+########## sandPile #############
+class sandPile( CA ):
     # currConf is the current state
     # nextConf is the next step after the current
     
@@ -431,7 +415,7 @@ class sandpile( CA ):
         elif initConf == self.INIT_FILE and filename != "":
             self.importConf( filename )
         else:
-            print "The initflag you've provided isn't available for the sandpile-CA"
+            print "The initflag you've provided isn't available for the sandPile-CA"
             print "Available initflags:"
             print "INIT_ZERO, INIT_RAND, INIT_FILE + filename"
             sys.exit(1)
@@ -474,7 +458,7 @@ class sandpile( CA ):
 
         
     def getTitle( self ):
-        return "Sandpile"
+        return "SandPile"
 
     def loopFunc( self ):
         self.addGrainRandomly()
@@ -489,9 +473,6 @@ class sandpile( CA ):
             self.nextConf[ x, y ] = s
     
     def step( self ):
-#        self.addGrain( self.sizeX/2, self.sizeY/2 )
-  #      self.updateAllCellsPyHistImpl()
-#        self.updateAllCellsPyHistExpl()
         self.updateAllCellsWeaveInline()
 
     def updateAllCellsPyHistImpl( self ):
@@ -545,8 +526,8 @@ for ( i = 1; i < sizeX-1; i++ ) {
 
 
 
-########## catpile #############
-class catpile( sandpile ):
+########## catPile #############
+class catPile( sandPile ):
 
     def __init__( self, sizeX, sizeY, initConf ):
         self.readImage( "cat.jpg" )
@@ -559,87 +540,35 @@ class catpile( sandpile ):
         for i in range(len(image)):
             for j in range(len(image[0])):
                 image[i,j] /= 32
-#        print image[10,10]
-#        print image
         self.currConf = image
         self.nextConf = image
-        print image[0:10,0:10]
         i = np.transpose(image)
-        print i[0:10,0:10]
-#       return
         self.currConf = np.transpose(image)
-        print self.currConf
         self.nextConf = self.currConf.copy()
 
     def getTitle( self ):
-        return "Catpile"
+        return "CatPile"
 
 
-class ballPile( CA ):
+######### ballPile ##########
+class ballPile( sandPile ):
     palette=[]
-    def __init__( self, sizeX, sizeY ):
-        self.size = self.sizeX, self.sizeY = sizeX, sizeY
-        
+    def __init__( self, sizeX, sizeY, initConf, filename="" ):
+        sandPile.__init__( self, sizeX, sizeY, initConf, filename ) 
+
         pygame.init()
         pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
-        
-        for filename in ( "images/ball_black.png", "images/ball_red.png"   , 
-                          "images/ball_blue.png" , "images/ball_orange.png",
-                          "images/ball_green.png", "images/ball_pink.png"  , 
-                          "images/ball_grey.png" , "images/ball_white.png"  ):
+
+        self.palette = []
+        for filename in ( "images/balls/ball_black.png", "images/balls/ball_red.png"   , 
+                          "images/balls/ball_blue.png" , "images/balls/ball_orange.png",
+                          "images/balls/ball_green.png", "images/balls/ball_pink.png"  , 
+                          "images/balls/ball_grey.png" , "images/balls/ball_white.png"  ):
             img = pygame.image.load( filename ).convert()
             self.palette.append( img )
-            
-        self.currConf = np.zeros( ( sizeX, sizeY ), int )
-#        for x in range(self.sizeX):
-#            for y in range( self.sizeY ):
-#                self.currConf[x,y] = (x+y)%8
-        self.nextConf = np.zeros( ( sizeX, sizeY ), int )
-#        self.nextConf = self.currConf.copy()
 
-
-    def addGrainRandomly( self ):
-        x = random.randint( 1, self.sizeX-1 )
-        y = random.randint( 1, self.sizeY-1 )
-        while self.currConf[ x, y ] >= 7:
-            x = random.randint( 1, self.sizeX-1 )
-            y = random.randint( 1, self.sizeY-1 )
-        self.currConf[ x, y ] += 1
-
-
-    def getDim( self ):
-        return 2
-
-    def loopFunc( self ):
-        self.addGrainRandomly()
-        self.step()
-
-    def step( self ):
-        self.updateAllCellsWeaveInline()
-
-    def updateAllCellsWeaveInline( self ):
-        code = """
-#line 1 "CA.py"
-int i, j;
-for ( i = 1; i < sizeX-1; i++ ) {
-  for ( j = 1; j < sizeY-1; j++ ) {
-    nconf(i,j)  = cconf(i,  j  ) & 3;
-    nconf(i,j) += cconf(i-1,j  ) >> 2;
-    nconf(i,j) += cconf(i+1,j  ) >> 2;
-    nconf(i,j) += cconf(i,  j-1) >> 2;
-    nconf(i,j) += cconf(i,  j+1) >> 2;
-  }
-}
-"""
-        cconf = self.currConf
-        nconf = self.nextConf
-        sizeX = self.sizeX
-        sizeY = self.sizeY
-        weave.inline( code, ['cconf', 'nconf', 'sizeX', 'sizeY' ],
-                      type_converters = converters.blitz,
-                      compiler = 'gcc' )
-        self.currConf = self.nextConf.copy()
-
+    def getTitle( self ):
+        return "BallPile"
 
 if __name__ == "__main__":
     sizeX, sizeY = 10, 10

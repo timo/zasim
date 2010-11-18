@@ -53,11 +53,11 @@ Simulation:
 import pygame
 import numpy as np
 from multiprocessing import Process, Pipe, Queue
-from CA import sandpile, catpile, binRule, ballPile, ballRule
+from CA import sandPile, catPile, binRule, ballPile, ballRule
 import Histogram
 import sys 
 import time
-from os import path, getcwd, chdir, listdir, path
+from os import path, getcwd, chdir, listdir, path, system
 import optparse
 import Display
 
@@ -67,11 +67,11 @@ class Simulator():
         self.oneLiner = oneLiner
         if CAType.upper() == "SANDPILE":
             if random:
-                self.ca = sandpile( sizeX, sizeY, sandpile.INIT_RAND )
+                self.ca = sandPile( sizeX, sizeY, sandPile.INIT_RAND )
             else:
-                self.ca = sandpile( sizeX, sizeY, sandpile.INIT_ZERO )
+                self.ca = sandPile( sizeX, sizeY, sandPile.INIT_ZERO )
             self.display = Display.DisplaySquares2D( self.ca.getSize(), float(scale),
-                                                   self.ca.palette, self.ca.getDim() )
+                                                     self.ca.palette, self.ca.getDim() )
         elif CAType[0:7].upper() == "BINRULE":
             if random:
                 self.ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_RAND )
@@ -90,7 +90,10 @@ class Simulator():
                                                     self.oneLiner )
             
         elif CAType.upper() == "BALLPILE":
-            self.ca = ballPile( sizeX, sizeY )
+            if random:
+                self.ca = ballPile( sizeX, sizeY, ballPile.INIT_RAND )
+            else:
+                self.ca = ballPile( sizeX, sizeY, ballPile.INIT_ZERO )
             self.display = Display.DisplayImages2D( self.ca.getSize(), float(scale),
                                                     self.ca.palette, self.ca.getDim() )
 
@@ -412,13 +415,21 @@ def quit():
 
 
 def listCA():
-    print "Available CA: Sandpile, BallPile, Binrule, Ballrule"
+    print "Available CA: SandPile, BallPile, Binrule, Ballrule"
     sys.exit(0)
 
 if __name__ == "__main__":
+    if "-i" in sys.argv:
+        cmd = "python -i"
+        for a in sys.argv:
+            if a != "-i":
+                cmd = cmd + " " + a
+        system( cmd )
+
     parser = optparse.OptionParser(version = "CASimulator 0.1")
     parser.add_option( "-f", "--file", default="", dest="confFile", 
                        help="Load initial configuration from FILE" )
+    parser.add_option( "-i", "--interactive", action="store_true", dest="interactive", help="start sim.py interactively" )
     parser.add_option( "-l", "--list", action="store_true", default=False, dest="listCA", 
                        help="List types of supported CA" )
     parser.add_option( "-n", "--binRuleNr", default=110, dest="binRuleNr",
@@ -427,8 +438,8 @@ if __name__ == "__main__":
                        help="Set initial configuration to RANDOM [False]" )
     parser.add_option( "-s", "--scale", default=20.0, dest="scale", 
                        help="Set the measure by which a state's display is scaled [20.0]", type=float ) 
-    parser.add_option( "-t", "--type",  default="Sandpile", dest="CAType", 
-                       help="Set type of CA (e.g. 'Sandpile' or 'Binrule') [Sandpile]" )
+    parser.add_option( "-t", "--type",  default="SandPile", dest="CAType", 
+                       help="Set type of CA (e.g. 'SandPile' or 'Binrule') [SandPile]" )
     parser.add_option( "-x", "--sizeX", default=20, dest="sizeX", help="width of CA [20]", type=int )
     parser.add_option( "-y", "--sizeY", default=20, dest="sizeY", help="height of CA [20]", type=int )  
     parser.add_option( "-1", "--oneLiner", action="store_true", default=False, dest="oneLiner", 

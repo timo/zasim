@@ -6,7 +6,7 @@ import sys
 import time
 from os import path, getcwd, chdir, listdir, path
 import optparse
-
+import copy
 
 ## class Display() handles everything connected to displaying the configuration of a CA.
 #
@@ -324,7 +324,7 @@ class DisplaySquares1D( DisplaySquares ):
 
     ## Blitting function used for 1D CA
     def blitArray( self, data, scroll ):
-        scroll = (int)(scroll)*(-1)*self.oneLiner
+        scroll = (int)(scroll)*(-1)
         self.surface.scroll( 0, scroll )
 
         pygame.surfarray.blit_array( self.newlineSurface, data )
@@ -453,16 +453,13 @@ class DisplayImages( Display ):
 
 
     def rescaleImages( self ):
-#        if self.stateImageDict.has_key( size ):
-#            self.stateImages = self.stateImageDict[size]
-#        else:
         iX = int( self.screenSize[0] / self.zoomSizes[self.zoomIdx][0] )
         iY = int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )
         size = (iX,iY)
         self.stateImages = []
         for img in self.palette:
             self.stateImages.append( pygame.transform.scale( img, size ) )
-        #self.stateImageDict[size] = self.stateImages
+
 
     ## Make the display bigger or smaller
     # @param f Factor by which the size is scaled
@@ -493,18 +490,20 @@ class DisplayImages1D( DisplayImages ):
     def blitImages( self, data, scroll ):
         imSizeX = self.stateImages[0].get_width()
         imSizeY = self.stateImages[0].get_height()
-        scroll = int((scroll)*(-int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )))*self.oneLiner
+        scroll = int((scroll)*(-int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )))
         self.simScreen.scroll( 0, scroll )
 
         for x in range(int(self.zoomSizes[self.zoomIdx][0])):
-            self.newlineSurface.blit( self.stateImages[data[self.screenXMin+x]], (x*imSizeX, 0 ) )
+            self.newlineSurface.blit( self.stateImages[data[self.screenXMin+x]], 
+                                      (x*imSizeX, 0 ) )
         temp = pygame.transform.scale( 
-            self.newlineSurface.subsurface(((0,0), 
-                                            (int(self.zoomSizes[self.zoomIdx][0]*imSizeX),imSizeY)) ),
-            ((self.simScreen.get_width(), int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )) ) )
+            self.newlineSurface.subsurface(
+                ((0,0), (int(self.zoomSizes[self.zoomIdx][0]*imSizeX),imSizeY)) ),
+            ((self.simScreen.get_width(), 
+              int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )) ) )
         self.simScreen.blit( 
             temp, 
-            (0,self.simScreen.get_height()-int( self.screenSize[1] / self.zoomSizes[self.zoomIdx][1] )) )
+            (0,self.simScreen.get_height()-int(self.screenSize[1]/self.zoomSizes[self.zoomIdx][1])))
 
 
     def resize( self, f ):
