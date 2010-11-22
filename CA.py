@@ -591,19 +591,21 @@ class vonNeumann ( CA ):
 #  
 # All states are encoded in a bitmask:
 #
-#    <--MSB     20                  10                           LSB
-#  ...... 0 0 0 0 0 0 0 0 0 0 0 0 0 X X u a1 a0 eps s2 s1 s0  e1 e0
-#                                   | | | |  |  |    |  |  |  |  |-> current e
-#  XX = 00 -> U            <--------| | | |  |  |    |  |  |  |----> next e
-#  XX = 01 -> C            <----------| | |  |  |    |  |  |     
-#  XX = 10 -> S                         | |  |  |    |  |  |-------> lsb on S
-#  XX = 11 -> T                         | |  |  |    |  |----------> ...
-#                                       | |  |  |    |-------------> msb on S
-#  S{} is encoded as SMASK_111          | |  |  |
-#                                       | |  |  |------------------> excited
-#                                       | |  |---------------------> direction
-#                                       | |------------------------> direction
-#                                       |--------------------------> special
+#    <--MSB                     10                              LSB
+#  ...... 0 0 0 0 0 0 0 0 0 X X u a1 a0 eps sc1 sc0 s2 s1 s0 e1 e0
+#                           | | | |  |  |    |   |   |  |  |  |  |-> current e
+#  XX = 00 -> U    <--------| | | |  |  |    |   |   |  |  |  |----> next e
+#  XX = 01 -> C    <----------| | |  |  |    |   |   |  |  |     
+#  XX = 10 -> S                 | |  |  |    |   |   |  |  |-------> lsb on S
+#  XX = 11 -> T                 | |  |  |    |   |   |  |----------> ...
+#                               | |  |  |    |   |   |-------------> msb on S
+#  S{} is encoded as SMASK_111  | |  |  |    |   |-----------------> s-state counter
+#                               | |  |  |    |---------------------> s-state counter
+#                               | |  |  |
+#                               | |  |  |--------------------------> excited
+#                               | |  |-----------------------------> direction
+#                               | |--------------------------------> direction
+#                               |----------------------------------> special
 #
 
     def updateAllCellsWeaveInline( self ):
@@ -618,28 +620,36 @@ class vonNeumann ( CA ):
 
 #line 1 "CA.py"
 #define U              0
-#define CMASK        512  // 1 << 9
-#define SMASK       1024  // 2 << 9
-#define TMASK       1536  // 3 << 9
-#define CSTATEMASK     3  // 1 + 2
-#define SSTATEMASK    28  // 4 + 8 + 16
-#define TSTATEMASK   480  // 32 + 64 + 128 + 256
+#define CMASK       2048  // 1 << 11
+#define SMASK       4096  // 2 << 11
+#define TMASK       6144  // 3 << 11
+#define CSTATEMASK     3  // 1|2
+#define SSTATEMASK    28  // 4|8|16
+#define TSTATEMASK  1920  // 128|256|512|1024
 #define e0     1
 #define e1     2
 #define s0     4
 #define s1     8
 #define s2    16
 #define s     28
-#define eps   32
-#define a0    64
-#define a1   128
-#define a    192
-#define u    256
+#define sc0   32
+#define sc1   64
+#define sc    96  // sc1|sc0
+#define eps  128
+#define a0   256
+#define a1   512
+#define a    768  // a1|a0
+#define u   1024
 
-#define U(x) (x == 0)
-#define C(x) (x & CMASK)
-#define S(x) (x & SMASK)
-#define T(x) (x & TMASK)
+#define U(x) ((x) == 0)
+#define C(x) ((x) & CMASK)
+#define S(x) ((x) & SMASK)
+#define T(x) ((x) & TMASK)
+
+#define A_UNSHIFT(x)  (((x)&a)>>8)
+#define SC_SHIFT(x)   ((x)<<5)
+#define SC_UNSHIFT(x) (((x)&sc)>>5)
+
 
 int code() {
   int i, j, k, l;
@@ -655,7 +665,7 @@ int code() {
       if ( T(state) ) { // transmission state
 	// transisition rule (T.1):
 	for ( k = 0; k < 4; k++ ) {
-	  if ( T(nbs[k]) && ( abs(k-((nbs[k]&a)>>6)) == 2) 
+	  if ( T(nbs[k]) && ( abs(k-(A_UNSHIFT(nbs[k]))) == 2) 
 	       && (nbs[k]&u != state&u) && (nbs[k]&eps)  ) {
 	    // (T.1)(alpha)
 	    nconf( i, j ) = U;
@@ -665,13 +675,13 @@ int code() {
 	if ( k == 4 ) {
 	  // (T.1)(beta)
 	  for ( k = 0; k < 4; k++ ) {
-	    if ( T(nbs[k]) && (abs(((nbs[k]&a)>>6)-((state&a)>>6)) != 2) 
+	    if ( T(nbs[k]) && (abs((A_UNSHIFT(nbs[k]))-(A_UNSHIFT(state))) != 2)
 		 && (nbs[k]&u == state&u ) && (nbs[k]&eps) ) {
 	      // (T.1)(beta)(a)
 	      nconf( i, j ) = state | eps;
 	      break;
 	    }
-	    if ( C(nbs[k]) && (nbs[k]&e0) && (abs(k-((state&a)>>6)) != 2) ) {
+	    if ( C(nbs[k]) && (nbs[k]&e0) && (abs(k-(A_UNSHIFT(state))) != 2) ) {
 	      // (T.1)(beta)(b)
 	      nconf( i, j ) = state | eps;
 	      break;
@@ -679,21 +689,55 @@ int code() {
 	  }
 	}
 	if ( k == 4 ) {
-	  // (T.1)(gamme)
+	  // (T.1)(gamma)
 	  nconf( i, j ) = TMASK | u | a;
 	}
       } 
 
       else if ( C(state) ) { // confluent state
-	
+	// transistion rule (T.2)
+	for ( k = 0; k < 4; k++ ) {
+	  if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) 
+	       && (nbs[k]&eps) && (nbs[k]&u) ) {
+	    // (T.2)(alpha)
+	    nconf( i, j ) = U;
+	    break;
+	  }
+	}
+	if ( k == 4 ) {
+	  // (T.2)(beta)
+	  for( k = 0; k < 4; k++ ) {
+	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) 
+		 && (nbs[k]&eps) && !(nbs[k]&u) )
+	      break;
+	  }
+	  if ( k < 4 ) {
+	    for ( k = 0; k < 4; k++ ) {
+	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+		   && !(nbs[k]&eps) && !(nbs[k]&u) ) {
+		break;
+	      }
+	    }
+	    if ( k == 4 ) {
+	      nconf( i, j ) = CMASK | e1;
+	      k = 3;
+	    }
+	  } else {
+	    k = 3;
+	  }
+	}
+	if ( k < 4 ) {
+	  // (T.2)(gamma)
+	  nconf( i, j ) = CMASK | ((state&e1)>>1);
+	}
       } 
 
       else if ( U(state) ) {  // unexcitable state
 	// transition rule (T.3)
 	for ( k = 0; k < 4; k++ ) {
-	  if ( T(nbs[k]) && (abs(k-(nbs[k]&a)>>6) == 2) && (nbs[k]&eps) ) {
+	  if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
 	    // (T.3)(alpha)
-	    nconf( i, j ) = SMASK | s0 | s1 | s2;
+	    nconf( i, j ) = SMASK;
 	    break;
 	  }
         }
@@ -702,23 +746,46 @@ int code() {
       } 
       
       else if ( S(state) ) { // sensitized state
-	// transition rule (T.4)
-	l = state&(s1|s0);
-	for ( k = 0; k < 4; k++ ) {
-	  if ( T(nbs[k]) && (abs(k-(nbs[k]&a)>>6) == 2) && (nbs[k]&eps) ) {
-	    // (T.4)(alpha)
-	    nconf( i, j ) = SMASK | l<<1 + s0;
-	    break;	    
+	if ( !(state&sc1)  ) {
+	  // transition rule (T.4)
+	  for ( k = 0; k < 4; k++ ) {
+	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+	      // (T.4)(alpha)
+	      nconf( i, j ) = state | (s0<<(2-SC_UNSHIFT(state)));
+	      break;
+	    }
+	  }
+	  // (T.4)(beta)
+	  // doesn't change the state but the counter
+	  nconf( i, j ) += sc0;
+	} else {
+	  for ( k = 0; k < 4; k++ ) {
+	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+	      // (T.4)(alpha)
+	      nconf( i, j ) = state | s0;
+	      break;
+	    }
+	  }
+	  if ( k < 4 ) {
+	    // make transition from sensitized to transmission or confluent state
+	    l = nconf( i, j );
+	    if ( (l & s) == s ) {
+	      nconf( i, j ) = CMASK; 
+	    } else {
+	      // other leaves of the S-to-T-transition tree of depth 3
+	      nconf( i, j ) = TMASK;
+	      l += s0;
+	      nconf( i, j ) |= (l&s)<<6;
+	    }
+	  } else {
+	    // stay for another run
 	  }
 	}
-	if ( k == 4 ) {
-	  // (T.4)(beta)
-	  nconf( i, j ) = SMASK | l<<1;
-	}
-      } 
+      }
 
       else  {
-	// error!
+	// this state is undefined!
+	return;
       }
 
     }
