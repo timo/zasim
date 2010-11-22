@@ -35,7 +35,7 @@ class CA():
         print "function __init__() not implemented yet"
 
     def eventFunc( self, event ):
-        print "function eventFunc() not implemented yet"
+        print "function eventFunc() for", self.getTitle(), "not implemented yet"
 
     def exportConf( self, filename ):
         with open( filename, 'w' ) as f:
@@ -132,7 +132,7 @@ class CA():
                     self.resize( sizeX )
                     retVal = self.SIZECHANGED
                 
-            importRegexp = re.compile("\((\d)\)")
+            importRegexp = re.compile("\((\d*)\)")
             for j in range(sizeY):
                 content = ['', '', f.readline()[0:-1]]
                 for i in range(sizeX):
@@ -286,8 +286,6 @@ class binRule( CA ):
             if ( self.ruleNr & ( 1 << i ) ):
                 self.ruleIdx[i] = 1
 
-    def eventFunc( self, event ):
-        pass
 
     def getDim( self ):
         return 1
@@ -422,7 +420,6 @@ class sandPile( CA ):
             if e.button == 3:
                 self.setState( x, y, 0 )
         
-        
     def getDim ( self ):
         return 2
 
@@ -556,26 +553,190 @@ class ballPile( sandPile ):
 class vonNeumann ( CA ):
     palette = []
     
-    def __init__( self, sizeX, sizeY, filename="" ):
+    def __init__( self, sizeX, sizeY ):
         self.size = self.sizeX, self.sizeY = sizeX, sizeY
 
+        # as usual, these two arrays contain the real configuration, that is used
+        # in every step ...
         self.currConf = np.zeros( (sizeX, sizeY), int )
         self.nextConf = np.zeros( (sizeX, sizeY), int )
-        if filename != "":
-            self.importConf( filename )
+        # ... but in this CA the states are not enumerable from 0..28, but scattered 
+        # between 0..~2^13, so we need a dict (see below) to map the states to 0..28, 
+        # so the Display-module can display states without knowing the difference
+        self.displayConf = np.zeros( (sizeX, sizeY), int)
 
-        for imgFile in ( "C00.jpg", "C01.jpg", "C10.jpg", "C11.jpg", 
-                         "S000.jpg", "S00.jpg", "S01.jpg", "S0.jpg", 
-                         "S10.jpg", "S11.jpg", "S1.jpg", "S.jpg", 
-                         "T000.jpg", "T001.jpg", "T010.jpg", "T011.jpg", 
-                         "T020.jpg", "T021.jpg", "T030.jpg", "T031.jpg", 
-                         "T100.jpg", "T101.jpg", "T110.jpg", "T111.jpg", 
-                         "T120.jpg", "T121.jpg", "T130.jpg", "T131.jpg", 
-                         "U.jpg" ):
-            img = pygame.image.load( filename ).convert()
+        pygame.init()
+        pygame.display.set_mode( self.size, 0, 8 )
+
+        for imgFile in ( "images/vonNeumann/U.jpg",    "images/vonNeumann/C00.jpg",  
+                         "images/vonNeumann/C01.jpg",  "images/vonNeumann/C10.jpg", 
+                         "images/vonNeumann/C11.jpg",  "images/vonNeumann/S000.jpg", 
+                         "images/vonNeumann/S00.jpg",  "images/vonNeumann/S01.jpg",  
+                         "images/vonNeumann/S0.jpg",   "images/vonNeumann/S10.jpg",  
+                         "images/vonNeumann/S11.jpg",  "images/vonNeumann/S1.jpg",   
+                         "images/vonNeumann/S.jpg",    "images/vonNeumann/T000.jpg", 
+                         "images/vonNeumann/T001.jpg", "images/vonNeumann/T010.jpg", 
+                         "images/vonNeumann/T011.jpg", "images/vonNeumann/T020.jpg", 
+                         "images/vonNeumann/T021.jpg", "images/vonNeumann/T030.jpg", 
+                         "images/vonNeumann/T031.jpg", "images/vonNeumann/T100.jpg", 
+                         "images/vonNeumann/T101.jpg", "images/vonNeumann/T110.jpg", 
+                         "images/vonNeumann/T111.jpg", "images/vonNeumann/T120.jpg", 
+                         "images/vonNeumann/T121.jpg", "images/vonNeumann/T130.jpg", 
+                         "images/vonNeumann/T131.jpg" ):
+            img = pygame.image.load( imgFile ).convert()
             self.palette.append( img )
 
-   
+        self.displayableStateDict = {}
+        # U
+        self.displayableStateDict[0] = 0    #U
+        # C
+        self.displayableStateDict[2048] = 1 #C00   2048
+        self.displayableStateDict[2049] = 2 #C10   2048+1
+        self.displayableStateDict[2050] = 3 #C01   2048+2
+        self.displayableStateDict[2051] = 4 #C11   2048+3
+        # S
+        self.displayableStateDict[4192] = 5  #S000 4096+96
+        self.displayableStateDict[4160] = 6  #S00  4096+64
+        self.displayableStateDict[4168] = 7  #S01  4096+64+8
+        self.displayableStateDict[4128] = 8  #S0   4096+32
+        self.displayableStateDict[4176] = 9  #S10  4096+64+16
+        self.displayableStateDict[4184] = 10 #S11  4096+64+16+8
+        self.displayableStateDict[4144] = 11 #S1   4096+32+16
+        self.displayableStateDict[4096] = 12 #S    4096
+        # T
+        self.displayableStateDict[6144] = 13 #T000 6144
+        self.displayableStateDict[6272] = 14 #T001 6144+128
+        self.displayableStateDict[6400] = 15 #T010 6144+256
+        self.displayableStateDict[6528] = 16 #T011 6144+128+256
+        self.displayableStateDict[6656] = 17 #T020 6144+512
+        self.displayableStateDict[6784] = 18 #T021 6144+128+512
+        self.displayableStateDict[6912] = 19 #T030 6144+256+512
+        self.displayableStateDict[7040] = 20 #T031 6144+128+256+512
+        self.displayableStateDict[7168] = 21 #T100 6144+1024
+        self.displayableStateDict[7296] = 22 #T101 6144+128+1024
+        self.displayableStateDict[7424] = 23 #T110 6144+256+1024
+        self.displayableStateDict[7552] = 24 #T111 6144+128+256+1024
+        self.displayableStateDict[7680] = 25 #T120 6144+512+1024
+        self.displayableStateDict[7808] = 26 #T121 6144+128+512+1024
+        self.displayableStateDict[7936] = 27 #T130 6144+256+512+1024
+        self.displayableStateDict[8064] = 28 #T131 6144+128+256+1024+512
+
+        self.nameStateDict = {}
+        # U
+        self.nameStateDict["U"] = 0
+        # C
+        self.nameStateDict["C00"] = 2048
+        self.nameStateDict["C10"] = 2049
+        self.nameStateDict["C01"] = 2050
+        self.nameStateDict["C11"] = 2051
+        # S
+        self.nameStateDict["S000"] = 4192
+        self.nameStateDict["S00"]  = 4160
+        self.nameStateDict["S01"]  = 4168
+        self.nameStateDict["S0"]   = 4128
+        self.nameStateDict["S10"]  = 4176
+        self.nameStateDict["S11"]  = 4184
+        self.nameStateDict["S1"]   = 4144
+        self.nameStateDict["S"]    = 4096
+        # T
+        self.nameStateDict["T000"] = 6144
+        self.nameStateDict["T001"] = 6272
+        self.nameStateDict["T010"] = 6400
+        self.nameStateDict["T011"] = 6528
+        self.nameStateDict["T020"] = 6656
+        self.nameStateDict["T032"] = 6784
+        self.nameStateDict["T030"] = 6912
+        self.nameStateDict["T031"] = 7040
+        self.nameStateDict["T100"] = 7168
+        self.nameStateDict["T101"] = 7296
+        self.nameStateDict["T110"] = 7424
+        self.nameStateDict["T111"] = 7552
+        self.nameStateDict["T120"] = 7680
+        self.nameStateDict["T121"] = 7808
+        self.nameStateDict["T130"] = 7936
+        self.nameStateDict["T131"] = 8064
+
+        # playing vonRandommann:
+        self.states = []
+        self.states.append(0)
+        self.states.append(2048)
+        self.states.append(2050)
+        self.states.append(2049)
+        self.states.append(2051)
+        self.states.append(4192)
+        self.states.append(4160)
+        self.states.append(4168)
+        self.states.append(4128)
+        self.states.append(4176)
+        self.states.append(4184)
+        self.states.append(4144)
+        self.states.append(4096)
+        self.states.append(6144)
+        self.states.append(6272)
+        self.states.append(6400)
+        self.states.append(6528)
+        self.states.append(6656)
+        self.states.append(6784)
+        self.states.append(6912)
+        self.states.append(7040)
+        self.states.append(7168)
+        self.states.append(7296)
+        self.states.append(7424)
+        self.states.append(7552)
+        self.states.append(7680)
+        self.states.append(7808)
+        self.states.append(7936)
+        self.states.append(8064)
+        k = 0
+#        for i in range( 1, self.sizeX-1 ):
+#            for j in range( 1, self.sizeY-1 ):
+#                self.currConf[i][j] = self.states[random.randint(0, len(self.states)-1)]
+#                k += 1
+
+    def eventFunc( self, e ):
+        if e.type == pygame.MOUSEBUTTONDOWN:
+            x,y = e.pos
+            state = self.states[self.displayConf[x][y]]
+            mods = pygame.key.get_mods()
+            if 0 == state:
+                stateStr = "U"
+            elif 2048 <= state <= 2051:
+                stateStr = "C"
+            elif 4096 <= state <= 4192:
+                stateStr = "S"
+            elif 6144 <= state <= 8064:
+                stateStr = "T"
+
+            if e.button == 1:
+                if mods & pygame.KMOD_LCTRL:
+                    stateStr = "T10"
+                else:
+                    stateStr = "T00"
+                if mods & pygame.KMOD_LSHIFT:
+                    stateStr += "1"
+                else:
+                    stateStr += "0"
+                
+                indirState = state | (state&1024) | (state&128)
+                newState = indirState | ((state+256)&768)
+                    
+
+                self.currConf[x][y] = newState#self.nameStateDict[newStateStr]
+            if e.button == 2:
+                self.currConf[x][y] = self.nameStateDict["T111"]
+            if e.button == 3:
+                self.currConf[x][y] = self.nameStateDict["C11"]
+        
+
+    def getConf( self ):
+        for i in range( 1, self.sizeX-1 ):
+            for j in range( 1, self.sizeY-1 ):
+                if self.displayableStateDict.has_key( self.currConf[i][j] ):
+                    self.displayConf[i][j] = self.displayableStateDict[self.currConf[i][j]]
+                else:
+                    print i, j, ":", self.currConf[i][j]
+        return self.displayConf
+
     def getDim( self ):
         return 2
 
@@ -588,6 +749,7 @@ class vonNeumann ( CA ):
     def step( self ):
         self.updateAllCellsWeaveInline()
 
+    def updateAllCellsWeaveInline( self ):
 #  
 # All states are encoded in a bitmask:
 #
@@ -607,19 +769,12 @@ class vonNeumann ( CA ):
 #                               | |--------------------------------> direction
 #                               |----------------------------------> special
 #
-
-    def updateAllCellsWeaveInline( self ):
         vonNeumannCode = """
-""";
-}
-
-
-
-
 #include <stdlib.h>
+#include <stdio.h>
 
 #line 1 "CA.py"
-#define U              0
+#define UMASK          0
 #define CMASK       2048  // 1 << 11
 #define SMASK       4096  // 2 << 11
 #define TMASK       6144  // 3 << 11
@@ -631,7 +786,7 @@ class vonNeumann ( CA ):
 #define s0     4
 #define s1     8
 #define s2    16
-#define s     28
+#define s     28  // s2|s1|s0
 #define sc0   32
 #define sc1   64
 #define sc    96  // sc1|sc0
@@ -642,18 +797,16 @@ class vonNeumann ( CA ):
 #define u   1024
 
 #define U(x) ((x) == 0)
-#define C(x) ((x) & CMASK)
-#define S(x) ((x) & SMASK)
-#define T(x) ((x) & TMASK)
+#define C(x) (((x) & CMASK) == CMASK)
+#define S(x) (((x) & SMASK) == SMASK)
+#define T(x) (((x) & TMASK) == TMASK)
 
 #define A_UNSHIFT(x)  (((x)&a)>>8)
 #define SC_SHIFT(x)   ((x)<<5)
 #define SC_UNSHIFT(x) (((x)&sc)>>5)
 
-
-int code() {
   int i, j, k, l;
-  int neighState[4];
+  int nbs[4];
   int state;
   for ( i = 1; i < sizeX-1; i++ ) {
     for ( j = 1; j < sizeY-1; j++ ) {
@@ -662,26 +815,29 @@ int code() {
       nbs[1] = cconf( i, j-1 );
       nbs[2] = cconf( i-1, j );
       nbs[3] = cconf( i, j+1 );
+
       if ( T(state) ) { // transmission state
 	// transisition rule (T.1):
 	for ( k = 0; k < 4; k++ ) {
 	  if ( T(nbs[k]) && ( abs(k-(A_UNSHIFT(nbs[k]))) == 2) 
-	       && (nbs[k]&u != state&u) && (nbs[k]&eps)  ) {
+	       && ((nbs[k]&u) != (state&u)) && (nbs[k]&eps)  ) {
 	    // (T.1)(alpha)
-	    nconf( i, j ) = U;
+	    nconf( i, j ) = UMASK;
+
 	    break;
 	  }
 	}
 	if ( k == 4 ) {
 	  // (T.1)(beta)
 	  for ( k = 0; k < 4; k++ ) {
-	    if ( T(nbs[k]) && (abs((A_UNSHIFT(nbs[k]))-(A_UNSHIFT(state))) != 2)
-		 && (nbs[k]&u == state&u ) && (nbs[k]&eps) ) {
+	    if ( T(nbs[k]) && (abs((A_UNSHIFT(nbs[k]))-(A_UNSHIFT(state))) != 2) 
+                 && (abs(k-(A_UNSHIFT(nbs[k]))) == 2)
+		 && ((nbs[k]&u) == (state&u) ) && (nbs[k]&eps) ) {
 	      // (T.1)(beta)(a)
 	      nconf( i, j ) = state | eps;
 	      break;
 	    }
-	    if ( C(nbs[k]) && (nbs[k]&e0) && (abs(k-(A_UNSHIFT(state))) != 2) ) {
+	    if ( C(nbs[k]) && (nbs[k]&e0) && (abs(k-(A_UNSHIFT(state))) == 2) ) {
 	      // (T.1)(beta)(b)
 	      nconf( i, j ) = state | eps;
 	      break;
@@ -690,47 +846,49 @@ int code() {
 	}
 	if ( k == 4 ) {
 	  // (T.1)(gamma)
-	  nconf( i, j ) = TMASK | u | a;
+	  nconf( i, j ) = TMASK | (state&u) | (state&a);
 	}
-      } 
+      } // end of T(state)
 
+
+
+      
       else if ( C(state) ) { // confluent state
-	// transistion rule (T.2)
-	for ( k = 0; k < 4; k++ ) {
-	  if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) 
-	       && (nbs[k]&eps) && (nbs[k]&u) ) {
-	    // (T.2)(alpha)
-	    nconf( i, j ) = U;
-	    break;
-	  }
-	}
-	if ( k == 4 ) {
-	  // (T.2)(beta)
-	  for( k = 0; k < 4; k++ ) {
-	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) 
-		 && (nbs[k]&eps) && !(nbs[k]&u) )
-	      break;
-	  }
-	  if ( k < 4 ) {
-	    for ( k = 0; k < 4; k++ ) {
-	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
-		   && !(nbs[k]&eps) && !(nbs[k]&u) ) {
-		break;
-	      }
-	    }
-	    if ( k == 4 ) {
-	      nconf( i, j ) = CMASK | e1;
-	      k = 3;
-	    }
-	  } else {
-	    k = 3;
-	  }
-	}
-	if ( k < 4 ) {
-	  // (T.2)(gamma)
-	  nconf( i, j ) = CMASK | ((state&e1)>>1);
-	}
-      } 
+       	// transistion rule (T.2) 
+       	for ( k = 0; k < 4; k++ ) { 
+       	  if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)  
+       	       && (nbs[k]&eps) && (nbs[k]&u) ) { 
+       	    // (T.2)(alpha) 
+       	    nconf( i, j ) = UMASK; 
+       	    break; 
+       	  } 
+       	} 
+       	if ( k == 4 ) { 
+       	  // (T.2)(beta) 
+       	  for( k = 0; k < 4; k++ ) { 
+       	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)  
+       		 && (nbs[k]&eps) && !(nbs[k]&u) ) 
+       	      break; 
+       	  } 
+       	  if ( k < 4 ) { 
+       	    for ( k = 0; k < 4; k++ ) { 
+       	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) 
+       	           && !(nbs[k]&eps) && !(nbs[k]&u) ) { 
+       		break; 
+       	      } 
+       	    } 
+       	    if ( k == 4 ) { 
+       	      nconf( i, j ) = CMASK | e1 | ((state&e1)>>1); 
+       	    } 
+       	  } else { 
+       	    k = 3; 
+       	  } 
+       	} 
+       	if ( k < 4 ) { 
+       	  // (T.2)(gamma) 
+       	  nconf( i, j ) = CMASK | ((state&e1)>>1); 
+       	}
+      }  
 
       else if ( U(state) ) {  // unexcitable state
 	// transition rule (T.3)
@@ -743,106 +901,71 @@ int code() {
         }
 	// (T.3)(beta)
 	// doesn' change the state
-      } 
+      }
       
-      else if ( S(state) ) { // sensitized state
-	if ( !(state&sc1)  ) {
-	  // transition rule (T.4)
-	  for ( k = 0; k < 4; k++ ) {
-	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
-	      // (T.4)(alpha)
-	      nconf( i, j ) = state | (s0<<(2-SC_UNSHIFT(state)));
-	      break;
-	    }
-	  }
-	  // (T.4)(beta)
-	  // doesn't change the state but the counter
-	  nconf( i, j ) += sc0;
-	} else {
-	  for ( k = 0; k < 4; k++ ) {
-	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
-	      // (T.4)(alpha)
-	      nconf( i, j ) = state | s0;
-	      break;
-	    }
-	  }
-	  if ( k < 4 ) {
-	    // make transition from sensitized to transmission or confluent state
-	    l = nconf( i, j );
-	    if ( (l & s) == s ) {
-	      nconf( i, j ) = CMASK; 
-	    } else {
-	      // other leaves of the S-to-T-transition tree of depth 3
-	      nconf( i, j ) = TMASK;
-	      l += s0;
-	      nconf( i, j ) |= (l&s)<<6;
+      else if ( S(state) ) { // sensitized state 
+       	if ( !(state&sc1)  ) { 
+       	  // transition rule (T.4) 
+       	  for ( k = 0; k < 4; k++ ) { 
+       	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) { 
+       	      // (T.4)(alpha) 
+       	      nconf( i, j ) = state | (s0<<(2-SC_UNSHIFT(state))); 
+       	      break; 
+       	    } 
+       	  } 
+       	  // (T.4)(beta) 
+       	  // doesn't change the state but the counter 
+       	  nconf( i, j ) += sc0; 
+       	} else {
+	  if ( state & sc == sc ) {
+	    for ( k = 0; k < 4; k++ ) { 
+	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) { 
+		nconf( i, j ) = TMASK | a0;
+		break; 
+	      } 
+	      if ( k == 4 ) {
+		nconf( i, j ) = TMASK;
+	      }
 	    }
 	  } else {
-	    // stay for another run
-	  }
-	}
-      }
-
+	    for ( k = 0; k < 4; k++ ) { 
+	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) { 
+		nconf( i, j ) = state | s0; 
+		break; 
+	      } 
+	    }
+	    if ( nconf( i, j ) & s ) { 
+	      // make transition from sensitized to transmission or confluent state 
+	      l = nconf( i, j ); 
+	      if ( (l & s) == s ) { 
+		nconf( i, j ) = CMASK;  
+	      } else { 
+		// other leaves of the S-to-T-transition tree of depth 3 
+		l += s0; 
+		nconf( i, j ) = TMASK | ((l&s)<<6); 
+	      } 
+	    }
+	  }// else { 
+       	    // stay for another run 
+	    //} 
+       	} 
+      } 
+      
       else  {
 	// this state is undefined!
-	return;
       }
-
     }
   }
-
-     
-
-
-
-      
-
-
-
+"""
 
         cconf = self.currConf
         nconf = self.nextConf
         sizeX = self.sizeX
         sizeY = self.sizeY
-# try to reduce varpreparation by using a datastructure with size, all statemasks
-# etc. and access it in the weavecode as array. 
-        weave.inline( vonNeumannCode, [ 'cconf', 'nconf', 'sizeX', 'rule'],
+        weave.inline( vonNeumannCode, [ 'cconf', 'nconf', 'sizeX', 'sizeY' ],
                       type_converters = converters.blitz,
                       compiler = 'gcc' )
         self.currConf = self.nextConf.copy()
-
-        
-        C00 = 0
-        C00 = 1
-        C01 = 2
-        C10 = 3
-        C11 = 4
-        S000 = 5
-        S00 = 6
-        S01 = 7
-        S0 = 8
-        S10 = 9
-        S11 = 10
-        S1 = 11
-        S = 12
-        T000 = 13
-        T001 = 14 
-        T010 = 15
-        T011 = 16
-        T020 = 17
-        T021 = 18
-        T030 = 19
-        T031 = 20
-        T100 = 21
-        T101 = 22
-        T110 = 23
-        T111 = 24
-        T120 = 25
-        T121 = 26
-        T130 = 27
-        T131 = 28
-        U = 29
-
 
 
 if __name__ == "__main__":

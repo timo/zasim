@@ -53,7 +53,7 @@ Simulation:
 import pygame
 import numpy as np
 from multiprocessing import Process, Pipe, Queue
-from CA import sandPile, catPile, binRule, ballPile, ballRule
+from CA import sandPile, catPile, binRule, ballPile, ballRule, vonNeumann
 import Histogram
 import sys 
 import time
@@ -94,6 +94,11 @@ class Simulator():
                 self.ca = ballPile( sizeX, sizeY, ballPile.INIT_RAND )
             else:
                 self.ca = ballPile( sizeX, sizeY, ballPile.INIT_ZERO )
+            self.display = Display.DisplayImages2D( self.ca.getSize(), float(scale),
+                                                    self.ca.palette, self.ca.getDim() )
+
+        elif CAType.upper() == "VONNEUMANN":
+            self.ca = vonNeumann( sizeX, sizeY )
             self.display = Display.DisplayImages2D( self.ca.getSize(), float(scale),
                                                     self.ca.palette, self.ca.getDim() )
 
@@ -415,7 +420,7 @@ def quit():
 
 
 def listCA():
-    print "Available CA: SandPile, BallPile, Binrule, Ballrule"
+    print "Available CA: SandPile, BallPile, Binrule, Ballrule, vonNeumann"
     sys.exit(0)
 
 if __name__ == "__main__":
@@ -451,7 +456,15 @@ if __name__ == "__main__":
         listCA()
         sys.exit(1)
 
+    if options.CAType.upper() not in ("SANDPILE", "BINRULE", "BALLPILE", "BALLRULE", "VONNEUMANN" ):
+        print "You didn't specify a correct type of cellular automaton."
+        print "You can get all supported types by passing the argument -l"
+        sys.exit(1)
+
     if options.CAType.upper() in ( "BINRULE", "BALLRULE" ):
+        if options.oneLiner == True:
+            # if only one line is displayed, space for displayed text messages is needed
+            options.sizeY = 2
         if not( 0 <= options.binRuleNr < 256):
             print "The binrule number has to be in [0,255]"
             sys.exit(0)
@@ -459,18 +472,12 @@ if __name__ == "__main__":
             if options.random == False:
                 print "Initialized to all-zero! Try option '-r' for randomized initialization"
             modCAType = options.CAType.upper()+str(options.binRuleNr)
-
-    elif options.CAType.upper() not in ("SANDPILE", "BINRULE", "BALLPILE", "BALLRULE" ):
-        print "You didn't specify a correct type of cellular automaton."
-        print "You can get all supported types by passing the argument -l"
-        sys.exit(1)
-
-    # if only one line is displayed, space for displayed text messages is needed
-    if options.CAType.upper() in ( "BINRULE", "BALLRULE" ) and options.oneLiner == True:
-        options.sizeY = 2
-
-    if options.CAType.upper() not in ( "BINRULE", "BALLRULE" ):
+    else:
         modCAType = options.CAType
+
+    if options.confFile != "" and not path.exists(options.confFile):
+        print "The given confFile you named does not exists! Exiting..."
+        sys.exit(1)
 
     # this Queue should be known to all subsequent processes...
     globalEventQueue = Queue()
