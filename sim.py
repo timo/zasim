@@ -67,43 +67,40 @@ class Simulator():
         self.oneLiner = oneLiner
         if CAType.upper() == "SANDPILE":
             if random:
-                self.ca = sandPile( sizeX, sizeY, sandPile.INIT_RAND )
+                self.ca = sandPile( sizeX, sizeY, sandPile.INIT_RAND, confFile )
             else:
-                self.ca = sandPile( sizeX, sizeY, sandPile.INIT_ZERO )
+                self.ca = sandPile( sizeX, sizeY, sandPile.INIT_ZERO, confFile )
             self.display = Display.DisplaySquares2D( self.ca.getSize(), float(scale),
                                                      self.ca.palette, self.ca.getDim() )
         elif CAType[0:7].upper() == "BINRULE":
             if random:
-                self.ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_RAND )
+                self.ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_RAND, confFile )
             else:
-                self.ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_ZERO )
+                self.ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_ZERO, confFile )
             self.display = Display.DisplaySquares1D( self.ca.getSize(), float(scale),
                                                    self.ca.palette, self.ca.getDim(),
                                                    self.oneLiner )
         elif CAType[0:8].upper() == "BALLRULE":
             if random:
-                self.ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_RAND )
+                self.ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_RAND, confFile )
             else:
-                self.ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_ZERO )
+                self.ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_ZERO, confFile )
             self.display = Display.DisplayImages1D( self.ca.getSize(), float(scale),
                                                     self.ca.palette, self.ca.getDim(),
                                                     self.oneLiner )
             
         elif CAType.upper() == "BALLPILE":
             if random:
-                self.ca = ballPile( sizeX, sizeY, ballPile.INIT_RAND )
+                self.ca = ballPile( sizeX, sizeY, ballPile.INIT_RAND, confFile )
             else:
-                self.ca = ballPile( sizeX, sizeY, ballPile.INIT_ZERO )
+                self.ca = ballPile( sizeX, sizeY, ballPile.INIT_ZERO, confFile )
             self.display = Display.DisplayImages2D( self.ca.getSize(), float(scale),
                                                     self.ca.palette, self.ca.getDim() )
 
         elif CAType.upper() == "VONNEUMANN":
-            self.ca = vonNeumann( sizeX, sizeY )
+            self.ca = vonNeumann( sizeX, sizeY, confFile )
             self.display = Display.DisplayImages2D( self.ca.getSize(), float(scale),
                                                     self.ca.palette, self.ca.getDim() )
-
-        if confFile != "":
-            self.ca.importConf( confFile )
 
         self.histograms = []
 #        self.histograms.append( Histogram.VBars( 8, 1600, self.ca.palette, self.ca.info ) )

@@ -96,13 +96,13 @@ class CA():
         return self.currConf
     
     def getDim( self ):
-        return 0
+        return self.dim
 
     def getSize( self ):
         return self.size
     
     def getTitle( self ):
-        return ""
+        return self.title
     
     def importConf( self, filename ):
         retVal = self.IMPORTOK
@@ -250,7 +250,8 @@ class binRule( CA ):
     palette = [ (0,0,0), (255,255,255) ]
 
     def __init__ ( self, ruleNr, sizeX, sizeY, initConf, filename="" ):
-
+        self.title = "Rule" + str( self.ruleNr )
+        self.dim = 1
         if not 0 <= ruleNr < 256:
             print "binRule only supports ruleNr between 0 and 255!"
             sys.exit(1)
@@ -272,13 +273,14 @@ class binRule( CA ):
             for i in range( sizeX ):
                 self.currConf[i,0] = random.randint( 0, 1 )
             self.nextConf = self.currConf.copy()
-        elif initConf == INIT_FILE and filename != "":
-            self.importConf( filename )
         else:
             print "The initflag you've provided isn't available for the binRule-CA"
             print "Available initflags:"
             print "INIT_ZERO, INIT_ONES, INIT_RAND, INIT_FILE + filename"
             sys.exit(1)
+        
+        if filename != "":
+            self.importConf( filename )
 
         # init the rule
         self.ruleIdx = np.zeros( 8, int )
@@ -286,13 +288,6 @@ class binRule( CA ):
             if ( self.ruleNr & ( 1 << i ) ):
                 self.ruleIdx[i] = 1
 
-
-    def getDim( self ):
-        return 1
-    
-    def getTitle( self ):
-        return "Rule" + str( self.ruleNr )
-    
     def loopFunc( self ):
         self.step()
 
@@ -375,6 +370,8 @@ class sandPile( CA ):
              "state 4", "state 5", "state 6", "state 7" )
     
     def __init__( self, sizeX, sizeY, initConf, filename="" ):
+        self.dim = 2
+        self.title = "Sandpile"
         self.size = self.sizeX,self.sizeY = sizeX,sizeY
 
         self.histogram = np.zeros( 8, int ) 
@@ -391,13 +388,14 @@ class sandPile( CA ):
                     self.currConf[ x, y ] = c
                     self.histogram[ c ] += 1
             self.nextConf = self.currConf.copy()
-        elif initConf == self.INIT_FILE and filename != "":
-            self.importConf( filename )
         else:
             print "The initflag you've provided isn't available for the sandPile-CA"
             print "Available initflags:"
             print "INIT_ZERO, INIT_RAND, INIT_FILE + filename"
             sys.exit(1)
+
+        if filename != "":
+            self.importConf( filename )
             
     def addGrain( self, x, y ):
         if not ( (x > self.sizeX - 1) or (y > self.sizeY - 1) ):
@@ -420,9 +418,6 @@ class sandPile( CA ):
             if e.button == 3:
                 self.setState( x, y, 0 )
         
-    def getDim ( self ):
-        return 2
-
     def getHistogram( self ):
         # making histogram
         # 
@@ -433,10 +428,6 @@ class sandPile( CA ):
                                        bins=np.arange(8), 
                                        normed=True )[0]
         return self.histogram
-
-        
-    def getTitle( self ):
-        return "SandPile"
 
     def loopFunc( self ):
         self.addGrainRandomly()
@@ -553,18 +544,23 @@ class ballPile( sandPile ):
 class vonNeumann ( CA ):
     palette = []
     
-    def __init__( self, sizeX, sizeY ):
+    def __init__( self, sizeX, sizeY, confFile ):
+        self.title = "vonNeumann"
+        self.dim = 2
         self.size = self.sizeX, self.sizeY = sizeX, sizeY
 
         # as usual, these two arrays contain the real configuration, that is used
         # in every step ...
         self.currConf = np.zeros( (sizeX, sizeY), int )
         self.nextConf = np.zeros( (sizeX, sizeY), int )
+        if confFile != "":
+            self.importConf( confFile )
+            self.nextConf = self.currConf.copy()
         # ... but in this CA the states are not enumerable from 0..28, but scattered 
         # between 0..~2^13, so we need a dict (see below) to map the states to 0..28, 
         # so the Display-module can display states without knowing the difference
-        self.displayConf = np.zeros( (sizeX, sizeY), int)
-
+        self.displayConf = np.zeros( self.size, int)
+        
         pygame.init()
         pygame.display.set_mode( self.size, 0, 8 )
 
@@ -660,8 +656,8 @@ class vonNeumann ( CA ):
         self.states = []
         self.states.append(0)
         self.states.append(2048)
-        self.states.append(2050)
         self.states.append(2049)
+        self.states.append(2050)
         self.states.append(2051)
         self.states.append(4192)
         self.states.append(4160)
@@ -698,35 +694,33 @@ class vonNeumann ( CA ):
             x,y = e.pos
             state = self.states[self.displayConf[x][y]]
             mods = pygame.key.get_mods()
-            if 0 == state:
-                stateStr = "U"
-            elif 2048 <= state <= 2051:
-                stateStr = "C"
-            elif 4096 <= state <= 4192:
-                stateStr = "S"
-            elif 6144 <= state <= 8064:
-                stateStr = "T"
-
+            s = 0
             if e.button == 1:
+                # T-states
+                s = 6144
                 if mods & pygame.KMOD_LCTRL:
-                    stateStr = "T10"
-                else:
-                    stateStr = "T00"
+                    # eps
+                    s += 128
                 if mods & pygame.KMOD_LSHIFT:
-                    stateStr += "1"
-                else:
-                    stateStr += "0"
-                
-                indirState = state | (state&1024) | (state&128)
-                newState = indirState | ((state+256)&768)
-                    
-
-                self.currConf[x][y] = newState#self.nameStateDict[newStateStr]
-            if e.button == 2:
-                self.currConf[x][y] = self.nameStateDict["T111"]
+                    # u
+                    s += 1024
+                s += (((state&768)+256) & 768)
+                self.currConf[x][y] = s
             if e.button == 3:
-                self.currConf[x][y] = self.nameStateDict["C11"]
-        
+                if mods & pygame.KMOD_LCTRL:
+                    # C-states
+                    s = 2048
+                    s += (((state&3)+1) & 3)
+                elif mods & pygame.KMOD_LSHIFT:
+                    # S-states
+                    s = 4192
+                    if (state & 4096) != 0:
+                        s += (((state&28)+4) & 28)
+                else:
+                    # U-state
+                    s = 0
+                self.currConf[x][y] = s
+            
 
     def getConf( self ):
         for i in range( 1, self.sizeX-1 ):
@@ -737,15 +731,21 @@ class vonNeumann ( CA ):
                     print i, j, ":", self.currConf[i][j]
         return self.displayConf
 
-    def getDim( self ):
-        return 2
-
-    def getTitle( self ):
-        return "vonNeumann"
 
     def loopFunc( self ):
         self.step()
 
+    def resize( self, sizeX, sizeY = None ):
+        CA.resize( self, sizeX, sizeY )
+        self.displayConf = np.zeros( self.size, int )
+
+    def setConf( self, conf ):
+        if conf.size != self.currConf.size:
+            self.resize( conf[0].size, conf[1].size )
+        for i in range( 1, self.sizeX-1 ):
+            for j in range( 1, self.sizeY-1 ):
+                self.currConf[i][j] = self.states[conf[i][j]]
+        
     def step( self ):
         self.updateAllCellsWeaveInline()
 
@@ -819,7 +819,7 @@ class vonNeumann ( CA ):
       if ( T(state) ) { // transmission state
 	// transisition rule (T.1):
 	for ( k = 0; k < 4; k++ ) {
-	  if ( T(nbs[k]) && ( abs(k-(A_UNSHIFT(nbs[k]))) == 2) 
+	  if ( T(nbs[k]) && ( abs(k-(A_UNSHIFT(nbs[k]))) == 2)
 	       && ((nbs[k]&u) != (state&u)) && (nbs[k]&eps)  ) {
 	    // (T.1)(alpha)
 	    nconf( i, j ) = UMASK;
@@ -830,14 +830,14 @@ class vonNeumann ( CA ):
 	if ( k == 4 ) {
 	  // (T.1)(beta)
 	  for ( k = 0; k < 4; k++ ) {
-	    if ( T(nbs[k]) && (abs((A_UNSHIFT(nbs[k]))-(A_UNSHIFT(state))) != 2) 
+	    if ( T(nbs[k]) && (abs((A_UNSHIFT(nbs[k]))-(A_UNSHIFT(state))) != 2)
                  && (abs(k-(A_UNSHIFT(nbs[k]))) == 2)
 		 && ((nbs[k]&u) == (state&u) ) && (nbs[k]&eps) ) {
 	      // (T.1)(beta)(a)
 	      nconf( i, j ) = state | eps;
 	      break;
 	    }
-	    if ( C(nbs[k]) && (nbs[k]&e0) && (abs(k-(A_UNSHIFT(state))) == 2) ) {
+	    if ( C(nbs[k]) && (nbs[k]&e0) && (k-(A_UNSHIFT(state)) != 0) ) {
 	      // (T.1)(beta)(b)
 	      nconf( i, j ) = state | eps;
 	      break;
@@ -851,44 +851,42 @@ class vonNeumann ( CA ):
       } // end of T(state)
 
 
-
-      
       else if ( C(state) ) { // confluent state
-       	// transistion rule (T.2) 
-       	for ( k = 0; k < 4; k++ ) { 
-       	  if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)  
-       	       && (nbs[k]&eps) && (nbs[k]&u) ) { 
-       	    // (T.2)(alpha) 
-       	    nconf( i, j ) = UMASK; 
-       	    break; 
-       	  } 
-       	} 
-       	if ( k == 4 ) { 
-       	  // (T.2)(beta) 
-       	  for( k = 0; k < 4; k++ ) { 
-       	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)  
-       		 && (nbs[k]&eps) && !(nbs[k]&u) ) 
-       	      break; 
-       	  } 
-       	  if ( k < 4 ) { 
-       	    for ( k = 0; k < 4; k++ ) { 
-       	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) 
-       	           && !(nbs[k]&eps) && !(nbs[k]&u) ) { 
-       		break; 
-       	      } 
-       	    } 
-       	    if ( k == 4 ) { 
-       	      nconf( i, j ) = CMASK | e1 | ((state&e1)>>1); 
-       	    } 
-       	  } else { 
-       	    k = 3; 
-       	  } 
-       	} 
-       	if ( k < 4 ) { 
-       	  // (T.2)(gamma) 
-       	  nconf( i, j ) = CMASK | ((state&e1)>>1); 
+       	// transistion rule (T.2)
+       	for ( k = 0; k < 4; k++ ) {
+       	  if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+       	       && (nbs[k]&eps) && (nbs[k]&u) ) {
+       	    // (T.2)(alpha)
+       	    nconf( i, j ) = UMASK;
+       	    break;
+       	  }
        	}
-      }  
+       	if ( k == 4 ) {
+       	  // (T.2)(beta)
+       	  for( k = 0; k < 4; k++ ) {
+       	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+       		 && (nbs[k]&eps) && !(nbs[k]&u) )
+       	      break;
+       	  }
+       	  if ( k < 4 ) {
+       	    for ( k = 0; k < 4; k++ ) {
+       	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+       	           && !(nbs[k]&eps) && !(nbs[k]&u) ) {
+       		break;
+       	      }
+       	    }
+       	    if ( k == 4 ) {
+       	      nconf( i, j ) = CMASK | e1 | ((state&e1)>>1);
+       	    }
+       	  } else {
+       	    k = 3; 
+       	  }
+       	}
+       	if ( k < 4 ) {
+       	  // (T.2)(gamma)
+       	  nconf( i, j ) = CMASK | ((state&e1)>>1);
+       	}
+      }
 
       else if ( U(state) ) {  // unexcitable state
 	// transition rule (T.3)
@@ -902,55 +900,58 @@ class vonNeumann ( CA ):
 	// (T.3)(beta)
 	// doesn' change the state
       }
-      
-      else if ( S(state) ) { // sensitized state 
-       	if ( !(state&sc1)  ) { 
-       	  // transition rule (T.4) 
-       	  for ( k = 0; k < 4; k++ ) { 
-       	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) { 
-       	      // (T.4)(alpha) 
-       	      nconf( i, j ) = state | (s0<<(2-SC_UNSHIFT(state))); 
-       	      break; 
-       	    } 
-       	  } 
-       	  // (T.4)(beta) 
-       	  // doesn't change the state but the counter 
-       	  nconf( i, j ) += sc0; 
+
+
+      else if ( S(state) ) { // sensitized state
+       	if ( !(state&sc1)  ) {
+       	  // transition rule (T.4)
+       	  for ( k = 0; k < 4; k++ ) {
+       	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+       	      // (T.4)(alpha)
+       	      nconf( i, j ) = state | (s0<<(2-SC_UNSHIFT(state)));
+       	      break;
+       	    }
+       	  }
+       	  // (T.4)(beta)
+       	  // doesn't change the state but the counter
+       	  nconf( i, j ) += sc0;
        	} else {
-	  if ( state & sc == sc ) {
-	    for ( k = 0; k < 4; k++ ) { 
-	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) { 
+	  if ( (state&sc) == sc ) {
+	    for ( k = 0; k < 4; k++ ) {
+	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
 		nconf( i, j ) = TMASK | a0;
-		break; 
-	      } 
-	      if ( k == 4 ) {
-		nconf( i, j ) = TMASK;
+		break;
 	      }
+            }
+	    if ( k == 4 ) {
+              nconf( i, j ) = TMASK;
 	    }
 	  } else {
-	    for ( k = 0; k < 4; k++ ) { 
-	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) { 
-		nconf( i, j ) = state | s0; 
-		break; 
-	      } 
+	    for ( k = 0; k < 4; k++ ) {
+	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+		nconf( i, j ) = state | s0;
+		break;
+	      }
 	    }
-	    if ( nconf( i, j ) & s ) { 
-	      // make transition from sensitized to transmission or confluent state 
-	      l = nconf( i, j ); 
-	      if ( (l & s) == s ) { 
-		nconf( i, j ) = CMASK;  
-	      } else { 
-		// other leaves of the S-to-T-transition tree of depth 3 
-		l += s0; 
-		nconf( i, j ) = TMASK | ((l&s)<<6); 
-	      } 
+            nconf( i, j ) += sc0;
+
+	    if ( nconf( i, j ) & s ) {
+	      // make transition from sensitized to transmission or confluent state
+	      l = nconf( i, j );
+	      if ( (l & s) == s ) {
+		nconf( i, j ) = CMASK;
+	      } else {
+		// other leaves of the S-to-T-transition tree of depth 3
+		l += s0;
+		nconf( i, j ) = TMASK | ((l&s)<<6);
+	      }
 	    }
-	  }// else { 
-       	    // stay for another run 
-	    //} 
-       	} 
-      } 
-      
+	  }// else {
+       	    // stay for another run
+	    //}
+       	}
+      }
+
       else  {
 	// this state is undefined!
       }
