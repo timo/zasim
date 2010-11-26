@@ -107,7 +107,7 @@ class Display():
 
     ## Get the size of the CA being displayed
     def getSize( self ):
-        pass
+        return self.size
 
     ## A kind of commandline that is displayed as HUD
     def getUserInputKey( self, msg="$> ", default="", fileHandling=False ):

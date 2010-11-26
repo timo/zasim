@@ -60,67 +60,73 @@ import time
 from os import path, getcwd, chdir, listdir, path, system
 import optparse
 import Display
-
+from copy import deepcopy
 
 class Simulator():
     def __init__( self, CAType, confFile, random, sizeX, sizeY, scale, oneLiner ):
         self.oneLiner = oneLiner
-        if CAType.upper() == "SANDPILE":
-            if random:
-                self.ca = sandPile( sizeX, sizeY, sandPile.INIT_RAND, confFile )
-            else:
-                self.ca = sandPile( sizeX, sizeY, sandPile.INIT_ZERO, confFile )
-            self.display = Display.DisplaySquares2D( self.ca.getSize(), float(scale),
-                                                     self.ca.palette, self.ca.getDim() )
-        elif CAType[0:7].upper() == "BINRULE":
-            if random:
-                self.ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_RAND, confFile )
-            else:
-                self.ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_ZERO, confFile )
-            self.display = Display.DisplaySquares1D( self.ca.getSize(), float(scale),
-                                                   self.ca.palette, self.ca.getDim(),
-                                                   self.oneLiner )
-        elif CAType[0:8].upper() == "BALLRULE":
-            if random:
-                self.ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_RAND, confFile )
-            else:
-                self.ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_ZERO, confFile )
-            self.display = Display.DisplayImages1D( self.ca.getSize(), float(scale),
-                                                    self.ca.palette, self.ca.getDim(),
-                                                    self.oneLiner )
-            
-        elif CAType.upper() == "BALLPILE":
-            if random:
-                self.ca = ballPile( sizeX, sizeY, ballPile.INIT_RAND, confFile )
-            else:
-                self.ca = ballPile( sizeX, sizeY, ballPile.INIT_ZERO, confFile )
-            self.display = Display.DisplayImages2D( self.ca.getSize(), float(scale),
-                                                    self.ca.palette, self.ca.getDim() )
-
-        elif CAType.upper() == "VONNEUMANN":
-            self.ca = vonNeumann( sizeX, sizeY, confFile )
-            self.display = Display.DisplayImages2D( self.ca.getSize(), float(scale),
-                                                    self.ca.palette, self.ca.getDim() )
-
+        self.scale = scale
         self.histograms = []
 #        self.histograms.append( Histogram.VBars( 8, 1600, self.ca.palette, self.ca.info ) )
 
+        self.caDict = { (CAType.upper(), (sizeX, sizeY)): self.getNewCA( CAType, confFile, random, sizeX, sizeY, scale, oneLiner) }
+        self.ca, self.display = self.caDict[ (CAType.upper(), (sizeX, sizeY)) ]
 
-        self.markedConfs = []
-        self.markedConfNames = []
+        self.caConfDict = { (CAType, (sizeX, sizeY) ): ([],[]) }
+
         self.delayGranularity = 3
         self.currDelay = 0
 
+    def getNewCA( self, CAType, confFile, random, sizeX, sizeY, scale, oneLiner ):
+        if CAType.upper() == "SANDPILE":
+            if random:
+                ca = sandPile( sizeX, sizeY, sandPile.INIT_RAND, confFile )
+            else:
+                ca = sandPile( sizeX, sizeY, sandPile.INIT_ZERO, confFile )
+            display = Display.DisplaySquares2D( ca.getSize(), float(scale),
+                                                ca.palette, ca.getDim() )
+        elif CAType[0:7].upper() == "BINRULE":
+            if random:
+                ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_RAND, confFile )
+            else:
+                ca = binRule( int(CAType[7:]), sizeX, sizeY, binRule.INIT_ZERO, confFile )
+            display = Display.DisplaySquares1D( ca.getSize(), float(scale),
+                                                ca.palette, ca.getDim(),
+                                                self.oneLiner )
+        elif CAType[0:8].upper() == "BALLRULE":
+            if random:
+                ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_RAND, confFile )
+            else:
+                ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_ZERO, confFile )
+            display = Display.DisplayImages1D( ca.getSize(), float(scale),
+                                               ca.palette, ca.getDim(),
+                                               self.oneLiner )
+            
+        elif CAType.upper() == "BALLPILE":
+            if random:
+                ca = ballPile( sizeX, sizeY, ballPile.INIT_RAND, confFile )
+            else:
+                ca = ballPile( sizeX, sizeY, ballPile.INIT_ZERO, confFile )
+            display = Display.DisplayImages2D( ca.getSize(), float(scale),
+                                               ca.palette, ca.getDim() )
+
+        elif CAType.upper() == "VONNEUMANN":
+            ca = vonNeumann( sizeX, sizeY, confFile )
+            display = Display.DisplayImages2D( ca.getSize(), float(scale),
+                                               ca.palette, ca.getDim() )
+        return (ca, display)
         
     def start( self ):
         loop = False
         delay = 0
         showStepCount = True
         stepCounter = 0
-        markedConfIdx = 0
-        self.markedConfs.append( self.ca.getConf().copy() )
-        self.markedConfNames.append( "init" )
+        markedConfIdxDict = { (self.ca.getType(), self.ca.getSize()): 0 }
+        self.caConfDict[(self.ca.getType(), self.ca.getSize())] = [(self.ca.getConf().copy(),self.ca.getType() + ": init")]
+        self.caKeys = [(self.ca.getType(), self.ca.getSize())]
+        keyIdx = 0
         pygame.key.set_repeat( 700, 100 )
+
         while 1:
             # note:
             # Modifier like CTRL, SHIFT and ALT only work with conditions
@@ -180,12 +186,17 @@ class Simulator():
                         print CASimulatorHelp
 
                     elif e.unicode == "m":
+#                        self.display.setText( "Marked configuration " + 
+#                                              str(len(self.markedConfs)) )
                         self.display.setText( "Marked configuration " + 
-                                              str(len(self.markedConfs)) )
-                        self.markedConfs.append( self.ca.getConf().copy() )
+                                              str(len(self.caConfDict[(self.ca.getType(), 
+                                                                       self.ca.getSize())])) )
                         confName = self.display.getUserInputKey(
                             msg="Set name for marked conf", default="" )
-                        self.markedConfNames.append( confName )
+                        self.caConfDict[(self.ca.getType(), 
+                                         self.ca.getSize())].append((self.ca.getConf().copy(),confName))
+#                        self.markedConfs.append( self.ca.getConf().copy() )
+#                        self.markedConfNames.append( confName )
                         self.display.drawConf( self.ca.getConf(), True )
                         loop = False
                         
@@ -225,22 +236,29 @@ class Simulator():
                                     break
                             if ( filename != "" and
                                  filename != "Conf_<Title>_<SizeX>x<SizeY>_<Number>.cnf" ):
-                                    
-                                ret = self.ca.importConf( filename )
-                                if ret == self.ca.IMPORTOK:
-                                    self.display.setText( "Opened file" + filename )
-                                elif ret == self.ca.SIZECHANGED:
-#                                    print self.ca.getSize()
-                                    self.display.__init__( self.ca.getSize(), self.display.scale, 
-                                                           self.ca.palette, self.display.dim )
-                                elif ret == self.ca.WRONGCA:
-                                    print "WRONGCA"
-                                    sys.exit(1)
-                                    pass
-                                elif ret == self.ca.IMPORTNOTOK:
-                                    print "IMPORTNOTOK"
-                                    sys.exit(1)
-                                    pass
+                                with open ( filename, "r" ) as fileHandle:
+                                    lineList = fileHandle.readlines()
+                                    fileHandle.close()
+                                    sizeX = int(lineList[0])
+                                    if lineList[1][0] != "(":
+                                        sizeY = int(lineList[1])
+                                        oneLiner = False
+                                    else:
+                                        sizeY = 2
+                                        oneLiner = True
+                                    CAType = lineList[-1][:-1]
+                                    if (CAType.upper(), (sizeX,sizeY)) in self.caDict:
+                                        self.ca, self.display = self.caDict[ (CAType.upper(), (sizeX,sizeY)) ]
+                                        self.ca.importConf( filename )
+                                        self.caConfDict[(CAType.upper(), (sizeX,sizeY))].append( (self.ca.getConf().copy, CAType + ": init" ) )
+                                        markedConfIdxDict[(self.ca.getType(), self.ca.getSize())] = len( self.caConfDict[(CAType.upper(), (sizeX,sizeY))] )
+                                    else:
+                                        self.caDict[(CAType.upper(), (sizeX, sizeY))] = self.getNewCA( CAType, filename, False, sizeX, sizeY, self.scale, oneLiner )
+                                        self.ca, self.display = self.caDict[ (CAType.upper(), (sizeX, sizeY)) ]
+                                        pygame.display.set_mode( self.display.screenSize, 0, 8 )
+                                        
+                                        self.caConfDict[(CAType.upper(), (sizeX, sizeY) )] = [(self.ca.getConf().copy(),CAType + ": init")]
+                                        markedConfIdxDict[(self.ca.getType(), self.ca.getSize())] = 0
                             else:
                                 self.display.drawConf( self.ca.getConf(), True )
                                 self.display.setText( "Cancelled" )
@@ -310,7 +328,19 @@ class Simulator():
 
                     elif e.key == pygame.K_RIGHT or e.key == pygame.K_LEFT \
                             or e.key == pygame.K_UP or e.key == pygame.K_DOWN:
-                        self.display.scroll( e.key )
+                        
+                        mod = pygame.key.get_mods()
+                        if mod & pygame.KMOD_LCTRL and mod & pygame.KMOD_LSHIFT:
+                            if e.key == pygame.K_RIGHT:
+                                keyIdx = (keyIdx+1)%len(self.caKeys)
+                            elif e.key == pygame.K_LEFT:
+                                keyIdx = (keyIdx-1)%len(self.caKeys)
+                            key = self.caKeys[keyIdx]
+                            self.ca, self.display = self.caDict[key]
+                            self.ca.setConf( self.caConfDict[key][markedConfIdxDict[key]][0] )
+
+                        else:
+                            self.display.scroll( e.key )
 
                     elif e.key == pygame.K_SPACE:
                         loop = not(loop)
@@ -324,44 +354,66 @@ class Simulator():
                     elif e.key == pygame.K_TAB:
                         loop = False
                         mod = pygame.key.get_mods()
+                        key = (self.ca.getType(), self.ca.getSize())
                         if mod & pygame.KMOD_LCTRL and mod & pygame.KMOD_SHIFT:
-                            confName = self.display.getUserInputKey(
-                                msg = "Name this conf:", default=self.markedConfNames[markedConfIdx] )
-                            if confName != "":
-                                self.markedConfNames[markedConfIdx] = confName
-                        elif mod & pygame.KMOD_SHIFT:
-                            markedConfIdx=(markedConfIdx-1)%len(self.markedConfs)
-                            if self.markedConfNames[markedConfIdx] == "":
-                                self.display.setText( "Load marked conf " 
-                                                      + str(markedConfIdx) )
-                            else:
-                                self.display.setText( "Load marked conf " 
-                                                      + self.markedConfNames[markedConfIdx] )
-                            self.ca.setConf( self.markedConfs[markedConfIdx] )
-                            confChanged = False
-                        elif mod & pygame.KMOD_LCTRL:
-                            if len(self.markedConfs) > 1 and not confChanged:
-                                self.markedConfs.pop(markedConfIdx)
-                                self.markedConfNames.pop(markedConfIdx)
-                                self.display.setText( "Kill conf " 
-                                                     + str(markedConfIdx) )
-                                markedConfIdx=(markedConfIdx-1)%len(self.markedConfs)
-                        else:
-                            markedConfIdx=(markedConfIdx+1)%len(self.markedConfs)
-                            if self.markedConfNames[markedConfIdx] == "":
-                                self.display.setText( "Load marked conf " 
-                                                      + str(markedConfIdx) )
-                            else:
-                                self.display.setText( "Load marked conf " 
-                                                      + self.markedConfNames[markedConfIdx] )
-                            self.ca.setConf( self.markedConfs[markedConfIdx] )
-                            confChanged = False
-                        if self.ca.getSize() != self.display.getSize():
-                            self.display.__init__( self.ca.getSize(), 
-                                                   self.display.scale, 
-                                                   self.ca.palette, 
-                                                   self.display.dim )
+#                            confName = self.display.getUserInputKey(
+#                                msg = "Name this conf:", default=self.markedConfNames[markedConfIdx] )
+#                            if confName != "":
+#                                self.markedConfNames[markedConfIdx] = confName
 
+                                        
+#                            self.caConfDict[(CAType.upper(), (sizeX, sizeY) )] = [([self.ca.getConf().copy()],[CAType + ": init"])]
+#                            markedConfIdxDict[(self.ca.getType(), self.ca.getSize())] = 0
+                            confName = self.display.getUserInputKey(
+                                msg = "Name this conf:", default=self.caConfDict[key][markedConfIdxDict[key]][1] )
+                            if confName == "":
+                                confName = "Conf no. " + len(self.caConfDict[key])
+                            self.caConfDict[key][markedConfIdxDict[key]][1] = confName
+
+
+                        elif mod & pygame.KMOD_SHIFT:
+                            markedConfIdxDict[key] = (markedConfIdxDict[key]-1)%len(self.caConfDict[key])
+                            self.display.setText( "Load marked conf " 
+                                                  + self.caConfDict[key][markedConfIdxDict[key]][1] )
+                            self.ca.setConf( self.caConfDict[key][markedConfIdxDict[key]][0] )
+#                            markedConfIdx=(markedConfIdx-1)%len(self.markedConfs)
+#                            self.display.setText( "Load marked conf " 
+#                                                  + self.markedConfNames[markedConfIdx] )
+#                            self.ca.setConf( self.markedConfs[markedConfIdx] )
+                            confChanged = False
+
+                        elif mod & pygame.KMOD_LCTRL:
+                            if len(self.caConfDict[key]) > 1 and not confChanged:
+                                self.caConfDict[key].pop(markedConfIdxDict[key])
+                                self.display.setText( "Kill conf " 
+                                                     + self.caConfDict[key][markedConfIdxDict[key]][1] )
+                                markedConfIdxDict[key]=(markedConfIdxDict[key]-1)%len(self.caConfDict[key])
+#                            if len(self.markedConfs) > 1 and not confChanged:
+#                                self.markedConfs.pop(markedConfIdx)
+#                                self.markedConfNames.pop(markedConfIdx)
+#                                self.display.setText( "Kill conf " 
+#                                                     + str(markedConfIdx) )
+#                                markedConfIdx=(markedConfIdx-1)%len(self.markedConfs)
+
+                        else:
+                            markedConfIdxDict[key]=(markedConfIdxDict[key]+1)%len(self.caConfDict[key])
+                            self.ca, self.display = self.caDict[key]
+#                            self.display.setText( "Load marked conf " 
+#                                                  + self.caConfDict[key][markedConfIdxDict[key]][1] )
+                            self.ca.setConf( self.caConfDict[key][markedConfIdxDict[key]][0] )
+                            confChanged = False
+
+#                            markedConfIdx=(markedConfIdx+1)%len(self.markedConfs)
+#                            if self.markedConfNames[markedConfIdx] == "":
+#                                self.display.setText( "Load marked conf " 
+#                                                      + str(markedConfIdx) )
+#                            else:
+#                                self.display.setText( "Load marked conf " 
+#                                                      + self.markedConfNames[markedConfIdx] )
+#                            self.ca.setConf( self.markedConfs[markedConfIdx] )
+#                            confChanged = False
+#                        self.display = self.markedConfDisplays[markedConfIdx][0]
+#                        self.ca = self.markedConfDisplays[markedConfIdx][1]
             
             if not globalEventQueue.empty():
                 for e in globalEventQueue.get():

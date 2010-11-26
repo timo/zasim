@@ -52,7 +52,8 @@ class CA():
             else:
                 for i in range(self.sizeX):
                     f.write( "(" + str(self.currConf[i][0]) + ")" )
-                f.write( "\n" )                             
+                f.write( "\n" )
+            f.write( self.getType() + "\n" )
             f.close()
 
     def exportConfAnnotatedLines( self, filename ):
@@ -91,6 +92,9 @@ class CA():
                 # end-tag
                 f.write( "###\n" )
                 f.close()
+
+    def getType( self ):
+        return self.title.upper()
 
     def getConf( self ):
         return self.currConf
@@ -236,11 +240,6 @@ class CA():
             self.nextConf = np.zeros( self.size, int )
         
     def setConf( self, conf ):
-        if conf.size != self.currConf.size:
-            if self.getDim() == 1:
-                self.resize( conf[0].size )
-            elif self.getDim() == 2:
-                self.resize( conf[0].size, conf[1].size )
         self.currConf = conf.copy()
         self.nextConf = conf.copy()
 
@@ -287,6 +286,9 @@ class binRule( CA ):
         for i in range( 8 ):
             if ( self.ruleNr & ( 1 << i ) ):
                 self.ruleIdx[i] = 1
+
+    def getType( self ):
+        return self.title.upper() + str(self.ruleNr)
 
     def loopFunc( self ):
         self.step()
@@ -335,6 +337,7 @@ class ballRule( binRule ):
     palette=[]
     def __init__( self, ruleNr, sizeX, sizeY, initConf, filename="" ):
         binRule.__init__( self, ruleNr, sizeX, sizeY, initConf, filename="" )
+        self.title = "ballRule"
 
         pygame.init()
         pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
@@ -504,7 +507,7 @@ class catPile( sandPile ):
     def readImage( self, filename ):
         dummy_data = Image.open(filename)
         dummy_data = dummy_data.convert("I")
-
+        
         image = fromimage(dummy_data)
         for i in range(len(image)):
             for j in range(len(image[0])):
@@ -529,10 +532,11 @@ class ballPile( sandPile ):
         pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
 
         self.palette = []
-        for filename in ( "images/balls/ball_black.png", "images/balls/ball_red.png"   , 
-                          "images/balls/ball_blue.png" , "images/balls/ball_orange.png",
-                          "images/balls/ball_green.png", "images/balls/ball_pink.png"  , 
-                          "images/balls/ball_grey.png" , "images/balls/ball_white.png"  ):
+        for filename in ( 
+            "images/balls/ball_black.png", "images/balls/ball_red.png" , 
+            "images/balls/ball_blue.png" , "images/balls/ball_orange.png",
+            "images/balls/ball_green.png", "images/balls/ball_pink.png" , 
+            "images/balls/ball_grey.png" , "images/balls/ball_white.png" ):
             img = pygame.image.load( filename ).convert()
             self.palette.append( img )
 
@@ -582,112 +586,51 @@ class vonNeumann ( CA ):
             img = pygame.image.load( imgFile ).convert()
             self.palette.append( img )
 
-        self.displayableStateDict = {}
-        # U
-        self.displayableStateDict[0] = 0    #U
-        # C
-        self.displayableStateDict[2048] = 1 #C00   2048
-        self.displayableStateDict[2049] = 2 #C10   2048+1
-        self.displayableStateDict[2050] = 3 #C01   2048+2
-        self.displayableStateDict[2051] = 4 #C11   2048+3
-        # S
-        self.displayableStateDict[4192] = 5  #S000 4096+96
-        self.displayableStateDict[4160] = 6  #S00  4096+64
-        self.displayableStateDict[4168] = 7  #S01  4096+64+8
-        self.displayableStateDict[4128] = 8  #S0   4096+32
-        self.displayableStateDict[4176] = 9  #S10  4096+64+16
-        self.displayableStateDict[4184] = 10 #S11  4096+64+16+8
-        self.displayableStateDict[4144] = 11 #S1   4096+32+16
-        self.displayableStateDict[4096] = 12 #S    4096
-        # T
-        self.displayableStateDict[6144] = 13 #T000 6144
-        self.displayableStateDict[6272] = 14 #T001 6144+128
-        self.displayableStateDict[6400] = 15 #T010 6144+256
-        self.displayableStateDict[6528] = 16 #T011 6144+128+256
-        self.displayableStateDict[6656] = 17 #T020 6144+512
-        self.displayableStateDict[6784] = 18 #T021 6144+128+512
-        self.displayableStateDict[6912] = 19 #T030 6144+256+512
-        self.displayableStateDict[7040] = 20 #T031 6144+128+256+512
-        self.displayableStateDict[7168] = 21 #T100 6144+1024
-        self.displayableStateDict[7296] = 22 #T101 6144+128+1024
-        self.displayableStateDict[7424] = 23 #T110 6144+256+1024
-        self.displayableStateDict[7552] = 24 #T111 6144+128+256+1024
-        self.displayableStateDict[7680] = 25 #T120 6144+512+1024
-        self.displayableStateDict[7808] = 26 #T121 6144+128+512+1024
-        self.displayableStateDict[7936] = 27 #T130 6144+256+512+1024
-        self.displayableStateDict[8064] = 28 #T131 6144+128+256+1024+512
+        self.displayableStateDict = { 
+            0: 0,     # U 
+            2048: 1,  #C00   2048
+            2049: 2,  #C10   2048+1
+            2050: 3,  #C01   2048+2
+            2051: 4,  #C11   2048+3
+            4192: 5,  #S000  4096+96
+            4160: 6,  #S00   4096+64
+            4168: 7,  #S01   4096+64+8
+            4128: 8,  #S0    4096+32
+            4176: 9,  #S10   4096+64+16
+            4184: 10, #S11   4096+64+16+8
+            4144: 11, #S1    4096+32+16
+            4096: 12, #S     4096
+            6144: 13, #T000  6144
+            6272: 14, #T001  6144+128
+            6400: 15, #T010  6144+256
+            6528: 16, #T011  6144+128+256
+            6656: 17, #T020  6144+512
+            6784: 18, #T021  6144+128+512
+            6912: 19, #T030  6144+256+512
+            7040: 20, #T031  6144+128+256+512
+            7168: 21, #T100  6144+1024
+            7296: 22, #T101  6144+128+1024
+            7424: 23, #T110  6144+256+1024
+            7552: 24, #T111  6144+128+256+1024
+            7680: 25, #T120  6144+512+1024
+            7808: 26, #T121  6144+128+512+1024
+            7936: 27, #T130  6144+256+512+1024
+            8064: 28, #T131  6144+128+256+1024+512
+            }
 
-        self.nameStateDict = {}
-        # U
-        self.nameStateDict["U"] = 0
-        # C
-        self.nameStateDict["C00"] = 2048
-        self.nameStateDict["C10"] = 2049
-        self.nameStateDict["C01"] = 2050
-        self.nameStateDict["C11"] = 2051
-        # S
-        self.nameStateDict["S000"] = 4192
-        self.nameStateDict["S00"]  = 4160
-        self.nameStateDict["S01"]  = 4168
-        self.nameStateDict["S0"]   = 4128
-        self.nameStateDict["S10"]  = 4176
-        self.nameStateDict["S11"]  = 4184
-        self.nameStateDict["S1"]   = 4144
-        self.nameStateDict["S"]    = 4096
-        # T
-        self.nameStateDict["T000"] = 6144
-        self.nameStateDict["T001"] = 6272
-        self.nameStateDict["T010"] = 6400
-        self.nameStateDict["T011"] = 6528
-        self.nameStateDict["T020"] = 6656
-        self.nameStateDict["T032"] = 6784
-        self.nameStateDict["T030"] = 6912
-        self.nameStateDict["T031"] = 7040
-        self.nameStateDict["T100"] = 7168
-        self.nameStateDict["T101"] = 7296
-        self.nameStateDict["T110"] = 7424
-        self.nameStateDict["T111"] = 7552
-        self.nameStateDict["T120"] = 7680
-        self.nameStateDict["T121"] = 7808
-        self.nameStateDict["T130"] = 7936
-        self.nameStateDict["T131"] = 8064
+        self.nameStateDict = { "U": 0,
+        "C00" : 2048, "C10" : 2049, "C01" : 2050, "C11" : 2051,
+        "S000": 4192, "S00" : 4160, "S01" : 4168, "S0"  : 4128,
+        "S10" : 4176, "S11" : 4184, "S1"  : 4144, "S"   : 4096,
+        "T000": 6144, "T001": 6272, "T010": 6400, "T011": 6528, 
+        "T020": 6656, "T032": 6784, "T030": 6912, "T031": 7040, 
+        "T100": 7168, "T101": 7296, "T110": 7424, "T111": 7552,
+        "T120": 7680, "T121": 7808, "T130": 7936, "T131": 8064 }
 
-        # playing vonRandommann:
-        self.states = []
-        self.states.append(0)
-        self.states.append(2048)
-        self.states.append(2049)
-        self.states.append(2050)
-        self.states.append(2051)
-        self.states.append(4192)
-        self.states.append(4160)
-        self.states.append(4168)
-        self.states.append(4128)
-        self.states.append(4176)
-        self.states.append(4184)
-        self.states.append(4144)
-        self.states.append(4096)
-        self.states.append(6144)
-        self.states.append(6272)
-        self.states.append(6400)
-        self.states.append(6528)
-        self.states.append(6656)
-        self.states.append(6784)
-        self.states.append(6912)
-        self.states.append(7040)
-        self.states.append(7168)
-        self.states.append(7296)
-        self.states.append(7424)
-        self.states.append(7552)
-        self.states.append(7680)
-        self.states.append(7808)
-        self.states.append(7936)
-        self.states.append(8064)
-        k = 0
-#        for i in range( 1, self.sizeX-1 ):
-#            for j in range( 1, self.sizeY-1 ):
-#                self.currConf[i][j] = self.states[random.randint(0, len(self.states)-1)]
-#                k += 1
+        self.states = [ 0, 2048, 2049, 2050, 2051, 4192, 4160, 4168, 4128, 4176, 
+                        4184, 4144, 4096, 6144, 6272, 6400, 6528, 6656, 6784, 
+                        6912, 7040, 7168, 7296, 7424, 7552, 7680, 7808, 7936, 8064 ]
+
 
     def eventFunc( self, e ):
         if e.type == pygame.MOUSEBUTTONDOWN:
@@ -700,12 +643,18 @@ class vonNeumann ( CA ):
                 s = 6144
                 if mods & pygame.KMOD_LCTRL:
                     # eps
+                    if state & 128 == 0 and state & 6144:
+                        # to just insert a new eps without changing anything
+                        self.currConf[x][y] = state+128
+                        self.nextConf[x][y] = state+128
+                        return
                     s += 128
                 if mods & pygame.KMOD_LSHIFT:
                     # u
                     s += 1024
                 s += (((state&768)+256) & 768)
                 self.currConf[x][y] = s
+                self.nextConf[x][y] = s
             if e.button == 3:
                 if mods & pygame.KMOD_LCTRL:
                     # C-states
@@ -720,6 +669,7 @@ class vonNeumann ( CA ):
                     # U-state
                     s = 0
                 self.currConf[x][y] = s
+                self.nextConf[x][y] = s
             
 
     def getConf( self ):
@@ -740,7 +690,7 @@ class vonNeumann ( CA ):
         self.displayConf = np.zeros( self.size, int )
 
     def setConf( self, conf ):
-        if conf.size != self.currConf.size:
+        if conf.shape != self.currConf.shape:
             self.resize( conf[0].size, conf[1].size )
         for i in range( 1, self.sizeX-1 ):
             for j in range( 1, self.sizeY-1 ):
@@ -823,31 +773,31 @@ class vonNeumann ( CA ):
 	       && ((nbs[k]&u) != (state&u)) && (nbs[k]&eps)  ) {
 	    // (T.1)(alpha)
 	    nconf( i, j ) = UMASK;
-
 	    break;
 	  }
 	}
-	if ( k == 4 ) {
-	  // (T.1)(beta)
-	  for ( k = 0; k < 4; k++ ) {
-	    if ( T(nbs[k]) && (abs((A_UNSHIFT(nbs[k]))-(A_UNSHIFT(state))) != 2)
-                 && (abs(k-(A_UNSHIFT(nbs[k]))) == 2)
-		 && ((nbs[k]&u) == (state&u) ) && (nbs[k]&eps) ) {
-	      // (T.1)(beta)(a)
-	      nconf( i, j ) = state | eps;
-	      break;
-	    }
-	    if ( C(nbs[k]) && (nbs[k]&e0) && (k-(A_UNSHIFT(state)) != 0) ) {
-	      // (T.1)(beta)(b)
-	      nconf( i, j ) = state | eps;
-	      break;
-	    }
+	if ( k < 4 ) continue;
+
+        // (T.1)(beta)
+        for ( k = 0; k < 4; k++ ) {
+          if ( T(nbs[k]) && (abs((A_UNSHIFT(nbs[k]))-(A_UNSHIFT(state))) != 2)
+               && (abs(k-(A_UNSHIFT(nbs[k]))) == 2)
+               && ((nbs[k]&u) == (state&u) ) && (nbs[k]&eps) ) {
+            // (T.1)(beta)(a)
+	    nconf( i, j ) = state | eps;
+	    break;
+	  }
+	  if ( C(nbs[k]) && (nbs[k]&e0) && (k-(A_UNSHIFT(state)) != 0) ) {
+	    // (T.1)(beta)(b)
+	    nconf( i, j ) = state | eps;
+	    break;
 	  }
 	}
-	if ( k == 4 ) {
-	  // (T.1)(gamma)
-	  nconf( i, j ) = TMASK | (state&u) | (state&a);
-	}
+	
+	if ( k < 4 ) continue;
+
+        // (T.1)(gamma)
+        nconf( i, j ) = TMASK | (state&u) | (state&a);
       } // end of T(state)
 
 
@@ -861,32 +811,33 @@ class vonNeumann ( CA ):
        	    break;
        	  }
        	}
-       	if ( k == 4 ) {
-       	  // (T.2)(beta)
-       	  for( k = 0; k < 4; k++ ) {
-       	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
-       		 && (nbs[k]&eps) && !(nbs[k]&u) )
-       	      break;
-       	  }
-       	  if ( k < 4 ) {
-       	    for ( k = 0; k < 4; k++ ) {
-       	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
-       	           && !(nbs[k]&eps) && !(nbs[k]&u) ) {
-       		break;
-       	      }
-       	    }
-       	    if ( k == 4 ) {
-       	      nconf( i, j ) = CMASK | e1 | ((state&e1)>>1);
-       	    }
-       	  } else {
-       	    k = 3; 
-       	  }
+        if ( k < 4 ) continue;
+       	
+        // (T.2)(beta)
+       	for( k = 0; k < 4; k++ ) {
+       	  if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+       	       && (nbs[k]&eps) && !(nbs[k]&u) ) {
+            // (T.2)(beta)(a)
+       	    break;
+          }
        	}
        	if ( k < 4 ) {
-       	  // (T.2)(gamma)
-       	  nconf( i, j ) = CMASK | ((state&e1)>>1);
+       	  for ( k = 0; k < 4; k++ ) {
+       	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+       	         && !(nbs[k]&eps) && !(nbs[k]&u) ) {
+       	      // (T.2)(beta)(b)
+              break;
+       	    }
+       	  }
+          if ( k == 4 ) {
+       	    nconf( i, j ) = CMASK | e1 | ((state&e1)>>1);
+            continue;
+       	  }
        	}
-      }
+       	
+        // (T.2)(gamma)
+        nconf( i, j ) = CMASK | ((state&e1)>>1);
+      } // end of C(state)
 
       else if ( U(state) ) {  // unexcitable state
 	// transition rule (T.3)
@@ -899,7 +850,7 @@ class vonNeumann ( CA ):
         }
 	// (T.3)(beta)
 	// doesn' change the state
-      }
+      } // end of U(state)
 
 
       else if ( S(state) ) { // sensitized state
