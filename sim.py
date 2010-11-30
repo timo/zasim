@@ -186,17 +186,13 @@ class Simulator():
                         print CASimulatorHelp
 
                     elif e.unicode == "m":
-#                        self.display.setText( "Marked configuration " + 
-#                                              str(len(self.markedConfs)) )
+                        key = (self.ca.getType(), self.ca.getSize())
                         self.display.setText( "Marked configuration " + 
-                                              str(len(self.caConfDict[(self.ca.getType(), 
-                                                                       self.ca.getSize())])) )
+                                              str(len(self.caConfDict[key])) )
                         confName = self.display.getUserInputKey(
                             msg="Set name for marked conf", default="" )
-                        self.caConfDict[(self.ca.getType(), 
-                                         self.ca.getSize())].append((self.ca.getConf().copy(),confName))
-#                        self.markedConfs.append( self.ca.getConf().copy() )
-#                        self.markedConfNames.append( confName )
+                        self.caConfDict[key].append((self.ca.getConf().copy(),confName))
+                        markedConfIdxDict[key] = len( self.caConfDict[key] ) - 1
                         self.display.drawConf( self.ca.getConf(), True )
                         loop = False
                         
@@ -247,21 +243,25 @@ class Simulator():
                                         sizeY = 2
                                         oneLiner = True
                                     CAType = lineList[-1][:-1]
-                                    if (CAType.upper(), (sizeX,sizeY)) in self.caDict:
-                                        self.ca, self.display = self.caDict[ (CAType.upper(), (sizeX,sizeY)) ]
-                                        self.ca.importConf( filename )
-                                        self.caConfDict[(CAType.upper(), (sizeX,sizeY))].append( (self.ca.getConf().copy, CAType + ": init" ) )
-                                        markedConfIdxDict[(self.ca.getType(), self.ca.getSize())] = len( self.caConfDict[(CAType.upper(), (sizeX,sizeY))] )
-                                    else:
-                                        self.caDict[(CAType.upper(), (sizeX, sizeY))] = self.getNewCA( CAType, filename, False, sizeX, sizeY, self.scale, oneLiner )
-                                        self.ca, self.display = self.caDict[ (CAType.upper(), (sizeX, sizeY)) ]
-                                        pygame.display.set_mode( self.display.screenSize, 0, 8 )
-                                        
-                                        self.caConfDict[(CAType.upper(), (sizeX, sizeY) )] = [(self.ca.getConf().copy(),CAType + ": init")]
+                                    key = (CAType.upper(), (sizeX,sizeY))
+
+                                    if key not in self.caDict:
+                                        self.caDict[key] = self.getNewCA( CAType, filename, False, sizeX, sizeY, self.scale, oneLiner )
+                                        self.ca, self.display = self.caDict[key]
+                                        self.caConfDict[key] = [(self.ca.getConf().copy(),CAType + ": " + filename )]
                                         markedConfIdxDict[(self.ca.getType(), self.ca.getSize())] = 0
+                                        self.caKeys.append( key )
+                                    else:
+                                        self.ca, self.display = self.caDict[key]
+                                        self.caConfDict[key].append( (self.ca.getConf().copy, CAType + ": " + filename ) )
+                                        markedConfIdxDict[key] = len( self.caConfDict[key] ) - 1
+
+                                    self.ca.importConf( filename )
+                                    pygame.display.set_mode( self.display.screenSize, 0, 8 )
                             else:
-                                self.display.drawConf( self.ca.getConf(), True )
                                 self.display.setText( "Cancelled" )
+
+                            self.display.drawConf( self.ca.getConf(), True )
                                 
 
                     elif e.unicode == "q":
@@ -331,14 +331,14 @@ class Simulator():
                         
                         mod = pygame.key.get_mods()
                         if mod & pygame.KMOD_LCTRL and mod & pygame.KMOD_LSHIFT:
+                            loop = False
                             if e.key == pygame.K_RIGHT:
                                 keyIdx = (keyIdx+1)%len(self.caKeys)
                             elif e.key == pygame.K_LEFT:
                                 keyIdx = (keyIdx-1)%len(self.caKeys)
                             key = self.caKeys[keyIdx]
                             self.ca, self.display = self.caDict[key]
-                            self.ca.setConf( self.caConfDict[key][markedConfIdxDict[key]][0] )
-
+                            pygame.display.set_mode( self.display.screenSize, 0, 8 )
                         else:
                             self.display.scroll( e.key )
 
@@ -386,7 +386,7 @@ class Simulator():
                             if len(self.caConfDict[key]) > 1 and not confChanged:
                                 self.caConfDict[key].pop(markedConfIdxDict[key])
                                 self.display.setText( "Kill conf " 
-                                                     + self.caConfDict[key][markedConfIdxDict[key]][1] )
+                                                      + self.caConfDict[key][markedConfIdxDict[key]][1] )
                                 markedConfIdxDict[key]=(markedConfIdxDict[key]-1)%len(self.caConfDict[key])
 #                            if len(self.markedConfs) > 1 and not confChanged:
 #                                self.markedConfs.pop(markedConfIdx)
@@ -398,23 +398,11 @@ class Simulator():
                         else:
                             markedConfIdxDict[key]=(markedConfIdxDict[key]+1)%len(self.caConfDict[key])
                             self.ca, self.display = self.caDict[key]
-#                            self.display.setText( "Load marked conf " 
-#                                                  + self.caConfDict[key][markedConfIdxDict[key]][1] )
+                            self.display.setText( "Load marked conf " 
+                                                  + self.caConfDict[key][markedConfIdxDict[key]][1] )
                             self.ca.setConf( self.caConfDict[key][markedConfIdxDict[key]][0] )
                             confChanged = False
 
-#                            markedConfIdx=(markedConfIdx+1)%len(self.markedConfs)
-#                            if self.markedConfNames[markedConfIdx] == "":
-#                                self.display.setText( "Load marked conf " 
-#                                                      + str(markedConfIdx) )
-#                            else:
-#                                self.display.setText( "Load marked conf " 
-#                                                      + self.markedConfNames[markedConfIdx] )
-#                            self.ca.setConf( self.markedConfs[markedConfIdx] )
-#                            confChanged = False
-#                        self.display = self.markedConfDisplays[markedConfIdx][0]
-#                        self.ca = self.markedConfDisplays[markedConfIdx][1]
-            
             if not globalEventQueue.empty():
                 for e in globalEventQueue.get():
                     print e

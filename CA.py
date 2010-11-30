@@ -249,7 +249,6 @@ class binRule( CA ):
     palette = [ (0,0,0), (255,255,255) ]
 
     def __init__ ( self, ruleNr, sizeX, sizeY, initConf, filename="" ):
-        self.title = "Rule" + str( self.ruleNr )
         self.dim = 1
         if not 0 <= ruleNr < 256:
             print "binRule only supports ruleNr between 0 and 255!"
@@ -259,6 +258,7 @@ class binRule( CA ):
         self.sizeX = sizeX
         self.sizeY = sizeY
         self.size = ( sizeX, sizeY )
+        self.title = "Rule" + str( self.ruleNr )
 
         if initConf == self.INIT_ZERO:
             self.currConf = np.zeros( (sizeX, 1), int )
@@ -433,7 +433,8 @@ class sandPile( CA ):
         return self.histogram
 
     def loopFunc( self ):
-        self.addGrainRandomly()
+        self.addGrain( self.sizeX/2, self.sizeY/2 )
+#        self.addGrainRandomly()
         self.step()
 
     def quit( self ):
@@ -643,7 +644,7 @@ class vonNeumann ( CA ):
                 s = 6144
                 if mods & pygame.KMOD_LCTRL:
                     # eps
-                    if state & 128 == 0 and state & 6144:
+                    if state & 128 == 0 and (state & 6144 == 6144):
                         # to just insert a new eps without changing anything
                         self.currConf[x][y] = state+128
                         self.nextConf[x][y] = state+128
@@ -652,6 +653,18 @@ class vonNeumann ( CA ):
                 if mods & pygame.KMOD_LSHIFT:
                     # u
                     s += 1024
+                for nbs in ( self.states[self.displayConf[x+1][y]],
+                             self.states[self.displayConf[x][y-1]],
+                             self.states[self.displayConf[x-1][y]],
+                             self.states[self.displayConf[x][y+1]] ):
+                    if ( nbs & 6144 == 6144 ) \
+                            and ( ( mods & pygame.KMOD_LSHIFT == state & 1024 ) \
+                                      and ( mods & pygame.KMOD_LCTRL == state & 128 ) \
+                                      and ( state & 768 != nbs & 768 ) ):
+                        s += nbs & 768
+                        self.currConf[x][y] = s
+                        self.nextConf[x][y] = s
+                        return
                 s += (((state&768)+256) & 768)
                 self.currConf[x][y] = s
                 self.nextConf[x][y] = s
