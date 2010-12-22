@@ -235,6 +235,9 @@ class Simulator():
                                 with open ( filename, "r" ) as fileHandle:
                                     lineList = fileHandle.readlines()
                                     fileHandle.close()
+                                    if lineList[0][0] == "#":
+                                        print "This seems to be a rle-file. Transform to cnf before importing!"
+                                        break;
                                     sizeX = int(lineList[0])
                                     if lineList[1][0] != "(":
                                         sizeY = int(lineList[1])
@@ -246,14 +249,18 @@ class Simulator():
                                     key = (CAType.upper(), (sizeX,sizeY))
 
                                     if key not in self.caDict:
-                                        self.caDict[key] = self.getNewCA( CAType, filename, False, sizeX, sizeY, self.scale, oneLiner )
+                                        self.caDict[key] = self.getNewCA( CAType, filename, 
+                                                                          False, sizeX, sizeY, 
+                                                                          self.scale, oneLiner )
                                         self.ca, self.display = self.caDict[key]
-                                        self.caConfDict[key] = [(self.ca.getConf().copy(),CAType + ": " + filename )]
+                                        self.caConfDict[key] = [(self.ca.getConf().copy(),
+                                                                 CAType + ": " + filename )]
                                         markedConfIdxDict[(self.ca.getType(), self.ca.getSize())] = 0
                                         self.caKeys.append( key )
                                     else:
                                         self.ca, self.display = self.caDict[key]
-                                        self.caConfDict[key].append( (self.ca.getConf().copy, CAType + ": " + filename ) )
+                                        self.caConfDict[key].append( (self.ca.getConf().copy, 
+                                                                      CAType + ": " + filename ) )
                                         markedConfIdxDict[key] = len( self.caConfDict[key] ) - 1
 
                                     self.ca.importConf( filename )
