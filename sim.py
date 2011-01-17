@@ -24,7 +24,6 @@ Display:
   '1'             Zoom in
   '2'             Zoom out
   'c'             Toggle display of step counter
-  ('f'            Toggle full screen DONT USE THIS)
 Cursor (when zoomed in)
   left            Move view left
   right                     right
@@ -33,6 +32,8 @@ Cursor (when zoomed in)
 Simulation:
   '*'             Bigger delay
   '/'             Smaller delay
+  CTRL-'*'        More steps between screenupdates
+  CTRL-'/'        Less steps between screenupdates
   '='             No delay
   'm'             Mark configuration
   's'             Do only one step and stop
@@ -119,13 +120,17 @@ class Simulator():
     def start( self ):
         loop = False
         delay = 0
+        steps = 1
         showStepCount = True
         stepCounter = 0
         markedConfIdxDict = { (self.ca.getType(), self.ca.getSize()): 0 }
         self.caConfDict[(self.ca.getType(), self.ca.getSize())] = [(self.ca.getConf().copy(),self.ca.getType() + ": init")]
         self.caKeys = [(self.ca.getType(), self.ca.getSize())]
         keyIdx = 0
-        pygame.key.set_repeat( 700, 100 )
+        # keyboard repeat intervall in ms
+        keybRepInt = 100
+        lastKeyHit = 0
+        pygame.key.set_repeat( 700, keybRepInt )
 
         while 1:
             # note:
@@ -147,20 +152,31 @@ class Simulator():
                 if e.type == pygame.KEYDOWN:
                     if e.unicode == "+":
                         self.display.resize(1.1)
-
+                        
                     elif e.unicode == "-":
                         self.display.resize(0.9)
                         
                     elif e.unicode == "*":
-                        self.currDelay += self.delayGranularity
-                        self.display.setText( "Delay: " + str(self.currDelay) )
+                        mod = pygame.key.get_mods()
+                        if mod & pygame.KMOD_CTRL:
+                            steps += 1
+                            self.display.setText( str(steps) + " steps per screenupdate" )
+                        else:
+                            self.currDelay += self.delayGranularity
+                            self.display.setText( "Delay: " + str(self.currDelay) )
                             
                     elif e.unicode == "/":
-                        if self.currDelay == 0:
-                            self.display.setText( "No delay" )
+                        mod = pygame.key.get_mods()
+                        if mod & pygame.KMOD_CTRL:
+                            if steps > 1:
+                                steps -= 1
+                                self.display.setText( str(steps) + " steps per screenupdate" )
                         else:
-                            self.currDelay -= self.delayGranularity
-                            self.display.setText( "Delay: " + str(self.currDelay) )
+                            if self.currDelay == 0:
+                                self.display.setText( "No delay" )
+                            else:
+                                self.currDelay -= self.delayGranularity
+                                self.display.setText( "Delay: " + str(self.currDelay) )
 
                     elif e.unicode == "=":
                         self.currDelay = 0
@@ -201,7 +217,7 @@ class Simulator():
                         loop = False
                         
                         mod = pygame.key.get_mods()
-                        if mod & pygame.KMOD_LCTRL:
+                        if mod & pygame.KMOD_CTRL:
                             # open conffile
                             # filename is generated automatically, but has to be 
                             # acknowledged by the user and can be changed
@@ -284,7 +300,7 @@ class Simulator():
                         loop = False
 
                         mod = pygame.key.get_mods()
-                        if mod & pygame.KMOD_LCTRL:
+                        if mod & pygame.KMOD_CTRL:
                             # save conffile
                             # filename is generated automatically, but has to be 
                             # acknowledged by the user and can be changed
@@ -337,7 +353,7 @@ class Simulator():
                             or e.key == pygame.K_UP or e.key == pygame.K_DOWN:
                         
                         mod = pygame.key.get_mods()
-                        if mod & pygame.KMOD_LCTRL and mod & pygame.KMOD_LSHIFT:
+                        if mod & pygame.KMOD_CTRL and mod & pygame.KMOD_LSHIFT:
                             loop = False
                             if e.key == pygame.K_RIGHT:
                                 keyIdx = (keyIdx+1)%len(self.caKeys)
@@ -347,8 +363,18 @@ class Simulator():
                             self.ca, self.display = self.caDict[key]
                             pygame.display.set_mode( self.display.screenSize, 0, 8 )
                         else:
-                            self.display.scroll( e.key )
-
+                            if pygame.time.get_ticks() - lastKeyHit < 3*keybRepInt:
+                                viewSize = self.display.getViewSize()
+                                if e.key in ( pygame.K_LEFT, pygame.K_RIGHT ):
+                                    viewSize = viewSize[0]
+                                else:
+                                    viewSize = viewSize[1]
+                                for i in range(min(5,int(viewSize*3/4))):
+                                    self.display.scroll( e.key )
+                            else:
+                                self.display.scroll( e.key )
+                            lastKeyHit = pygame.time.get_ticks()
+                                    
                     elif e.key == pygame.K_SPACE:
                         loop = not(loop)
                         msg = "Stop"
@@ -362,7 +388,7 @@ class Simulator():
                         loop = False
                         mod = pygame.key.get_mods()
                         key = (self.ca.getType(), self.ca.getSize())
-                        if mod & pygame.KMOD_LCTRL and mod & pygame.KMOD_SHIFT:
+                        if mod & pygame.KMOD_CTRL and mod & pygame.KMOD_SHIFT:
 #                            confName = self.display.getUserInputKey(
 #                                msg = "Name this conf:", default=self.markedConfNames[markedConfIdx] )
 #                            if confName != "":
@@ -389,7 +415,7 @@ class Simulator():
 #                            self.ca.setConf( self.markedConfs[markedConfIdx] )
                             confChanged = False
 
-                        elif mod & pygame.KMOD_LCTRL:
+                        elif mod & pygame.KMOD_CTRL:
                             if len(self.caConfDict[key]) > 1 and not confChanged:
                                 self.caConfDict[key].pop(markedConfIdxDict[key])
                                 self.display.setText( "Kill conf " 
@@ -417,11 +443,11 @@ class Simulator():
             if loop:
                 if self.currDelay > 0:
                     if delay % self.currDelay == 0:
-                        self.step(1)
-                        stepCounter += 1
+                        self.step(steps)
+                        stepCounter += steps
                 else:
-                    self.step(1)
-                    stepCounter += 1
+                    self.step(steps)
+                    stepCounter += steps
             delay += 1
 
             self.display.drawConf( self.ca.getConf(), not self.oneLiner and loop )
@@ -431,7 +457,8 @@ class Simulator():
             self.display.update()
 
     def step( self, n ):
-        self.ca.loopFunc()
+        for i in range(n):
+            self.ca.loopFunc()
         self.display.update()
 
     def stop( self ):

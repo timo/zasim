@@ -234,6 +234,10 @@ class Display():
                                          (0,3*int(self.myfontSize*4/3)) )
                 pygame.display.update()
             
+    def getViewSize( self ):
+        return self.zoomSizes[self.zoomIdx]
+
+
     def quit( self ):
         pass
 

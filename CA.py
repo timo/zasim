@@ -588,15 +588,15 @@ class vonNeumann ( CA ):
         
         self.nameStateDict = { "U": 0,
                                "C00" : 2048, "C10" : 2049, "C01" : 2050, "C11" : 2051,
-                               "S000": 4192, "S00" : 4160, "S01" : 4168, "S0"  : 4128,
-                               "S10" : 4176, "S11" : 4184, "S1"  : 4144, "S"   : 4096,
+                               "S"   : 4096, "S0"  : 4128, "S1"  : 4144, "S00" : 4160, 
+                               "S01" : 4168, "S10" : 4176, "S11" : 4184, "S000": 4192, 
                                "T000": 6144, "T001": 6272, "T010": 6400, "T011": 6528, 
                                "T020": 6656, "T032": 6784, "T030": 6912, "T031": 7040, 
                                "T100": 7168, "T101": 7296, "T110": 7424, "T111": 7552,
                                "T120": 7680, "T121": 7808, "T130": 7936, "T131": 8064 }
 
-        self.states = [ 0, 2048, 2049, 2050, 2051, 4192, 4160, 4168, 4128, 4176, 
-                        4184, 4144, 4096, 6144, 6272, 6400, 6528, 6656, 6784, 
+        self.states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168, 
+                        4176, 4184, 4192, 6144, 6272, 6400, 6528, 6656, 6784, 
                         6912, 7040, 7168, 7296, 7424, 7552, 7680, 7808, 7936, 8064 ]
 
         # as usual, these two arrays contain the real configuration, that is used
@@ -644,34 +644,41 @@ class vonNeumann ( CA ):
         # self.cActArray[x*y] = True
 
     def eventFunc( self, e ):
+        EPS = 128
+        SPECIAL = 1024
+        CSTATE = 2048
+        SSTATE = 4096
+        TSTATE = 6144
+
         if e.type == pygame.MOUSEBUTTONDOWN:
             x,y = e.pos
             state = self.states[self.displayConf[x][y]]
             mods = pygame.key.get_mods()
             s = 0
+            
             if e.button == 1:
                 # T-states
-                s = 6144
+                s = TSTATE
                 if mods & pygame.KMOD_LCTRL:
                     # eps
-                    if state & 128 == 0 and (state & 6144 == 6144):
+                    if state & EPS == 0 and (state & TSTATE == TSTATE):
                         # to just insert a new eps without changing anything
-                        self.currConf[x][y] = state+128
-                        self.nextConf[x][y] = state+128
+                        self.currConf[x][y] = state+EPS
+                        self.nextConf[x][y] = state+EPS
                         self.enlist(x,y)
                         return
-                    s += 128
+                    s += EPS
                 if mods & pygame.KMOD_LSHIFT:
                     # u
-                    s += 1024
+                    s += SPECIAL
                 if state == 0:
                     for nbs in ( self.states[self.displayConf[x+1][y]],
                                  self.states[self.displayConf[x][y-1]],
                                  self.states[self.displayConf[x-1][y]],
                                  self.states[self.displayConf[x][y+1]] ):
-                        if ( nbs & 6144 == 6144 ) \
-                                and ( ( mods & pygame.KMOD_LSHIFT == state & 1024 ) \
-                                          and ( mods & pygame.KMOD_LCTRL == state & 128 ) ):
+                        if ( nbs & TSTATE == TSTATE ) \
+                                and ( ( mods & pygame.KMOD_LSHIFT == state & SPECIAL ) \
+                                          and ( mods & pygame.KMOD_LCTRL == state & EPS ) ):
                             s += nbs & 768
                             self.currConf[x][y] = s
                             self.nextConf[x][y] = s
@@ -684,13 +691,18 @@ class vonNeumann ( CA ):
             if e.button == 3:
                 if mods & pygame.KMOD_LCTRL:
                     # C-states
-                    s = 2048
+                    s = CSTATE
                     s += (((state&3)+1) & 3)
                 elif mods & pygame.KMOD_LSHIFT:
                     # S-states
-                    s = 4192
-                    if (state & 4096) != 0:
-                        s += (((state&28)+4) & 28)
+                    if state == 0 or (state & SSTATE) != SSTATE:
+                        s = SSTATE
+                        self.currConf[x][y] = s
+                        self.nextConf[x][y] = s
+                        self.enlist(x,y)
+                        return
+                    sIdx = ( ( self.displayableStateDict[state] - 5 + 1 ) % 8 ) + 5
+                    s = self.states[sIdx]
                 else:
                     # U-state
                     s = 0
@@ -787,7 +799,8 @@ class vonNeumann ( CA ):
         for i in range( 1, self.sizeX-1 ):
             for j in range( 1, self.sizeY-1 ):
                 self.currConf[i][j] = self.states[conf[i][j]]
-        
+                self.nextConf[i][j] = self.states[conf[i][j]]
+
     def step( self ):
         self.updateAllCellsWeaveInline()
 
@@ -943,7 +956,6 @@ class vonNeumann ( CA ):
 	// (T.3)(beta)
 	// doesn' change the state
       } // end of U(state)
-
 
       else if ( S(state) ) { // sensitized state
        	if ( !(state&sc1)  ) {
