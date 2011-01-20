@@ -63,21 +63,41 @@ import optparse
 import Display
 from copy import deepcopy
 
+
+## Central simulation unit.
+# Handles user I/O, importing and exporting, marking, and everything else
 class Simulator():
+    ## The constructor
     def __init__( self, CAType, confFile, random, sizeX, sizeY, scale, oneLiner ):
+        ## a flag if the first CA is a 2 oder 3 dimensional CA
         self.oneLiner = oneLiner
+
+        ## scale by which a single cell is displayed (pixel)
         self.scale = scale
+
+        ## a list of histograms that are used to visualize the distribution of different 
+        # states in the displayed conf. Since this is not always useful (vonNeumann...?!), it's not always needed...
         self.histograms = []
 #        self.histograms.append( Histogram.VBars( 8, 1600, self.ca.palette, self.ca.info ) )
 
+        ## a map where one can get the object to a given type and size of CA
         self.caDict = { (CAType.upper(), (sizeX, sizeY)): self.getNewCA( CAType, confFile, random, sizeX, sizeY, scale, oneLiner) }
+
+        ## references to the currently used CA and Display
         self.ca, self.display = self.caDict[ (CAType.upper(), (sizeX, sizeY)) ]
 
+        ## a map to the marked configurations that can be reloaded. You can mark a configuration by hitting 'm' during the simulation
         self.caConfDict = { (CAType, (sizeX, sizeY) ): ([],[]) }
 
+        ## delta between two different levels of delaying the simulation to slow it down and have a look
         self.delayGranularity = 3
+
+        ## the current level of delay
         self.currDelay = 0
 
+    ## get new instance of a given CA
+    # since more than one CA-object is used to display different kinds and sizes of CA,
+    # more than one object is easier to handle than a single one
     def getNewCA( self, CAType, confFile, random, sizeX, sizeY, scale, oneLiner ):
         if CAType.upper() == "SANDPILE":
             if random:
@@ -117,6 +137,10 @@ class Simulator():
                                                ca.palette, ca.getDim() )
         return (ca, display)
         
+    ## The main function
+    # This function runs until the simulator ends. The main while(1)-loop is a pygameism, 
+    # all keyboard- and mouse-events are cought here and relayed to Display- and CA-objects,
+    # respectively
     def start( self ):
         loop = False
         delay = 0
@@ -125,6 +149,7 @@ class Simulator():
         stepCounter = 0
         markedConfIdxDict = { (self.ca.getType(), self.ca.getSize()): 0 }
         self.caConfDict[(self.ca.getType(), self.ca.getSize())] = [(self.ca.getConf().copy(),self.ca.getType() + ": init")]
+        ## a list of all the different sizes and kinds of CA the simulator has handled yet
         self.caKeys = [(self.ca.getType(), self.ca.getSize())]
         keyIdx = 0
         # keyboard repeat intervall in ms
@@ -456,11 +481,15 @@ class Simulator():
                 self.display.showCounter( stepCounter )
             self.display.update()
 
+    ## Wrapper
+    # a thin layer between caller and callee of the mighty step() functions of every CA
     def step( self, n ):
         for i in range(n):
             self.ca.loopFunc()
         self.display.update()
 
+    ## Wrapper
+    # to stop simulation. Not in use right now (Jan 17th 2011)
     def stop( self ):
         pass
 
@@ -488,7 +517,6 @@ def quit():
     simProc.join()
     print "exiting..."
     sys.exit(0)
-
 
 def listCA():
     print "Available CA: SandPile, BallPile, Binrule, Ballrule, vonNeumann"
