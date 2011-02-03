@@ -61,6 +61,7 @@ class CA():
     # (0)(2)(0)(3)(0)  // number of cols is witdh
     # (0)(2)(1)(2)(0)  // number of lines is height
     # (0)(0)(0)(0)(0)
+    # SANDPILE
     # \endverbatim
     def exportConf( self, filename ):
         with open( filename, 'w' ) as f:
@@ -148,6 +149,15 @@ class CA():
     def importConf( self, filename ):
         retVal = self.IMPORTOK
         with open( filename, 'r' ) as f:
+            lines = f.readlines()
+            CAImportType = lines[-1][:-1]
+            f.close()
+            if CAImportType != self.getType():
+                print "You are trying to import a configuration of a", CAImportType, "CA into an", \
+                    self.getType(), "CA!"
+                print "Cancelling import!"
+                return
+            f = open( filename, 'r' )
             # sizeX
             sizeX = f.readline()
             # remove "\n" at end of line
@@ -161,7 +171,7 @@ class CA():
                 # check 
                 if not sizeY.isdigit():
                     print "ERROR importing conf!"
-                    return
+                    return 
                 sizeY = int(sizeY)
                 if sizeX != self.sizeX or sizeY != self.sizeY:
                     self.resize( sizeX, sizeY )
@@ -706,6 +716,11 @@ class vonNeumann ( CA ):
         self.currConf = np.zeros( (sizeX, sizeY), int )
         ## The current configuration is held here
         self.nextConf = np.zeros( (sizeX, sizeY), int )
+        # used when updating only some cells instead of all....
+        self.cActArr = np.zeros( (self.sizeX*self.sizeY), bool )
+        self.nActArr = np.zeros( (self.sizeX*self.sizeY), bool )
+        self.cCounter = 0
+        self.nCounter = 0
         if confFile != "":
             self.importConf( confFile )
             self.nextConf = self.currConf.copy()
@@ -715,12 +730,8 @@ class vonNeumann ( CA ):
         # to map the states to 0..28, so the Display-module can display states
         # without knowing the difference
         self.displayConf = np.zeros( self.size, int)
- 
-        # used when updating only some cells instead of all....
-        # BIG TODO!
-        # self.cActArray = np.zeros( (sizeX*sizeY), bool )
-        # self.nActArray = np.zeros( (sizeX*sizeY), bool )
-        
+
+
         pygame.init()
         pygame.display.set_mode( self.size, 0, 8 )
 
@@ -745,8 +756,14 @@ class vonNeumann ( CA ):
 
     ## Used to append cells to the list of cells to handle in the next step
     def enlist( self, x, y ):
-        pass
-        # self.cActArray[x*y] = True
+        self.cCounter += (not self.cActArr[ x+y*self.sizeX ]) + (not self.cActArr[ (x-1)+(y)*self.sizeX ]) + (not self.cActArr[ (x+1)+(y)*self.sizeX ])
+        self.cCounter += (not self.cActArr[ (x)+(y-1)*self.sizeX ]) + (not self.cActArr[ (x)+(y+1)*self.sizeX ])
+        self.cActArr[ x+y*self.sizeX ] = True
+        self.cActArr[ (x-1)+(y)*self.sizeX ] = True
+        self.cActArr[ (x+1)+(y)*self.sizeX ] = True
+        self.cActArr[ (x)+(y-1)*self.sizeX ] = True
+        self.cActArr[ (x)+(y+1)*self.sizeX ] = True
+
 
     def eventFunc( self, e ):
         EPS = 128
@@ -757,6 +774,8 @@ class vonNeumann ( CA ):
 
         if e.type == pygame.MOUSEBUTTONDOWN:
             x,y = e.pos
+            if x <= 0 or x >= self.sizeX-1 or y <= 0 or y >= self.sizeY-1:
+                return
             state = self.states[self.displayConf[x][y]]
             mods = pygame.key.get_mods()
             s = 0
@@ -821,7 +840,7 @@ class vonNeumann ( CA ):
                 if self.displayableStateDict.has_key( self.currConf[i][j] ):
                     self.displayConf[i][j] = self.displayableStateDict[self.currConf[i][j]]
                 else:
-                    print i, j, ":", self.currConf[i][j]
+                    print "Unkown state in cell", i, j, ":", self.currConf[i][j]
         return self.displayConf
 
     def importConf( self, filename ):
@@ -832,29 +851,29 @@ class vonNeumann ( CA ):
             if line[0:4] != "x = ":
                 # fall back to familiar CASimulator/Xasim fileformat
                 CA.importConf( self, filename )
-                return
+            else:
 
-            line = line[4:]
-            sizeX = 0
-            sizeX = int(line[0:line.find(",")])
-            line = line[line.find("y = ")+4:]
-            sizeY = 0
-            sizeY = int(line[0:line.find(",")])
-            line = line[line.find("rule = ")+7:]
-            rule = line[:-1]
+                line = line[4:]
+                sizeX = 0
+                sizeX = int(line[0:line.find(",")])+2
+                line = line[line.find("y = ")+4:]
+                sizeY = 0
+                sizeY = int(line[0:line.find(",")])+2
+                line = line[line.find("rule = ")+7:]
+                rule = line[:-1]
             
-            if sizeX != self.sizeX or sizeY != self.sizeY:
-                self.resize( sizeX, sizeY )
+                if sizeX != self.sizeX or sizeY != self.sizeY:
+                    self.resize( sizeX, sizeY )
             
-            rleStateDict = { ".": "U",
-                             "A": "S",     "B": "S0",    "C": "S1",    "D": "S00", 
-                             "E": "S01",   "F": "S10",   "G": "S11",   "H": "S000",
-                             "I": "T000",  "J": "T010",  "K": "T020",  "L": "T030",
-                             "M": "T001",  "N": "T011",  "O": "T021",  "P": "T031",
-                             "Q": "T100",  "R": "T110",  "S": "T120",  "T": "T130",
-                             "U": "T101",  "V": "T111",  "W": "T121",  "X": "T131",
-                             "pA": "C00",  "pB": "C01",  "pC": "C10",  "pD": "C11" }
-
+                rleStateDict = { ".": "U",
+                                 "A": "S",     "B": "S0",    "C": "S1",    "D": "S00", 
+                                 "E": "S01",   "F": "S10",   "G": "S11",   "H": "S000",
+                                 "I": "T000",  "J": "T010",  "K": "T020",  "L": "T030",
+                                 "M": "T001",  "N": "T011",  "O": "T021",  "P": "T031",
+                                 "Q": "T100",  "R": "T110",  "S": "T120",  "T": "T130",
+                                 "U": "T101",  "V": "T111",  "W": "T121",  "X": "T131",
+                                 "pA": "C00",  "pB": "C01",  "pC": "C10",  "pD": "C11" }
+                
 # 63.8ILILILILIL$63.J.J.pA.pA.IJIJIJIJL$63.J.J.J.J9.IL$57.IL4IpAIpAIpAI
 # pAIpAIpAIpAIpA.LK$57.JIJ3.L.L.2LKLKLKLKLK.IL$57.J5.L.L.LILILILILIL.LK
 # .IL$57.J5.L.L.L.L.L.L.pA.pA.L2.JL$57.J5.16IL2.JL$57.J15.L6K2.JL$52.IL
@@ -864,32 +883,39 @@ class vonNeumann ( CA ):
 # L.L.2LK.JL$52.JLJL.J.J3.L.L.L.L.L.LIL.JLIL$52.JLJL.J.J3.L.L.L.pA.pA.p
 # .L.JLJL$52.JLJL.J.J3.14IJIJ5IL$52.JLJLIpAIpA25IL$52.JIJI2J.J25.L$52.J
 
-            x = 0
-            y = 0
-            mx = 0
-            importRegexp = re.compile( "((\d*)(\.|(p*)[A-X]))|(\$)|(\!)" )
-            for line in f:
-                content = importRegexp.findall( line[0:-2] )
-                for c in content:
-                    if c[0] != "":
-                        if c[1] != "":
-                            r = int(c[1])
-                        else:
-                            r = 1
-                        for s in range(r):
-                            self.currConf[x][y] = self.nameStateDict[rleStateDict[c[2]]]
-                            x += 1
-                    elif c[4] != "":
-                        if x > mx:
-                            mx = x
-                        x = 0
-                        y += 1
-                    elif c[5] != "":
-                        break
 
-            self.nextConf = self.currConf.copy()
+                # since RLE-configuration files don't imply ghostcells, they are added here!
+                x = 1
+                y = 1
+                mx = 0
+                importRegexp = re.compile( "((\d*)(\.|(p*)[A-X]))|(\$)|(\!)" )
+                for line in f:
+                    content = importRegexp.findall( line[0:-2] )
+                    for c in content:
+                        if c[0] != "":
+                            if c[1] != "":
+                                r = int(c[1])
+                            else:
+                                r = 1
+                            for s in range(r):
+                                self.currConf[x][y] = self.nameStateDict[rleStateDict[c[2]]]
+                                x += 1
+                        elif c[4] != "":
+                            if x > mx:
+                                mx = x
+                            x = 1
+                            y += 1
+                        elif c[5] != "":
+                            break
 
-            f.close()
+                self.nextConf = self.currConf.copy()
+                f.close()
+
+        # now, get all active cells:
+        for x in range(1,self.sizeX-1):
+            for y in range(1,self.sizeY-1):
+                self.enlist(x,y)
+
 
     def loopFunc( self ):
         self.step()
@@ -897,6 +923,8 @@ class vonNeumann ( CA ):
     def resize( self, sizeX, sizeY = None ):
         CA.resize( self, sizeX, sizeY )
         self.displayConf = np.zeros( self.size, int )
+        self.cActArr = np.zeros( self.sizeX*self.sizeY, bool )
+        self.nActArr = np.zeros( self.sizeX*self.sizeY, bool )
 
     def setConf( self, conf ):
         if conf.shape != self.currConf.shape:
@@ -908,7 +936,8 @@ class vonNeumann ( CA ):
 
     ## Calls the actual function that is used to calculate the next configuration
     def step( self ):
-        self.updateAllCellsWeaveInline()
+        self.updateAllCellsWeaveInlineFewStates()
+#        self.updateAllCellsWeaveInline()
 
     ## Updates all cells using scipy.weave.inline
     def updateAllCellsWeaveInline( self ):
@@ -1152,11 +1181,11 @@ class vonNeumann ( CA ):
 #                               | |--------------------------------> direction
 #                               |----------------------------------> special
 #
-        vonNeumannCode = """
+        vonNeumannCodeFewStates = """
 #include <stdlib.h>
 #include <stdio.h>
-
-#line 1 "CA.py"
+          
+#line 1 "VonNeumannDefinesInCA.py"
 #define UMASK          0
 #define CMASK       2048  // 1 << 11
 #define SMASK       4096  // 2 << 11
@@ -1188,200 +1217,212 @@ class vonNeumann ( CA ):
 #define SC_SHIFT(x)   ((x)<<5)
 #define SC_UNSHIFT(x) (((x)&sc)>>5)
 
-#define ADDTONLIST(x,y) nActArr((x)*(y)) = true;\
-                        nActArr((x+1)*(y)) = true;\
-                        nActArr((x)*(y-1)) = true;\
-                        nActArr((x-1)*(y)) = true;\
-                        nActArr((x)*(y+1)) = true;
 
-  int g, h, i, j, k, l;
-  int nbs[4];
-  int state;
-  h = 1;
-  #include <stdio.h>
-  for ( g = sizeX+1; g < sizeX*sizeY-sizeX; g++ ) {
-    if ( !cActArr(g) )
-      continue;
+#define ENLIST(x,y) nCounter += ( !nActArr( (x)+(y)*sizeX ) );\
+                    nActArr( (x)+(y)*sizeX ) = true;
+#define MARKNBH(x,y) ENLIST((x),(y));\
+                     ENLIST((x)-1,(y));\
+                     ENLIST((x)+1,(y));\
+                     ENLIST((x),(y)-1);\
+                     ENLIST((x),(y)+1); /*printf( "seed in list: %d,%d\\n", x, y );*/
 
-    cActArr(g) = false;
-    i = g%sizeX;
-    j = g/sizeX;
-    printf(\"lala\");
-    state = cconf( i, j );
-    nbs[0] = cconf( i+1, j );
-    nbs[1] = cconf( i, j-1 );
-    nbs[2] = cconf( i-1, j );
-    nbs[3] = cconf( i, j+1 );
+#include <stdio.h>
+#line 1 "VonNeumannCodeInCA.py"
+int i, j, k, l, x, y, aa;
+int nbs[4];
+int state;
+for ( i = 0; i < sizeX*sizeY && cCounter > 0; i++ ) {
+//  printf("%d %d\\n", i, (int)cActArr(i) );
+  if ( cActArr(i) == true ) {
+    cActArr(i) = false;
+    x = i % sizeX;
+    y = i / sizeX;
+    cCounter--;
+  } else {
+    continue;
+  }
+//  printf("i: %d: Updating %d,%d\\n", i, x, y );
+  state = cconf( x, y );
+  nbs[0] = cconf( x+1, y );
+  nbs[1] = cconf( x, y-1 );
+  nbs[2] = cconf( x-1, y );
+  nbs[3] = cconf( x, y+1 );
 
-    if ( T(state) ) { // transmission state
-      // transisition rule (T.1):
-      for ( k = 0; k < 4; k++ ) {
-        if ( T(nbs[k]) && ( abs(k-(A_UNSHIFT(nbs[k]))) == 2)
-             && ((nbs[k]&u) != (state&u)) && (nbs[k]&eps)  ) {
-          // (T.1)(alpha)
-          nconf( i, j ) = UMASK;
-          break;
-        }
+  if ( T(state) ) { // transmission state
+    // transisition rule (T.1):
+    for ( k = 0; k < 4; k++ ) {
+      if ( T(nbs[k]) && ( abs(k-(A_UNSHIFT(nbs[k]))) == 2)
+           && ((nbs[k]&u) != (state&u)) && (nbs[k]&eps)  ) {
+        // (T.1)(alpha)
+        nconf( x, y ) = UMASK;
+        break;
       }
-      if ( k < 4 ) continue;
+    }
+    if ( k < 4 ) continue;
 
-      // (T.1)(beta)
-      for ( k = 0; k < 4; k++ ) {
-        if ( T(nbs[k]) && (abs((A_UNSHIFT(nbs[k]))-(A_UNSHIFT(state))) != 2)
-             && (abs(k-(A_UNSHIFT(nbs[k]))) == 2)
-             && ((nbs[k]&u) == (state&u) ) && (nbs[k]&eps) ) {
-          // (T.1)(beta)(a)
-          nconf( i, j ) = state | eps;
-          ADDTONLIST(i,j);
-          break;
-        }
-        if ( C(nbs[k]) && (nbs[k]&e0) && (k-(A_UNSHIFT(state)) != 0) ) {
-          // (T.1)(beta)(b)
-          nconf( i, j ) = state | eps;
-          ADDTONLIST(i,j);
-          break;
-        }
+    // (T.1)(beta)
+    for ( k = 0; k < 4; k++ ) {
+      if ( T(nbs[k]) && (abs((A_UNSHIFT(nbs[k]))-(A_UNSHIFT(state))) != 2)
+           && (abs(k-(A_UNSHIFT(nbs[k]))) == 2)
+           && ((nbs[k]&u) == (state&u) ) && (nbs[k]&eps) ) {
+        // (T.1)(beta)(a)
+        nconf( x, y ) = state | eps;
+        MARKNBH( x, y );
+        break;
       }
-      
-      if ( k < 4 ) continue;
+      if ( C(nbs[k]) && (nbs[k]&e0) && (k-(A_UNSHIFT(state)) != 0) ) {
+        // (T.1)(beta)(b)
+        nconf( x, y ) = state | eps;
+        MARKNBH( x, y );
+        break;
+      }
+    }
+	
+    if ( k < 4 ) continue;
 
-      // (T.1)(gamma)
-      nconf( i, j ) = TMASK | (state&u) | (state&a);
-      ADDTONLIST(i,j);
-    } // end of T(state)
+    // (T.1)(gamma)
+    // don't enlist, since cell is not active
+    MARKNBH( x, y );
+    nconf( x, y ) = TMASK | (state&u) | (state&a);
+  } // end of T(state)
 
 
-    else if ( C(state) ) { // confluent state
-      // transistion rule (T.2)
+  else if ( C(state) ) { // confluent state
+    // transistion rule (T.2)
+    for ( k = 0; k < 4; k++ ) {
+      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+           && (nbs[k]&eps) && (nbs[k]&u) ) {
+        // (T.2)(alpha)
+        // don't enlist, since cell is not active
+        nconf( x, y ) = UMASK;
+        break;
+      }
+    }
+    if ( k < 4 ) continue;
+       	
+    // (T.2)(beta)
+    for( k = 0; k < 4; k++ ) {
+      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+           && (nbs[k]&eps) && !(nbs[k]&u) ) {
+        // (T.2)(beta)(a)
+        break;
+      }
+    }
+    if ( k < 4 ) {
       for ( k = 0; k < 4; k++ ) {
         if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
-          && (nbs[k]&eps) && (nbs[k]&u) ) {
-          // (T.2)(alpha)
-          nconf( i, j ) = UMASK;
+             && !(nbs[k]&eps) && !(nbs[k]&u) ) {
+          // (T.2)(beta)(b)
           break;
         }
       }
-      if ( k < 4 ) continue;
+      if ( k == 4 ) {
+        nconf( x, y ) = CMASK | e1 | ((state&e1)>>1);
+        // don't enlist, since cell is not active
+        continue;
+      }
+    }
+       	
+    // (T.2)(gamma)
+    nconf( x, y ) = CMASK | ((state&e1)>>1);
+    MARKNBH( x, y );
+  } // end of C(state)
 
-      // (T.2)(beta)
-      for( k = 0; k < 4; k++ ) {
-        if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
-             && (nbs[k]&eps) && !(nbs[k]&u) ) {
-      // (T.2)(beta)(a)
+  else if ( U(state) ) {  // unexcitable state
+    // transition rule (T.3)
+    for ( k = 0; k < 4; k++ ) {
+      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+        // (T.3)(alpha)
+        nconf( x, y ) = SMASK;
+        MARKNBH( x, y );
+        break;
+      }
+    }
+    // (T.3)(beta)
+    // doesn' change the state
+  } // end of U(state)
+
+  else if ( S(state) ) { // sensitized state
+    if ( !(state&sc1)  ) {
+      // transition rule (T.4)
+      for ( k = 0; k < 4; k++ ) {
+        if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+          // (T.4)(alpha)
+          nconf( x, y ) = state | (s0<<(2-SC_UNSHIFT(state)));
+          MARKNBH( x, y );
           break;
         }
       }
-      if ( k < 4 ) {
+      // (T.4)(beta)
+      // doesn't change the state but the counter
+      nconf( x, y ) += sc0;
+      MARKNBH( x, y );
+    } else {
+      if ( (state&sc) == sc ) {
         for ( k = 0; k < 4; k++ ) {
-          if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
-               && !(nbs[k]&eps) && !(nbs[k]&u) ) {
-            // (T.2)(beta)(b)
+          if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+            nconf( x, y ) = TMASK | a0;
+            MARKNBH( x, y );
             break;
           }
         }
         if ( k == 4 ) {
-          nconf( i, j ) = CMASK | e1 | ((state&e1)>>1);
-          ADDTONLIST(i,j);
-          continue;
+          nconf( x, y ) = TMASK;
+          MARKNBH( x, y );
         }
-      }
-
-      // (T.2)(gamma)
-      nconf( i, j ) = CMASK | ((state&e1)>>1);
-      ADDTONLIST(i,j);
-    } // end of C(state)
-
-    else if ( U(state) ) {  // unexcitable state
-      // transition rule (T.3)
-      for ( k = 0; k < 4; k++ ) {
-        if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
-          // (T.3)(alpha)
-          nconf( i, j ) = SMASK;
-          ADDTONLIST(i,j);
-          break;
-        }
-      }
-      // (T.3)(beta)
-      // doesn' change the state
-    } // end of U(state)
-
-
-    else if ( S(state) ) { // sensitized state
-      if ( !(state&sc1)  ) {
-        // transition rule (T.4)
+      } else {
         for ( k = 0; k < 4; k++ ) {
           if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
-            // (T.4)(alpha)
-            nconf( i, j ) = state | (s0<<(2-SC_UNSHIFT(state)));
-            ADDTONLIST(i,j);
+            nconf( x, y ) = state | s0;
+            MARKNBH( x, y );
             break;
           }
         }
-        // (T.4)(beta)
-        // doesn't change the state but the counter
-        nconf( i, j ) += sc0;
-      } else {
-        if ( (state&sc) == sc ) {
-          for ( k = 0; k < 4; k++ ) {
-            if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
-              nconf( i, j ) = TMASK | a0;
-              ADDTONLIST(i,j);
-              break;
-            }
-          }
-          if ( k == 4 ) {
-            nconf( i, j ) = TMASK;
-            ADDTONLIST(i,j);
-          }
-        } else {
-          for ( k = 0; k < 4; k++ ) {
-            if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
-              nconf( i, j ) = state | s0;
-              ADDTONLIST(i,j);
-              break;
-            }
-          }
-          nconf( i, j ) += sc0;
-          ADDTONLIST(i,j);
+        nconf( x, y ) += sc0;
+        MARKNBH( x, y );
 
-          if ( nconf( i, j ) & s ) {
-            // make transition from sensitized to transmission or confluent state
-            l = nconf( i, j );
-            if ( (l & s) == s ) {
-              nconf( i, j ) = CMASK;
-              ADDTONLIST(i,j);
-            } else {
-              // other leaves of the S-to-T-transition tree of depth 3
-              l += s0;
-              nconf( i, j ) = TMASK | ((l&s)<<6);
-              ADDTONLIST(i,j);
-            }
+        if ( nconf( x, y ) & s ) {
+          // make transition from sensitized to transmission or confluent state
+          l = nconf( x, y );
+          if ( (l & s) == s ) {
+            nconf( x, y ) = CMASK;
+            MARKNBH( x, y );
+          } else {
+            // other leaves of the S-to-T-transition tree of depth 3
+            l += s0;
+            nconf( x, y ) = TMASK | ((l&s)<<6);
+            MARKNBH( x, y );
           }
-        }// else {
-          // stay for another run
-          //}
-      }
-    }
-    else  {
-      // this state is undefined!
+        }
+      }// else {
+      // stay for another run
+      //}
     }
   }
-
+    
+  else  {
+    // this state is undefined!
+  }
+}
+cCounter = nCounter;
+nCounter = 0;
 """
-
         cconf = self.currConf
         nconf = self.nextConf
         sizeX = self.sizeX
         sizeY = self.sizeY
-        cActArr = self.cActArray
-        nActArr = self.nActArray
-        weave.inline( vonNeumannCode, [ 'cconf', 'nconf', 'sizeX', 'sizeY', 
-                                        'cActArr', 'nActArr' ],
+        cCounter = self.cCounter
+        nCounter = self.nCounter
+        cActArr = self.cActArr
+        nActArr = self.nActArr
+
+        weave.inline( vonNeumannCodeFewStates, [ 'cconf', 'nconf', 'sizeX', 'sizeY',
+                                                 'cCounter', 'nCounter', 'cActArr', 'nActArr' ],
                       type_converters = converters.blitz,
                       compiler = 'gcc' )
         self.currConf = self.nextConf.copy()
-        ## see vonNeumann::enlist
-        self.cActArray,self.nActArray = self.nActArray,self.cActArray
+        self.cActArr, self.nActArr = self.nActArr.copy(), self.cActArr.copy()
+
 
 if __name__ == "__main__":
     sizeX, sizeY = 10, 10

@@ -45,7 +45,7 @@ Simulation:
   CTRL-s          Save currently shown configuration to file
   CTRL-o          Open configuration from file
   'h'             Print this help
-  'q'             Quit
+  'q' or ESC      Quit
 
 
 """
@@ -168,7 +168,9 @@ class Simulator():
 
             # pygame-events
             for e in pygame.event.get():
-                if e.type == pygame.MOUSEBUTTONDOWN:
+                if e.type == pygame.QUIT:
+                    sys.exit(1)
+                elif e.type == pygame.MOUSEBUTTONDOWN:
                     ev = pygame.event.Event( pygame.MOUSEBUTTONDOWN, 
                                              pos=self.display.getCACoordinates(e.pos),
                                              button=e.button )
@@ -312,7 +314,7 @@ class Simulator():
                             self.display.drawConf( self.ca.getConf(), True )
                                 
 
-                    elif e.unicode == "q":
+                    elif e.unicode == "q" or e.key == pygame.K_ESCAPE:
                         sys.exit(1)
                         
                     elif e.unicode == "r":
