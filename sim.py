@@ -75,21 +75,26 @@ class Simulator():
         ## scale by which a single cell is displayed (pixel)
         self.scale = scale
 
-        ## a list of histograms that are used to visualize the distribution of different 
-        # states in the displayed conf. Since this is not always useful (vonNeumann...?!), it's not always needed...
-        self.histograms = []
-#        self.histograms.append( Histogram.VBars( 8, 1600, self.ca.palette, self.ca.info ) )
-
         ## a map where one can get the object to a given type and size of CA
-        self.caDict = { (CAType.upper(), (sizeX, sizeY)): self.getNewCA( CAType, confFile, random, sizeX, sizeY, scale, oneLiner) }
+        self.caDict = { (CAType.upper(), (sizeX, sizeY)):
+                            self.getNewCA( CAType, confFile, random, 
+                                           sizeX, sizeY, scale, oneLiner) }
 
         ## references to the currently used CA and Display
         self.ca, self.display = self.caDict[ (CAType.upper(), (sizeX, sizeY)) ]
 
-        ## a map to the marked configurations that can be reloaded. You can mark a configuration by hitting 'm' during the simulation
+        ## a list of histograms that are used to visualize the distribution of different 
+        # states in the displayed conf. Since this is not always useful (vonNeumann...?!),
+        # it's not always needed...
+        self.histograms = []
+#        self.histograms.append( Histogram.VBars( 8, sizeX*sizeY, self.ca.palette, self.ca.info ) )
+
+        ## a map to the marked configurations that can be reloaded. You can mark a
+        # configuration by hitting 'm' during the simulation
         self.caConfDict = { (CAType, (sizeX, sizeY) ): ([],[]) }
 
-        ## delta between two different levels of delaying the simulation to slow it down and have a look
+        ## delta between two different levels of delaying the simulation to slow it down
+        # and have a look
         self.delayGranularity = 3
 
         ## the current level of delay

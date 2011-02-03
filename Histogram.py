@@ -146,18 +146,20 @@ class Histogram():
 ## use these! ##
 class VBars(Histogram):
     def runProcess( self, conn ):
-        pygame.init()
-        pygame.display.set_caption( "VBar-Histogram" )
-
+        pygame.display.init()
+#        pygame.display.set_caption( "VBar-Histogram" )
+        print "iuzgozg"
         # 20 pixels per bar, 30 pixels between bars, 65 pixels on each side
         self.histWindowSize = ( ((self.N*20)+((self.N-1)*30)+65+65), 100 )
         self.offsetX = 55
         infoPos = self.getInfoPositions( self.histWindowSize[0]+self.offsetX )
         self.offsetY = infoPos[len(infoPos)-1][1][1]
+        print "iuzgozg"
 
         # setting surface up and dividing it into subsurfs
         self.surf = pygame.display.set_mode( (self.histWindowSize[0] + self.offsetX,
                                               self.histWindowSize[1] + self.offsetY) )
+        print "iuzgozg"
         self.scaleSubSurf = self.surf.subsurface( (0, 0, 
                                                    self.offsetX, 
                                                    self.histWindowSize[1] ) )
@@ -166,6 +168,7 @@ class VBars(Histogram):
         self.infoSubSurf = self.surf.subsurface( (0, self.histWindowSize[1],
                                                   self.histWindowSize[0] + self.offsetX,
                                                   self.offsetY ) )
+        print "iuzgozg"
         
         # scale         
         pygame.draw.line( self.scaleSubSurf, white, (50,self.histWindowSize[1]*0.1), 
