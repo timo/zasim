@@ -18,6 +18,11 @@ import copy
 # It handles zooming, resizing, scrolling, handling 1D and 2D CA, 
 # the colors used for different states of a cell, user input like
 # file names and displaying short info messages and updating everything over and over again.
+#
+# The general difference between DisplaySquares and DisplayImages is, that squares are uni-colored
+# and can be blitted using only 1x1 pixel per cell and afterwards scaled up to the actual 
+# screensize, while images have to be scaled to the maximum size s, so that (s * #cells) doesn't
+# exceed the screensize, and afterwards be scaled up a little to fit the screen exactly.
 class Display():
     ## Constructor, initializes pretty everything
     # @param size The size of the display in cells*cells

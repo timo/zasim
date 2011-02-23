@@ -117,11 +117,20 @@ def&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="class
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a9b029532645cb0595e6144f3e2eb3d88"></a><!-- doxytag: member="CA::vonNeumann::nextConf" ref="a9b029532645cb0595e6144f3e2eb3d88" args="" -->
 &nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCA_1_1vonNeumann.html#a9b029532645cb0595e6144f3e2eb3d88">nextConf</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The current configuration is held here. <br/></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a2abc06044537a2dc1edfff90196bcb16"></a><!-- doxytag: member="CA::vonNeumann::cActArr" ref="a2abc06044537a2dc1edfff90196bcb16" args="" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><b>cActArr</b></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a8d106e61600fe24f08ef28bc696986a5"></a><!-- doxytag: member="CA::vonNeumann::nActArr" ref="a8d106e61600fe24f08ef28bc696986a5" args="" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><b>nActArr</b></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a991286f9d4929f05cd57352fe5e5f3b2"></a><!-- doxytag: member="CA::vonNeumann::cList" ref="a991286f9d4929f05cd57352fe5e5f3b2" args="" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><b>cList</b></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a6ade2d9c1ee33f54df1c76d7b56d6ff4"></a><!-- doxytag: member="CA::vonNeumann::nList" ref="a6ade2d9c1ee33f54df1c76d7b56d6ff4" args="" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><b>nList</b></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a0d3e18a3dbe57eb071c2f32ac8b2d0d0"></a><!-- doxytag: member="CA::vonNeumann::cCounter" ref="a0d3e18a3dbe57eb071c2f32ac8b2d0d0" args="" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><b>cCounter</b></td></tr>
+<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="abc3d300db5df665a8293abab9b236c9f"></a><!-- doxytag: member="CA::vonNeumann::nCounter" ref="abc3d300db5df665a8293abab9b236c9f" args="" -->
+&nbsp;</td><td class="memItemRight" valign="bottom"><b>nCounter</b></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top">&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCA_1_1vonNeumann.html#a0a7d501e47570c4503ed06547394a9d2">displayConf</a></td></tr>
 <tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">The configuration that is blittet.  <a href="#a0a7d501e47570c4503ed06547394a9d2"></a><br/></td></tr>
-<tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="a30e9aea953ff8e0d3b8769207be7550a"></a><!-- doxytag: member="CA::vonNeumann::nActArray" ref="a30e9aea953ff8e0d3b8769207be7550a" args="" -->
-&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCA_1_1vonNeumann.html#a30e9aea953ff8e0d3b8769207be7550a">nActArray</a></td></tr>
-<tr><td class="mdescLeft">&nbsp;</td><td class="mdescRight">see <a class="el" href="classCA_1_1vonNeumann.html#adc692ced7299ded119afb2cb7ecf35ff" title="Used to append cells to the list of cells to handle in the next step.">vonNeumann.enlist</a> <br/></td></tr>
 <tr><td colspan="2"><h2>Static Public Attributes</h2></td></tr>
 <tr><td class="memItemLeft" align="right" valign="top"><a class="anchor" id="ae6fecceb19b67789dc45c3f5f2206a43"></a><!-- doxytag: member="CA::vonNeumann::palette" ref="ae6fecceb19b67789dc45c3f5f2206a43" args="" -->
 list&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="classCA_1_1vonNeumann.html#ae6fecceb19b67789dc45c3f5f2206a43">palette</a> = []</td></tr>
@@ -327,6 +336,7 @@ list&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 <div class="memdoc">
 
 <p>Update cells, but only those that changed or are in the neighbourhood of one of those. </p>
+<p>This is done via bitchecking, and hence admittedly difficult to read. Every subsection of the transitionfunction from von Neumann's paper is marked. </p>
 
 </div>
 </div>
@@ -383,7 +393,7 @@ list&nbsp;</td><td class="memItemRight" valign="bottom"><a class="el" href="clas
 </iframe>
 </div>
 
-<hr class="footer"/><address style="text-align: right;"><small>Generated on Thu Jan 20 14:06:33 2011 by&nbsp;
+<hr class="footer"/><address style="text-align: right;"><small>Generated on Wed Feb 23 14:18:47 2011 by&nbsp;
 <a href="http://www.doxygen.org/index.html">
 <img class="footer" src="doxygen.png" alt="doxygen"/></a> 1.6.3 </small></address>
 </body>

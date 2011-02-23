@@ -719,6 +719,8 @@ class vonNeumann ( CA ):
         # used when updating only some cells instead of all....
         self.cActArr = np.zeros( (self.sizeX*self.sizeY), bool )
         self.nActArr = np.zeros( (self.sizeX*self.sizeY), bool )
+        self.cList = np.zeros( (self.sizeX*self.sizeY), int )
+        self.nList = np.zeros( (self.sizeX*self.sizeY), int )
         self.cCounter = 0
         self.nCounter = 0
         if confFile != "":
@@ -756,14 +758,15 @@ class vonNeumann ( CA ):
 
     ## Used to append cells to the list of cells to handle in the next step
     def enlist( self, x, y ):
-        self.cCounter += (not self.cActArr[ x+y*self.sizeX ]) + (not self.cActArr[ (x-1)+(y)*self.sizeX ]) + (not self.cActArr[ (x+1)+(y)*self.sizeX ])
-        self.cCounter += (not self.cActArr[ (x)+(y-1)*self.sizeX ]) + (not self.cActArr[ (x)+(y+1)*self.sizeX ])
-        self.cActArr[ x+y*self.sizeX ] = True
-        self.cActArr[ (x-1)+(y)*self.sizeX ] = True
-        self.cActArr[ (x+1)+(y)*self.sizeX ] = True
-        self.cActArr[ (x)+(y-1)*self.sizeX ] = True
-        self.cActArr[ (x)+(y+1)*self.sizeX ] = True
-
+        for i in ( ( (x)   + (y)*self.sizeX ), 
+                   ( (x+1) + (y)*self.sizeX ),
+                   ( (x-1) + (y)*self.sizeX ),
+                   ( (x) + (y-1)*self.sizeX ),
+                   ( (x) + (y+1)*self.sizeX ) ):
+            if self.cActArr[ i ] == False:
+                self.cActArr[ i ] = True
+                self.cList[self.cCounter] = i
+                self.cCounter += 1
 
     def eventFunc( self, e ):
         EPS = 128
@@ -914,8 +917,11 @@ class vonNeumann ( CA ):
         # now, get all active cells:
         for x in range(1,self.sizeX-1):
             for y in range(1,self.sizeY-1):
-                self.enlist(x,y)
-
+                if self.currConf[x,y] in ( 2049, 2050, 2051, 4096, 4128, 4144, 4160,
+                                           4168, 4176, 4184, 4192, 6272, 6528, 6784,
+                                           7040, 7296, 7552, 7808, 8064 ):
+                    self.enlist(x,y)
+                
 
     def loopFunc( self ):
         self.step()
@@ -925,6 +931,8 @@ class vonNeumann ( CA ):
         self.displayConf = np.zeros( self.size, int )
         self.cActArr = np.zeros( self.sizeX*self.sizeY, bool )
         self.nActArr = np.zeros( self.sizeX*self.sizeY, bool )
+        self.cList = np.zeros( (self.sizeX*self.sizeY), int )
+        self.nList = np.zeros( (self.sizeX*self.sizeY), int )
 
     def setConf( self, conf ):
         if conf.shape != self.currConf.shape:
@@ -1161,6 +1169,8 @@ class vonNeumann ( CA ):
 
 
     ## Update cells, but only those that changed or are in the neighbourhood of one of those.
+    # This is done via bitchecking, and hence admittedly difficult to read.
+    # Every subsection of the transitionfunction from von Neumann's paper is marked.
     def updateAllCellsWeaveInlineFewStates( self ):
 #  
 # All states are encoded in a bitmask:
@@ -1180,6 +1190,7 @@ class vonNeumann ( CA ):
 #                               | |  |-----------------------------> direction
 #                               | |--------------------------------> direction
 #                               |----------------------------------> special
+#
 #
         vonNeumannCodeFewStates = """
 #include <stdlib.h>
@@ -1208,40 +1219,46 @@ class vonNeumann ( CA ):
 #define a    768  // a1|a0
 #define u   1024
 
+/* checkers for different kinds of states */
 #define U(x) ((x) == 0)
 #define C(x) (((x) & CMASK) == CMASK)
 #define S(x) (((x) & SMASK) == SMASK)
 #define T(x) (((x) & TMASK) == TMASK)
 
+/* get the direction of a T-state and the 'age' of an S-state */
 #define A_UNSHIFT(x)  (((x)&a)>>8)
 #define SC_SHIFT(x)   ((x)<<5)
 #define SC_UNSHIFT(x) (((x)&sc)>>5)
 
+/* enlist a cell to be checked in the next step */
+#define ENLIST(id) if ( !nActArr( (id) ) ) {\
+                     nActArr( id ) = true;\
+                     nList( nCounter++ ) = id;\
+                   }
 
-#define ENLIST(x,y) nCounter += ( !nActArr( (x)+(y)*sizeX ) );\
-                    nActArr( (x)+(y)*sizeX ) = true;
-#define MARKNBH(x,y) ENLIST((x),(y));\
-                     ENLIST((x)-1,(y));\
-                     ENLIST((x)+1,(y));\
-                     ENLIST((x),(y)-1);\
-                     ENLIST((x),(y)+1); /*printf( "seed in list: %d,%d\\n", x, y );*/
+/* enlist a cell and it's neighbourhood to be checke in the next step */
+#define MARKNBH(x,y) ENLIST( (x)+(y)*sizeX );\
+                     ENLIST( (x+1)+(y)*sizeX );\
+                     ENLIST( (x-1)+(y)*sizeX );\
+                     ENLIST( (x)+(y-1)*sizeX );\
+                     ENLIST( (x)+(y+1)*sizeX );
+
 
 #include <stdio.h>
 #line 1 "VonNeumannCodeInCA.py"
 int i, j, k, l, x, y, aa;
+
+/* the neighbours' states */
 int nbs[4];
+/* the 'own' state */
 int state;
-for ( i = 0; i < sizeX*sizeY && cCounter > 0; i++ ) {
-//  printf("%d %d\\n", i, (int)cActArr(i) );
-  if ( cActArr(i) == true ) {
-    cActArr(i) = false;
-    x = i % sizeX;
-    y = i / sizeX;
-    cCounter--;
-  } else {
-    continue;
-  }
-//  printf("i: %d: Updating %d,%d\\n", i, x, y );
+/* the number of cells that have to be checked in the next step and is returned as return_val */
+int nCounter = 0;
+for ( i = 0; i < cCounter; i++ ) {
+  x = cList( i ) % sizeX;
+  y = cList( i ) / sizeX;
+  cActArr( cList( i ) ) = false;
+
   state = cconf( x, y );
   nbs[0] = cconf( x+1, y );
   nbs[1] = cconf( x, y-1 );
@@ -1282,7 +1299,7 @@ for ( i = 0; i < sizeX*sizeY && cCounter > 0; i++ ) {
 
     // (T.1)(gamma)
     // don't enlist, since cell is not active
-    MARKNBH( x, y );
+//    MARKNBH( x, y );
     nconf( x, y ) = TMASK | (state&u) | (state&a);
   } // end of T(state)
 
@@ -1305,6 +1322,7 @@ for ( i = 0; i < sizeX*sizeY && cCounter > 0; i++ ) {
       if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
            && (nbs[k]&eps) && !(nbs[k]&u) ) {
         // (T.2)(beta)(a)
+        MARKNBH( x, y );
         break;
       }
     }
@@ -1313,12 +1331,13 @@ for ( i = 0; i < sizeX*sizeY && cCounter > 0; i++ ) {
         if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
              && !(nbs[k]&eps) && !(nbs[k]&u) ) {
           // (T.2)(beta)(b)
+          MARKNBH( x, y );
           break;
         }
       }
       if ( k == 4 ) {
         nconf( x, y ) = CMASK | e1 | ((state&e1)>>1);
-        // don't enlist, since cell is not active
+        MARKNBH( x, y );
         continue;
       }
     }
@@ -1343,55 +1362,48 @@ for ( i = 0; i < sizeX*sizeY && cCounter > 0; i++ ) {
   } // end of U(state)
 
   else if ( S(state) ) { // sensitized state
+    MARKNBH( x, y );
     if ( !(state&sc1)  ) {
       // transition rule (T.4)
       for ( k = 0; k < 4; k++ ) {
         if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
           // (T.4)(alpha)
           nconf( x, y ) = state | (s0<<(2-SC_UNSHIFT(state)));
-          MARKNBH( x, y );
           break;
         }
       }
       // (T.4)(beta)
       // doesn't change the state but the counter
       nconf( x, y ) += sc0;
-      MARKNBH( x, y );
     } else {
       if ( (state&sc) == sc ) {
         for ( k = 0; k < 4; k++ ) {
           if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
             nconf( x, y ) = TMASK | a0;
-            MARKNBH( x, y );
             break;
           }
         }
         if ( k == 4 ) {
           nconf( x, y ) = TMASK;
-          MARKNBH( x, y );
         }
       } else {
         for ( k = 0; k < 4; k++ ) {
           if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
             nconf( x, y ) = state | s0;
-            MARKNBH( x, y );
             break;
           }
         }
         nconf( x, y ) += sc0;
-        MARKNBH( x, y );
 
         if ( nconf( x, y ) & s ) {
           // make transition from sensitized to transmission or confluent state
           l = nconf( x, y );
           if ( (l & s) == s ) {
             nconf( x, y ) = CMASK;
-            MARKNBH( x, y );
           } else {
             // other leaves of the S-to-T-transition tree of depth 3
             l += s0;
             nconf( x, y ) = TMASK | ((l&s)<<6);
-            MARKNBH( x, y );
           }
         }
       }// else {
@@ -1404,25 +1416,27 @@ for ( i = 0; i < sizeX*sizeY && cCounter > 0; i++ ) {
     // this state is undefined!
   }
 }
-cCounter = nCounter;
-nCounter = 0;
+return_val = nCounter;
 """
         cconf = self.currConf
         nconf = self.nextConf
         sizeX = self.sizeX
         sizeY = self.sizeY
         cCounter = self.cCounter
-        nCounter = self.nCounter
+        cList = self.cList
+        nList = self.nList
         cActArr = self.cActArr
         nActArr = self.nActArr
+        print "IN PY-1: cCounter", cCounter
 
-        weave.inline( vonNeumannCodeFewStates, [ 'cconf', 'nconf', 'sizeX', 'sizeY',
-                                                 'cCounter', 'nCounter', 'cActArr', 'nActArr' ],
-                      type_converters = converters.blitz,
-                      compiler = 'gcc' )
+        self.cCounter = weave.inline( vonNeumannCodeFewStates, [ 'cconf', 'nconf', 'sizeX', 'sizeY',
+                                                                 'cList', 'nList', 'cCounter',
+                                                                 'cActArr', 'nActArr' ],
+                                      type_converters = converters.blitz,
+                                      compiler = 'gcc' )
         self.currConf = self.nextConf.copy()
         self.cActArr, self.nActArr = self.nActArr.copy(), self.cActArr.copy()
-
+        self.cList = self.nList
 
 if __name__ == "__main__":
     sizeX, sizeY = 10, 10
