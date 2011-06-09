@@ -13,7 +13,7 @@ from scipy.misc import pilutil
 import Image
 
 ## @package CA.py
-# 
+#
 # Provides us with classes for cellular automata. If a new automaton is to be implemented,
 # it should find it's place here as well.
 
@@ -39,15 +39,15 @@ class CA():
 
     ## Tells the Display module how to show each state
     palette = []
-    
-    ## Is executed when any events, such as mouseclicks or keyboardhits, are recorded and 
+
+    ## Is executed when any events, such as mouseclicks or keyboardhits, are recorded and
     # relayed to the cellular automaton.
     def eventFunc( self, event ):
         print "function eventFunc() for", self.getTitle(), "not implemented yet"
 
     ## Exports the current configuration to a file in XASIM-format.
     # The first lines states the width, the next line the height, if the cellular automaton is 2 dimensional,
-    # the configuration itself beginning after that, consists all cell's states in a row, 
+    # the configuration itself beginning after that, consists all cell's states in a row,
     # row by row, so the shape of the configuration file is the same as the configuration itself.
     # Notice the ghostcells at the borders!
     # \verbatim
@@ -118,7 +118,7 @@ class CA():
                 f.close()
 
     ## Returns the type of the cellular automaton.
-    # It's a upper-cased version of CA::title, used to identify it internally as one or 
+    # It's a upper-cased version of CA::title, used to identify it internally as one or
     # another cellular automaton.
     def getType( self ):
         return self.title.upper()
@@ -126,7 +126,7 @@ class CA():
     ## Returns the current configuration
     def getConf( self ):
         return self.currConf
-    
+
     ## Returns the cellular automaton's dimension
     def getDim( self ):
         return self.dim
@@ -134,12 +134,12 @@ class CA():
     ## Returns the cellular automaton's size as (height,width)
     def getSize( self ):
         return self.size
-    
+
     ## Returns the cellular automaton's title.
     # It's a non-upper-cased version of CA::title, used to display it in the titlebar
     def getTitle( self ):
         return self.title
-    
+
     ## Imports a configuration from a file in XASIM-Format.
     # For XASIM-Format, see CA::exportConf.
     # For vonNeumann cellular automaton, RLE-files are supported as well (see vonNeumann::importConf).
@@ -165,21 +165,21 @@ class CA():
                 sizeY = f.readline()
                 # remove "\n" at end of line
                 sizeY = sizeY[0:-1]
-                # check 
+                # check
                 if not sizeY.isdigit():
                     print "ERROR importing conf!"
-                    return 
+                    return
                 sizeY = int(sizeY)
                 if sizeX != self.sizeX or sizeY != self.sizeY:
                     self.resize( sizeX, sizeY )
                     retVal = self.SIZECHANGED
 
-            else: 
+            else:
                 sizeY = 1
                 if sizeX != self.sizeX:
                     self.resize( sizeX )
                     retVal = self.SIZECHANGED
-                
+
             importRegexp = re.compile("\((\d*)\)")
             for j in range(sizeY):
                 content = ['', '', f.readline()[0:-1]]
@@ -198,7 +198,7 @@ class CA():
     def importConfAnnotatedLines( self, filename ):
         #### WERE USING XASIM-EXPORT-STYLE ####
         # don't use this function but importConf()
-        
+
             with open( filename, 'r' ) as f:
                 for line in f:
                     line = line[0:-1]
@@ -235,7 +235,7 @@ class CA():
                     if sizeX != self.sizeX or sizeY != self.sizeY:
                         retVal = self.SIZECHANGED
                         self.resize( sizeX, sizeY )
-                    
+
                 # y: counter of imported lines (checking!)
                 y = 0
                 for line in f:
@@ -269,9 +269,9 @@ class CA():
     ## Prototype... Not really implemented yet
     def quit( self ):
         print "function quit() not implemented yet"
-    
+
     ## Resizing the cellular automaton.
-    # Not in use right now, 
+    # Not in use right now,
     def resize( self, sizeX, sizeY = None ):
         ## width of the ca
         self.sizeX = sizeX
@@ -290,7 +290,7 @@ class CA():
         elif self.getDim() == 2:
             self.currConf = np.zeros( self.size, int )
             self.nextConf = np.zeros( self.size, int )
-        
+
     ## Set the current configuration to conf.
     # This is used when switching between marked configurations and cellular automaton types.
     # @param conf The configuration to load.
@@ -299,7 +299,7 @@ class CA():
         self.nextConf = conf.copy()
 
 
-## A cellular automaton that simulates all one dimensional binary rule cellular automaton, 
+## A cellular automaton that simulates all one dimensional binary rule cellular automaton,
 # such as Rule 110. CA::binRule handles all one dimenasional binary cellular automaton
 # with the neighbourhood (-1,0,1).
 class binRule( CA ):
@@ -337,7 +337,7 @@ class binRule( CA ):
             print "Available initflags:"
             print "INIT_ZERO, INIT_ONES, INIT_RAND, INIT_FILE + filename"
             sys.exit(1)
-        
+
         if filename != "":
             self.importConf( filename )
 
@@ -403,9 +403,9 @@ class ballRule( binRule ):
 
         pygame.init()
         pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
-        
+
         palette = []
-        for filename in ( "images/balls/ball_red.png" , "images/balls/ball_blue.png" ): 
+        for filename in ( "images/balls/ball_red.png" , "images/balls/ball_blue.png" ):
             img = pygame.image.load( filename ).convert()
             self.palette.append( img )
 
@@ -413,7 +413,7 @@ class ballRule( binRule ):
 
 ## The SandPile cellular automaton
 class sandPile( CA ):
-    
+
     #black = 0,0,0
     #white = 255,255,255
     #red = 255,0,0
@@ -423,13 +423,13 @@ class sandPile( CA ):
     #pink = 250,40,230
     #darkred = 95,0,16
     #yellow = 255,240,0
-    
+
 #    palette = [blue, white, yellow, darkred, grey, pink, green, red]
-    palette = [(0, 0, 0), (32, 32, 32), (64, 64, 64), (96, 96, 96), 
+    palette = [(0, 0, 0), (32, 32, 32), (64, 64, 64), (96, 96, 96),
                (128, 128, 128), (160, 160, 160), (192, 192, 192), (224, 224, 224)]
 
     ## Histogram info for each state
-    info = ( "state 0", "state 1", "state 2", "state 3", 
+    info = ( "state 0", "state 1", "state 2", "state 3",
              "state 4", "state 5", "state 6", "state 7" )
     ## The constructor
     def __init__( self, sizeX, sizeY, initConf, filename="" ):
@@ -441,8 +441,8 @@ class sandPile( CA ):
 
         ## The histogram over all states in the ca, as numpy.array.
         # Containing the absolute frequency of each state
-        self.histogram = np.zeros( 8, int ) 
-        
+        self.histogram = np.zeros( 8, int )
+
         if initConf == self.INIT_ZERO:
             self.currConf = np.zeros( ( sizeX, sizeY ), int )
             self.nextConf = np.zeros( ( sizeX, sizeY ), int )
@@ -463,7 +463,7 @@ class sandPile( CA ):
 
         if filename != "":
             self.importConf( filename )
-    
+
     ## Since a sandPile ca runs out of activity eventually if no grains are added, it has to
     # happen once in a while.
     # @param x X-coordinate where to add a grain
@@ -492,16 +492,16 @@ class sandPile( CA ):
                 self.addGrain( x, y )
             if e.button == 3:
                 self.setState( x, y, 0 )
-    
+
     ## Returns a histogram over the ca's states.
     def getHistogram( self ):
         # making histogram
-        # 
-        # note: when importing a new conf from file, a new histogram has to 
+        #
+        # note: when importing a new conf from file, a new histogram has to
         # be counted!
         # ( in case there has been made a change in that matter )
-        self.histogram = np.histogram( self.currConf, 
-                                       bins=np.arange(8), 
+        self.histogram = np.histogram( self.currConf,
+                                       bins=np.arange(8),
                                        normed=True )[0]
         return self.histogram
 
@@ -519,7 +519,7 @@ class sandPile( CA ):
             self.currConf[ x, y ] = s
             self.nextConf[ x, y ] = s
 
-    
+
     ## What to do in every step.
     # Calls sandPile::updateAllCellsWeaveInline, that uses scipy.weave.inline
     def step( self ):
@@ -535,7 +535,7 @@ class sandPile( CA ):
                     self.nextConf[ x-1, y ] = self.currConf[ x-1, y ] + 1
                     self.nextConf[ x, y+1 ] = self.currConf[ x, y+1 ] + 1
                     self.nextConf[ x, y-1 ] = self.currConf[ x, y-1 ] + 1
-                else: 
+                else:
                     self.nextConf[ x, y ] = self.currConf[ x, y ]
         self.currConf,self.nextConf = self.nextConf,self.currConf
 
@@ -574,7 +574,7 @@ for ( i = 1; i < sizeX-1; i++ ) {
                       type_converters = converters.blitz,
                       compiler = 'gcc' )
         self.currConf = self.nextConf.copy()
-        
+
 
 
 
@@ -585,12 +585,12 @@ class catPile( sandPile ):
     ## The constructor
     def __init__( self, sizeX, sizeY, initConf ):
         self.readImage( "cat.jpg" )
-    
+
     ## Reads the image of a cat that is being used as starting configuration
     def readImage( self, filename ):
         dummy_data = Image.open(filename)
         dummy_data = dummy_data.convert("I")
-        
+
         image = pilutil.fromimage(dummy_data)
         for i in range(len(image)):
             for j in range(len(image[0])):
@@ -609,16 +609,16 @@ class catPile( sandPile ):
 class ballPile( sandPile ):
     palette=[]
     def __init__( self, sizeX, sizeY, initConf, filename="" ):
-        sandPile.__init__( self, sizeX, sizeY, initConf, filename ) 
+        sandPile.__init__( self, sizeX, sizeY, initConf, filename )
 
         pygame.init()
         pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
 
         self.palette = []
-        for filename in ( 
-            "images/balls/ball_black.png", "images/balls/ball_red.png" , 
+        for filename in (
+            "images/balls/ball_black.png", "images/balls/ball_red.png" ,
             "images/balls/ball_blue.png" , "images/balls/ball_orange.png",
-            "images/balls/ball_green.png", "images/balls/ball_pink.png" , 
+            "images/balls/ball_green.png", "images/balls/ball_pink.png" ,
             "images/balls/ball_grey.png" , "images/balls/ball_white.png" ):
             img = pygame.image.load( filename ).convert()
             self.palette.append( img )
@@ -635,7 +635,7 @@ class ballPile( sandPile ):
 #  ...... 0 0 0 0 0 0 0 0 0 X X u a1 a0 eps sc1 sc0 s2 s1 s0 e1 e0
 #                           | | | |  |  |    |   |   |  |  |  |  |-> current e
 #  XX = 00 -> U    <--------| | | |  |  |    |   |   |  |  |  |----> next e
-#  XX = 01 -> C    <----------| | |  |  |    |   |   |  |  |     
+#  XX = 01 -> C    <----------| | |  |  |    |   |   |  |  |
 #  XX = 10 -> S                 | |  |  |    |   |   |  |  |-------> lsb on S
 #  XX = 11 -> T                 | |  |  |    |   |   |  |----------> ...
 #                               | |  |  |    |   |   |-------------> msb on S
@@ -657,11 +657,11 @@ class vonNeumann ( CA ):
         ## The ca's dimension
         self.dim = 2
         self.size = self.sizeX, self.sizeY = sizeX, sizeY
-        
-        ## A map from states according to the bitmask to 
+
+        ## A map from states according to the bitmask to
         # pygame blittable states ( between 0 and 28 )
-        self.displayableStateDict = { 
-            0: 0,     # U 
+        self.displayableStateDict = {
+            0: 0,     # U
             2048: 1,  #C00   2048
             2049: 2,  #C10   2048+1
             2050: 3,  #C01   2048+2
@@ -691,21 +691,21 @@ class vonNeumann ( CA ):
             7936: 27, #T130  6144+256+512+1024
             8064: 28, #T131  6144+128+256+1024+512
             }
-        
+
         ## A map from human readable vonNeumann states ( such as 'U', 'T020' and 'C11' )
         # actual states calculated via bitmask
         self.nameStateDict = { "U": 0,
                                "C00" : 2048, "C10" : 2049, "C01" : 2050, "C11" : 2051,
-                               "S"   : 4096, "S0"  : 4128, "S1"  : 4144, "S00" : 4160, 
-                               "S01" : 4168, "S10" : 4176, "S11" : 4184, "S000": 4192, 
-                               "T000": 6144, "T001": 6272, "T010": 6400, "T011": 6528, 
-                               "T020": 6656, "T032": 6784, "T030": 6912, "T031": 7040, 
+                               "S"   : 4096, "S0"  : 4128, "S1"  : 4144, "S00" : 4160,
+                               "S01" : 4168, "S10" : 4176, "S11" : 4184, "S000": 4192,
+                               "T000": 6144, "T001": 6272, "T010": 6400, "T011": 6528,
+                               "T020": 6656, "T032": 6784, "T030": 6912, "T031": 7040,
                                "T100": 7168, "T101": 7296, "T110": 7424, "T111": 7552,
                                "T120": 7680, "T121": 7808, "T130": 7936, "T131": 8064 }
 
         ## An array containing all correct states (see vonNeumann)
-        self.states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168, 
-                        4176, 4184, 4192, 6144, 6272, 6400, 6528, 6656, 6784, 
+        self.states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168,
+                        4176, 4184, 4192, 6144, 6272, 6400, 6528, 6656, 6784,
                         6912, 7040, 7168, 7296, 7424, 7552, 7680, 7808, 7936, 8064 ]
 
         ## The current configuration is held here
@@ -725,8 +725,8 @@ class vonNeumann ( CA ):
             self.importConf( confFile )
             self.nextConf = self.currConf.copy()
         ## The configuration that is blittet...
-        # But in this CA the states are not enumerable from 0..28, but scattered 
-        # between 0 and ~2^13, so we need a dict (see vonNeumann::displayableStateDict) 
+        # But in this CA the states are not enumerable from 0..28, but scattered
+        # between 0 and ~2^13, so we need a dict (see vonNeumann::displayableStateDict)
         # to map the states to 0..28, so the Display-module can display states
         # without knowing the difference
         self.displayConf = np.zeros( self.size, int)
@@ -735,20 +735,20 @@ class vonNeumann ( CA ):
         pygame.init()
         pygame.display.set_mode( self.size, 0, 8 )
 
-        for imgFile in ( "images/vonNeumann/U.jpg",    "images/vonNeumann/C00.jpg",  
-                         "images/vonNeumann/C01.jpg",  "images/vonNeumann/C10.jpg", 
-                         "images/vonNeumann/C11.jpg",  "images/vonNeumann/S000.jpg", 
-                         "images/vonNeumann/S00.jpg",  "images/vonNeumann/S01.jpg",  
-                         "images/vonNeumann/S0.jpg",   "images/vonNeumann/S10.jpg",  
-                         "images/vonNeumann/S11.jpg",  "images/vonNeumann/S1.jpg",   
-                         "images/vonNeumann/S.jpg",    "images/vonNeumann/T000.jpg", 
-                         "images/vonNeumann/T001.jpg", "images/vonNeumann/T010.jpg", 
-                         "images/vonNeumann/T011.jpg", "images/vonNeumann/T020.jpg", 
-                         "images/vonNeumann/T021.jpg", "images/vonNeumann/T030.jpg", 
-                         "images/vonNeumann/T031.jpg", "images/vonNeumann/T100.jpg", 
-                         "images/vonNeumann/T101.jpg", "images/vonNeumann/T110.jpg", 
-                         "images/vonNeumann/T111.jpg", "images/vonNeumann/T120.jpg", 
-                         "images/vonNeumann/T121.jpg", "images/vonNeumann/T130.jpg", 
+        for imgFile in ( "images/vonNeumann/U.jpg",    "images/vonNeumann/C00.jpg",
+                         "images/vonNeumann/C01.jpg",  "images/vonNeumann/C10.jpg",
+                         "images/vonNeumann/C11.jpg",  "images/vonNeumann/S000.jpg",
+                         "images/vonNeumann/S00.jpg",  "images/vonNeumann/S01.jpg",
+                         "images/vonNeumann/S0.jpg",   "images/vonNeumann/S10.jpg",
+                         "images/vonNeumann/S11.jpg",  "images/vonNeumann/S1.jpg",
+                         "images/vonNeumann/S.jpg",    "images/vonNeumann/T000.jpg",
+                         "images/vonNeumann/T001.jpg", "images/vonNeumann/T010.jpg",
+                         "images/vonNeumann/T011.jpg", "images/vonNeumann/T020.jpg",
+                         "images/vonNeumann/T021.jpg", "images/vonNeumann/T030.jpg",
+                         "images/vonNeumann/T031.jpg", "images/vonNeumann/T100.jpg",
+                         "images/vonNeumann/T101.jpg", "images/vonNeumann/T110.jpg",
+                         "images/vonNeumann/T111.jpg", "images/vonNeumann/T120.jpg",
+                         "images/vonNeumann/T121.jpg", "images/vonNeumann/T130.jpg",
                          "images/vonNeumann/T131.jpg" ):
             img = pygame.image.load( imgFile ).convert()
             self.palette.append( img )
@@ -756,7 +756,7 @@ class vonNeumann ( CA ):
 
     ## Used to append cells to the list of cells to handle in the next step
     def enlist( self, x, y ):
-        for i in ( ( (x)   + (y)*self.sizeX ), 
+        for i in ( ( (x)   + (y)*self.sizeX ),
                    ( (x+1) + (y)*self.sizeX ),
                    ( (x-1) + (y)*self.sizeX ),
                    ( (x) + (y-1)*self.sizeX ),
@@ -780,7 +780,7 @@ class vonNeumann ( CA ):
             state = self.states[self.displayConf[x][y]]
             mods = pygame.key.get_mods()
             s = 0
-            
+
             if e.button == 1:
                 # T-states
                 s = TSTATE
@@ -862,19 +862,19 @@ class vonNeumann ( CA ):
                 sizeY = int(line[0:line.find(",")])+2
                 line = line[line.find("rule = ")+7:]
                 rule = line[:-1]
-            
+
                 if sizeX != self.sizeX or sizeY != self.sizeY:
                     self.resize( sizeX, sizeY )
-            
+
                 rleStateDict = { ".": "U",
-                                 "A": "S",     "B": "S0",    "C": "S1",    "D": "S00", 
+                                 "A": "S",     "B": "S0",    "C": "S1",    "D": "S00",
                                  "E": "S01",   "F": "S10",   "G": "S11",   "H": "S000",
                                  "I": "T000",  "J": "T010",  "K": "T020",  "L": "T030",
                                  "M": "T001",  "N": "T011",  "O": "T021",  "P": "T031",
                                  "Q": "T100",  "R": "T110",  "S": "T120",  "T": "T130",
                                  "U": "T101",  "V": "T111",  "W": "T121",  "X": "T131",
                                  "pA": "C00",  "pB": "C01",  "pC": "C10",  "pD": "C11" }
-                
+
 # 63.8ILILILILIL$63.J.J.pA.pA.IJIJIJIJL$63.J.J.J.J9.IL$57.IL4IpAIpAIpAI
 # pAIpAIpAIpAIpA.LK$57.JIJ3.L.L.2LKLKLKLKLK.IL$57.J5.L.L.LILILILILIL.LK
 # .IL$57.J5.L.L.L.L.L.L.pA.pA.L2.JL$57.J5.16IL2.JL$57.J15.L6K2.JL$52.IL
@@ -919,7 +919,7 @@ class vonNeumann ( CA ):
                                            4168, 4176, 4184, 4192, 6272, 6528, 6784,
                                            7040, 7296, 7552, 7808, 8064 ):
                     self.enlist(x,y)
-                
+
 
     def loopFunc( self ):
         self.step()
@@ -947,14 +947,14 @@ class vonNeumann ( CA ):
 
     ## Updates all cells using scipy.weave.inline
     def updateAllCellsWeaveInline( self ):
-#  
+#
 # All states are encoded in a bitmask:
 #
 #    <--MSB                     10                              LSB
 #  ...... 0 0 0 0 0 0 0 0 0 X X u a1 a0 eps sc1 sc0 s2 s1 s0 e1 e0
 #                           | | | |  |  |    |   |   |  |  |  |  |-> current e
 #  XX = 00 -> U    <--------| | | |  |  |    |   |   |  |  |  |----> next e
-#  XX = 01 -> C    <----------| | |  |  |    |   |   |  |  |     
+#  XX = 01 -> C    <----------| | |  |  |    |   |   |  |  |
 #  XX = 10 -> S                 | |  |  |    |   |   |  |  |-------> lsb on S
 #  XX = 11 -> T                 | |  |  |    |   |   |  |----------> ...
 #                               | |  |  |    |   |   |-------------> msb on S
@@ -1170,14 +1170,14 @@ class vonNeumann ( CA ):
     # This is done via bitchecking, and hence admittedly difficult to read.
     # Every subsection of the transitionfunction from von Neumann's paper is marked.
     def updateAllCellsWeaveInlineFewStates( self ):
-#  
+#
 # All states are encoded in a bitmask:
 #
 #    <--MSB                     10                              LSB
 #  ...... 0 0 0 0 0 0 0 0 0 X X u a1 a0 eps sc1 sc0 s2 s1 s0 e1 e0
 #                           | | | |  |  |    |   |   |  |  |  |  |-> current e
 #  XX = 00 -> U    <--------| | | |  |  |    |   |   |  |  |  |----> next e
-#  XX = 01 -> C    <----------| | |  |  |    |   |   |  |  |     
+#  XX = 01 -> C    <----------| | |  |  |    |   |   |  |  |
 #  XX = 10 -> S                 | |  |  |    |   |   |  |  |-------> lsb on S
 #  XX = 11 -> T                 | |  |  |    |   |   |  |----------> ...
 #                               | |  |  |    |   |   |-------------> msb on S
@@ -1193,7 +1193,7 @@ class vonNeumann ( CA ):
         vonNeumannCodeFewStates = """
 #include <stdlib.h>
 #include <stdio.h>
-          
+
 #line 1 "VonNeumannDefinesInCA.py"
 #define UMASK          0
 #define CMASK       2048  // 1 << 11
@@ -1409,7 +1409,7 @@ for ( i = 0; i < cCounter; i++ ) {
       //}
     }
   }
-    
+
   else  {
     // this state is undefined!
   }
