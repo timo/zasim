@@ -106,7 +106,7 @@ from CA import sandPile, catPile, binRule, ballPile, ballRule, vonNeumann
 
 ## Central simulation unit.
 # Handles user I/O, importing and exporting, marking, and everything else
-class Simulator():
+class Simulator(object):
     ## The constructor
     def __init__( self, CAType, confFile, random, sizeX, sizeY, scale, oneLiner ):
         ## a flag if the first CA is a 2 oder 3 dimensional CA

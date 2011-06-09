@@ -30,7 +30,7 @@ palettes = ( palette1, palette2, palette3, palette4,
 
 
 ## abstract superclass, dont use this one ##
-class Histogram():
+class Histogram(object):
     def __init__ ( self, N, maxVal, palette, info=() ):
         if N > 8:
             print "maximum N is 8 at the moment :("

@@ -18,7 +18,7 @@ import Image
 # it should find it's place here as well.
 
 ## Provides stuff like import/export functions, getter methods and resizing
-class CA():
+class CA(object):
     ## When passed as parameter, the configuration is filled with zeros
     INIT_ZERO = 0
     ## When passed as parameter, the configuration is filled with ones
