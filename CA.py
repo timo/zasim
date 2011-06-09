@@ -4,15 +4,12 @@ import numpy as np
 import pygame
 import random
 import sys
-import os
 import re
-from multiprocessing import Array
-import scipy
 from scipy import weave
 from scipy.weave import converters
 
 # for catPile
-from scipy.misc.pilutil import *
+from scipy.misc import pilutil
 import Image
 
 ## @package CA.py
@@ -583,6 +580,7 @@ for ( i = 1; i < sizeX-1; i++ ) {
 
 
 ## Exactly the same as sandPile, but has an image of a cat as starting configuration
+# XXX: what is this?
 class catPile( sandPile ):
     ## The constructor
     def __init__( self, sizeX, sizeY, initConf ):
@@ -593,7 +591,7 @@ class catPile( sandPile ):
         dummy_data = Image.open(filename)
         dummy_data = dummy_data.convert("I")
         
-        image = fromimage(dummy_data)
+        image = pilutil.fromimage(dummy_data)
         for i in range(len(image)):
             for j in range(len(image[0])):
                 image[i,j] /= 32

@@ -92,16 +92,16 @@ Simulation:
 
 
 import pygame
-import numpy as np
-from multiprocessing import Process, Pipe, Queue
-from CA import sandPile, catPile, binRule, ballPile, ballRule, vonNeumann
-import Histogram
 import sys 
 import time
-from os import path, getcwd, chdir, listdir, path, system
 import optparse
+
+from multiprocessing import Process, Queue
+from os import path, system
+
 import Display
-from copy import deepcopy
+import Histogram
+from CA import sandPile, catPile, binRule, ballPile, ballRule, vonNeumann
 
 
 ## Central simulation unit.
