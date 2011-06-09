@@ -355,8 +355,9 @@ class DisplaySquares1D( DisplaySquares ):
 
     ## Blitting function used for 1D CA
     def blitArray( self, data, scroll ):
-        scroll = (int)(scroll)*(-1)
-        self.surface.scroll( 0, scroll )
+        scroll = int(scroll)*-1
+
+        self.surface.blit(self.surface, (0, scroll))
 
         pygame.surfarray.blit_array( self.newlineSurface, data )
         temp = pygame.transform.scale( self.displaySurface, self.simScreen.get_size() )
