@@ -1014,16 +1014,16 @@ class vonNeumann ( CA ):
       nbs[3] = cconf( i, j+1 );
 
       if ( T(state) ) { // transmission state
-	// transisition rule (T.1):
-	for ( k = 0; k < 4; k++ ) {
-	  if ( T(nbs[k]) && ( abs(k-(A_UNSHIFT(nbs[k]))) == 2)
-	       && ((nbs[k]&u) != (state&u)) && (nbs[k]&eps)  ) {
-	    // (T.1)(alpha)
-	    nconf( i, j ) = UMASK;
-	    break;
-	  }
-	}
-	if ( k < 4 ) continue;
+        // transisition rule (T.1):
+        for ( k = 0; k < 4; k++ ) {
+          if ( T(nbs[k]) && ( abs(k-(A_UNSHIFT(nbs[k]))) == 2)
+               && ((nbs[k]&u) != (state&u)) && (nbs[k]&eps)  ) {
+            // (T.1)(alpha)
+            nconf( i, j ) = UMASK;
+            break;
+          }
+        }
+        if ( k < 4 ) continue;
 
         // (T.1)(beta)
         for ( k = 0; k < 4; k++ ) {
@@ -1031,17 +1031,17 @@ class vonNeumann ( CA ):
                && (abs(k-(A_UNSHIFT(nbs[k]))) == 2)
                && ((nbs[k]&u) == (state&u) ) && (nbs[k]&eps) ) {
             // (T.1)(beta)(a)
-	    nconf( i, j ) = state | eps;
-	    break;
-	  }
-	  if ( C(nbs[k]) && (nbs[k]&e0) && (k-(A_UNSHIFT(state)) != 0) ) {
-	    // (T.1)(beta)(b)
-	    nconf( i, j ) = state | eps;
-	    break;
-	  }
-	}
-	
-	if ( k < 4 ) continue;
+            nconf( i, j ) = state | eps;
+            break;
+          }
+          if ( C(nbs[k]) && (nbs[k]&e0) && (k-(A_UNSHIFT(state)) != 0) ) {
+            // (T.1)(beta)(b)
+            nconf( i, j ) = state | eps;
+            break;
+          }
+        }
+
+        if ( k < 4 ) continue;
 
         // (T.1)(gamma)
         nconf( i, j ) = TMASK | (state&u) | (state&a);
@@ -1049,108 +1049,108 @@ class vonNeumann ( CA ):
 
 
       else if ( C(state) ) { // confluent state
-       	// transistion rule (T.2)
-       	for ( k = 0; k < 4; k++ ) {
-       	  if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
-       	       && (nbs[k]&eps) && (nbs[k]&u) ) {
-       	    // (T.2)(alpha)
-       	    nconf( i, j ) = UMASK;
-       	    break;
-       	  }
-       	}
-        if ( k < 4 ) continue;
-       	
-        // (T.2)(beta)
-       	for( k = 0; k < 4; k++ ) {
-       	  if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
-       	       && (nbs[k]&eps) && !(nbs[k]&u) ) {
-            // (T.2)(beta)(a)
-       	    break;
+        // transistion rule (T.2)
+        for ( k = 0; k < 4; k++ ) {
+          if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+               && (nbs[k]&eps) && (nbs[k]&u) ) {
+            // (T.2)(alpha)
+            nconf( i, j ) = UMASK;
+            break;
           }
-       	}
-       	if ( k < 4 ) {
-       	  for ( k = 0; k < 4; k++ ) {
-       	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
-       	         && !(nbs[k]&eps) && !(nbs[k]&u) ) {
-       	      // (T.2)(beta)(b)
+        }
+        if ( k < 4 ) continue;
+
+        // (T.2)(beta)
+        for( k = 0; k < 4; k++ ) {
+          if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+               && (nbs[k]&eps) && !(nbs[k]&u) ) {
+            // (T.2)(beta)(a)
+            break;
+          }
+        }
+        if ( k < 4 ) {
+          for ( k = 0; k < 4; k++ ) {
+            if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
+                 && !(nbs[k]&eps) && !(nbs[k]&u) ) {
+              // (T.2)(beta)(b)
               break;
-       	    }
-       	  }
+            }
+          }
           if ( k == 4 ) {
-       	    nconf( i, j ) = CMASK | e1 | ((state&e1)>>1);
+            nconf( i, j ) = CMASK | e1 | ((state&e1)>>1);
             continue;
-       	  }
-       	}
-       	
+          }
+        }
+
         // (T.2)(gamma)
         nconf( i, j ) = CMASK | ((state&e1)>>1);
       } // end of C(state)
 
       else if ( U(state) ) {  // unexcitable state
-	// transition rule (T.3)
-	for ( k = 0; k < 4; k++ ) {
-	  if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
-	    // (T.3)(alpha)
-	    nconf( i, j ) = SMASK;
-	    break;
-	  }
+        // transition rule (T.3)
+        for ( k = 0; k < 4; k++ ) {
+          if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+            // (T.3)(alpha)
+            nconf( i, j ) = SMASK;
+            break;
+          }
         }
-	// (T.3)(beta)
-	// doesn' change the state
+        // (T.3)(beta)
+        // doesn' change the state
       } // end of U(state)
 
       else if ( S(state) ) { // sensitized state
-       	if ( !(state&sc1)  ) {
-       	  // transition rule (T.4)
-       	  for ( k = 0; k < 4; k++ ) {
-       	    if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
-       	      // (T.4)(alpha)
-       	      nconf( i, j ) = state | (s0<<(2-SC_UNSHIFT(state)));
-       	      break;
-       	    }
-       	  }
-       	  // (T.4)(beta)
-       	  // doesn't change the state but the counter
-       	  nconf( i, j ) += sc0;
-       	} else {
-	  if ( (state&sc) == sc ) {
-	    for ( k = 0; k < 4; k++ ) {
-	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
-		nconf( i, j ) = TMASK | a0;
-		break;
-	      }
+        if ( !(state&sc1)  ) {
+          // transition rule (T.4)
+          for ( k = 0; k < 4; k++ ) {
+            if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+              // (T.4)(alpha)
+              nconf( i, j ) = state | (s0<<(2-SC_UNSHIFT(state)));
+              break;
             }
-	    if ( k == 4 ) {
+          }
+          // (T.4)(beta)
+          // doesn't change the state but the counter
+          nconf( i, j ) += sc0;
+        } else {
+          if ( (state&sc) == sc ) {
+            for ( k = 0; k < 4; k++ ) {
+              if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+                nconf( i, j ) = TMASK | a0;
+                break;
+              }
+            }
+            if ( k == 4 ) {
               nconf( i, j ) = TMASK;
-	    }
-	  } else {
-	    for ( k = 0; k < 4; k++ ) {
-	      if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
-		nconf( i, j ) = state | s0;
-		break;
-	      }
-	    }
+            }
+          } else {
+            for ( k = 0; k < 4; k++ ) {
+              if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2) && (nbs[k]&eps) ) {
+                nconf( i, j ) = state | s0;
+                break;
+              }
+            }
             nconf( i, j ) += sc0;
 
-	    if ( nconf( i, j ) & s ) {
-	      // make transition from sensitized to transmission or confluent state
-	      l = nconf( i, j );
-	      if ( (l & s) == s ) {
-		nconf( i, j ) = CMASK;
-	      } else {
-		// other leaves of the S-to-T-transition tree of depth 3
-		l += s0;
-		nconf( i, j ) = TMASK | ((l&s)<<6);
-	      }
-	    }
-	  }// else {
-       	    // stay for another run
-	    //}
-       	}
+            if ( nconf( i, j ) & s ) {
+              // make transition from sensitized to transmission or confluent state
+              l = nconf( i, j );
+              if ( (l & s) == s ) {
+                nconf( i, j ) = CMASK;
+              } else {
+                // other leaves of the S-to-T-transition tree of depth 3
+                l += s0;
+                nconf( i, j ) = TMASK | ((l&s)<<6);
+              }
+            }
+          }// else {
+            // stay for another run
+        //}
+        }
       }
 
       else  {
-	// this state is undefined!
+    // this state is undefined!
       }
     }
   }
@@ -1292,12 +1292,12 @@ for ( i = 0; i < cCounter; i++ ) {
         break;
       }
     }
-	
+
     if ( k < 4 ) continue;
 
     // (T.1)(gamma)
     // don't enlist, since cell is not active
-//    MARKNBH( x, y );
+    // MARKNBH( x, y );
     nconf( x, y ) = TMASK | (state&u) | (state&a);
   } // end of T(state)
 
@@ -1314,7 +1314,7 @@ for ( i = 0; i < cCounter; i++ ) {
       }
     }
     if ( k < 4 ) continue;
-       	
+
     // (T.2)(beta)
     for( k = 0; k < 4; k++ ) {
       if ( T(nbs[k]) && (abs(k-A_UNSHIFT(nbs[k])) == 2)
@@ -1339,7 +1339,7 @@ for ( i = 0; i < cCounter; i++ ) {
         continue;
       }
     }
-       	
+
     // (T.2)(gamma)
     nconf( x, y ) = CMASK | ((state&e1)>>1);
     MARKNBH( x, y );
