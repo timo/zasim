@@ -79,44 +79,6 @@ class CA(object):
             f.write( self.getType() + "\n" )
             f.close()
 
-    ## Since we want to be compatible to XASIM, this file format is deprecated.
-    def exportConfAnnotatedLines( self, filename ):
-        #### WERE USING XASIM-EXPORT-STYLE ####
-        # don't use this function but exportConf()
-
-        # for input/output of confs see
-        # http://www.scipy.org/Cookbook/InputOutput
-
-        # exporting conf to file in ascii-representation
-        # rules:
-        # - comments must not start with an '#'
-        # - a new line with info about the conf starts with '#'
-        # - a new line of the conf starts with '##'
-        # - the last line that is going to be interpreted starts with '###'
-            with open( filename, 'w' ) as f:
-                # info
-                f.write( "#title=" + self.getTitle() + "\n" )
-                f.write( "#sizeX=" + str(self.sizeX) + "\n" )
-                dim = self.getDim()
-                if dim > 1:
-                    f.write( "#sizeY=" + str(self.sizeY) + "\n" )
-                f.write( "##Conf=\n" )
-                # the conf
-                if dim == 1:
-                    f.write( "## " )
-                    for i in range(self.sizeX):
-                        f.write( str(self.currConf[i,0]) + " " )
-                    f.write( "\n" )
-                elif dim == 2:
-                    for j in range(self.sizeY):
-                        f.write( "## " )
-                        for i in range(self.sizeX):
-                            f.write( str(self.currConf[i][j]) + " " )
-                        f.write( "\n" )
-                # end-tag
-                f.write( "###\n" )
-                f.close()
-
     ## Returns the type of the cellular automaton.
     # It's a upper-cased version of CA::title, used to identify it internally as one or
     # another cellular automaton.
@@ -193,74 +155,6 @@ class CA(object):
                     self.nextConf[i][j] = state
             f.close()
         return retVal
-
-    ## Deprecated. Importing own, non-XASIM-compatible format.
-    def importConfAnnotatedLines( self, filename ):
-        #### WERE USING XASIM-EXPORT-STYLE ####
-        # don't use this function but importConf()
-
-            with open( filename, 'r' ) as f:
-                for line in f:
-                    line = line[0:-1]
-                    # read info
-                    if line[0:7] == "#title=":
-                        title = line[7:]
-                    elif line[0:7] == "#sizeX=":
-                        sizeX = int(line[7:])
-                    elif line[0:7] == "#sizeY=":
-                        sizeY = int(line[7:])
-                    elif line[0:12] == "#stepsTaken=":
-                        if line[12:] == "n/a":
-                            steps = 0
-                        else:
-                            steps = int(line[15:])
-                    elif line[0:] == "##Conf=":
-                        # now import conf, but make some checks first
-                        break;
-
-                retVal = self.IMPORTOK
-
-                if title != self.getTitle():
-                    print "TODO: opening different kind of ca-conf!!"
-                    f.close()
-                    return self.WRONGCA
-
-                dim = self.getDim()
-                if dim == 1:
-                    sizeY = 1
-                    if sizeX != self.sizeX:
-                        retVal = self.SIZECHANGED
-                        self.resize( sizeX )
-                elif dim == 2:
-                    if sizeX != self.sizeX or sizeY != self.sizeY:
-                        retVal = self.SIZECHANGED
-                        self.resize( sizeX, sizeY )
-
-                # y: counter of imported lines (checking!)
-                y = 0
-                for line in f:
-                    line = line[0:-1]
-                    if line[0:3] == "###":
-                        if y != sizeY:
-                            f.close()
-                            return self.IMPORTNOTOK
-                        break
-                    elif line[0:3] == "## ":
-                        # thats a conf-line!
-                        line = line[3:]
-                        s = line
-                        x = 0
-                        while x < sizeX:
-                            s = s.partition( " " )
-                            if dim == 1:
-                                self.currConf[x,0] = int(s[0])
-                            elif dim == 2:
-                                self.currConf[x,y] = int(s[0])
-                            s = s[2]
-                            x += 1
-                    y += 1
-            f.close()
-            return retVal
 
     ## Is called in every step of the simulation.
     def loopFunc( self ):
