@@ -262,7 +262,6 @@ class binRule( CA ):
             for i in range( sizeX ):
                 self.currConf[i] = random.randint( 0, 1 )
             self.nextConf = copy(self.currConf)
-            #self.nextConf = self.currConf.copy()
         else:
             print "The initflag you've provided isn't available for the binRule-CA"
             print "Available initflags:"

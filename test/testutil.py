@@ -1,4 +1,8 @@
 def assert_arrays_equal(arr1, arr2):
+    """assert the equality of two arrays.
+
+    highlights different array cells if they differ.
+    outputs the array if they are the same"""
     assert len(arr1) == len(arr2), "array lengths don't match"
     equal = True
     l1, mid, l2 = "arr1 ", "     ", "arr2 "

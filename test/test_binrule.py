@@ -5,6 +5,7 @@ from testutil import assert_arrays_equal
 
 class TestBinRule:
     def test_compare_weave_pure(self, ruleNum, random=True):
+        """compare the weave version of binRule with the pure python one"""
         if random:
             br = CA.binRule(110, randrange(10,30), 1, CA.binRule.INIT_RAND)
         else:
