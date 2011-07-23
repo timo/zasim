@@ -1,16 +1,52 @@
 #!/usr/bin/python
 
 import numpy as np
-import pygame
 import random
 import sys
 import re
-from scipy import weave
-from scipy.weave import converters
 
-# for catPile
-from scipy.misc import pilutil
-import Image
+try:
+    from scipy import weave
+    from scipy.weave import converters
+except:
+    print "weave is not available."
+
+copy = lambda x: x.copy()
+
+# pypy micronumpy does not have copy yet.
+try:
+    a = np.zeros(10)
+    b = copy(a)
+except AttributeError:
+    def slowcopy(arr):
+        return arr * 1
+    copy = slowcopy
+
+b = copy(a)
+
+if " 0." not in repr(np.zeros(10)):
+    print "using own repr version for arrays"
+    def repr_arr(arr):
+        r = "array(["
+        for i in range(len(arr)):
+            r += ", " + str(arr[i])
+        r += "])"
+        return r
+else:
+    def repr_array(arr):
+        return repr(arr)
+
+try:
+    a = np.zeros((100,), int)
+except TypeError:
+    print "using integer array compatibility with float arrays"
+    old_zeros = np.zeros
+    def compatibility_zeros(*args):
+        try:
+            return old_zeros(args[0])
+        except TypeError:
+            return old_zeros(args[0][0])
+    np.zeros = compatibility_zeros
 
 ## @package CA.py
 #
@@ -178,12 +214,12 @@ class CA(object):
         self.size = sizeX,sizeY
         if self.getDim() == 1:
             ## The current configuration is stored here
-            self.currConf = np.zeros( (sizeX,1), int )
+            self.currConf = np.zeros( sizeX )
             ## The next step's configuration is stored here (ping-ponging!).
-            self.nextConf = np.zeros( (sizeX,1), int )
+            self.nextConf = np.zeros( sizeX )
         elif self.getDim() == 2:
-            self.currConf = np.zeros( self.size, int )
-            self.nextConf = np.zeros( self.size, int )
+            self.currConf = np.zeros( self.size )
+            self.nextConf = np.zeros( self.size )
 
     ## Set the current configuration to conf.
     # This is used when switching between marked configurations and cellular automaton types.
@@ -215,17 +251,18 @@ class binRule( CA ):
         self.title = "Rule" + str( self.ruleNr )
 
         if initConf == self.INIT_ZERO:
-            self.currConf = np.zeros( (sizeX, 1), int )
-            self.nextConf = np.zeros( (sizeX, 1), int )
+            self.currConf = np.zeros((sizeX,), int)
+            self.nextConf = np.zeros((sizeX,), int)
         elif initConf == self.INIT_ONES:
-            self.currConf = np.ones( (sizeX, 1), int )
-            self.nextConf = np.ones( (sizeX, 1), int )
+            self.currConf = np.ones((sizeX,), int)
+            self.nextConf = np.ones((sizeX,), int)
         elif initConf == self.INIT_RAND:
-            self.currConf = np.zeros( (sizeX, 1), int )
-            self.nextConf = np.zeros( (sizeX, 1), int )
+            self.currConf = np.zeros((sizeX,), int)
+            self.nextConf = np.zeros((sizeX,), int)
             for i in range( sizeX ):
-                self.currConf[i,0] = random.randint( 0, 1 )
-            self.nextConf = self.currConf.copy()
+                self.currConf[i] = random.randint( 0, 1 )
+            self.nextConf = copy(self.currConf)
+            #self.nextConf = self.currConf.copy()
         else:
             print "The initflag you've provided isn't available for the binRule-CA"
             print "Available initflags:"
@@ -236,7 +273,7 @@ class binRule( CA ):
             self.importConf( filename )
 
         ## An array that contains the value table for this particular binary transition rule
-        self.ruleIdx = np.zeros( 8, int )
+        self.ruleIdx = np.zeros( 8 )
         for i in range( 8 ):
             if ( self.ruleNr & ( 1 << i ) ):
                 self.ruleIdx[i] = 1
@@ -250,15 +287,20 @@ class binRule( CA ):
     ## What to do in every step.
     # Calls binRule::updateAllCellsWeaveInline, that uses scipy.weave.inline
     def step( self ):
-        self.updateAllCellsWeaveInline()
+        try:
+            self.updateAllCellsWeaveInline()
+            self.loopFunc = self.updateAllCellsWeaveInline
+        except:
+            self.updateAllCellsPy()
+            self.loopFunc = self.updateAllCellsPy
 
     ## Updates all cells in plain python.
     def updateAllCellsPy( self ):
         for i in range( 1, self.sizeX-1 ):
-            state =  self.currConf[i-1] << 2
-            state += self.currConf[i] << 1
+            state =  self.currConf[i-1] * 4.
+            state += self.currConf[i] * 2.
             state += self.currConf[i+1]
-            self.nextConf[i] = self.ruleIdx[state]
+            self.nextConf[i] = self.ruleIdx[int(state)]
         self.currConf, self.nextConf = self.nextConf, self.currConf
 
     ## Updates all cells using scipy.weave.inline for faster execution
@@ -285,25 +327,6 @@ nconf(sizeX-1,0) = nconf(1,0);
                       type_converters = converters.blitz,
                       compiler = 'gcc' )
         self.currConf = self.nextConf.copy()
-
-
-## Exactly the same as binRule, but with images of colored footballs instead of colored squares.
-class ballRule( binRule ):
-    palette=[]
-    def __init__( self, ruleNr, sizeX, sizeY, initConf, filename="" ):
-        binRule.__init__( self, ruleNr, sizeX, sizeY, initConf, filename="" )
-        ## The title of this ca
-        self.title = "ballRule"
-
-        pygame.init()
-        pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
-
-        palette = []
-        for filename in ( "images/balls/ball_red.png" , "images/balls/ball_blue.png" ):
-            img = pygame.image.load( filename ).convert()
-            self.palette.append( img )
-
-
 
 ## The SandPile cellular automaton
 class sandPile( CA ):
@@ -380,12 +403,13 @@ class sandPile( CA ):
     # When the left mousebutton is clicked on a cell, a grain is added to that, a right-click
     # resets the cell's state to 0.
     def eventFunc( self, e ):
-        if e.type == pygame.MOUSEBUTTONDOWN:
+        return
+        """if e.type == pygame.MOUSEBUTTONDOWN:
             x,y = e.pos
             if e.button == 1:
                 self.addGrain( x, y )
             if e.button == 3:
-                self.setState( x, y, 0 )
+                self.setState( x, y, 0 )"""
 
     ## Returns a histogram over the ca's states.
     def getHistogram( self ):
@@ -498,29 +522,6 @@ class catPile( sandPile ):
     def getTitle( self ):
         return "CatPile"
 
-
-## Exactly the same as sandPile, but using images of colored footballs.
-class ballPile( sandPile ):
-    palette=[]
-    def __init__( self, sizeX, sizeY, initConf, filename="" ):
-        sandPile.__init__( self, sizeX, sizeY, initConf, filename )
-
-        pygame.init()
-        pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
-
-        self.palette = []
-        for filename in (
-            "images/balls/ball_black.png", "images/balls/ball_red.png" ,
-            "images/balls/ball_blue.png" , "images/balls/ball_orange.png",
-            "images/balls/ball_green.png", "images/balls/ball_pink.png" ,
-            "images/balls/ball_grey.png" , "images/balls/ball_white.png" ):
-            img = pygame.image.load( filename ).convert()
-            self.palette.append( img )
-
-    def getTitle( self ):
-        return "BallPile"
-
-
 ## The cellular automaton proposed by John von Neumann
 # \verbatim
 # All states are encoded in a bitmask:
@@ -626,9 +627,6 @@ class vonNeumann ( CA ):
         self.displayConf = np.zeros( self.size, int)
 
 
-        pygame.init()
-        pygame.display.set_mode( self.size, 0, 8 )
-
         for imgFile in ( "images/vonNeumann/U.jpg",    "images/vonNeumann/C00.jpg",
                          "images/vonNeumann/C01.jpg",  "images/vonNeumann/C10.jpg",
                          "images/vonNeumann/C11.jpg",  "images/vonNeumann/S000.jpg",
@@ -644,7 +642,7 @@ class vonNeumann ( CA ):
                          "images/vonNeumann/T111.jpg", "images/vonNeumann/T120.jpg",
                          "images/vonNeumann/T121.jpg", "images/vonNeumann/T130.jpg",
                          "images/vonNeumann/T131.jpg" ):
-            img = pygame.image.load( imgFile ).convert()
+            img = None #pygame.image.load( imgFile ).convert()
             self.palette.append( img )
 
 
@@ -667,7 +665,9 @@ class vonNeumann ( CA ):
         SSTATE = 4096
         TSTATE = 6144
 
-        if e.type == pygame.MOUSEBUTTONDOWN:
+        return
+
+        """if e.type == pygame.MOUSEBUTTONDOWN:
             x,y = e.pos
             if x <= 0 or x >= self.sizeX-1 or y <= 0 or y >= self.sizeY-1:
                 return
@@ -727,7 +727,7 @@ class vonNeumann ( CA ):
                     s = 0
                 self.currConf[x][y] = s
                 self.nextConf[x][y] = s
-                self.enlist(x,y)
+                self.enlist(x,y)"""
 
     def getConf( self ):
         for i in range( 1, self.sizeX-1 ):
@@ -1331,8 +1331,7 @@ return_val = nCounter;
         self.cList = self.nList
 
 if __name__ == "__main__":
-    sizeX, sizeY = 10, 10
-    pygame.init()
-    screen = pygame.display.set_mode( (sizeX,sizeY), 0, 8 )
-    surf = pygame.surface.Surface( (sizeX, sizeY ), 0, 8 )
-    ca = ballPile( 10, 10 )
+    sizeX, sizeY = 1000, 10
+    ca = binRule(110, sizeX, sizeY, binRule.INIT_RAND)
+    for i in range(300000):
+        ca.loopFunc()
