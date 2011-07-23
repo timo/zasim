@@ -225,8 +225,8 @@ class CA(object):
     # This is used when switching between marked configurations and cellular automaton types.
     # @param conf The configuration to load.
     def setConf( self, conf ):
-        self.currConf = conf.copy()
-        self.nextConf = conf.copy()
+        self.currConf = copy(conf)
+        self.nextConf = copy(conf)
 
 
 ## A cellular automaton that simulates all one dimensional binary rule cellular automaton,
@@ -326,7 +326,7 @@ nconf(sizeX-1,0) = nconf(1,0);
         weave.inline( binRuleCode, ['cconf', 'nconf', 'sizeX', 'rule'],
                       type_converters = converters.blitz,
                       compiler = 'gcc' )
-        self.currConf = self.nextConf.copy()
+        self.currConf = copy(self.nextConf)
 
 ## The SandPile cellular automaton
 class sandPile( CA ):
@@ -371,7 +371,7 @@ class sandPile( CA ):
                     c = random.randint( 0, 3 )
                     self.currConf[ x, y ] = c
                     self.histogram[ c ] += 1
-            self.nextConf = self.currConf.copy()
+            self.nextConf = copy(self.currConf)
         else:
             print "The initflag you've provided isn't available for the sandPile-CA"
             print "Available initflags:"
@@ -467,7 +467,7 @@ class sandPile( CA ):
                     self.nextConf[ x-1, y ] = self.currConf[ x-1, y ] + 1
                     self.nextConf[ x, y+1 ] = self.currConf[ x, y+1 ] + 1
                     self.nextConf[ x, y-1 ] = self.currConf[ x, y-1 ] + 1
-        self.currConf = self.nextConf.copy()
+        self.currConf = copy(self.nextConf)
 
     ## Updates all cells using scipy.weave.inline
     def updateAllCellsWeaveInline( self ):
@@ -491,7 +491,7 @@ for ( i = 1; i < sizeX-1; i++ ) {
         weave.inline( sandpileCode, ['cconf', 'nconf', 'sizeX', 'sizeY' ],
                       type_converters = converters.blitz,
                       compiler = 'gcc' )
-        self.currConf = self.nextConf.copy()
+        self.currConf = copy(self.nextConf)
 
 
 
