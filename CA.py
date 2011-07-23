@@ -53,6 +53,9 @@ except TypeError:
 # Provides us with classes for cellular automata. If a new automaton is to be implemented,
 # it should find it's place here as well.
 
+class ConfigurationImportError(Exception): pass
+class ConfigurationParseError(ConfigurationImportError): pass
+
 ## Provides stuff like import/export functions, getter methods and resizing
 class CA(object):
     ## When passed as parameter, the configuration is filled with zeros
@@ -148,26 +151,23 @@ class CA(object):
             CAImportType = lines[-1][:-1]
             f.close()
             if CAImportType != self.getType():
-                print "You are trying to import a configuration of a", CAImportType, "CA into an", \
-                    self.getType(), "CA!"
-                print "Cancelling import!"
-                return
+                raise ConfigurationImportError("Tried importing a %s into an %s." % 
+                        (CAImportType, self.getType()))
             f = open( filename, 'r' )
             # sizeX
-            sizeX = f.readline()
-            # remove "\n" at end of line
-            sizeX = int(sizeX[0:-1])
+            sizeX = f.readline().strip()
+            try:
+                sizeX = int(sizeX)
+            except ValueError:
+                raise ConfigurationImportError("Expected y dimension size as integer, got %r instead" % sizeX)
 
             if self.getDim() > 1:
                 # sizeY
-                sizeY = f.readline()
-                # remove "\n" at end of line
-                sizeY = sizeY[0:-1]
-                # check
-                if not sizeY.isdigit():
-                    print "ERROR importing conf!"
-                    return
-                sizeY = int(sizeY)
+                sizeY = f.readline().strip()
+                try:
+                    sizeY = int(sizeY)
+                except ValueError:
+                    raise ConfigurationImportError("Expected y dimension size as integer, got %r instead" % sizeY)
                 if sizeX != self.sizeX or sizeY != self.sizeY:
                     self.resize( sizeX, sizeY )
                     retVal = self.SIZECHANGED
@@ -183,13 +183,13 @@ class CA(object):
                 content = ['', '', f.readline()[0:-1]]
                 for i in range(sizeX):
                     content = importRegexp.split( content[2], 1 )
-                    if content[1] == '':
-                        print "error importing file"
-                        sys.exit()
-                    state = int(content[1])
+                    try:
+                        state = int(content[1])
+                    except ValueError:
+                        raise ConfigurationParseError("Could not parse line. %r" %
+                                content)
                     self.currConf[i][j] = state
-                    self.nextConf[i][j] = state
-            f.close()
+        self.nextConf = copy(self.currConf)
         return retVal
 
     ## Is called in every step of the simulation.
