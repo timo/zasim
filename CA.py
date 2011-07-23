@@ -301,6 +301,8 @@ class binRule( CA ):
             state += self.currConf[i] * 2.
             state += self.currConf[i+1]
             self.nextConf[i] = self.ruleIdx[int(state)]
+        self.nextConf[0] = self.nextConf[self.sizeX-2]
+        self.nextConf[self.sizeX-1] = self.nextConf[1]
         self.currConf, self.nextConf = self.nextConf, self.currConf
 
     ## Updates all cells using scipy.weave.inline for faster execution
