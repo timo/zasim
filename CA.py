@@ -1,15 +1,18 @@
 #!/usr/bin/python
 
 import numpy as np
+from array import array
+from copy import copy as ocopy
 import random
-import sys
 import re
 
 try:
     from scipy import weave
     from scipy.weave import converters
+    HAVE_WEAVE = True
 except:
     print "weave is not available."
+    HAVE_WEAVE = False
 
 copy = lambda x: x.copy()
 
@@ -235,7 +238,7 @@ class CA(object):
 class binRule( CA ):
     palette = [ (0,0,0), (255,255,255) ]
     ## constructor
-    def __init__ ( self, ruleNr, sizeX, sizeY, initConf, filename="" ):
+    def __init__ ( self, ruleNr, sizeX, sizeY, initConf, filename="", use_array=False):
         ## The dimension of binRule
         self.dim = 1
         if not 0 <= ruleNr < 256:
@@ -250,29 +253,36 @@ class binRule( CA ):
         ## The title of the ca
         self.title = "Rule" + str( self.ruleNr )
 
-        if initConf == self.INIT_ZERO:
-            self.currConf = np.zeros((sizeX,), int)
-            self.nextConf = np.zeros((sizeX,), int)
-        elif initConf == self.INIT_ONES:
-            self.currConf = np.ones((sizeX,), int)
-            self.nextConf = np.ones((sizeX,), int)
-        elif initConf == self.INIT_RAND:
-            self.currConf = np.zeros((sizeX,), int)
-            self.nextConf = np.zeros((sizeX,), int)
-            for i in range( sizeX ):
-                self.currConf[i] = random.randint( 0, 1 )
-            self.nextConf = copy(self.currConf)
+        if use_array:
+            assert initConf == self.INIT_RAND
+            self.currConf = array("l", [random.choice([0, 1]) for i in range(sizeX)])
+            self.nextConf = ocopy(self.currConf)
         else:
-            print "The initflag you've provided isn't available for the binRule-CA"
-            print "Available initflags:"
-            print "INIT_ZERO, INIT_ONES, INIT_RAND, INIT_FILE + filename"
-            sys.exit(1)
+            if initConf == self.INIT_ZERO:
+                self.currConf = np.zeros((sizeX,1), int)
+                self.nextConf = np.zeros((sizeX,1), int)
+            elif initConf == self.INIT_ONES:
+                self.currConf = np.ones((sizeX,1), int)
+                self.nextConf = np.ones((sizeX,1), int)
+            elif initConf == self.INIT_RAND:
+                self.currConf = np.zeros((sizeX,1), int)
+                self.nextConf = np.zeros((sizeX,1), int)
+                for i in range( sizeX ):
+                    self.currConf[i] = random.randint( 0, 1 )
+                self.nextConf = copy(self.currConf)
+            else:
+                raise ValueError("Initflag not supported for %s. Supported flags are:\n" +
+                    "INIT_ZERO, INIT_ONES, INIT_RAND, INIT_FILE + filename" %
+                    self.getType())
 
         if filename != "":
             self.importConf( filename )
 
         ## An array that contains the value table for this particular binary transition rule
-        self.ruleIdx = np.zeros( 8 )
+        if use_array:
+            self.ruleIdx = array("l", [0] * 8)
+        else:
+            self.ruleIdx = np.zeros( 8 )
         for i in range( 8 ):
             if ( self.ruleNr & ( 1 << i ) ):
                 self.ruleIdx[i] = 1
@@ -296,10 +306,12 @@ class binRule( CA ):
     ## Updates all cells in plain python.
     def updateAllCellsPy( self ):
         for i in range( 1, self.sizeX-1 ):
-            state =  self.currConf[i-1] * 4.
-            state += self.currConf[i] * 2.
+            state =  self.currConf[i-1] * 4
+            state += self.currConf[i] * 2
             state += self.currConf[i+1]
-            self.nextConf[i] = self.ruleIdx[int(state)]
+            state = int(state)
+            self.nextConf[i] = ((1 << state) & self.ruleNr) >> state
+            #self.nextConf[i] = self.ruleIdx[int(state)]
         self.nextConf[0] = self.nextConf[self.sizeX-2]
         self.nextConf[self.sizeX-1] = self.nextConf[1]
         self.currConf, self.nextConf = self.nextConf, self.currConf
@@ -327,7 +339,7 @@ nconf(sizeX-1,0) = nconf(1,0);
         weave.inline( binRuleCode, ['cconf', 'nconf', 'sizeX', 'rule'],
                       type_converters = converters.blitz,
                       compiler = 'gcc' )
-        self.currConf = copy(self.nextConf)
+        self.currConf, self.nextConf = self.nextConf, self.currConf
 
 ## The SandPile cellular automaton
 class sandPile( CA ):
