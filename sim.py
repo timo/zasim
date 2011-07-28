@@ -101,7 +101,7 @@ from os import path, system
 
 import Display
 import Histogram
-from CA import sandPile, catPile, binRule, ballPile, ballRule, vonNeumann
+from CA import sandPile, catPile, binRule, vonNeumann
 
 
 ## Central simulation unit.
