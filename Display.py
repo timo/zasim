@@ -343,11 +343,20 @@ class DisplaySquares( Display ):
 # directed Y-Axis representing time.
 class DisplaySquares1D( DisplaySquares ):
     ## Constructor, initializes pretty everything
-    def __init__( self, size, scale, palette, dim, oneLiner=False ):
+    def __init__( self, size, scale, palette, dim, oneLiner=False, rolling=True ):
         DisplaySquares.__init__( self, size, scale, palette, dim, oneLiner )
 
-        ## New configurations of a 1D CA are displayed only in the bottom line
-        self.newlineSurface = self.surface.subsurface( (0,self.sizeY-1,self.sizeX,1) )
+        if rolling:
+            self.newlineSurface = pygame.Surface( (self.sizeX, 1 ),
+                                         self.surface.get_flags(),
+                                         self.surface )
+            self.newlineSurface.set_palette(self.surface.get_palette())
+            self.blitArray = self.blitArrayRolling
+            self.roll_offset = 0
+            self.scale_factor = self.simScreen.get_width() / self.sizeX
+        else:
+            ## New configurations of a 1D CA are displayed only in the bottom line
+            self.newlineSurface = self.surface.subsurface( (0,self.sizeY-1,self.sizeX,1) )
         ## the section of the ca that is actually displayed
         self.displaySurface = self.surface.subsurface( (0,
                                                         self.sizeY-self.zoomSizes[self.zoomIdx][1]),
@@ -363,6 +372,29 @@ class DisplaySquares1D( DisplaySquares ):
         temp = pygame.transform.scale( self.displaySurface, self.simScreen.get_size() )
         self.simScreen.blit( temp, (0,0) )
 
+    ## Blitting with a rolling line instead of moving all data up all the time
+    def blitArrayRolling( self, data, scroll ):
+        scroll = int(scroll) * -1
+        if scroll != 0:
+            self.roll_offset += 1
+            if self.roll_offset > self.sizeY:
+                self.roll_offset = 0
+
+        pygame.surfarray.blit_array( self.newlineSurface, data )
+        self.displaySurface.blit( self.newlineSurface, (0, self.roll_offset) )
+        if not self.sizeX == self.simScreen.get_width():
+            temp = pygame.transform.scale( self.newlineSurface,
+                    (self.simScreen.get_width(), self.scale_factor ))
+            self.simScreen.blit( temp,
+                    (0, self.roll_offset * self.scale_factor),
+                    (0, 0,
+                        self.simScreen.get_width(), self.scale_factor) )
+        else:
+            temp = self.displaySurface
+            self.simScreen.blit( temp,
+                    (0, self.roll_offset * self.scale_factor),
+                    (0, self.roll_offset * self.scale_factor,
+                        self.simScreen.get_width(), self.scale_factor) )
 
     ## When zoomed, scrolling to the left and to the right in 1D CA
     # In 1D CA scrolling up and down is not supported yet
