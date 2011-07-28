@@ -1,7 +1,7 @@
 import pygame
 from multiprocessing import Process, Queue
 import Histogram
-from os import path, getcwd, chdir, listdir, path
+from os import path, getcwd, chdir, listdir
 
 ## @package Display.py
 #
