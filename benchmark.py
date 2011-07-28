@@ -10,18 +10,19 @@ def timedrun(fun, *args):
         et = time.time()
         return (et - st) * 1000
     except:
+        raise
         return -1
 
-def runBinRule(size, count, array):
-    ca = CA.binRule(110, size, 1, CA.binRule.INIT_RAND, use_array=array)
+def runBinRule(size, count):
+    ca = CA.binRule(110, size, 1, CA.binRule.INIT_RAND)
     for i in range(count):
         ca.loopFunc()
 
-def matrix(fun, array):
+def matrix(fun):
     sizes = [1000, 2000, 4000, 8000, 16000]
     counts = [1, 10000, 20000, 40000, 80000]
 
-    timedrun(runBinRule, 1000, 1000, array)
+    timedrun(runBinRule, 1000, 1000)
 
     results = {}
 
@@ -33,17 +34,13 @@ def matrix(fun, array):
     for count in counts:
         print "% 10d" % count,
         for size in sizes:
-            runs = [timedrun(fun, size, count, array) for i in range(AVERAGE_RUNS)]
+            runs = [timedrun(fun, size, count) for i in range(AVERAGE_RUNS)]
             value = sum(runs) / len(runs)
             print "% 10d" % value,
-            results[(array, count, size)] = (value, runs)
+            results[(count, size)] = (value, runs)
         print
     return results
 
 allresults = {}
-print "using numpy method"
-allresults.update(matrix(runBinRule, False))
-if not CA.HAVE_WEAVE:
-    print "using array module:"
-    allresults.update(matrix(runBinRule, True))
+allresults.update(matrix(runBinRule))
 print allresults
