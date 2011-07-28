@@ -294,6 +294,10 @@ class binRule( CA ):
 
     ## Updates all cells in plain python.
     def updateAllCellsPy( self ):
+        ## this will eventually be really fast in pypy,
+        ## but at the moment, the garbage collector will use big amounts of
+        ## memory
+
         #result = self.currConf[:-2] * 4 + self.currConf[1:-1] * 2 + self.currConf[2:]
         #index = 0
         #for value in result:
