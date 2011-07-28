@@ -242,8 +242,7 @@ class binRule( CA ):
         ## The dimension of binRule
         self.dim = 1
         if not 0 <= ruleNr < 256:
-            print "binRule only supports ruleNr between 0 and 255!"
-            sys.exit(1)
+            raise ValueError("binRule only supports ruleNr between 0 and 255!")
 
         ## The rulenumber in decimal notation ( in [0;255] )
         self.ruleNr = ruleNr
@@ -386,10 +385,9 @@ class sandPile( CA ):
                     self.histogram[ c ] += 1
             self.nextConf = copy(self.currConf)
         else:
-            print "The initflag you've provided isn't available for the sandPile-CA"
-            print "Available initflags:"
-            print "INIT_ZERO, INIT_RAND, INIT_FILE + filename"
-            sys.exit(1)
+            raise ValueError("Initflag not supported for %s. Supported flags are:\n" +
+                "INIT_ZERO, INIT_RAND, INIT_FILE + filename" %
+                self.getType())
 
         if filename != "":
             self.importConf( filename )
