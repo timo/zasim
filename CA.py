@@ -1332,7 +1332,10 @@ return_val = nCounter;
         self.cList = self.nList
 
 if __name__ == "__main__":
-    sizeX, sizeY = 1000, 10
+    import sys
+    print sys.argv
+    sizeX, sizeY = int(sys.argv[1]), 1
     ca = binRule(110, sizeX, sizeY, binRule.INIT_RAND)
-    for i in range(300000):
+    print "ca created"
+    for i in range(int(sys.argv[2])):
         ca.loopFunc()
