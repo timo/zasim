@@ -293,7 +293,7 @@ class binRule( CA ):
         self.step()
 
     ## What to do in every step.
-    # Calls binRule::updateAllCellsWeaveInline, that uses scipy.weave.inline
+    # sets loopFunc to the appropriate update function
     def step( self ):
         try:
             self.updateAllCellsWeaveInline()
