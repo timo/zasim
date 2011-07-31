@@ -572,11 +572,12 @@ def listCA():
 
 if __name__ == "__main__":
     if "-i" in sys.argv:
-        cmd = "python -i"
+        cmd = sys.executable + " -i"
         for a in sys.argv:
             if a != "-i":
                 cmd = cmd + " " + a
-        system( cmd )
+        returnvalue = system( cmd )
+        sys.exit(returnvalue)
 
     parser = optparse.OptionParser(version = "CASimulator 0.1")
     parser.add_option( "-f", "--file", default="", dest="confFile",
