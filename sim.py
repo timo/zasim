@@ -219,9 +219,10 @@ class Simulator(object):
                     ev = pygame.event.Event( pygame.MOUSEBUTTONDOWN,
                                              pos=self.display.getCACoordinates(e.pos),
                                              button=e.button )
-                    self.ca.eventFunc( ev )
+                    self.ca.click_on_cell( ev )
 
                 if e.type == pygame.KEYDOWN:
+                    # XXX call ca.keyboard_hit
                     if e.unicode == "+":
                         self.display.resize(1.1)
 

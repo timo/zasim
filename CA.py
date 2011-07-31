@@ -49,6 +49,29 @@ except TypeError:
             return old_zeros(args[0][0])
     np.zeros = compatibility_zeros
 
+try:
+    import pygame
+except ImportError:
+    # if pygame isn't installed, at least get the modifier values.
+    pygame = object()
+    pygame.KMOD_ALT = 768
+    pygame.KMOD_CAPS = 8192
+    pygame.KMOD_CTRL = 192
+    pygame.KMOD_LALT = 256
+    pygame.KMOD_LCTRL = 64
+    pygame.KMOD_LMETA = 1024
+    pygame.KMOD_LSHIFT = 1
+    pygame.KMOD_META = 3072
+    pygame.KMOD_MODE = 16384
+    pygame.KMOD_NONE = 0
+    pygame.KMOD_NUM = 4096
+    pygame.KMOD_RALT = 512
+    pygame.KMOD_RCTRL = 128
+    pygame.KMOD_RMETA = 2048
+    pygame.KMOD_RSHIFT = 2
+    pygame.KMOD_SHIFT = 3
+
+
 ## @package CA.py
 #
 # Provides us with classes for cellular automata. If a new automaton is to be implemented,
@@ -80,10 +103,14 @@ class CA(object):
     ## Tells the Display module how to show each state
     palette = []
 
-    ## Is executed when any events, such as mouseclicks or keyboardhits, are recorded and
-    # relayed to the cellular automaton.
-    def eventFunc( self, event ):
-        print "function eventFunc() for", self.getTitle(), "not implemented yet"
+    ## Is executed when the user clicks on a cell
+    def click_on_cell( self, x, y, mousekey, modifiers ):
+        print "function clickOnCell() for", self.getTitle(), "not implemented yet"
+
+    ## Is executed when the user hits a key
+    # this is currently not connected to anything
+    def keyboard_hit( self, x, y, key, modifiers ):
+        print "function keyboard_hit() for", self.getTitle(), "not implemented yet"
 
     ## Exports the current configuration to a file in XASIM-format.
     # The first lines states the width, the next line the height, if the cellular automaton is 2 dimensional,
@@ -414,14 +441,11 @@ class sandPile( CA ):
     ## What happens when a event occurs?
     # When the left mousebutton is clicked on a cell, a grain is added to that, a right-click
     # resets the cell's state to 0.
-    def eventFunc( self, e ):
-        return
-        """if e.type == pygame.MOUSEBUTTONDOWN:
-            x,y = e.pos
-            if e.button == 1:
-                self.addGrain( x, y )
-            if e.button == 3:
-                self.setState( x, y, 0 )"""
+    def click_on_cell( self, x, y, mousekey, modifiers ):
+        if mousekey == 1:
+            self.addGrain( x, y )
+        if mousekey == 3:
+            self.setState( x, y, 0 )
 
     ## Returns a histogram over the ca's states.
     def getHistogram( self ):
@@ -670,76 +694,71 @@ class vonNeumann ( CA ):
                 self.cList[self.cCounter] = i
                 self.cCounter += 1
 
-    def eventFunc( self, e ):
+    def click_on_cell( self, x, y, mousekey, mods ):
         EPS = 128
         SPECIAL = 1024
         CSTATE = 2048
         SSTATE = 4096
         TSTATE = 6144
 
-        return
+        if x <= 0 or x >= self.sizeX-1 or y <= 0 or y >= self.sizeY-1:
+            return
+        state = self.states[self.displayConf[x][y]]
+        s = 0
 
-        """if e.type == pygame.MOUSEBUTTONDOWN:
-            x,y = e.pos
-            if x <= 0 or x >= self.sizeX-1 or y <= 0 or y >= self.sizeY-1:
-                return
-            state = self.states[self.displayConf[x][y]]
-            mods = pygame.key.get_mods()
-            s = 0
-
-            if e.button == 1:
-                # T-states
-                s = TSTATE
-                if mods & pygame.KMOD_LCTRL:
-                    # eps
-                    if state & EPS == 0 and (state & TSTATE == TSTATE):
-                        # to just insert a new eps without changing anything
-                        self.currConf[x][y] = state+EPS
-                        self.nextConf[x][y] = state+EPS
-                        self.enlist(x,y)
-                        return
-                    s += EPS
-                if mods & pygame.KMOD_LSHIFT:
-                    # u
-                    s += SPECIAL
-                if state == 0:
-                    for nbs in ( self.states[self.displayConf[x+1][y]],
-                                 self.states[self.displayConf[x][y-1]],
-                                 self.states[self.displayConf[x-1][y]],
-                                 self.states[self.displayConf[x][y+1]] ):
-                        if ( nbs & TSTATE == TSTATE ) \
-                                and ( ( mods & pygame.KMOD_LSHIFT == state & SPECIAL ) \
-                                          and ( mods & pygame.KMOD_LCTRL == state & EPS ) ):
-                            s += nbs & 768
-                            self.currConf[x][y] = s
-                            self.nextConf[x][y] = s
-                            self.enlist(x,y)
-                            return
-                s += (((state&768)+256) & 768)
-                self.currConf[x][y] = s
-                self.nextConf[x][y] = s
-                self.enlist(x,y)
-            if e.button == 3:
-                if mods & pygame.KMOD_LCTRL:
-                    # C-states
-                    s = CSTATE
-                    s += (((state&3)+1) & 3)
-                elif mods & pygame.KMOD_LSHIFT:
-                    # S-states
-                    if state == 0 or (state & SSTATE) != SSTATE:
-                        s = SSTATE
+        if e.button == 1:
+            # T-states
+            s = TSTATE
+            if mods & pygame.KMOD_LCTRL:
+                # eps
+                if state & EPS == 0 and (state & TSTATE == TSTATE):
+                    # to just insert a new eps without changing anything
+                    self.currConf[x][y] = state+EPS
+                    self.nextConf[x][y] = state+EPS
+                    self.enlist(x,y)
+                    return
+                s += EPS
+            if mods & pygame.KMOD_LSHIFT:
+                # u
+                s += SPECIAL
+            if state == 0:
+                for nbs in ( self.states[self.displayConf[x+1][y]],
+                             self.states[self.displayConf[x][y-1]],
+                             self.states[self.displayConf[x-1][y]],
+                             self.states[self.displayConf[x][y+1]] ):
+                    if ( nbs & TSTATE == TSTATE ) \
+                            and ( ( mods & pygame.KMOD_LSHIFT == state & SPECIAL ) \
+                                      and ( mods & pygame.KMOD_LCTRL == state & EPS ) ):
+                        s += nbs & 768
                         self.currConf[x][y] = s
                         self.nextConf[x][y] = s
                         self.enlist(x,y)
                         return
-                    sIdx = ( ( self.displayableStateDict[state] - 5 + 1 ) % 8 ) + 5
-                    s = self.states[sIdx]
-                else:
-                    # U-state
-                    s = 0
-                self.currConf[x][y] = s
-                self.nextConf[x][y] = s
-                self.enlist(x,y)"""
+            s += (((state&768)+256) & 768)
+            self.currConf[x][y] = s
+            self.nextConf[x][y] = s
+            self.enlist(x,y)
+        if e.button == 3:
+            if mods & pygame.KMOD_LCTRL:
+                # C-states
+                s = CSTATE
+                s += (((state&3)+1) & 3)
+            elif mods & pygame.KMOD_LSHIFT:
+                # S-states
+                if state == 0 or (state & SSTATE) != SSTATE:
+                    s = SSTATE
+                    self.currConf[x][y] = s
+                    self.nextConf[x][y] = s
+                    self.enlist(x,y)
+                    return
+                sIdx = ( ( self.displayableStateDict[state] - 5 + 1 ) % 8 ) + 5
+                s = self.states[sIdx]
+            else:
+                # U-state
+                s = 0
+            self.currConf[x][y] = s
+            self.nextConf[x][y] = s
+            self.enlist(x,y)
 
     def getConf( self ):
         for i in range( 1, self.sizeX-1 ):
