@@ -23,7 +23,8 @@ class PySideDisplay(QWidget):
         self.resize(self.sim.sizeX * self.scale,
                     self.size * self.scale)
 
-        self.startTimer(1)
+        self.timer_delay = 10
+        self.timer_id = self.startTimer(self.timer_delay)
 
     def paintEvent(self, ev):
         if self.display_queue.empty():
@@ -77,7 +78,9 @@ class PySideDisplay(QWidget):
         self.update(QRect(QPoint(0, ((self.last_step + self.queued_steps - 1) % self.size) * self.scale), QSize(self.width * self.scale, self.scale)))
 
     def timerEvent(self, event):
+        self.killTimer(self.timer_id)
         self.step()
+        self.timer_id = self.startTimer(self.timer_delay)
 
 def main():
     app = QApplication(sys.argv)
