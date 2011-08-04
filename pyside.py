@@ -4,6 +4,7 @@ from PySide.QtGui import *
 import Queue
 import sys
 import random
+import time
 
 class PySideDisplay(QWidget):
     def __init__(self, simulator, size, scale=1, parent=None):
@@ -114,9 +115,13 @@ class PySideDisplay(QWidget):
         self.timer_id = self.startTimer(self.timer_delay)
 
     def fullspeed(self):
+        last_time = time.time()
         while True:
             self.step()
             QApplication.processEvents()
+            if self.last_step % 1000 == 0:
+                diff, last_time = time.time() - last_time, time.time()
+                print self.last_step, diff
 
 def main():
     app = QApplication(sys.argv)
