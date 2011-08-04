@@ -3,6 +3,7 @@ from PySide.QtCore import *
 from PySide.QtGui import *
 import Queue
 import sys
+import random
 
 class PySideDisplay(QWidget):
     def __init__(self, simulator, size, scale=1, parent=None):
@@ -73,8 +74,8 @@ class PySideDisplay(QWidget):
 def main():
     app = QApplication(sys.argv)
 
-    sim = binRule(150, 400, 0, binRule.INIT_RAND)
-    disp = PySideDisplay(sim, 300, 10)
+    sim = binRule(random.randint(0, 256), 800, 0, binRule.INIT_RAND)
+    disp = PySideDisplay(sim, 600, 3)
 
     window = QMainWindow()
     scroller = QScrollArea()
