@@ -11,11 +11,13 @@ class PySideDisplay(QWidget):
         self.sim = simulator
         self.scale = scale
         self.size = size
+        self.width = self.sim.sizeX
 
         self.image = QPixmap(self.sim.sizeX, self.size)
 
         self.display_queue = Queue.Queue()
         self.last_step = 0
+        self.queued_steps = 0
 
         self.resize(self.sim.sizeX * self.scale,
                     self.size * self.scale)
@@ -31,6 +33,7 @@ class PySideDisplay(QWidget):
         try:
             while rendered < 100:
                 conf = self.display_queue.get_nowait()
+                self.queued_steps -= 1
                 ones = []
                 paint.setPen(QColor("black"))
                 for x, field in enumerate(conf):
@@ -66,7 +69,8 @@ class PySideDisplay(QWidget):
     def step(self):
         self.sim.loopFunc()
         self.display_queue.put(self.sim.getConf().copy())
-        self.update()
+        self.queued_steps += 1
+        self.update(QRect(QPoint(0, ((self.last_step % self.size) + self.queued_steps - 1) * self.scale), QSize(self.width * self.scale, self.scale)))
 
     def timerEvent(self, event):
         self.step()
