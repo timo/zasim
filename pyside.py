@@ -13,7 +13,8 @@ class PySideDisplay(QWidget):
         self.size = size
         self.width = self.sim.sizeX
 
-        self.image = QPixmap(self.sim.sizeX, self.size)
+        self.image = QBitmap(self.sim.sizeX, self.size)
+        self.image.clear()
 
         self.display_queue = Queue.Queue()
         self.last_step = 0
@@ -35,13 +36,13 @@ class PySideDisplay(QWidget):
                 conf = self.display_queue.get_nowait()
                 self.queued_steps -= 1
                 ones = []
-                paint.setPen(QColor("black"))
+                paint.setPen(Qt.color0)
                 for x, field in enumerate(conf):
                     if field == 1:
                         ones.append(x)
                     else:
                         paint.drawPoint(x, y)
-                paint.setPen(QColor("white"))
+                paint.setPen(Qt.color1)
                 for x in ones:
                     paint.drawPoint(x, y)
                 rendered += 1
@@ -51,6 +52,9 @@ class PySideDisplay(QWidget):
             pass
 
         copier = QPainter(self)
+        copier.setPen(QColor("white"))
+        copier.setBackground(QColor("black"))
+        copier.setBackgroundMode(Qt.OpaqueMode)
         if self.scale == 1:
             tgt = ev.rect()
             src = ev.rect()
