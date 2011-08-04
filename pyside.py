@@ -74,7 +74,7 @@ class PySideDisplay(QWidget):
         self.sim.loopFunc()
         self.display_queue.put(self.sim.getConf().copy())
         self.queued_steps += 1
-        self.update(QRect(QPoint(0, ((self.last_step % self.size) + self.queued_steps - 1) * self.scale), QSize(self.width * self.scale, self.scale)))
+        self.update(QRect(QPoint(0, ((self.last_step + self.queued_steps - 1) % self.size) * self.scale), QSize(self.width * self.scale, self.scale)))
 
     def timerEvent(self, event):
         self.step()
