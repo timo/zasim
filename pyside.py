@@ -16,7 +16,7 @@ class PySideDisplay(QWidget):
         self.image = QBitmap(self.sim.sizeX, self.size)
         self.image.clear()
 
-        self.display_queue = Queue.Queue(100)
+        self.display_queue = Queue.Queue(self.size)
         self.last_step = 0
         self.queued_steps = 0
 
@@ -73,7 +73,21 @@ class PySideDisplay(QWidget):
 
     def step(self):
         self.sim.loopFunc()
-        self.display_queue.put(self.sim.getConf().copy())
+        conf = self.sim.getConf().copy()
+        try:
+            self.display_queue.put(conf)
+        except Queue.Full:
+            # the queue is initialised to hold as much lines as the
+            # screen does. if we have more changes queued up than can
+            # fit on the screen, we can just skip some of them.
+            self.display_queue.get()
+            self.display_queue.put(conf)
+            # theoretically, in this case, the queued steps var would
+            # have to be treated in a special way so that the update
+            # line wanders around so that it still works, but
+            # since the whole screen will get updated anyway, we
+            # don't need to care at all.
+
         self.queued_steps += 1
         self.update(QRect(QPoint(0, ((self.last_step + self.queued_steps - 1) % self.size) * self.scale), QSize(self.width * self.scale, self.scale)))
 
@@ -85,8 +99,11 @@ class PySideDisplay(QWidget):
 def main():
     app = QApplication(sys.argv)
 
-    sim = binRule(random.randint(0, 256), 800, 0, binRule.INIT_RAND)
-    disp = PySideDisplay(sim, 600, 3)
+    # get a random beautiful CA
+    sim = binRule(random.choice(
+         [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
+         400, 0, binRule.INIT_RAND)
+    disp = PySideDisplay(sim, 300, 2)
 
     window = QMainWindow()
     scroller = QScrollArea()
