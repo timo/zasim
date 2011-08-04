@@ -16,7 +16,7 @@ class PySideDisplay(QWidget):
         self.image = QBitmap(self.sim.sizeX, self.size)
         self.image.clear()
 
-        self.display_queue = Queue.Queue()
+        self.display_queue = Queue.Queue(100)
         self.last_step = 0
         self.queued_steps = 0
 
