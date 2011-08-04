@@ -53,23 +53,23 @@ try:
     import pygame
 except ImportError:
     # if pygame isn't installed, at least get the modifier values.
-    pygame = object()
-    pygame.KMOD_ALT = 768
-    pygame.KMOD_CAPS = 8192
-    pygame.KMOD_CTRL = 192
-    pygame.KMOD_LALT = 256
-    pygame.KMOD_LCTRL = 64
-    pygame.KMOD_LMETA = 1024
-    pygame.KMOD_LSHIFT = 1
-    pygame.KMOD_META = 3072
-    pygame.KMOD_MODE = 16384
-    pygame.KMOD_NONE = 0
-    pygame.KMOD_NUM = 4096
-    pygame.KMOD_RALT = 512
-    pygame.KMOD_RCTRL = 128
-    pygame.KMOD_RMETA = 2048
-    pygame.KMOD_RSHIFT = 2
-    pygame.KMOD_SHIFT = 3
+    class pygame(object):
+        KMOD_ALT = 768
+        KMOD_CAPS = 8192
+        KMOD_CTRL = 192
+        KMOD_LALT = 256
+        KMOD_LCTRL = 64
+        KMOD_LMETA = 1024
+        KMOD_LSHIFT = 1
+        KMOD_META = 3072
+        KMOD_MODE = 16384
+        KMOD_NONE = 0
+        KMOD_NUM = 4096
+        KMOD_RALT = 512
+        KMOD_RCTRL = 128
+        KMOD_RMETA = 2048
+        KMOD_RSHIFT = 2
+        KMOD_SHIFT = 3
 
 
 ## @package CA.py
