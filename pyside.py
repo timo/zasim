@@ -56,20 +56,32 @@ class PySideDisplay(QWidget):
         copier.setPen(QColor("white"))
         copier.setBackground(QColor("black"))
         copier.setBackgroundMode(Qt.OpaqueMode)
+
+        self._copy_pixmap(ev.rect(), copier)
+
+
+    def _copy_pixmap(self, target, painter, damageRect=None):
+        """_copy_pixmap(self, target, painter, damageRect)
+
+        cleverly copies over a part of the stored image onto the widget.
+        target is a the rect on the widget that's supposed to be updated,
+        painter is the painter to be used for drawing,
+        damageRect is an optional rect to limit the redrawing"""
+        if damageRect:
+            target = damageRect.intersected(target)
         if self.scale == 1:
-            tgt = ev.rect()
-            src = ev.rect()
+            src = target
         else:
-            tgt = ev.rect()
-            tgt.setX(int(tgt.x() / self.scale) * self.scale)
-            tgt.setY(int(tgt.y() / self.scale) * self.scale)
-            tgt.setWidth(int(tgt.width() / self.scale) * self.scale + self.scale)
-            tgt.setHeight(int(tgt.height() / self.scale) * self.scale + self.scale)
-            src = QRect(tgt.x() / self.scale,
-                        tgt.y() / self.scale,
-                        tgt.width() / self.scale,
-                        tgt.height() / self.scale)
-        copier.drawPixmap(tgt, self.image, src)
+            target.setX(int(target.x() / self.scale) * self.scale)
+            target.setY(int(target.y() / self.scale) * self.scale)
+            target.setWidth(int(target.width() / self.scale) * self.scale + self.scale)
+            target.setHeight(int(target.height() / self.scale) * self.scale + self.scale)
+            src = QRect(target.x() / self.scale,
+                        target.y() / self.scale,
+                        target.width() / self.scale,
+                        target.height() / self.scale)
+
+        painter.drawPixmap(target, self.image, src)
 
     def step(self):
         self.sim.loopFunc()
