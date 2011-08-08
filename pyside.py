@@ -1,6 +1,12 @@
 from CA import binRule
-from PySide.QtCore import *
-from PySide.QtGui import *
+try:
+    from PySide.QtCore import *
+    from PySide.QtGui import *
+    print "using pyside"
+except ImportError:
+    from PyQt4.QtCore import *
+    from PyQt4.QtGui import *
+    print "using pyqt4"
 import Queue
 import sys
 import random
