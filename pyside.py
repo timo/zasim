@@ -157,7 +157,7 @@ class PySideDisplay(QWidget):
     def after_step(self):
         conf = self.sim.getConf().copy()
         try:
-            self.display_queue.put(conf)
+            self.display_queue.put_nowait(conf)
         except Queue.Full:
             # the queue is initialised to hold as much lines as the
             # screen does. if we have more changes queued up than can
