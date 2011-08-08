@@ -12,6 +12,73 @@ import sys
 import random
 import time
 
+class PySideControl(QWidget):
+    def __init__(self, simulator, parent=None):
+        super(PySideControl, self).__init__(parent)
+
+        self.sim = simulator
+        self.timer_delay = 10
+        self.attached_displays = []
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        l = QHBoxLayout(self)
+        self.start_button = QPushButton("Start")
+        self.stop_button = QPushButton("Stop")
+        self.stop_button.setDisabled(True)
+        delay = QSpinBox()
+
+        l.addWidget(self.start_button)
+        l.addWidget(self.stop_button)
+        l.addWidget(delay)
+        self.setLayout(l)
+
+        self.start_button.clicked.connect(self.start)
+        self.stop_button.clicked.connect(self.stop)
+        delay.valueChanged.connect(self.delay_changed)
+
+    def start(self):
+        self.timer_id = self.startTimer(self.timer_delay)
+        self.start_button.setDisabled(True)
+        self.stop_button.setEnabled(True)
+
+    def stop(self):
+        self.killTimer(self.timer_id)
+        self.stop_button.setDisabled(True)
+        self.start_button.setEnabled(True)
+
+    def delay_changed(self, delay):
+        self.timer_delay = int(delay)
+
+    def timerEvent(self, event):
+        self.killTimer(self.timer_id)
+        self.step()
+        self.timer_id = self.startTimer(self.timer_delay)
+
+    def step(self):
+        self.sim.step()
+        for d in self.attached_displays:
+            d.after_step()
+
+    def attach_display(self, display):
+        self.attached_displays.append(display)
+
+    def detach_display(self, display):
+        self.attached_displays.remove(display)
+
+    def fullspeed(self):
+        last_time = time.time()
+        last_step = 0
+        while self.isVisible():
+            self.step()
+            last_step += 1
+            QApplication.processEvents()
+            if last_step % 1000 == 1:
+                diff, last_time = time.time() - last_time, time.time()
+                print last_step, diff
+
+
 class PySideDisplay(QWidget):
     def __init__(self, simulator, size, scale=1, parent=None):
         super(PySideDisplay, self).__init__(parent)
@@ -33,8 +100,6 @@ class PySideDisplay(QWidget):
         self.timer_delay = 10
 
     def paintEvent(self, ev):
-        if self.display_queue.empty():
-            self.step()
         rendered = 0
         y = self.last_step % self.size
         paint = QPainter(self.image)
@@ -89,8 +154,7 @@ class PySideDisplay(QWidget):
 
         painter.drawPixmap(target, self.image, src)
 
-    def step(self):
-        self.sim.loopFunc()
+    def after_step(self):
         conf = self.sim.getConf().copy()
         try:
             self.display_queue.put(conf)
@@ -109,43 +173,38 @@ class PySideDisplay(QWidget):
         self.queued_steps += 1
         self.update(QRect(QPoint(0, ((self.last_step + self.queued_steps - 1) % self.size) * self.scale), QSize(self.width * self.scale, self.scale)))
 
-    def start(self):
-        self.timer_id = self.startTimer(self.timer_delay)
-
-    def stop(self):
-        self.killTimer(self.timer_id)
-
-    def timerEvent(self, event):
-        self.killTimer(self.timer_id)
-        self.step()
-        self.timer_id = self.startTimer(self.timer_delay)
-
-    def fullspeed(self):
-        last_time = time.time()
-        while True:
-            self.step()
-            QApplication.processEvents()
-            if self.last_step % 1000 == 0:
-                diff, last_time = time.time() - last_time, time.time()
-                print self.last_step, diff
 
 def main():
     app = QApplication(sys.argv)
 
+    scale = 2
+    sizex, sizey = 800 / scale, 600 / scale
+
     # get a random beautiful CA
     sim = binRule(random.choice(
          [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
-         400, 0, binRule.INIT_RAND)
-    disp = PySideDisplay(sim, 300, 2)
+         sizex, 0, binRule.INIT_RAND)
+    disp = PySideDisplay(sim, sizey, scale)
 
     window = QMainWindow()
+
+
+    central_widget = QWidget(window)
+
+    window_l = QVBoxLayout(central_widget)
+
     scroller = QScrollArea()
+    window_l.addWidget(scroller)
     scroller.setWidget(disp)
-    window.setCentralWidget(scroller)
     scroller.resize(800, 600)
 
+    control = PySideControl(sim, parent=central_widget)
+    window_l.addWidget(control)
+    control.attach_display(disp)
+
+    window.setCentralWidget(central_widget)
     window.show()
-    disp.fullspeed()
+
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
