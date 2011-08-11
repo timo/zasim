@@ -202,7 +202,7 @@ class LinearStateAccessor(StateAccessor):
         self.code.add_code("localvars",
                 """int result;""")
         self.code.add_code("post_compute",
-                self.write_access(self.code.loop.get_position()) + " = result")
+                self.write_access(self.code.loop.get_position()) + " = result;")
 
     def read_from(self, pos):
         return self.target.currConf[pos]
@@ -215,7 +215,7 @@ class LinearStateAccessor(StateAccessor):
 
 class LinearCellLoop(CellLoop):
     def get_position(self, offset=0):
-        if offset != 0:
+        if offset == 0:
             return "i"
         else:
             return "i + %d" % (offset)
@@ -236,7 +236,7 @@ class LinearNeighbourhood(Neighbourhood):
     def visit(self):
         for name, offset in zip(self.names, self.offsets):
             self.code.add_code("pre_compute",
-                "%s = %s" % (name,
+                "%s = %s;" % (name,
                              self.code.acc.read_access(self.code.loop.get_position(offset))))
 
     def neighbourhood_cells(self):
