@@ -29,6 +29,10 @@ the inlining capabilities of the PyPy JIT will compensate the amount of
 functions that take part in doing everything.
 """
 
+# TODO decide between letting the cells be calibrated by the accessor or
+#      having loop and border cooperate so that no accesses beyond the
+#      border are possible
+
 from scipy import weave
 
 class WeaveStepFuncVisitor(object):
@@ -109,6 +113,10 @@ class CellLoop(WeaveStepFuncVisitor):
         """returns a code bit to get the current position in config space"""
         return offset
 
+    def get_pos_of(self, offset):
+        """returns the current position plus the offset in python."""
+        return offset
+
     def get_iter(self):
         """returns an iterator for iterating over the config space in python"""
         return iter([])
@@ -138,7 +146,6 @@ class BorderHandler(WeaveStepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
     configuration. One example is copying the leftmost border to the rightmost
     border and vice versa or ensuring the border cells are always 0."""
-    pass
 
 class WeaveStepFunc(object):
     """The WeaveStepFunc will compose different parts into a functioning
@@ -208,11 +215,14 @@ class WeaveStepFunc(object):
         state = {}
         def runhooks(hook, state):
             for hook in self.pycode[hook]:
-                hook(state)
+                upd = hook(state)
+                if isinstance(upd, dict):
+                    state.update(upd)
 
         runhooks("init")
         loop_iter = self.loop.get_iter()
         for pos in loop_iter:
+            state.update(dict(pos=pos))
             state.update(self.neigh.get_neighbourhood(pos))
             runhooks("pre_compute")
             runhooks("compute")
@@ -228,6 +238,9 @@ class WeaveStepFunc(object):
             code.init_once()
 
 class LinearStateAccessor(StateAccessor):
+    def __init__(self, size):
+        self.size = size
+
     def read_access(self, pos):
         return "cconf(%s, 0)" % pos
 
@@ -238,7 +251,12 @@ class LinearStateAccessor(StateAccessor):
         self.code.add_code("localvars",
                 """int result;""")
         self.code.add_code("post_compute",
-                self.write_access(self.code.loop.get_position()) + " = result;")
+                self.write_access(self.code.loop.get_pos()) + " = result;")
+
+        self.code.add_py_hook("init",
+                lambda state: dict(result=None))
+        self.code.add_py_hook("post_compute",
+                lambda state, code=self.code: code.acc.write_to(state["pos"], state["result"]))
 
     def read_from(self, pos):
         return self.target.currConf[pos]
@@ -253,7 +271,7 @@ class LinearStateAccessor(StateAccessor):
         self.target.currConf[pos] = value
 
 class LinearCellLoop(CellLoop):
-    def get_position(self, offset=0):
+    def get_pos(self, offset=0):
         if offset == 0:
             return "i"
         else:
@@ -264,6 +282,9 @@ class LinearCellLoop(CellLoop):
                 """for(int i=1; i < sizeX-1; i++) {""")
         self.code.add_code("loop_end",
                 """}""")
+
+    def get_iter(self):
+        return range(1, self.code.acc.get_size_of() - 1)
 
 class LinearNeighbourhood(Neighbourhood):
     def __init__(self, names, offsets):
@@ -280,6 +301,11 @@ class LinearNeighbourhood(Neighbourhood):
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
+        self.code.add_py_hook("pre_compute",
+                lambda state, code=self.code: dict(zip(self.names,
+                    [self.code.acc.read_from(self.code.loop.get_position(offset)
+                        for offset in self.offsets)])))
+
     def neighbourhood_cells(self):
         return self.names
 
@@ -288,9 +314,14 @@ class LinearNeighbourhood(Neighbourhood):
 
 class LinearBorderCopier(BorderHandler):
     def visit(self):
+        # XXX this still has to take the neighbourhood bounding box into account
         self.code.add_code("after_step",
                 self.code.acc.write_access("0") + " = " + self.code.acc.write_access("sizeX - 2") + ";\n" +
                 self.code.acc.write_access("sizeX - 1") + " = " + self.code.acc.write_access("1") + ";")
+
+        self.code.add_py_hook("after_step",
+                lambda state: self.code.acc.write_to(0, self.code.acc.read_from_current(state["sizeX"] - 2)) and
+                              self.code.acc.write_to(state["sizeX"] - 1, self.code.acc.read_from_current(1)))
 
     def new_config(self):
         left = self.code.acc.read_from(self.target, 1)
@@ -302,7 +333,7 @@ class LinearBorderCopier(BorderHandler):
 def test():
     binRuleTestCode = WeaveStepFunc(
             loop=LinearCellLoop(),
-            accessor=LinearStateAccessor(),
+            accessor=LinearStateAccessor(1000),
             neighbourhood=LinearNeighbourhood(["l", "m", "r"], (-1, 0, 1)),
             extra_code=[LinearBorderCopier()])
     binRuleTestCode.attrs += "rule"
