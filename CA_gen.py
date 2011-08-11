@@ -239,9 +239,9 @@ class WeaveStepFunc(object):
             runhooks("post_compute")
         runhooks("after_step")
 
-    def new_conf(self):
+    def new_config(self):
         for code in self.visitors:
-            code.new_conf(self.target)
+            code.new_config()
 
     def init_once(self):
         for code in self.visitors:
