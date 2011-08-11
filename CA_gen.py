@@ -108,6 +108,8 @@ class BorderHandler(WeaveStepFuncVisitor):
     pass
 
 class WeaveStepFunc(object):
+    """The WeaveStepFunc will compose different parts into a functioning
+    step function."""
     def __init__(self, loop, accessor, neighbourhood, extra_code=[]):
         """create a weave-based step function from the specified parts.
 
