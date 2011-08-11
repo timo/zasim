@@ -1,8 +1,12 @@
-"""This module tests slimming down the specification of cellular automaton
+""" This module tests slimming down the specification of cellular automaton
 step functions by using re-usable components.
 
-Currently, the step function will only be generated as c++ code, but later, the
-step function will be runnable as pure python code as well.
+Ideally, only the very core of the computation would have to be written
+once in C++ and once in python. The rest would then be done by the
+composite classes.
+
+Currently, the step function will only be generated as c++ code, but later,
+the step function will be runnable as pure python code as well.
 
 The parts the step function is decomposed into are:
 
@@ -20,9 +24,9 @@ The parts the step function is decomposed into are:
     handles the borders of the configuration by copying over parts or writing
     data. Maybe, in the future, it could also resize configurations on demand.
 
-When these classes gain the capability to "generate" pure python code, the
-inlining capabilities of the PyPy JIT will compensate the amount of functions
-that take part in doing everything.
+When these classes gain the capability to "generate" pure python code,
+the inlining capabilities of the PyPy JIT will compensate the amount of
+functions that take part in doing everything.
 """
 
 from scipy import weave
