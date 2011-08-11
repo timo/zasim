@@ -2,22 +2,93 @@ from scipy import weave
 
 class WeaveStepFuncVisitor(object):
     def visit(self, code):
+        """add code snippets to the code object."""
+        pass
+
+    def init_once(self, code, target):
+        """initialize data on the target."""
+        pass
+
+    def new_config(self, code, target):
+        """check and sanitize a new config."""
         pass
 
 class StateAccessor(WeaveStepFuncVisitor):
-    pass
+    """A StateAccessor will supply read and write access to the state array.
+
+    it also knows things about how the config space is shaped and sized."""
+
+    def read_access(self, pos):
+        """generate a code bit for reading from the old config at pos.
+
+        example: cconf(pos, 0)"""
+        return ""
+
+    def write_access(self, pos):
+        """generate a code bit to write to the new config at pos.
+
+        example: nconf(pos, 0)"""
+        return ""
+
+    def write_to(self, target, pos, value):
+        """directly write to the config supplied by target at pos."""
+
+    def read_from(self, target, pos):
+        """directly read from the config supplied by target at pos."""
+        return 0
+
+    def get_size(self, code, dimension=0):
+        """generate a code bit to get the size of the config space in
+        the specified dimension"""
+        return "size"
+
+    def get_size_of(self, target, dimension=0):
+        """get the size of the config space in the specified dimension."""
+        return 0
 
 class CellLoop(WeaveStepFuncVisitor):
-    pass
+    """A CellLoop is responsible for looping over cell space and giving access
+    to the current position."""
+    def get_pos(self, offset):
+        """returns a code bit to get the current position in config space"""
+        return offset
 
 class Neighbourhood(WeaveStepFuncVisitor):
-    pass
+    """A Neighbourhood is responsible for getting states from neighbouring cells."""
+
+    def neighbourhood_cells(self):
+        """Get the names of the neighbouring cells."""
+
+    def bounding_box(self, steps=1):
+        """Find out, how many cells, at most, have to be read after
+        a number of steps have been done.
+
+        It will return a tuple with relative values where 0 is the index of the
+        current cell. It will have a format like:
+
+            (minX, [minY, [minZ]],
+             maxX, [maxY, [maxZ]])"""
+        return (-steps, steps)
 
 class BorderHandler(WeaveStepFuncVisitor):
+    """The BorderHandler is responsible for treating the borders of the
+    configuration. One example is copying the leftmost border to the rightmost
+    border and vice versa or ensuring the border cells are always 0."""
     pass
 
 class WeaveStepFunc(object):
     def __init__(self, loop, accessor, neighbourhood, extra_code=[]):
+        """create a weave-based step function from the specified parts.
+
+        loop          -  a CellLoop, that adds a loop at loop_begin
+                         and loop_end.
+        accessor      -  a StateAccessor, that handles accesses to the state
+                         array as well as setting the cell value during
+                         the loop.
+        neighbourhood -  a Neighbourhood, that fetches neighbouring
+                         cell values into known variables.
+        extra_code    -  further WeaveStepFuncVisitors, that add more
+                         behaviour."""
         self.sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
         self.code = dict((s, []) for s in self.sections)
         self.code_text = ""
@@ -86,7 +157,7 @@ class LinearNeighbourhood(Neighbourhood):
     def neighbourhood_cells(self):
         return self.names
 
-    def bounding_box(self):
+    def bounding_box(self, steps=1):
         return min(self.offsets), max(self.offsets)
 
 class LinearBorderCopier(BorderHandler):
