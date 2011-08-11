@@ -103,6 +103,9 @@ class WeaveStepFunc(object):
         self.neigh.visit(self)
         self.loop.visit(self)
 
+        for code in extra_code:
+            extra_code.visit(self)
+
     def add_code(self, hook, code):
         self.code[hook].append(code)
 
