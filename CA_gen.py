@@ -249,6 +249,7 @@ class WeaveStepFunc(object):
 
 class LinearStateAccessor(StateAccessor):
     def __init__(self, size):
+        super(LinearStateAccessor, self).__init__()
         self.size = size
 
     def read_access(self, pos):
@@ -257,6 +258,8 @@ class LinearStateAccessor(StateAccessor):
     def write_access(self, pos):
         return "nconf(%s, 0)" % pos
 
+    def init_once(self):
+        self.code.attrs.extend(["nconf", "cconf"])
     def visit(self):
         self.code.add_code("localvars",
                 """int result;""")
@@ -269,16 +272,19 @@ class LinearStateAccessor(StateAccessor):
                 lambda state, code=self.code: code.acc.write_to(state["pos"], state["result"]))
 
     def read_from(self, pos):
-        return self.target.currConf[pos]
+        return self.target.cconf[pos]
 
     def read_from_next(self, pos):
-        return self.target.nextConf[pos]
+        return self.target.nconf[pos]
 
     def write_to(self, pos, value):
-        self.target.nextConf[pos] = value
+        self.target.nconf[pos] = value
 
     def write_to_current(self, pos, value):
-        self.target.currConf[pos] = value
+        self.target.cconf[pos] = value
+
+    def get_size_of(self, dimension=0):
+        return self.size
 
 class LinearCellLoop(CellLoop):
     def get_pos(self, offset=0):
