@@ -243,6 +243,9 @@ class LinearStateAccessor(StateAccessor):
     def read_from(self, pos):
         return self.target.currConf[pos]
 
+    def read_from_next(self, pos):
+        return self.target.nextConf[pos]
+
     def write_to(self, pos, value):
         self.target.nextConf[pos] = value
 
