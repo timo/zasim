@@ -33,7 +33,13 @@ functions that take part in doing everything.
 #      having loop and border cooperate so that no accesses beyond the
 #      border are possible
 
-from scipy import weave
+import numpy as np
+try:
+    from scipy import weave
+    from scipy.weave import converters
+    USE_WEAVE=True
+except:
+    USE_WEAVE=False
 
 class WeaveStepFuncVisitor(object):
     def __init__(self):
@@ -331,6 +337,15 @@ class LinearBorderCopier(BorderHandler):
         self.code.acc.write_to(self.target, self.code.acc.get_size_of(self.target, 0) - 2, left)
 
 def test():
+    import random
+    class TestTarget(object):
+        def __init__(self, size):
+            self.size = size
+            self.cconf = np.zeros(size)
+            for i in range(size):
+                self.cconf[i] = random.choice([0, 1])
+            self.nconf = self.cconf.copy()
+            self.rule = np.array([0, 0, 1, 0, 1, 1, 0, 1])
     binRuleTestCode = WeaveStepFunc(
             loop=LinearCellLoop(),
             accessor=LinearStateAccessor(1000),
