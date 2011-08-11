@@ -51,11 +51,15 @@ class WeaveStepFuncVisitor(object):
         pass
 
     def init_once(self):
-        """initialize data on the target."""
+        """initialize data on the target.
+
+        this is pure python code that runs on init."""
         pass
 
     def new_config(self):
-        """check and sanitize a new config."""
+        """check and sanitize a new config.
+
+        this is pure python code that runs when a new config is loaded."""
         pass
 
 class StateAccessor(WeaveStepFuncVisitor):
