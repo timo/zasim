@@ -132,11 +132,9 @@ class WeaveStepFunc(object):
         self.neigh = neighbourhood
         self.loop = loop
 
-        self.acc.visit(self)
-        self.neigh.visit(self)
-        self.loop.visit(self)
+        self.visitors = [self.acc, self.neigh, self.loop] + extra_code
 
-        for code in extra_code:
+        for code in self.visitors:
             code.visit(self)
 
     def add_code(self, hook, code):
@@ -151,6 +149,14 @@ class WeaveStepFunc(object):
     def inline(self, target):
         weave.inline( self.code_text,
             local_dict=dict((k, getattr(target, k)) for k in self.attrs))
+
+    def new_conf(self, target):
+        for code in self.visitors:
+            code.new_conf(target)
+
+    def init_once(self, target):
+        for code in self.visitors:
+            code.init_once(target
 
 class LinearStateAccessor(StateAccessor):
     def read_access(self, pos):
