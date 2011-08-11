@@ -179,6 +179,7 @@ class WeaveStepFunc(object):
         self.pycode = dict((s, []) for s in self.pysections)
 
         self.attrs = []
+        self.consts = {}
 
         self.acc = accessor
         self.neigh = neighbourhood
@@ -218,12 +219,16 @@ class WeaveStepFunc(object):
         self.code_text = "\n".join(code_bits)
 
     def step_inline(self):
-        weave.inline( self.code_text,
-            local_dict=dict((k, getattr(self.target, k)) for k in self.attrs))
+        local_dict=dict((k, getattr(self.target, k)) for k in self.attrs)
+        local_dict.update(self.consts)
+        attrs = self.attrs + self.consts.keys()
+        weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
+                      type_converters = converters.blitz)
 
     def step_pure_py(self):
-        state = {}
-        def runhooks(hook, state):
+        state = self.consts.copy()
+        state.update(dict((k, getattr(self.target, k)) for k in self.attrs))
+        def runhooks(hook):
             for hook in self.pycode[hook]:
                 upd = hook(state)
                 if isinstance(upd, dict):
@@ -259,7 +264,9 @@ class LinearStateAccessor(StateAccessor):
         return "nconf(%s, 0)" % pos
 
     def init_once(self):
+        self.code.consts["sizeX"] = self.size
         self.code.attrs.extend(["nconf", "cconf"])
+
     def visit(self):
         self.code.add_code("localvars",
                 """int result;""")
@@ -356,12 +363,14 @@ def test():
                 self.cconf[i] = random.choice([0, 1])
             self.nconf = self.cconf.copy()
             self.rule = np.array([0, 0, 1, 0, 1, 1, 0, 1])
+
     binRuleTestCode = WeaveStepFunc(
             loop=LinearCellLoop(),
             accessor=LinearStateAccessor(1000),
             neighbourhood=LinearNeighbourhood(["l", "m", "r"], (-1, 0, 1)),
             extra_code=[LinearBorderCopier()])
-    binRuleTestCode.attrs += "rule"
+
+    binRuleTestCode.attrs.append("rule")
     binRuleTestCode.add_code("localvars",
             """int state;""")
     binRuleTestCode.add_code("compute",
