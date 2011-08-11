@@ -37,10 +37,12 @@ class WeaveStepFuncVisitor(object):
         self.target = None
 
     def bind(self, code):
+        """bind the visitor to a StepFunc"""
         assert self.code is None, "%r is already bound to %r" % (self, self.code)
         self.code = code
 
     def set_target(self, target):
+        """target a CA instance"""
         assert self.target is None, "%r already targets %r" % (self, self.target)
         self.target = target
 
