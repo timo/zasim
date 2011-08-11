@@ -82,7 +82,11 @@ class StateAccessor(WeaveStepFuncVisitor):
         """directly write to the current config at pos."""
 
     def read_from(self, pos):
-        """directly read from the current config supplied by target at pos."""
+        """directly read from the current config at pos."""
+        return 0
+
+    def read_from_next(self, pos):
+        """directly read from the next config at pos."""
         return 0
 
     def get_size(self, dimension=0):
