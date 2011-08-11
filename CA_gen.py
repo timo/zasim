@@ -76,10 +76,13 @@ class StateAccessor(WeaveStepFuncVisitor):
         return ""
 
     def write_to(self, pos, value):
-        """directly write to the config supplied by target at pos."""
+        """directly write to the next config at pos."""
+
+    def write_to_current(self, pos, value):
+        """directly write to the current config at pos."""
 
     def read_from(self, pos):
-        """directly read from the config supplied by target at pos."""
+        """directly read from the current config supplied by target at pos."""
         return 0
 
     def get_size(self, dimension=0):
@@ -201,6 +204,9 @@ class LinearStateAccessor(StateAccessor):
         return self.target.currConf[pos]
 
     def write_to(self, pos, value):
+        self.target.nextConf[pos] = value
+
+    def write_to_current(self, pos, value):
         self.target.currConf[pos] = value
 
 class LinearCellLoop(CellLoop):
