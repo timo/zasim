@@ -159,6 +159,12 @@ class LinearStateAccessor(StateAccessor):
         code.add_code("post_compute",
                 self.write_access(code.loop.get_position()) + " = result")
 
+    def read_from(self, target, pos):
+        return target.currConf[pos]
+
+    def write_to(self, target, pos, value):
+        target.currConf[pos] = value
+
 class LinearCellLoop(CellLoop):
     def get_position(self, offset=0):
         if offset != 0:
