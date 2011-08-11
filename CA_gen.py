@@ -200,6 +200,10 @@ class WeaveStepFunc(object):
     def set_target(self, target):
         assert self.target is None, "%r already targets %r" % (self, self.target)
         self.target = target
+        for visitor in self.visitors:
+            visitor.set_target(target)
+        self.init_once()
+        self.new_config()
 
     def add_code(self, hook, code):
         self.code[hook].append(code)
