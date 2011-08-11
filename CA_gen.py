@@ -1,3 +1,30 @@
+"""This module tests slimming down the specification of cellular automaton
+step functions by using re-usable components.
+
+Currently, the step function will only be generated as c++ code, but later, the
+step function will be runnable as pure python code as well.
+
+The parts the step function is decomposed into are:
+
+  - A StateAccessor
+
+    is responsible for writing to and reading from the configuration as
+    well as knowing what shape and size the configuration has.
+
+  - A CellLoop
+
+    defines the order in which to loop over the configuration cells.
+
+  - A BorderHandler
+
+    handles the borders of the configuration by copying over parts or writing
+    data. Maybe, in the future, it could also resize configurations on demand.
+
+When these classes gain the capability to "generate" pure python code, the
+inlining capabilities of the PyPy JIT will compensate the amount of functions
+that take part in doing everything.
+"""
+
 from scipy import weave
 
 class WeaveStepFuncVisitor(object):
