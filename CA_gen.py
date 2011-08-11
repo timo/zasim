@@ -109,11 +109,19 @@ class CellLoop(WeaveStepFuncVisitor):
         """returns a code bit to get the current position in config space"""
         return offset
 
+    def get_iter(self):
+        """returns an iterator for iterating over the config space in python"""
+        return iter([])
+
 class Neighbourhood(WeaveStepFuncVisitor):
     """A Neighbourhood is responsible for getting states from neighbouring cells."""
 
     def neighbourhood_cells(self):
         """Get the names of the neighbouring cells."""
+
+    def get_neighbourhood(self, pos):
+        """Get the values of the neighbouring cells for pos in python"""
+        return {}
 
     def bounding_box(self, steps=1):
         """Find out, how many cells, at most, have to be read after
@@ -147,9 +155,15 @@ class WeaveStepFunc(object):
                          cell values into known variables.
         extra_code    -  further WeaveStepFuncVisitors, that add more
                          behaviour."""
+
+        # those are for generated c code
         self.sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
         self.code = dict((s, []) for s in self.sections)
         self.code_text = ""
+
+        # those are for composed python functions
+        self.pysections = "init pre_compute compute post_compute after_step".split()
+        self.pycode = dict((s, []) for s in self.pysections)
 
         self.attrs = []
 
@@ -177,15 +191,33 @@ class WeaveStepFunc(object):
     def add_code(self, hook, code):
         self.code[hook].append(code)
 
+    def add_py_hook(self, hook, function):
+        self.pycode[hook].append(function)
+
     def regen_code(self):
         code_bits = []
         for section in self.sections:
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
 
-    def inline(self):
+    def step_inline(self):
         weave.inline( self.code_text,
             local_dict=dict((k, getattr(self.target, k)) for k in self.attrs))
+
+    def step_pure_py(self):
+        state = {}
+        def runhooks(hook, state):
+            for hook in self.pycode[hook]:
+                hook(state)
+
+        runhooks("init")
+        loop_iter = self.loop.get_iter()
+        for pos in loop_iter:
+            state.update(self.neigh.get_neighbourhood(pos))
+            runhooks("pre_compute")
+            runhooks("compute")
+            runhooks("post_compute")
+        runhooks("after_step")
 
     def new_conf(self):
         for code in self.visitors:
