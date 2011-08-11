@@ -320,14 +320,14 @@ class LinearNeighbourhood(Neighbourhood):
         for name, offset in zip(self.names, self.offsets):
             self.code.add_code("pre_compute",
                 "%s = %s;" % (name,
-                             self.code.acc.read_access(self.code.loop.get_position(offset))))
+                             self.code.acc.read_access(self.code.loop.get_pos(offset))))
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
         self.code.add_py_hook("pre_compute",
                 lambda state, code=self.code: dict(zip(self.names,
-                    [self.code.acc.read_from(self.code.loop.get_position(offset)
-                        for offset in self.offsets)])))
+                    [self.code.acc.read_from(state["pos"] + offset)
+                        for offset in self.offsets])))
 
     def neighbourhood_cells(self):
         return self.names
@@ -343,15 +343,15 @@ class LinearBorderCopier(BorderHandler):
                 self.code.acc.write_access("sizeX - 1") + " = " + self.code.acc.write_access("1") + ";")
 
         self.code.add_py_hook("after_step",
-                lambda state: self.code.acc.write_to(0, self.code.acc.read_from_current(state["sizeX"] - 2)) and
-                              self.code.acc.write_to(state["sizeX"] - 1, self.code.acc.read_from_current(1)))
+                lambda state: self.code.acc.write_to_current(0, self.code.acc.read_from(self.code.acc.get_size_of(0) - 2)) and
+                              self.code.acc.write_to_current(self.code.acc.get_size_of(0) - 1, self.code.acc.read_from(1)))
 
     def new_config(self):
-        left = self.code.acc.read_from(self.target, 1)
-        right = self.code.acc.read_from(self.target, self.code.acc.get_size_of(self.target, 0) - 1)
+        left = self.code.acc.read_from(1)
+        right = self.code.acc.read_from(self.code.acc.get_size_of(0) - 1)
 
-        self.code.acc.write_to(self.target, 0, right)
-        self.code.acc.write_to(self.target, self.code.acc.get_size_of(self.target, 0) - 2, left)
+        self.code.acc.write_to(0, right)
+        self.code.acc.write_to(self.code.acc.get_size_of(0) - 2, left)
 
 def test():
     import random
@@ -378,8 +378,22 @@ def test():
   state += m << 1;
   state += r;
   result = rule(state);""")
+
+    binRuleTestCode.add_py_hook("compute",
+            lambda state: dict(result=state["rule"][int(state["l"] * 4 + state["m"] * 2 + state["r"])]))
+
+    target = TestTarget(1000)
+    binRuleTestCode.set_target(target)
     binRuleTestCode.regen_code()
     print binRuleTestCode.code_text
+    if USE_WEAVE:
+        print "weave"
+        for i in range(10000):
+            binRuleTestCode.step_inline()
+    else:
+        print "pure"
+        for i in range(1000):
+            binRuleTestCode.step_pure_py()
 
 if __name__ == "__main__":
     test()
