@@ -166,6 +166,12 @@ class LinearBorderCopier(BorderHandler):
                 code.acc.write_access("0") + " = " + code.acc.write_access("sizeX - 2") + ";\n" +
                 code.acc.write_access("sizeX - 1") + " = " + code.acc.write_access("1") + ";")
 
+    def new_config(self, code, target):
+        left = code.acc.read_from(target, 1)
+        right = code.acc.read_from(target, code.acc.get_size_of(target, 0) - 1)
+
+        code.acc.write_to(target, 0, right)
+        code.acc.write_to(target, code.acc.get_size_of(target, 0) - 2, left)
 
 def test():
     binRuleTestCode = WeaveStepFunc(
