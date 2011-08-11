@@ -238,6 +238,8 @@ class LinearNeighbourhood(Neighbourhood):
             self.code.add_code("pre_compute",
                 "%s = %s;" % (name,
                              self.code.acc.read_access(self.code.loop.get_position(offset))))
+        self.code.add_code("localvars",
+                "int " + ", ".join(self.names) + ";")
 
     def neighbourhood_cells(self):
         return self.names
