@@ -213,8 +213,8 @@ def test():
     binRuleTestCode = WeaveStepFunc(
             loop=LinearCellLoop(),
             accessor=LinearStateAccessor(),
-            neighbourhood=LinearNeighbourhood(["l", "m", "r"], (-1, 0, 1)))
-    LinearBorderCopier().visit(binRuleTestCode)
+            neighbourhood=LinearNeighbourhood(["l", "m", "r"], (-1, 0, 1)),
+            extra_code=[LinearBorderCopier()])
     binRuleTestCode.attrs += "rule"
     binRuleTestCode.add_code("localvars",
             """int state;""")
