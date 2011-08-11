@@ -366,7 +366,7 @@ def test():
 
     binRuleTestCode = WeaveStepFunc(
             loop=LinearCellLoop(),
-            accessor=LinearStateAccessor(1000),
+            accessor=LinearStateAccessor(size=1000),
             neighbourhood=LinearNeighbourhood(["l", "m", "r"], (-1, 0, 1)),
             extra_code=[LinearBorderCopier()])
 
