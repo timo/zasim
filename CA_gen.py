@@ -33,6 +33,15 @@ functions that take part in doing everything.
 #      having loop and border cooperate so that no accesses beyond the
 #      border are possible
 
+# TODO get some code in place that compares the run functions against the
+#      official implementation.
+
+# TODO separate the functions to make C code from the ones that do pure python
+#      computation
+
+# TODO instead of putting together lambdas, generate python code as strings
+#      and compare performance in pypy
+
 import numpy as np
 try:
     from scipy import weave
