@@ -227,6 +227,8 @@ class WeaveStepFunc(object):
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
 
+        self.visitors = tuple(self.visitors)
+        self.pycode = dict((k, tuple(v)) for k, v in self.pycode.iteritems())
     def step_inline(self):
         local_dict=dict((k, getattr(self.target, k)) for k in self.attrs)
         local_dict.update(self.consts)
