@@ -334,7 +334,7 @@ class LinearCellLoop(CellLoop):
                 """}""")
 
     def get_iter(self):
-        return range(1, self.code.acc.get_size_of() - 1)
+        return range(0, self.code.acc.get_size_of())
 
 class LinearNondeterministicCellLoop(LinearCellLoop):
     def __init__(self, probab=0.5, random_generator=None, **kwargs):
@@ -347,7 +347,7 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
 
     def get_iter(self):
         def generator():
-            for i in range(1, self.code.acc.get_size_of() - 1):
+            for i in range(self.code.acc.get_size_of()):
                 if self.random.random() < self.probab:
                     yield i
         return iter(generator())
