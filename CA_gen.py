@@ -29,10 +29,6 @@ the inlining capabilities of the PyPy JIT will compensate the amount of
 functions that take part in doing everything.
 """
 
-# TODO decide between letting the cells be calibrated by the accessor or
-#      having loop and border cooperate so that no accesses beyond the
-#      border are possible
-
 # TODO get some code in place that compares the run functions against the
 #      official implementation.
 
@@ -156,14 +152,24 @@ class Neighbourhood(WeaveStepFuncVisitor):
         It will return a tuple with relative values where 0 is the index of the
         current cell. It will have a format like:
 
-            (minX, [minY, [minZ]],
-             maxX, [maxY, [maxZ]])"""
+            (minX, maxX,
+             [minY, maxY,
+              [minZ, maxZ]])"""
         return (-steps, steps)
 
 class BorderHandler(WeaveStepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
     configuration. One example is copying the leftmost border to the rightmost
     border and vice versa or ensuring the border cells are always 0."""
+
+class BorderSizeEnsurer(BorderHandler):
+    def new_config(self):
+        super(BorderSizeEnsurer, self).new_config()
+        bbox = self.code.neigh.bounding_box()
+        new_conf = np.zeros(len(self.target.cconf) + abs(bbox[0]) + abs(bbox[1]))
+        new_conf[abs(bbox[0]):-abs(bbox[1])] = self.target.cconf
+        self.target.cconf = new_conf
+        self.target.nconf = new_conf.copy()
 
 class WeaveStepFunc(object):
     """The WeaveStepFunc will compose different parts into a functioning
@@ -275,14 +281,18 @@ class LinearStateAccessor(StateAccessor):
         self.size = size
 
     def read_access(self, pos):
-        return "cconf(%s, 0)" % pos
+        return "cconf(%s + %s, 0)" % (pos, self.border_l)
 
     def write_access(self, pos):
-        return "nconf(%s, 0)" % pos
+        return "nconf(%s + %s, 0)" % (pos, self.border_l)
 
     def init_once(self):
         self.code.consts["sizeX"] = self.size
         self.code.attrs.extend(["nconf", "cconf"])
+
+    def bind(self, target):
+        super(LinearStateAccessor, self).bind(target)
+        self.border_l = abs(self.code.neigh.bounding_box()[0])
 
     def visit(self):
         self.code.add_code("localvars",
@@ -296,16 +306,16 @@ class LinearStateAccessor(StateAccessor):
                 lambda state, code=self.code: code.acc.write_to(state["pos"], state["result"]))
 
     def read_from(self, pos):
-        return self.target.cconf[pos]
+        return self.target.cconf[pos + self.border_l]
 
     def read_from_next(self, pos):
-        return self.target.nconf[pos]
+        return self.target.nconf[pos + self.border_l]
 
     def write_to(self, pos, value):
-        self.target.nconf[pos] = value
+        self.target.nconf[pos + self.border_l] = value
 
     def write_to_current(self, pos, value):
-        self.target.cconf[pos] = value
+        self.target.cconf[pos + self.border_l] = value
 
     def get_size_of(self, dimension=0):
         return self.size
@@ -319,7 +329,7 @@ class LinearCellLoop(CellLoop):
 
     def visit(self):
         self.code.add_code("loop_begin",
-                """for(int i=1; i < sizeX-1; i++) {""")
+                """for(int i=0; i < sizeX; i++) {""")
         self.code.add_code("loop_end",
                 """}""")
 
@@ -383,7 +393,7 @@ class LinearNeighbourhood(Neighbourhood):
     def bounding_box(self, steps=1):
         return min(self.offsets), max(self.offsets)
 
-class LinearBorderCopier(BorderHandler):
+class LinearBorderCopier(BorderSizeEnsurer):
     def visit(self):
         # XXX this still has to take the neighbourhood bounding box into account
         self.code.add_code("after_step",
@@ -395,6 +405,7 @@ class LinearBorderCopier(BorderHandler):
                               self.code.acc.write_to_current(self.code.acc.get_size_of(0) - 1, self.code.acc.read_from(1)))
 
     def new_config(self):
+        super(LinearBorderCopier, self).new_config()
         left = self.code.acc.read_from(1)
         right = self.code.acc.read_from(self.code.acc.get_size_of(0) - 1)
 
@@ -415,13 +426,13 @@ def test():
             for i in range(size):
                 self.cconf[i] = rand.choice([0, 1])
             self.nconf = self.cconf.copy()
-            self.rule = np.array([0, 0, 1, 0, 1, 1, 0, 1])
+            self.rule = np.array([1, 0, 0, 0, 0, 0, 1, 0])
 
-    size = 20
+    size = 30
 
     binRuleTestCode = WeaveStepFunc(
-            loop=LinearNondeterministicCellLoop(random_generator=random.Random(11)),
-            #loop=LinearCellLoop(),
+            #loop=LinearNondeterministicCellLoop(random_generator=random.Random(11)),
+            loop=LinearCellLoop(),
             accessor=LinearStateAccessor(size=size),
             neighbourhood=LinearNeighbourhood(["l", "m", "r"], (-1, 0, 1)),
             extra_code=[LinearBorderCopier()])
@@ -449,7 +460,7 @@ def test():
             pretty_print_array(target.cconf)
     else:
         print "pure"
-        for i in range(1000):
+        for i in range(10000):
             binRuleTestCode.step_pure_py()
             pretty_print_array(target.cconf)
 
