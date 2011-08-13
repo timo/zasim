@@ -50,6 +50,9 @@ try:
 except:
     USE_WEAVE=False
 
+import random
+import sys
+
 class WeaveStepFuncVisitor(object):
     def __init__(self):
         self.code = None
@@ -323,6 +326,37 @@ class LinearCellLoop(CellLoop):
     def get_iter(self):
         return range(1, self.code.acc.get_size_of() - 1)
 
+class LinearNondeterministicCellLoop(LinearCellLoop):
+    def __init__(self, probab=0.5, random_generator=None, **kwargs):
+        super(LinearNondeterministicCellLoop, self).__init__(**kwargs)
+        if random_generator is None:
+            self.random = random.Random()
+        else:
+            self.random = random_generator
+        self.probab = probab
+
+    def get_iter(self):
+        def generator():
+            for i in range(1, self.code.acc.get_size_of() - 1):
+                if self.random.random() < self.probab:
+                    yield i
+        return iter(generator())
+
+    def visit(self):
+        super(LinearNondeterministicCellLoop, self).visit()
+        self.code.add_code("loop_begin",
+                """if(rand() >= RAND_MAX * %s) continue;""" % (self.probab))
+        self.code.add_code("localvars",
+                """srand(randseed(0));""")
+        self.code.add_code("after_step",
+                """randseed(0) = rand();""")
+        self.code.attrs.append("randseed")
+
+    def set_target(self, target):
+        super(LinearNondeterministicCellLoop, self).set_target(target)
+        # FIXME how do i get the randseed out without using np.array?
+        target.randseed = np.array([self.random.random()])
+
 class LinearNeighbourhood(Neighbourhood):
     def __init__(self, names, offsets):
         super(Neighbourhood, self).__init__()
@@ -368,19 +402,27 @@ class LinearBorderCopier(BorderHandler):
         self.code.acc.write_to(self.code.acc.get_size_of(0) - 2, left)
 
 def test():
-    import random
+    def pretty_print_array(arr):
+        for cell in arr:
+            sys.stdout.write("X" if cell > 0.5 else " ")
+        sys.stdout.write("\n")
+
     class TestTarget(object):
         def __init__(self, size):
+            rand = random.Random(10)
             self.size = size
             self.cconf = np.zeros(size)
             for i in range(size):
-                self.cconf[i] = random.choice([0, 1])
+                self.cconf[i] = rand.choice([0, 1])
             self.nconf = self.cconf.copy()
             self.rule = np.array([0, 0, 1, 0, 1, 1, 0, 1])
 
+    size = 20
+
     binRuleTestCode = WeaveStepFunc(
-            loop=LinearCellLoop(),
-            accessor=LinearStateAccessor(size=1000),
+            loop=LinearNondeterministicCellLoop(random_generator=random.Random(11)),
+            #loop=LinearCellLoop(),
+            accessor=LinearStateAccessor(size=size),
             neighbourhood=LinearNeighbourhood(["l", "m", "r"], (-1, 0, 1)),
             extra_code=[LinearBorderCopier()])
 
@@ -396,7 +438,7 @@ def test():
     binRuleTestCode.add_py_hook("compute",
             lambda state: dict(result=state["rule"][int(state["l"] * 4 + state["m"] * 2 + state["r"])]))
 
-    target = TestTarget(1000)
+    target = TestTarget(size)
     binRuleTestCode.set_target(target)
     binRuleTestCode.regen_code()
     print binRuleTestCode.code_text
@@ -404,10 +446,12 @@ def test():
         print "weave"
         for i in range(10000):
             binRuleTestCode.step_inline()
+            pretty_print_array(target.cconf)
     else:
         print "pure"
         for i in range(1000):
             binRuleTestCode.step_pure_py()
+            pretty_print_array(target.cconf)
 
 if __name__ == "__main__":
     test()
