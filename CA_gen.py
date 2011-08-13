@@ -229,12 +229,14 @@ class WeaveStepFunc(object):
 
         self.visitors = tuple(self.visitors)
         self.pycode = dict((k, tuple(v)) for k, v in self.pycode.iteritems())
+
     def step_inline(self):
         local_dict=dict((k, getattr(self.target, k)) for k in self.attrs)
         local_dict.update(self.consts)
         attrs = self.attrs + self.consts.keys()
         weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
                       type_converters = converters.blitz)
+        self.target.nconf, self.target.cconf = self.target.cconf, self.target.nconf
 
     def step_pure_py(self):
         state = self.consts.copy()
@@ -254,6 +256,7 @@ class WeaveStepFunc(object):
             runhooks("compute")
             runhooks("post_compute")
         runhooks("after_step")
+        self.target.nconf, self.target.cconf = self.target.cconf, self.target.nconf
 
     def new_config(self):
         for code in self.visitors:
