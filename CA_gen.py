@@ -43,8 +43,9 @@ try:
     from scipy import weave
     from scipy.weave import converters
     USE_WEAVE=True
-except:
+except ImportError:
     USE_WEAVE=False
+    print "not using weave"
 
 import random
 import sys
