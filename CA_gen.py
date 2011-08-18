@@ -260,7 +260,7 @@ class WeaveStepFunc(object):
         runhooks("init")
         loop_iter = self.loop.get_iter()
         for pos in loop_iter:
-            state.update(dict(pos=pos))
+            state["pos"] = pos
             state.update(self.neigh.get_neighbourhood(pos))
             runhooks("pre_compute")
             runhooks("compute")
