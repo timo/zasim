@@ -421,15 +421,15 @@ def test():
 
     class TestTarget(object):
         def __init__(self, size):
-            rand = random.Random(10)
+            rand = random.Random(11)
             self.size = size
             self.cconf = np.zeros(size)
             for i in range(size):
                 self.cconf[i] = rand.choice([0, 1])
             self.nconf = self.cconf.copy()
-            self.rule = np.array([1, 0, 0, 0, 0, 0, 1, 0])
+            self.rule = np.array([0, 1, 1, 1, 1, 1, 1, 0])
 
-    size = 30
+    size = 75
 
     binRuleTestCode = WeaveStepFunc(
             #loop=LinearNondeterministicCellLoop(random_generator=random.Random(11)),
