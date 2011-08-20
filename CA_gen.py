@@ -399,10 +399,22 @@ class LinearNeighbourhood(Neighbourhood):
 
 class LinearBorderCopier(BorderSizeEnsurer):
     def visit(self):
-        # XXX this still has to take the neighbourhood bounding box into account
+        bbox = self.code.neigh.bounding_box()
+        copy_to_left = abs(bbox[0])
+        copy_to_right = abs(bbox[1])
+        copy_code = []
+        for i in range(copy_to_left):
+            copy_code.append(self.code.acc.write_access(i) + " = " + self.code.acc.write_access("sizeX - " + str(copy_to_left - i)) + ";")
+            self.code.add_py_hook("after_step",
+                    lambda state: self.code.acc.write_to_current(i, self.code.acc.read_from(self.code.acc.get_size_of(0) - copy_to_left - i)))
+
+        for i in range(copy_to_right):
+            copy_code.append(self.code.acc.write_access("sizeX - " + str(copy_to_right - i)) + " = " + self.code.acc.write_access(str(i)) + ";")
+            self.code.add_py_hook("after_step",
+                    lambda state: self.code.acc.write_to_current(self.code.acc.get_size_of(0) - i, self.code.acc.read_from(copy_to_right - i)))
+
         self.code.add_code("after_step",
-                self.code.acc.write_access("0") + " = " + self.code.acc.write_access("sizeX - 2") + ";\n" +
-                self.code.acc.write_access("sizeX - 1") + " = " + self.code.acc.write_access("1") + ";")
+                "\n".join(copy_code))
 
         self.code.add_py_hook("after_step",
                 lambda state: self.code.acc.write_to_current(0, self.code.acc.read_from(self.code.acc.get_size_of(0) - 2)) and
@@ -438,7 +450,7 @@ def test():
             #loop=LinearNondeterministicCellLoop(random_generator=random.Random(11)),
             loop=LinearCellLoop(),
             accessor=LinearStateAccessor(size=size),
-            neighbourhood=LinearNeighbourhood(["l", "m", "r"], (-1, 0, 1)),
+            neighbourhood=LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
             extra_code=[LinearBorderCopier()])
 
     binRuleTestCode.attrs.append("rule")
