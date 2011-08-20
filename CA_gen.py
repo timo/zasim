@@ -428,9 +428,9 @@ class LinearBorderCopier(BorderSizeEnsurer):
         right_border = abs(bbox[1])
         copy_code = []
         for i in range(left_border):
-            copy_code.append("%s = %s" % (
+            copy_code.append("%s = %s;" % (
                 self.code.acc.write_access(i, skip_border=True),
-                self.code.acc.write_access("sizeX - %d + %d" % (left_border, i)) + ";"))
+                self.code.acc.write_access("sizeX - %d + %d" % (left_border, i))))
 
             self.code.add_py_hook("after_step",
                     lambda state: self.code.acc.write_to_current(i, skip_border=True,
@@ -438,9 +438,9 @@ class LinearBorderCopier(BorderSizeEnsurer):
 
 
         for i in range(right_border):
-            copy_code.append("%s = %s" % (
+            copy_code.append("%s = %s;" % (
                 self.code.acc.write_access("sizeX + " + str(i)),
-                self.code.acc.write_access(str(i)) + ";"))
+                self.code.acc.write_access(str(i))))
 
             self.code.add_py_hook("after_step",
                     lambda state: self.code.acc.write_to_current(self.code.acc.get_size_of(0) + i,
