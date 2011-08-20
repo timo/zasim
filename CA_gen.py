@@ -67,13 +67,11 @@ class WeaveStepFuncVisitor(object):
 
     def visit(self):
         """add code snippets to the code object."""
-        pass
 
     def init_once(self):
         """initialize data on the target.
 
         this is pure python code that runs on init."""
-        pass
 
     def new_config(self):
         """check and sanitize a new config.
@@ -81,7 +79,6 @@ class WeaveStepFuncVisitor(object):
         this is pure python code that runs when a new config is loaded.
         it only changes the current configuration "cconf" of the automaton.
         after all new_config hooks have been run, they are multiplied."""
-        pass
 
 class StateAccessor(WeaveStepFuncVisitor):
     """A StateAccessor will supply read and write access to the state array.
