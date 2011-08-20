@@ -436,8 +436,8 @@ class LinearBorderCopier(BorderSizeEnsurer):
         #       |----> |---------------->
         #       offset    sizeX           |---->
         #        l_b                        r_b
-        # conf(i) <- conf(offset + sizeX - l_b + i) with i from 0 to l_b
-        # conf(offset + sizeX + i] <- conf(offset + i) with i from 0 to r_b
+        # conf(i) <- conf(i + sizeX)
+        # conf(offset + sizeX + i) <- conf(offset + i)
 
         bbox = self.code.neigh.bounding_box()
         left_border = abs(bbox[0])
@@ -446,7 +446,7 @@ class LinearBorderCopier(BorderSizeEnsurer):
         for i in range(left_border):
             copy_code.append("%s = %s;" % (
                 self.code.acc.write_access(i, skip_border=True),
-                self.code.acc.write_access("sizeX - %d + %d" % (left_border, i))))
+                self.code.acc.write_access("sizeX + %d" % (i), skip_border=True)))
 
             self.code.add_py_hook("after_step",
                     lambda state: self.code.acc.write_to_current(i, skip_border=True,
