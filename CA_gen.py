@@ -460,10 +460,19 @@ class LinearBorderCopier(BorderSizeEnsurer):
         self.code.acc.write_to(self.code.acc.get_size_of(0) - 2, left)
 
 def test():
-    def pretty_print_array(arr):
-        for cell in arr:
-            sys.stdout.write("X" if cell > 0.5 else " ")
-        sys.stdout.write("\n")
+    import itertools
+    def build_array_pretty_printer(border_left, border_right, extra_left=0, extra_right=0):
+        cell_shadow, cell_full = ",#"
+        back_shadow, back_full = "  "
+        def pretty_print_array(arr):
+            for cell in itertools.chain(arr[-border_right - extra_left:-border_right], arr[:border_left]):
+                sys.stdout.write(cell_shadow if cell > 0.5 else back_shadow)
+            for cell in arr[border_left:-border_right]:
+                sys.stdout.write(cell_full if cell > 0.5 else back_full)
+            for cell in itertools.chain(arr[border_left:border_left + extra_right], arr[:border_left]):
+                sys.stdout.write(cell_shadow if cell > 0.5 else back_shadow)
+            sys.stdout.write("\n")
+        return pretty_print_array
 
     class TestTarget(object):
         def __init__(self, size):
@@ -499,6 +508,10 @@ def test():
     target = TestTarget(size)
     binRuleTestCode.set_target(target)
     binRuleTestCode.regen_code()
+
+    b_l, b_r = binRuleTestCode.neigh.bounding_box()
+    pretty_print_array = build_array_pretty_printer(abs(b_l), abs(b_r), 20, 20)
+
     print binRuleTestCode.code_text
     if USE_WEAVE:
         print "weave"
