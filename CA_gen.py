@@ -38,6 +38,9 @@ functions that take part in doing everything.
 # TODO instead of putting together lambdas, generate python code as strings
 #      and compare performance in pypy
 
+# TODO figure out how the code should handle resizing of configurations and
+#      other such things.
+
 import numpy as np
 try:
     from scipy import weave
