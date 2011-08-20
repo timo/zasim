@@ -284,11 +284,15 @@ class LinearStateAccessor(StateAccessor):
         super(LinearStateAccessor, self).__init__()
         self.size = size
 
-    def read_access(self, pos):
-        return "cconf(%s + %s, 0)" % (pos, self.border_l)
+    def read_access(self, pos, skip_border=False):
+        if skip_border:
+            return "cconf(%s, 0)" % (pos)
+        return "cconf(%s + %s, 0)" % (pos, self.border_l_name)
 
-    def write_access(self, pos):
-        return "nconf(%s + %s, 0)" % (pos, self.border_l)
+    def write_access(self, pos, skip_border=False):
+        if skip_border:
+            return "nconf(%s, 0)" % (pos)
+        return "nconf(%s + %s, 0)" % (pos, self.border_l_name)
 
     def init_once(self):
         self.code.consts["sizeX"] = self.size
@@ -297,8 +301,11 @@ class LinearStateAccessor(StateAccessor):
     def bind(self, target):
         super(LinearStateAccessor, self).bind(target)
         self.border_l = abs(self.code.neigh.bounding_box()[0])
+        self.border_l_name = "BORDER_OFFSET"
 
     def visit(self):
+        self.code.add_code("headers",
+                "#define %s %d" % (self.border_l_name, self.border_l))
         self.code.add_code("localvars",
                 """int result;""")
         self.code.add_code("post_compute",
