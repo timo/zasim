@@ -168,6 +168,8 @@ class BorderSizeEnsurer(BorderHandler):
         # XXX all of this needs to be extended for multi-dim arrays
         super(BorderSizeEnsurer, self).new_config()
         bbox = self.code.neigh.bounding_box()
+        # FIXME if the bbox goes into the positive values, abs is wrong. use the 
+        # FIXME correct amount of minus signs instead?
         new_conf = np.zeros(len(self.target.cconf) + abs(bbox[0]) + abs(bbox[1]))
         new_conf[abs(bbox[0]):-abs(bbox[1])] = self.target.cconf
         self.target.cconf = new_conf
