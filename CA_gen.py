@@ -50,7 +50,7 @@ except ImportError:
     USE_WEAVE=False
     print "not using weave"
 
-import random
+from random import Random
 import sys
 
 class WeaveStepFuncVisitor(object):
@@ -389,7 +389,7 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
     def __init__(self, probab=0.5, random_generator=None, **kwargs):
         super(LinearNondeterministicCellLoop, self).__init__(**kwargs)
         if random_generator is None:
-            self.random = random.Random()
+            self.random = Random()
         else:
             self.random = random_generator
         self.probab = probab
@@ -492,6 +492,26 @@ class LinearBorderCopier(BorderSizeEnsurer):
             self.code.acc.write_to_current(self.code.acc.get_size_of(0) + i,
                     value=self.code.acc.read_from(i))
 
+class TestTarget(object):
+    def __init__(self, size, rule=126, random=True, config=None):
+        self.size = size
+        if random:
+            self.cconf = np.zeros(size)
+            rand = Random(11)
+            for i in range(size):
+                self.cconf[i] = rand.choice([0, 1])
+        elif config is not None:
+            self.cconf = config.copy()
+        else:
+            raise AttributeError("Please supply either a config or set random to True")
+
+        self.nconf = self.cconf.copy()
+        self.rule = np.zeros( 8 )
+
+        for i in range( 8 ):
+            if ( rule & ( 1 << i ) ):
+                self.rule[i] = 1
+
 def test():
     cell_shadow, cell_full = "%#"
     back_shadow, back_full = ", "
@@ -506,15 +526,6 @@ def test():
             sys.stdout.write("\n")
         return pretty_print_array
 
-    class TestTarget(object):
-        def __init__(self, size):
-            rand = random.Random(11)
-            self.size = size
-            self.cconf = np.zeros(size)
-            for i in range(size):
-                self.cconf[i] = rand.choice([0, 1])
-            self.nconf = self.cconf.copy()
-            self.rule = np.array([0, 1, 1, 1, 1, 1, 1, 0])
 
     size = 75
 
