@@ -406,17 +406,33 @@ class LinearNeighbourhood(Neighbourhood):
 
 class LinearBorderCopier(BorderSizeEnsurer):
     def visit(self):
+        # copying works like this:
+        #
+        # conf: [e][f] [a][b][c][d][e][f] [a][b]
+        #       |----> |---------------->
+        #       offset    sizeX           |---->
+        #        l_b                        r_b
+        # conf(i) <- conf(offset + sizeX - l_b + i) with i from 0 to l_b
+        # conf(offset + sizeX + i] <- conf(offset + i) with i from 0 to r_b
+
         bbox = self.code.neigh.bounding_box()
-        copy_to_left = abs(bbox[0])
-        copy_to_right = abs(bbox[1])
+        left_border = abs(bbox[0])
+        right_border = abs(bbox[1])
         copy_code = []
-        for i in range(copy_to_left):
-            copy_code.append(self.code.acc.write_access(i) + " = " + self.code.acc.write_access("sizeX - " + str(copy_to_left - i)) + ";")
+        for i in range(left_border):
+            copy_code.append("%s = %s" % (
+                self.code.acc.write_access(i, skip_border=True),
+                self.code.acc.write_access("sizeX - %d + %d" % (left_border, i)) + ";"))
+
             self.code.add_py_hook("after_step",
                     lambda state: self.code.acc.write_to_current(i, self.code.acc.read_from(self.code.acc.get_size_of(0) - copy_to_left - i)))
 
-        for i in range(copy_to_right):
-            copy_code.append(self.code.acc.write_access("sizeX - " + str(copy_to_right - i)) + " = " + self.code.acc.write_access(str(i)) + ";")
+
+        for i in range(right_border):
+            copy_code.append("%s = %s" % (
+                self.code.acc.write_access("sizeX + " + str(i)),
+                self.code.acc.write_access(str(i)) + ";"))
+
             self.code.add_py_hook("after_step",
                     lambda state: self.code.acc.write_to_current(self.code.acc.get_size_of(0) - i, self.code.acc.read_from(copy_to_right - i)))
 
