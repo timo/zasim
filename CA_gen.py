@@ -227,6 +227,8 @@ class WeaveStepFunc(object):
             code.visit()
 
     def set_target(self, target):
+        """set the target of the step function. the target contains,
+        among other things, the configurations."""
         assert self.target is None, "%r already targets %r" % (self, self.target)
         self.target = target
         for visitor in self.visitors:
@@ -235,12 +237,15 @@ class WeaveStepFunc(object):
         self.new_config()
 
     def add_code(self, hook, code):
+        """add a snippet of C code to the section "hook"."""
         self.code[hook].append(code)
 
     def add_py_hook(self, hook, function):
+        """add a python callable to the section "hook"."""
         self.pycode[hook].append(function)
 
     def regen_code(self):
+        """regenerate the C and python code from the bits"""
         code_bits = []
         for section in self.sections:
             code_bits.extend(self.code[section])
@@ -250,6 +255,7 @@ class WeaveStepFunc(object):
         self.pycode = dict((k, tuple(v)) for k, v in self.pycode.iteritems())
 
     def step_inline(self):
+        """run a step of the simulator using weave.inline and the C code."""
         local_dict=dict((k, getattr(self.target, k)) for k in self.attrs)
         local_dict.update(self.consts)
         attrs = self.attrs + self.consts.keys()
@@ -258,6 +264,8 @@ class WeaveStepFunc(object):
         self.acc.swap_configs()
 
     def step_pure_py(self):
+        """run a step of the simulator using the python callables hooked into
+        the step function"""
         state = self.consts.copy()
         state.update(dict((k, getattr(self.target, k)) for k in self.attrs))
         def runhooks(hook):
@@ -278,11 +286,14 @@ class WeaveStepFunc(object):
         self.acc.swap_configs()
 
     def new_config(self):
+        """handle setting up and sanitising a newly set configuration in the
+        target object."""
         for code in self.visitors:
             code.new_config()
         self.acc.multiplicate_config()
 
     def init_once(self):
+        """initialise all the visitors after a configuration has been set."""
         for code in self.visitors:
             code.init_once()
 
