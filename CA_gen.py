@@ -449,8 +449,8 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 self.code.acc.write_access("sizeX + %d" % (i), skip_border=True)))
 
             self.code.add_py_hook("after_step",
-                    lambda state: self.code.acc.write_to_current(i, skip_border=True,
-                            value = self.code.acc.read_from(self.code.acc.get_size_of(0) - left_border + i)))
+                    lambda state: self.code.acc.write_to(i, skip_border=True,
+                            value = self.code.acc.read_from_next(self.code.acc.get_size_of(0) + i, skip_border=True)))
 
 
         for i in range(right_border):
@@ -459,8 +459,8 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 self.code.acc.write_access(str(i))))
 
             self.code.add_py_hook("after_step",
-                    lambda state: self.code.acc.write_to_current(self.code.acc.get_size_of(0) + i,
-                            value = self.code.acc.read_from(i)))
+                    lambda state: self.code.acc.write_to(self.code.acc.get_size_of(0) + i,
+                            value = self.code.acc.read_from_next(i)))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
