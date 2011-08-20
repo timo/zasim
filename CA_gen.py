@@ -329,12 +329,14 @@ class LinearStateAccessor(StateAccessor):
     def write_to(self, pos, value, skip_border=False):
         if skip_border:
             self.target.nconf[pos] = value
-        self.target.nconf[pos + self.border_l] = value
+        else:
+            self.target.nconf[pos + self.border_l] = value
 
     def write_to_current(self, pos, value, skip_border=False):
         if skip_border:
             self.target.cconf[pos] = value
-        self.target.cconf[pos + self.border_l] = value
+        else:
+            self.target.cconf[pos + self.border_l] = value
 
     def get_size_of(self, dimension=0):
         return self.size
