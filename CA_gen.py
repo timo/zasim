@@ -78,13 +78,16 @@ class WeaveStepFuncVisitor(object):
     def new_config(self):
         """check and sanitize a new config.
 
-        this is pure python code that runs when a new config is loaded."""
+        this is pure python code that runs when a new config is loaded.
+        it only changes the current configuration "cconf" of the automaton.
+        after all new_config hooks have been run, they are multiplied."""
         pass
 
 class StateAccessor(WeaveStepFuncVisitor):
     """A StateAccessor will supply read and write access to the state array.
 
-    it also knows things about how the config space is shaped and sized."""
+    it also knows things about how the config space is shaped and sized and
+    how to handle swapping or history of configs."""
 
     def read_access(self, pos):
         """generate a code bit for reading from the old config at pos.
@@ -120,6 +123,13 @@ class StateAccessor(WeaveStepFuncVisitor):
     def get_size_of(self, dimension=0):
         """get the size of the config space in the specified dimension."""
         return 0
+
+    def multiplicate_config(self):
+        """take the current config "cconf" and multiply it over all
+        history slots that need to have duplicates at the beginning"""
+
+    def swap_configs(self):
+        """swap out all configs"""
 
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
@@ -173,7 +183,6 @@ class BorderSizeEnsurer(BorderHandler):
         new_conf = np.zeros(len(self.target.cconf) + abs(bbox[0]) + abs(bbox[1]))
         new_conf[abs(bbox[0]):-abs(bbox[1])] = self.target.cconf
         self.target.cconf = new_conf
-        self.target.nconf = new_conf.copy()
 
 class WeaveStepFunc(object):
     """The WeaveStepFunc will compose different parts into a functioning
@@ -249,7 +258,7 @@ class WeaveStepFunc(object):
         attrs = self.attrs + self.consts.keys()
         weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
                       type_converters = converters.blitz)
-        self.target.nconf, self.target.cconf = self.target.cconf, self.target.nconf
+        self.acc.swap_configs()
 
     def step_pure_py(self):
         state = self.consts.copy()
@@ -269,11 +278,12 @@ class WeaveStepFunc(object):
             runhooks("compute")
             runhooks("post_compute")
         runhooks("after_step")
-        self.target.nconf, self.target.cconf = self.target.cconf, self.target.nconf
+        self.acc.swap_configs()
 
     def new_config(self):
         for code in self.visitors:
             code.new_config()
+        self.acc.multiplicate_config()
 
     def init_once(self):
         for code in self.visitors:
@@ -340,6 +350,13 @@ class LinearStateAccessor(StateAccessor):
 
     def get_size_of(self, dimension=0):
         return self.size
+
+    def swap_configs(self):
+        self.target.nconf, self.target.cconf = \
+                self.target.cconf, self.target.nconf
+
+    def multiplicate_config(self):
+        self.target.nconf = self.target.cconf.copy()
 
 class LinearCellLoop(CellLoop):
     def get_pos(self, offset=0):
