@@ -316,16 +316,24 @@ class LinearStateAccessor(StateAccessor):
         self.code.add_py_hook("post_compute",
                 lambda state, code=self.code: code.acc.write_to(state["pos"], state["result"]))
 
-    def read_from(self, pos):
+    def read_from(self, pos, skip_border=False):
+        if skip_border:
+            return self.target.cconf[pos]
         return self.target.cconf[pos + self.border_l]
 
-    def read_from_next(self, pos):
+    def read_from_next(self, pos, skip_border=False):
+        if skip_border:
+            return self.target.nconf[pos]
         return self.target.nconf[pos + self.border_l]
 
-    def write_to(self, pos, value):
+    def write_to(self, pos, value, skip_border=False):
+        if skip_border:
+            self.target.nconf[pos] = value
         self.target.nconf[pos + self.border_l] = value
 
-    def write_to_current(self, pos, value):
+    def write_to_current(self, pos, value, skip_border=False):
+        if skip_border:
+            self.target.cconf[pos] = value
         self.target.cconf[pos + self.border_l] = value
 
     def get_size_of(self, dimension=0):
@@ -425,7 +433,8 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 self.code.acc.write_access("sizeX - %d + %d" % (left_border, i)) + ";"))
 
             self.code.add_py_hook("after_step",
-                    lambda state: self.code.acc.write_to_current(i, self.code.acc.read_from(self.code.acc.get_size_of(0) - copy_to_left - i)))
+                    lambda state: self.code.acc.write_to_current(i, skip_border=True,
+                            value = self.code.acc.read_from(self.code.acc.get_size_of(0) - left_border + i)))
 
 
         for i in range(right_border):
@@ -434,14 +443,11 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 self.code.acc.write_access(str(i)) + ";"))
 
             self.code.add_py_hook("after_step",
-                    lambda state: self.code.acc.write_to_current(self.code.acc.get_size_of(0) - i, self.code.acc.read_from(copy_to_right - i)))
+                    lambda state: self.code.acc.write_to_current(self.code.acc.get_size_of(0) + i,
+                            value = self.code.acc.read_from(i)))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
-
-        self.code.add_py_hook("after_step",
-                lambda state: self.code.acc.write_to_current(0, self.code.acc.read_from(self.code.acc.get_size_of(0) - 2)) and
-                              self.code.acc.write_to_current(self.code.acc.get_size_of(0) - 1, self.code.acc.read_from(1)))
 
     def new_config(self):
         super(LinearBorderCopier, self).new_config()
