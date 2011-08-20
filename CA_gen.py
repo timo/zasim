@@ -165,6 +165,7 @@ class BorderHandler(WeaveStepFuncVisitor):
 
 class BorderSizeEnsurer(BorderHandler):
     def new_config(self):
+        # XXX all of this needs to be extended for multi-dim arrays
         super(BorderSizeEnsurer, self).new_config()
         bbox = self.code.neigh.bounding_box()
         new_conf = np.zeros(len(self.target.cconf) + abs(bbox[0]) + abs(bbox[1]))
