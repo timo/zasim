@@ -453,11 +453,16 @@ class LinearBorderCopier(BorderSizeEnsurer):
 
     def new_config(self):
         super(LinearBorderCopier, self).new_config()
-        left = self.code.acc.read_from(1)
-        right = self.code.acc.read_from(self.code.acc.get_size_of(0) - 1)
 
-        self.code.acc.write_to(0, right)
-        self.code.acc.write_to(self.code.acc.get_size_of(0) - 2, left)
+        bbox = self.code.neigh.bounding_box()
+        left_border = abs(bbox[0])
+        right_border = abs(bbox[1])
+        for i in range(left_border):
+            self.code.acc.write_to_current(i, skip_border=True,
+                    value=self.code.acc.read_from(self.code.acc.get_size_of(0) + i, skip_border=True))
+        for i in range(right_border):
+            self.code.acc.write_to_current(self.code.acc.get_size_of(0) + i,
+                    value=self.code.acc.read_from(i))
 
 def test():
     cell_shadow, cell_full = "%#"
