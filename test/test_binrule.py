@@ -5,8 +5,6 @@ from testutil import assert_arrays_equal, INTERESTING_BINRULES
 
 import pytest
 
-import pytest
-
 class TestBinRule:
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_compare_weave_pure(self, ruleNum, random=True):
