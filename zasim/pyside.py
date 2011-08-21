@@ -1,3 +1,4 @@
+from __future__ import absolute_import
 from .ca import binRule
 try:
     from PySide.QtCore import *
