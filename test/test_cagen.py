@@ -1,6 +1,6 @@
 from zasim import ca, cagen
 from random import randrange
-from testutil import assert_arrays_equal, compare_arrays, INTERESTING_BINRULES
+from testutil import *
 
 import pytest
 
@@ -41,6 +41,9 @@ class TestCAGen:
         br = ca.binRule(ruleNum, size, 1, ca.binRule.INIT_RAND)
         br2 = cagen.TestTarget(size-2, rule=ruleNum, config=br.getConf().copy()[1:-1])
 
+        # are the rules the same?
+        assert_arrays_equal(br.ruleIdx, br2.rule)
+
         binRuleTestCode = cagen.WeaveStepFunc(
                 loop=cagen.LinearCellLoop(),
                 accessor=cagen.LinearStateAccessor(size=size-2),
@@ -54,6 +57,8 @@ class TestCAGen:
 
         binRuleTestCode.set_target(br2)
         binRuleTestCode.regen_code()
+
+        assert_arrays_equal(br.getConf(), br2.cconf)
 
         for i in range(10):
             br.updateAllCellsPy()
