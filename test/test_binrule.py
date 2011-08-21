@@ -24,6 +24,18 @@ class TestBinRule:
             br2.updateAllCellsPy()
             assert_arrays_equal(br.getConf(), br2.getConf())
 
+    def test_init_sanitized(self):
+        # since random is random, we have to do this several times
+        # to ensure that this test can fail if the binRule constructor
+        # misbehaves
+        for i in range(20):
+            br = ca.binRule(110, 10, 1, ca.binRule.INIT_RAND)
+            conf = br.getConf().copy()
+
+            # do the edges match up?
+            assert conf[0] == conf[-2]
+            assert conf[-1] == conf[1]
+
 # TODO test setconf and stuff, sanitizing of confs etc., running pure only for pypy, ...
 
 def pytest_generate_tests(metafunc):
