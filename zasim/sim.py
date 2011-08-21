@@ -1,4 +1,5 @@
 #!/usr/bin/python
+from __future__ import absolute_import
 
 ## @package sim.py
 #
@@ -99,8 +100,8 @@ import optparse
 from multiprocessing import Process, Queue
 from os import path, system
 
-import Display
-from zasim.ca import sandPile, ballRule, ballPile, binRule, vonNeumann
+from . import display as Display
+from .ca import sandPile, binRule, vonNeumann
 
 
 ## Central simulation unit.
@@ -158,22 +159,23 @@ class Simulator(object):
             display = Display.DisplaySquares1D( ca.getSize(), float(scale),
                                                 ca.palette, ca.getDim(),
                                                 self.oneLiner )
-        elif CAType[0:8].upper() == "BALLRULE":
-            if random:
-                ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_RAND, confFile )
-            else:
-                ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_ZERO, confFile )
-            display = Display.DisplayImages1D( ca.getSize(), float(scale),
-                                               ca.palette, ca.getDim(),
-                                               self.oneLiner )
+        # FIXME make this more data-driven
+        #elif CAType[0:8].upper() == "BALLRULE":
+            #if random:
+                #ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_RAND, confFile )
+            #else:
+                #ca = ballRule( int(CAType[8:]), sizeX, sizeY, ballRule.INIT_ZERO, confFile )
+            #display = Display.DisplayImages1D( ca.getSize(), float(scale),
+                                               #ca.palette, ca.getDim(),
+                                               #self.oneLiner )
 
-        elif CAType.upper() == "BALLPILE":
-            if random:
-                ca = ballPile( sizeX, sizeY, ballPile.INIT_RAND, confFile )
-            else:
-                ca = ballPile( sizeX, sizeY, ballPile.INIT_ZERO, confFile )
-            display = Display.DisplayImages2D( ca.getSize(), float(scale),
-                                               ca.palette, ca.getDim() )
+        #elif CAType.upper() == "BALLPILE":
+            #if random:
+                #ca = ballPile( sizeX, sizeY, ballPile.INIT_RAND, confFile )
+            #else:
+                #ca = ballPile( sizeX, sizeY, ballPile.INIT_ZERO, confFile )
+            #display = Display.DisplayImages2D( ca.getSize(), float(scale),
+                                               #ca.palette, ca.getDim() )
 
         elif CAType.upper() == "VONNEUMANN":
             ca = vonNeumann( sizeX, sizeY, confFile )
