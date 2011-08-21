@@ -1,5 +1,5 @@
 import time
-import CA
+from zasim import ca
 
 AVERAGE_RUNS = 2
 
@@ -14,9 +14,9 @@ def timedrun(fun, *args):
         return -1
 
 def runBinRule(size, count):
-    ca = CA.binRule(110, size, 1, CA.binRule.INIT_RAND)
+    br = ca.binRule(110, size, 1, ca.binRule.INIT_RAND)
     for i in range(count):
-        ca.loopFunc()
+        br.loopFunc()
 
 def matrix(fun):
     sizes = [1000, 2000, 4000, 8000, 16000]
