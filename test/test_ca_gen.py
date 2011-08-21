@@ -24,6 +24,29 @@ class TestCAGen:
       state += r;
       result = rule(state);""")
 
+        binRuleTestCode.set_target(br2)
+        binRuleTestCode.regen_code()
+
+        for i in range(10):
+            br.updateAllCellsWeaveInline()
+            binRuleTestCode.step_inline()
+            compare_arrays(br.getConf(), br2.cconf)
+
+        assert_arrays_equal(br.getConf(), br2.cconf)
+
+    def test_compare_pures(self, ruleNum):
+        size = randrange(10, 30)
+        br = CA.binRule(ruleNum, size, 1, CA.binRule.INIT_RAND)
+        br2 = CA_gen.TestTarget(size-2, rule=ruleNum, config=br.getConf().copy()[1:-1])
+
+        binRuleTestCode = CA_gen.WeaveStepFunc(
+                loop=CA_gen.LinearCellLoop(),
+                accessor=CA_gen.LinearStateAccessor(size=size-2),
+                neighbourhood=CA_gen.LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
+                extra_code=[CA_gen.LinearBorderCopier()])
+
+        binRuleTestCode.attrs.append("rule")
+
         binRuleTestCode.add_py_hook("compute",
                 lambda state: dict(result=state["rule"][int(state["l"] * 4 + state["m"] * 2 + state["r"])]))
 
@@ -31,8 +54,8 @@ class TestCAGen:
         binRuleTestCode.regen_code()
 
         for i in range(10):
-            br.updateAllCellsWeaveInline()
-            binRuleTestCode.step_inline()
+            br.updateAllCellsPy()
+            binRuleTestCode.step_pure_py()
             compare_arrays(br.getConf(), br2.cconf)
 
         assert_arrays_equal(br.getConf(), br2.cconf)
