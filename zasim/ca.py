@@ -50,6 +50,7 @@ except TypeError:
     np.zeros = compatibility_zeros
 
 try:
+    raise ImportError("foo")
     import pygame
 except ImportError:
     # if pygame isn't installed, at least get the modifier values.
