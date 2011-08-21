@@ -73,4 +73,4 @@ TESTED_BINRULE = {
             [1,1,1,0,0,0,0,0,1,1],
             [1,0,1,0,0,0,0,1,1,0],
             [1,1,1,0,0,0,1,1,1,1]]}
-TESTED_BINRULE = dict((k, np.array(v)) for k, v in TESTED_BINRULE.iteritems())
+TESTED_BINRULE = dict((k, [np.array(arr) for arr in v]) for k, v in TESTED_BINRULE.iteritems())
