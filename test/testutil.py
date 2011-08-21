@@ -47,6 +47,17 @@ def assert_arrays_equal(arr1, arr2):
     # are the arrays equal?
     assert equal
 
+def pretty_print_binrule(rule_arr):
+    """display a key for neighbourhood to value, oriented the same way as the
+    arrays are displayed"""
+    l1 = []
+    l2 = []
+    for i in range(8):
+        l1.append("%03d" % int(bin(i)[2:]))
+        l2.append(str(int(rule_arr[i])))
+    print " ".join(l1)
+    print " " + "   ".join(l2)
+
 INTERESTING_BINRULES = [
         26, 30, 60, 90, 122, 126, 150, 184, # triangles of different sorts
         45, 54, 73, 105, # other pretty rules
