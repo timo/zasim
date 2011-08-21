@@ -278,14 +278,14 @@ class binRule( CA ):
         self.title = "Rule" + str( self.ruleNr )
 
         if initConf == self.INIT_ZERO:
-            self.currConf = np.zeros((sizeX,1), int)
-            self.nextConf = np.zeros((sizeX,1), int)
+            self.currConf = np.zeros(sizeX, int)
+            self.nextConf = np.zeros(sizeX, int)
         elif initConf == self.INIT_ONES:
-            self.currConf = np.ones((sizeX,1), int)
-            self.nextConf = np.ones((sizeX,1), int)
+            self.currConf = np.ones(sizeX, int)
+            self.nextConf = np.ones(sizeX, int)
         elif initConf == self.INIT_RAND:
-            self.currConf = np.zeros((sizeX,1), int)
-            self.nextConf = np.zeros((sizeX,1), int)
+            self.currConf = np.zeros(sizeX, int)
+            self.nextConf = np.zeros(sizeX, int)
             for i in range( sizeX ):
                 self.currConf[i] = random.randint( 0, 1 )
             self.nextConf = copy(self.currConf)
@@ -351,13 +351,13 @@ class binRule( CA ):
 int i;
 int state;
 for ( i = 1; i < sizeX-1; i++ ) {
-  state =  cconf(i-1,0) << 2;
-  state += cconf(i  ,0) << 1;
-  state += cconf(i+1,0);
-  nconf(i,0) = rule(state);
+  state =  cconf(i-1) << 2;
+  state += cconf(i  ) << 1;
+  state += cconf(i+1);
+  nconf(i) = rule(state);
 }
-nconf(0,0) = nconf(sizeX-2,0);
-nconf(sizeX-1,0) = nconf(1,0);
+nconf(0) = nconf(sizeX-2);
+nconf(sizeX-1) = nconf(1);
 """
         cconf = self.currConf
         nconf = self.nextConf
