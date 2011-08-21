@@ -493,17 +493,15 @@ class LinearBorderCopier(BorderSizeEnsurer):
                     value=self.code.acc.read_from(i))
 
 class TestTarget(object):
-    def __init__(self, size, rule=126, random=True, config=None):
+    def __init__(self, size, rule=126, config=None):
         self.size = size
-        if random:
+        if config is None:
             self.cconf = np.zeros(size)
             rand = Random(11)
             for i in range(size):
                 self.cconf[i] = rand.choice([0, 1])
-        elif config is not None:
-            self.cconf = config.copy()
         else:
-            raise AttributeError("Please supply either a config or set random to True")
+            self.cconf = config.copy()
 
         self.nconf = self.cconf.copy()
         self.rule = np.zeros( 8 )
