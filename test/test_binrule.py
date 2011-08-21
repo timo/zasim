@@ -3,7 +3,10 @@ import numpy as np
 from random import randrange
 from testutil import assert_arrays_equal
 
+import pytest
+
 class TestBinRule:
+    @pytest.mark.skipif("not CA.HAVE_WEAVE")
     def test_compare_weave_pure(self, ruleNum, random=True):
         """compare the weave version of binRule with the pure python one"""
         if random:
@@ -20,6 +23,8 @@ class TestBinRule:
             br.updateAllCellsWeaveInline()
             br2.updateAllCellsPy()
             assert_arrays_equal(br.getConf(), br2.getConf())
+
+# TODO test setconf and stuff, sanitizing of confs etc., running pure only for pypy, ...
 
 def pytest_generate_tests(metafunc):
     if "ruleNum" in metafunc.funcargnames:
