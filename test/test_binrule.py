@@ -36,6 +36,21 @@ class TestBinRule:
             assert conf[0] == conf[-2]
             assert conf[-1] == conf[1]
 
+    def test_setconf_sanitized(self):
+        br = ca.binRule(110, 10, 1, ca.binRule.INIT_RAND)
+        conf = br.getConf().copy()
+
+        # make the edges not match up any more
+        conf[:2] = [1, 0]
+        conf[-2:] = [0, 1]
+
+        # set the config
+        br.setConf(conf)
+
+        # has the config been corrected?
+        assert conf[0] == conf[-2]
+        assert conf[-1] == conf[1]
+
 # TODO test setconf and stuff, sanitizing of confs etc., running pure only for pypy, ...
 
 def pytest_generate_tests(metafunc):
