@@ -292,9 +292,7 @@ class binRule( CA ):
                 "INIT_ZERO, INIT_ONES, INIT_RAND, INIT_FILE + filename" %
                 self.getType())
 
-        self.currConf[0] = self.currConf[self.sizeX-2]
-        self.currConf[self.sizeX-1] = self.currConf[1]
-        self.nextConf = copy(self.currConf)
+        self.setConf(self.currConf)
 
         if filename != "":
             self.importConf( filename )
@@ -310,6 +308,12 @@ class binRule( CA ):
 
     def loopFunc( self ):
         self.step()
+
+    def setConf( self, conf ):
+        self.currConf = conf.copy()
+        self.currConf[0] = self.currConf[-2]
+        self.currConf[-1] = self.currConf[1]
+        self.nextConf = copy(self.currConf)
 
     ## What to do in every step.
     # sets loopFunc to the appropriate update function
