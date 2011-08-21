@@ -19,7 +19,7 @@ def generate_pretty_printed_comparison(arr1, arr2):
         if arr1[i] == arr2[i]:
             mid += " " * len(l1p)
         else:
-            mid += "  !" + " " * (max(len(l1p), len(l2p)) - 3)
+            mid += "  #" + " " * (max(len(l1p), len(l2p)) - 3)
 
     return (equal, l1, mid, l2)
 
