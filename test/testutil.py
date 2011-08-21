@@ -47,3 +47,8 @@ def assert_arrays_equal(arr1, arr2):
     # are the arrays equal?
     assert equal
 
+INTERESTING_BINRULES = [
+        26, 30, 60, 90, 122, 126, 150, 184, # triangles of different sorts
+        45, 54, 73, 105, # other pretty rules
+        110, # this one's actually able to calculate things
+        ]
