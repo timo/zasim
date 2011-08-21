@@ -155,7 +155,7 @@ class CA(object):
 
     ## Returns the current configuration
     def getConf( self ):
-        return self.currConf
+        return self.currConf.copy()
 
     ## Returns the cellular automaton's dimension
     def getDim( self ):
