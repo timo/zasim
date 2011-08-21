@@ -175,7 +175,7 @@ class BorderHandler(WeaveStepFuncVisitor):
 
 class BorderSizeEnsurer(BorderHandler):
     def new_config(self):
-        # XXX all of this needs to be extended for multi-dim arrays
+        # TODO all of this needs to be extended for multi-dim arrays
         super(BorderSizeEnsurer, self).new_config()
         bbox = self.code.neigh.bounding_box()
         # FIXME if the bbox goes into the positive values, abs is wrong. use the 
