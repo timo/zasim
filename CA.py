@@ -279,20 +279,20 @@ class binRule( CA ):
 
         if initConf == self.INIT_ZERO:
             self.currConf = np.zeros(sizeX, int)
-            self.nextConf = np.zeros(sizeX, int)
         elif initConf == self.INIT_ONES:
             self.currConf = np.ones(sizeX, int)
-            self.nextConf = np.ones(sizeX, int)
         elif initConf == self.INIT_RAND:
             self.currConf = np.zeros(sizeX, int)
-            self.nextConf = np.zeros(sizeX, int)
             for i in range( sizeX ):
                 self.currConf[i] = random.randint( 0, 1 )
-            self.nextConf = copy(self.currConf)
         else:
             raise ValueError("Initflag not supported for %s. Supported flags are:\n" +
                 "INIT_ZERO, INIT_ONES, INIT_RAND, INIT_FILE + filename" %
                 self.getType())
+
+        self.currConf[0] = self.currConf[self.sizeX-2]
+        self.currConf[self.sizeX-1] = self.currConf[1]
+        self.nextConf = copy(self.currConf)
 
         if filename != "":
             self.importConf( filename )
