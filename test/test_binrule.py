@@ -47,6 +47,7 @@ class TestBinRule:
         # set the config
         br.setConf(conf)
 
+        conf = br.getConf().copy()
         # has the config been corrected?
         assert conf[0] == conf[-2]
         assert conf[-1] == conf[1]
