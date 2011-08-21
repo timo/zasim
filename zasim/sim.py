@@ -100,8 +100,7 @@ from multiprocessing import Process, Queue
 from os import path, system
 
 import Display
-import Histogram
-from CA import sandPile, catPile, binRule, vonNeumann
+from zasim.ca import sandPile, ballRule, ballPile, binRule, vonNeumann
 
 
 ## Central simulation unit.
