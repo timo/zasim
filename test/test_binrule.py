@@ -35,6 +35,7 @@ class TestBinRule:
             br.updateAllCellsPy()
             assert_arrays_equal(br.getConf(), conf)
 
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_weave_only(self, tested_rule_num):
         confs = TESTED_BINRULE[tested_rule_num]
         br = ca.binRule(tested_rule_num, 10, 1, ca.binRule.INIT_ZERO)
