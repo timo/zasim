@@ -1,4 +1,4 @@
-from CA import binRule
+from .ca import binRule
 try:
     from PySide.QtCore import *
     from PySide.QtGui import *
