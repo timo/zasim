@@ -264,6 +264,7 @@ class CA(object):
 class binRule( CA ):
     palette = [ (0,0,0), (255,255,255) ]
     ## constructor
+    # TODO remove the unnecessary sizeY argument
     def __init__ ( self, ruleNr, sizeX, sizeY, initConf, filename=""):
         ## The dimension of binRule
         self.dim = 1
