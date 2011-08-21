@@ -1,22 +1,21 @@
-import CA_gen
-import CA
+from zasim import ca, cagen
 from random import randrange
 from testutil import assert_arrays_equal, compare_arrays
 
 import pytest
 
 class TestCAGen:
-    @pytest.mark.skipif("not CA.HAVE_WEAVE")
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_compare_weaves(self, ruleNum):
         size = randrange(10, 30)
-        br = CA.binRule(ruleNum, size, 1, CA.binRule.INIT_RAND)
-        br2 = CA_gen.TestTarget(size-2, rule=ruleNum, config=br.getConf().copy()[1:-1])
+        br = ca.binRule(ruleNum, size, 1, ca.binRule.INIT_RAND)
+        br2 = cagen.TestTarget(size-2, rule=ruleNum, config=br.getConf().copy()[1:-1])
 
-        binRuleTestCode = CA_gen.WeaveStepFunc(
-                loop=CA_gen.LinearCellLoop(),
-                accessor=CA_gen.LinearStateAccessor(size=size-2),
-                neighbourhood=CA_gen.LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
-                extra_code=[CA_gen.LinearBorderCopier()])
+        binRuleTestCode = cagen.WeaveStepFunc(
+                loop=cagen.LinearCellLoop(),
+                accessor=cagen.LinearStateAccessor(size=size-2),
+                neighbourhood=cagen.LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
+                extra_code=[cagen.LinearBorderCopier()])
 
         binRuleTestCode.attrs.append("rule")
         binRuleTestCode.add_code("localvars",
@@ -39,14 +38,14 @@ class TestCAGen:
 
     def test_compare_pures(self, ruleNum):
         size = randrange(10, 30)
-        br = CA.binRule(ruleNum, size, 1, CA.binRule.INIT_RAND)
-        br2 = CA_gen.TestTarget(size-2, rule=ruleNum, config=br.getConf().copy()[1:-1])
+        br = ca.binRule(ruleNum, size, 1, ca.binRule.INIT_RAND)
+        br2 = cagen.TestTarget(size-2, rule=ruleNum, config=br.getConf().copy()[1:-1])
 
-        binRuleTestCode = CA_gen.WeaveStepFunc(
-                loop=CA_gen.LinearCellLoop(),
-                accessor=CA_gen.LinearStateAccessor(size=size-2),
-                neighbourhood=CA_gen.LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
-                extra_code=[CA_gen.LinearBorderCopier()])
+        binRuleTestCode = cagen.WeaveStepFunc(
+                loop=cagen.LinearCellLoop(),
+                accessor=cagen.LinearStateAccessor(size=size-2),
+                neighbourhood=cagen.LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
+                extra_code=[cagen.LinearBorderCopier()])
 
         binRuleTestCode.attrs.append("rule")
 
