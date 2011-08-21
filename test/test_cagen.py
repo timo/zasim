@@ -50,7 +50,7 @@ class TestCAGen:
         binRuleTestCode.attrs.append("rule")
 
         binRuleTestCode.add_py_hook("compute",
-                lambda state: dict(result=state["rule"][int(state["l"] * 4 + state["m"] * 2 + state["r"])]))
+            """result = self.target.rule[int(l * 4 + m * 2 + r)]""")
 
         binRuleTestCode.set_target(br2)
         binRuleTestCode.regen_code()
