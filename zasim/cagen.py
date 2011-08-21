@@ -490,7 +490,7 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 self.code.acc.write_access(str(i))))
 
             self.code.add_py_hook("after_step",
-                    """self.acc.write_to(%d, skip_border=True,
+                    """self.acc.write_to(%d,
     value=self.acc.read_from_next(%d))""" % (self.code.acc.get_size_of(0) + i, i))
 
         self.code.add_code("after_step",
