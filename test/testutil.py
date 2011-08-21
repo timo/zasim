@@ -27,7 +27,10 @@ def generate_pretty_printed_comparison(arr1, arr2):
 
 def compare_arrays(arr1, arr2):
     (equal, l1, mid, l2) = generate_pretty_printed_comparison(arr1, arr2)
-    print "\n".join((l1, mid, l2))
+    if equal:
+        print l1
+    else:
+        print "\n".join((l1, mid, l2))
 
 def assert_arrays_equal(arr1, arr2):
     """assert the equality of two arrays.
