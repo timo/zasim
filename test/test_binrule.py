@@ -1,7 +1,8 @@
+from __future__ import absolute_import
 from zasim import ca
 import numpy as np
 from random import randrange
-from testutil import assert_arrays_equal, INTERESTING_BINRULES
+from .testutil import *
 
 import pytest
 
@@ -23,6 +24,26 @@ class TestBinRule:
             br.updateAllCellsWeaveInline()
             br2.updateAllCellsPy()
             assert_arrays_equal(br.getConf(), br2.getConf())
+
+    def test_pure_python_only(self, tested_rule_num):
+        confs = TESTED_BINRULE[tested_rule_num]
+        br = ca.binRule(tested_rule_num, 10, 1, ca.binRule.INIT_ZERO)
+        pretty_print_binrule(br.ruleIdx)
+        br.setConf(confs[0])
+        assert_arrays_equal(br.getConf(), confs[0])
+        for conf in confs[1:]:
+            br.updateAllCellsPy()
+            assert_arrays_equal(br.getConf(), conf)
+
+    def test_weave_only(self, tested_rule_num):
+        confs = TESTED_BINRULE[tested_rule_num]
+        br = ca.binRule(tested_rule_num, 10, 1, ca.binRule.INIT_ZERO)
+        pretty_print_binrule(br.ruleIdx)
+        br.setConf(confs[0])
+        assert_arrays_equal(br.getConf(), confs[0])
+        for conf in confs[1:]:
+            br.updateAllCellsWeaveInline()
+            assert_arrays_equal(br.getConf(), conf)
 
     def test_init_sanitized(self):
         # since random is random, we have to do this several times
@@ -52,9 +73,11 @@ class TestBinRule:
         assert conf[0] == conf[-2]
         assert conf[-1] == conf[1]
 
-# TODO test setconf and stuff, sanitizing of confs etc., running pure only for pypy, ...
 
 def pytest_generate_tests(metafunc):
     if "ruleNum" in metafunc.funcargnames:
         for i in INTERESTING_BINRULES:
             metafunc.addcall(funcargs=dict(ruleNum=i))
+    if "tested_rule_num" in metafunc.funcargnames:
+        for i in TESTED_BINRULE.keys():
+            metafunc.addcall(funcargs=dict(tested_rule_num=i))

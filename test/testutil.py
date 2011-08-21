@@ -1,3 +1,5 @@
+import numpy as np
+
 def generate_pretty_printed_comparison(arr1, arr2):
     """return a pretty-printed comparison of two arrays as well as its equality:
 
@@ -63,3 +65,12 @@ INTERESTING_BINRULES = [
         45, 54, 73, 105, # other pretty rules
         110, # this one's actually able to calculate things
         ]
+
+TESTED_BINRULE = {
+        110:
+           [[1,0,0,1,0,1,0,1,1,0],
+            [1,0,1,1,1,1,1,1,1,0],
+            [1,1,1,0,0,0,0,0,1,1],
+            [1,0,1,0,0,0,0,1,1,0],
+            [1,1,1,0,0,0,1,1,1,1]]}
+TESTED_BINRULE = dict((k, np.array(v)) for k, v in TESTED_BINRULE.iteritems())
