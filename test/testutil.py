@@ -1,9 +1,7 @@
-def assert_arrays_equal(arr1, arr2):
-    """assert the equality of two arrays.
+def generate_pretty_printed_comparison(arr1, arr2):
+    """return a pretty-printed comparison of two arrays as well as its equality:
 
-    highlights different array cells if they differ.
-    outputs the array if they are the same"""
-    assert len(arr1) == len(arr2), "array lengths don't match"
+        (equal, l1, mid, l2)"""
     equal = True
     l1, mid, l2 = "arr1 ", "     ", "arr2 "
     for i in range(len(arr1)):
@@ -23,6 +21,22 @@ def assert_arrays_equal(arr1, arr2):
         else:
             mid += "  !" + " " * (max(len(l1p), len(l2p)) - 3)
 
+    return (equal, l1, mid, l2)
+
+def compare_arrays(arr1, arr2):
+    (equal, l1, mid, l2) = generate_pretty_printed_comparison(arr1, arr2)
+    print "\n".join((l1, mid, l2))
+
+def assert_arrays_equal(arr1, arr2):
+    """assert the equality of two arrays.
+
+    highlights different array cells if they differ.
+    outputs the array if they are the same"""
+    # are the arrays the same size?
+    assert len(arr1) == len(arr2)
+
+    (equal, l1, mid, l2) = generate_pretty_printed_comparison(arr1, arr2)
+
     if not equal:
         print l1
         print mid
@@ -30,5 +44,6 @@ def assert_arrays_equal(arr1, arr2):
     else:
         print l1
 
-    assert equal, "array content does not match"
+    # are the arrays equal?
+    assert equal
 
