@@ -1,7 +1,9 @@
 from zasim import ca
 import numpy as np
 from random import randrange
-from testutil import assert_arrays_equal
+from testutil import assert_arrays_equal, INTERESTING_BINRULES
+
+import pytest
 
 import pytest
 
@@ -28,5 +30,5 @@ class TestBinRule:
 
 def pytest_generate_tests(metafunc):
     if "ruleNum" in metafunc.funcargnames:
-        for i in range(128):
+        for i in INTERESTING_BINRULES:
             metafunc.addcall(funcargs=dict(ruleNum=i))
