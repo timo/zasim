@@ -3,7 +3,10 @@ import CA
 from random import randrange
 from testutil import assert_arrays_equal, compare_arrays
 
+import pytest
+
 class TestCAGen:
+    @pytest.mark.skipif("not CA.HAVE_WEAVE")
     def test_compare_weaves(self, ruleNum):
         size = randrange(10, 30)
         br = CA.binRule(ruleNum, size, 1, CA.binRule.INIT_RAND)
