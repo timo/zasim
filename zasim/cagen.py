@@ -52,6 +52,7 @@ except ImportError:
 
 from random import Random
 import sys
+import new
 
 class WeaveStepFuncVisitor(object):
     def __init__(self):
@@ -206,8 +207,11 @@ class WeaveStepFunc(object):
         self.code_text = ""
 
         # those are for composed python functions
-        self.pysections = "init pre_compute compute post_compute after_step".split()
+        self.pysections = "init pre_compute compute post_compute after_step finalize".split()
         self.pycode = dict((s, []) for s in self.pysections)
+        self.pycode_indent = dict((s, 4) for s in self.pysections)
+        for section in "pre_compute compute post_compute".split():
+            self.pycode_indent[section] = 8
 
         self.attrs = []
         self.consts = {}
@@ -244,18 +248,49 @@ class WeaveStepFunc(object):
         self.code[hook].append(code)
 
     def add_py_hook(self, hook, function):
-        """add a python callable to the section "hook"."""
-        self.pycode[hook].append(function)
+        """add a string of python code to the section "hook"."""
+        assert isinstance(function, basestring)
+        function = function.split("\n")
+        newfunc = []
+
+        for line in function:
+            newfunc.append(" " * self.pycode_indent[hook] + line)
+
+        self.pycode[hook].append("\n".join(newfunc))
 
     def regen_code(self):
         """regenerate the C and python code from the bits"""
+        # TODO decide if this should maybe be mutable after regen_code or rename regen_code
+        self.visitors = tuple(self.visitors)
         code_bits = []
         for section in self.sections:
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
 
-        self.visitors = tuple(self.visitors)
-        self.pycode = dict((k, tuple(v)) for k, v in self.pycode.iteritems())
+        #def step_pure_py(self):
+            #raise ValueError("pure python step function could not be compiled")
+
+        code_bits = ["""def step_pure_py(self):"""]
+        def append_code(section):
+            code_bits.append("# from hook %s" % section)
+            code_bits.append("\n".join(self.pycode[section]))
+
+        append_code("init")
+        code_bits.append("    for pos in self.loop.get_iter():")
+        append_code("pre_compute")
+        append_code("compute")
+        append_code("post_compute")
+        append_code("after_step")
+        append_code("finalize")
+        code_bits.append("")
+        code_text = "\n".join(code_bits)
+        code_object = compile(code_text, "<string>", "exec")
+        print code_text
+
+        myglob = globals()
+        myloc = locals()
+        exec code_object in myglob, myloc
+        self.step_pure_py = new.instancemethod(myloc["step_pure_py"], self, self.__class__)
 
     def step_inline(self):
         """run a step of the simulator using weave.inline and the C code."""
@@ -264,28 +299,6 @@ class WeaveStepFunc(object):
         attrs = self.attrs + self.consts.keys()
         weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
                       type_converters = converters.blitz)
-        self.acc.swap_configs()
-
-    def step_pure_py(self):
-        """run a step of the simulator using the python callables hooked into
-        the step function"""
-        state = self.consts.copy()
-        state.update(dict((k, getattr(self.target, k)) for k in self.attrs))
-        def runhooks(hook):
-            for hook in self.pycode[hook]:
-                upd = hook(state)
-                if isinstance(upd, dict):
-                    state.update(upd)
-
-        runhooks("init")
-        loop_iter = self.loop.get_iter()
-        for pos in loop_iter:
-            state["pos"] = pos
-            state.update(self.neigh.get_neighbourhood(pos))
-            runhooks("pre_compute")
-            runhooks("compute")
-            runhooks("post_compute")
-        runhooks("after_step")
         self.acc.swap_configs()
 
     def new_config(self):
@@ -333,9 +346,13 @@ class LinearStateAccessor(StateAccessor):
                 self.write_access(self.code.loop.get_pos()) + " = result;")
 
         self.code.add_py_hook("init",
-                lambda state: dict(result=None))
+                """result = None""")
+        self.code.add_py_hook("init",
+                """sizeX = %d""" % (self.code.acc.get_size_of(0)))
         self.code.add_py_hook("post_compute",
-                lambda state, code=self.code: code.acc.write_to(state["pos"], state["result"]))
+                """self.acc.write_to(pos, result)""")
+        self.code.add_py_hook("finalize",
+                """self.acc.swap_configs()""")
 
     def read_from(self, pos, skip_border=False):
         if skip_border:
@@ -431,10 +448,10 @@ class LinearNeighbourhood(Neighbourhood):
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
+        assignments = ["%s = self.acc.read_from(pos + %d)" % (
+                name, offset) for name, offset in zip(self.names, self.offsets)]
         self.code.add_py_hook("pre_compute",
-                lambda state, code=self.code: dict(zip(self.names,
-                    [self.code.acc.read_from(state["pos"] + offset)
-                        for offset in self.offsets])))
+                "\n".join(assignments))
 
     def neighbourhood_cells(self):
         return self.names
@@ -463,8 +480,8 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 self.code.acc.write_access("sizeX + %d" % (i), skip_border=True)))
 
             self.code.add_py_hook("after_step",
-                    lambda state: self.code.acc.write_to(i, skip_border=True,
-                            value = self.code.acc.read_from_next(self.code.acc.get_size_of(0) + i, skip_border=True)))
+                    """self.acc.write_to(%d, skip_border=True,
+    value=self.acc.read_from_next(%d, skip_border=True))""" % (i, self.code.acc.get_size_of(0) + i))
 
 
         for i in range(right_border):
@@ -473,8 +490,8 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 self.code.acc.write_access(str(i))))
 
             self.code.add_py_hook("after_step",
-                    lambda state: self.code.acc.write_to(self.code.acc.get_size_of(0) + i,
-                            value = self.code.acc.read_from_next(i)))
+                    """self.acc.write_to(%d, skip_border=True,
+    value=self.acc.read_from_next(%d))""" % (self.code.acc.get_size_of(0) + i, i))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
@@ -528,7 +545,7 @@ def test():
     size = 75
 
     binRuleTestCode = WeaveStepFunc(
-            #loop=LinearNondeterministicCellLoop(random_generator=random.Random(11)),
+            #loop=LinearNondeterministicCellLoop(random_generator=Random(11)),
             loop=LinearCellLoop(),
             accessor=LinearStateAccessor(size=size),
             neighbourhood=LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
@@ -544,7 +561,7 @@ def test():
   result = rule(state);""")
 
     binRuleTestCode.add_py_hook("compute",
-            lambda state: dict(result=state["rule"][int(state["l"] * 4 + state["m"] * 2 + state["r"])]))
+            """result = self.target.rule[int(l * 4 + m * 2 + r)]""")
 
     target = TestTarget(size)
     binRuleTestCode.set_target(target)
@@ -566,4 +583,6 @@ def test():
             pretty_print_array(target.cconf)
 
 if __name__ == "__main__":
+    if "pure" in sys.argv:
+        USE_WEAVE = False
     test()
