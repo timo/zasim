@@ -370,7 +370,7 @@ class LinearStateAccessor(StateAccessor):
     def init_once(self):
         """Set the sizeX const and register nconf and cconf for extraction
         from the targen when running C code."""
-        # XXX call super, too!
+        super(LinearStateAccessor, self).init_once()
         self.code.consts["sizeX"] = self.size
         self.code.attrs.extend(["nconf", "cconf"])
 
@@ -384,6 +384,7 @@ class LinearStateAccessor(StateAccessor):
         """Take care for result and sizeX to exist in python and C code,
         for the result to be written to the config space and for the configs
         to be swapped by the python code."""
+        super(LinearStateAccessor, self).visit()
         self.code.add_code("headers",
                 "#define %s %d" % (self.border_l_name, self.border_l))
         self.code.add_code("localvars",
