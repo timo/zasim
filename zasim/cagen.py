@@ -256,44 +256,40 @@ class WeaveStepFuncVisitor(object):
 class StateAccessor(WeaveStepFuncVisitor):
     """A StateAccessor will supply read and write access to the state array.
 
-    it also knows things about how the config space is shaped and sized and
+    It also knows things about how the config space is shaped and sized and
     how to handle swapping or history of configs."""
 
     def read_access(self, pos):
-        """generate a code bit for reading from the old config at pos.
-
-        example: cconf(pos, 0)"""
+        """Generate a bit of C code for reading from the old config at pos."""
 
     def write_access(self, pos):
-        """generate a code bit to write to the new config at pos.
-
-        example: nconf(pos, 0)"""
+        """Generate a code bit to write to the new config at pos."""
 
     def write_to(self, pos, value):
-        """directly write to the next config at pos."""
+        """Directly write to the next config at pos."""
 
     def write_to_current(self, pos, value):
-        """directly write to the current config at pos."""
+        """Directly write a value to the current config at pos."""
 
     def read_from(self, pos):
-        """directly read from the current config at pos."""
+        """Directly read from the current config at pos."""
 
     def read_from_next(self, pos):
-        """directly read from the next config at pos."""
+        """Directly read from the next config at pos."""
 
     def get_size(self, dimension=0):
-        """generate a code bit to get the size of the config space in
+        """Generate a code bit to get the size of the config space in
         the specified dimension"""
 
     def get_size_of(self, dimension=0):
-        """get the size of the config space in the specified dimension."""
+        """Get the size of the config space in the specified dimension."""
 
     def multiplicate_config(self):
-        """take the current config "cconf" and multiply it over all
-        history slots that need to have duplicates at the beginning"""
+        """Take the current config "cconf" and multiply it over all
+        history slots that need to have duplicates at the beginning."""
 
     def swap_configs(self):
-        """swap out all configs"""
+        """Swap out all configs"""
 
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
