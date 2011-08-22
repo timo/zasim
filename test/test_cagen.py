@@ -48,7 +48,7 @@ class TestCAGen:
         br = cagen.BinRule(size-2, deterministic=False, rule=rule_num)
 
         for i in range(10):
-            br.step_pure_inline()
+            br.step_inline()
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
