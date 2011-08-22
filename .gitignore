@@ -1,3 +1,9 @@
 *pyc
 .tox
 *.egg-info
+docs/_build
+.coverage
+coverage.xml
+*,cover
+htmlcov
+junit*.xml
