@@ -94,13 +94,11 @@ class StateAccessor(WeaveStepFuncVisitor):
         """generate a code bit for reading from the old config at pos.
 
         example: cconf(pos, 0)"""
-        return ""
 
     def write_access(self, pos):
         """generate a code bit to write to the new config at pos.
 
         example: nconf(pos, 0)"""
-        return ""
 
     def write_to(self, pos, value):
         """directly write to the next config at pos."""
@@ -110,20 +108,16 @@ class StateAccessor(WeaveStepFuncVisitor):
 
     def read_from(self, pos):
         """directly read from the current config at pos."""
-        return 0
 
     def read_from_next(self, pos):
         """directly read from the next config at pos."""
-        return 0
 
     def get_size(self, dimension=0):
         """generate a code bit to get the size of the config space in
         the specified dimension"""
-        return "size"
 
     def get_size_of(self, dimension=0):
         """get the size of the config space in the specified dimension."""
-        return 0
 
     def multiplicate_config(self):
         """take the current config "cconf" and multiply it over all
@@ -137,15 +131,12 @@ class CellLoop(WeaveStepFuncVisitor):
     to the current position."""
     def get_pos(self, offset):
         """returns a code bit to get the current position in config space"""
-        return offset
 
     def get_pos_of(self, offset):
         """returns the current position plus the offset in python."""
-        return offset
 
     def get_iter(self):
         """returns an iterator for iterating over the config space in python"""
-        return iter([])
 
 class Neighbourhood(WeaveStepFuncVisitor):
     """A Neighbourhood is responsible for getting states from neighbouring cells."""
@@ -155,7 +146,6 @@ class Neighbourhood(WeaveStepFuncVisitor):
 
     def get_neighbourhood(self, pos):
         """Get the values of the neighbouring cells for pos in python"""
-        return {}
 
     def bounding_box(self, steps=1):
         """Find out, how many cells, at most, have to be read after
@@ -167,7 +157,6 @@ class Neighbourhood(WeaveStepFuncVisitor):
             (minX, maxX,
              [minY, maxY,
               [minZ, maxZ]])"""
-        return (-steps, steps)
 
 class BorderHandler(WeaveStepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
