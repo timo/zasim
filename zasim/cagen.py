@@ -587,9 +587,9 @@ for(int j=0; i < sizeY; j++) {""")
                 for j in range(0, self.code.acc.get_size_of(1)):
                     yield (i, j)
 
-class LinearNondeterministicCellLoop(LinearCellLoop):
-    """The LinearNondeterministicCellLoop iterates over all cells in order from
-    0 to sizeX, but skips cells pseudo-randomly."""
+class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
+    """Deriving from a CellLoop and this Mixin will cause every cell to be
+    skipped with a given probability"""
     def __init__(self, probab=0.5, random_generator=None, **kwargs):
         """:param probab: The probability of a cell to be computed.
         :param random_generator: If supplied, use this Random object for
@@ -608,7 +608,7 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
         .. warning::
             If reproducible randomness sequences are desired, do NOT mix the
             pure python and weave inline step functions!"""
-        super(LinearNondeterministicCellLoop, self).__init__(**kwargs)
+        super(NondeterministicCellLoopMixin, self).__init__(**kwargs)
         if random_generator is None:
             self.random = Random()
         else:
@@ -618,15 +618,16 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
     def get_iter(self):
         """The returned iterator will skip cells with a probability
         of self.probab."""
+        basic_iter = super(NondeterministicCellLoopMixin, self).get_iter()
         def generator():
-            for i in range(self.code.acc.get_size_of()):
+            for pos in basic_iter:
                 if self.random.random() < self.probab:
-                    yield i
+                    yield pos
         return iter(generator())
 
     def visit(self):
         """Adds C code for handling the randseed and skipping."""
-        super(LinearNondeterministicCellLoop, self).visit()
+        super(NondeterministicCellLoopMixin, self).visit()
         self.code.add_code("loop_begin",
                 """if(rand() >= RAND_MAX * %s) continue;""" % (self.probab))
         self.code.add_code("localvars",
@@ -637,9 +638,15 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
 
     def set_target(self, target):
         """Adds the randseed attribute to the target."""
-        super(LinearNondeterministicCellLoop, self).set_target(target)
+        super(NondeterministicCellLoopMixin, self).set_target(target)
         # FIXME how do i get the randseed out without using np.array?
         target.randseed = np.array([self.random.random()])
+
+class LinearNondeterministicCellLoop(LinearCellLoop, NondeterministicCellLoopMixin):
+    pass
+
+class TwoDimNondeterministicCellLoop(TwoDimCellLoop, NondeterministicCellLoopMixin):
+    pass
 
 class LinearNeighbourhood(Neighbourhood):
     """The LinearNeighbourhood offers named access to any number of
