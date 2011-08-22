@@ -26,6 +26,7 @@ Contents:
 
    ca
    cagen
+   display
 
 Indices and tables
 ==================
