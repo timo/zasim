@@ -504,13 +504,19 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
         target.randseed = np.array([self.random.random()])
 
 class LinearNeighbourhood(Neighbourhood):
+    """The LinearNeighbourhood offers named access to any number of
+    neighbouring fields."""
     def __init__(self, names, offsets):
+        """:param names: A list of names for the neighbouring cells.
+        :param offsets: A list of offsets for each of the neighbouring cells."""
         super(Neighbourhood, self).__init__()
         self.names = tuple(names)
         self.offsets = tuple(offsets)
         assert len(self.names) == len(self.offsets)
 
     def visit(self):
+        """Adds C and python code to get the neighbouring values and stores
+        them in local variables."""
         for name, offset in zip(self.names, self.offsets):
             self.code.add_code("pre_compute",
                 "%s = %s;" % (name,
@@ -527,6 +533,7 @@ class LinearNeighbourhood(Neighbourhood):
         return self.names
 
     def bounding_box(self, steps=1):
+        # XXX this currently ignores the steps parameter.
         return min(self.offsets), max(self.offsets)
 
 class LinearBorderCopier(BorderSizeEnsurer):
