@@ -433,6 +433,7 @@ class LinearStateAccessor(StateAccessor):
         self.target.nconf = self.target.cconf.copy()
 
 class LinearCellLoop(CellLoop):
+    """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
     def get_pos(self, offset=0):
         if offset == 0:
             return "i"
