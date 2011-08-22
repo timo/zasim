@@ -621,7 +621,14 @@ class TestTarget(object):
                 self.rule[i] = 1
 
 class BinRule(TestTarget):
+    """A Target plus a WeaveStepFunc for elementary cellular automatons."""
     def __init__(self, size, deterministic=True, rule=126, config=None, **kwargs):
+        """:param size: The size of the config to generate or the size of the
+                        supplied config.
+           :param deterministic: Go over every cell every time or skip cells
+                                 randomly?
+           :param rule: The rule number for the elementary cellular automaton.
+           :param config: Optionally the configuration to use."""
         super(BinRule, self).__init__(size, rule, config, **kwargs)
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
@@ -646,9 +653,11 @@ class BinRule(TestTarget):
         self.stepfunc.gen_code()
 
     def step_inline(self):
+        """Use the step function to step with weave.inline."""
         self.stepfunc.step_inline()
 
     def step_pure_py(self):
+        """Use the step function to step with pure python code."""
         self.stepfunc.step_pure_py()
 
 def test():
