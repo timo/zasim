@@ -595,26 +595,28 @@ class LinearBorderCopier(BorderSizeEnsurer):
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
     :class:`WeaveStepFunc`."""
-    def __init__(self, size, config=None, **kwargs):
+    def __init__(self, size=None, config=None, **kwargs):
         """:param size: The size of the config to generate. Alternatively the
                         size of the supplied config.
-           :param config: An optional starting config."""
+           :param config: Optionally the config to use."""
         super(TestTarget, self).__init__(**kwargs)
-        self.size = size
         if config is None:
+            assert size is not None
             self.cconf = np.zeros(size)
             rand = Random(11)
             for i in range(size):
                 self.cconf[i] = rand.choice([0, 1])
+            self.size = size
         else:
             self.cconf = config.copy()
+            self.size = len(self.cconf)
 
 
 class BinRule(TestTarget):
     """A Target plus a WeaveStepFunc for elementary cellular automatons."""
-    def __init__(self, size, deterministic=True, rule=126, config=None, **kwargs):
-        """:param size: The size of the config to generate or the size of the
-                        supplied config.
+    def __init__(self, size=None, deterministic=True, rule=126, config=None, **kwargs):
+        """:param size: The size of the config to generate if no config
+                        is supplied.
            :param deterministic: Go over every cell every time or skip cells
                                  randomly?
            :param rule: The rule number for the elementary cellular automaton.
