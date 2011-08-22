@@ -410,7 +410,7 @@ class SimpleStateAccessor(StateAccessor):
         """Get the bounding box from the neighbourhood object."""
         super(SimpleStateAccessor, self).bind(target)
         bb = self.code.neigh.bounding_box()
-        mins = [abs(a) for a in bb[::2]]
+        mins = [[abs(b) for b in a] for a in bb[::2]]
         self.border = tuple(mins)
 
     def visit(self):
