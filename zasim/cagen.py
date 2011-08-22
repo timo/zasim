@@ -295,13 +295,13 @@ class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
     def get_pos(self, offset):
-        """returns a code bit to get the current position in config space"""
+        """Returns a code bit to get the current position in config space."""
 
     def get_pos_of(self, offset):
-        """returns the current position plus the offset in python."""
+        """Returns the current position plus the offset in python."""
 
     def get_iter(self):
-        """returns an iterator for iterating over the config space in python"""
+        """Returns an iterator for iterating over the config space in python."""
 
 class Neighbourhood(WeaveStepFuncVisitor):
     """A Neighbourhood is responsible for getting states from neighbouring cells."""
