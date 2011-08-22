@@ -450,7 +450,26 @@ class LinearCellLoop(CellLoop):
         return range(0, self.code.acc.get_size_of())
 
 class LinearNondeterministicCellLoop(LinearCellLoop):
+    """The LinearNondeterministicCellLoop iterates over all cells in order from
+    0 to sizeX, but skips cells pseudo-randomly."""
     def __init__(self, probab=0.5, random_generator=None, **kwargs):
+        """:param probab: The probability of a cell to be computed.
+        :param random_generator: If supplied, use this Random object for
+                                 random values.
+
+        .. note::
+            The random generator will be used directly by the python code, but
+            the C code is a bit more complex.
+
+            The C code carries a randseed with it that gets seeded by the
+            Python random number generator at the very beginning, then it uses
+            the randseed attribute in the target to seed srand. After the
+            computation, randseed will be set to rand(), so that the same
+            starting seed will still give the same result.
+
+        .. warning::
+            If reproducible randomness sequences are desired, do NOT mix the
+            pure python and weave inline step functions!"""
         super(LinearNondeterministicCellLoop, self).__init__(**kwargs)
         if random_generator is None:
             self.random = Random()
@@ -459,6 +478,8 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
         self.probab = probab
 
     def get_iter(self):
+        """The returned iterator will skip cells with a probability
+        of self.probab."""
         def generator():
             for i in range(self.code.acc.get_size_of()):
                 if self.random.random() < self.probab:
@@ -466,6 +487,7 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
         return iter(generator())
 
     def visit(self):
+        """Adds C code for handling the randseed and skipping."""
         super(LinearNondeterministicCellLoop, self).visit()
         self.code.add_code("loop_begin",
                 """if(rand() >= RAND_MAX * %s) continue;""" % (self.probab))
@@ -476,6 +498,7 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
         self.code.attrs.append("randseed")
 
     def set_target(self, target):
+        """Adds the randseed attribute to the target."""
         super(LinearNondeterministicCellLoop, self).set_target(target)
         # FIXME how do i get the randseed out without using np.array?
         target.randseed = np.array([self.random.random()])
