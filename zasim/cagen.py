@@ -58,14 +58,15 @@ class WeaveStepFunc(object):
         """The Constructor creates a weave-based step function from the specified parts.
 
         :param loop: a :class:`CellLoop`, that adds a loop at loop_begin
-                         and loop_end.
-        :param accessor: a :class:`StateAccessor`, that handles accesses to the state
-                         array as well as setting the cell value during
+                     and loop_end.
+        :param accessor: a :class:`StateAccessor`, that handles accesses to the
+                         state array as well as setting the cell value during
                          the loop.
-        :param neighbourhood: a :class:`Neighbourhood`, that fetches neighbouring
-                         cell values into known variables.
-        :param extra_code: further :class:`WeaveStepFuncVisitor`s, that add more
-                         behaviour. Usually at least a :class:`BorderCopier`."""
+        :param neighbourhood: a :class:`Neighbourhood`, that fetches
+                              neighbouring cell values into known variables.
+        :param extra_code: further :class:`WeaveStepFuncVisitor` classes, that
+                           add more behaviour. 
+                           Usually at least a :class:`BorderCopier`."""
 
         super(WeaveStepFunc, self).__init__(**kwargs)
 
