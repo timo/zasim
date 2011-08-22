@@ -564,6 +564,29 @@ class LinearCellLoop(CellLoop):
     def get_iter(self):
         return range(0, self.code.acc.get_size_of())
 
+class TwoDimCellLoop(CellLoop):
+    """The TwoDimCellLoop iterates over all cells from left to right, then from
+    top to bottom."""
+    def get_pos(self, offset=(0, 0)):
+        if offset == (0, 0):
+            return "i, j"
+        else:
+            return "i + %d, j + %d" % (offset)
+
+    def visit(self):
+        self.code.add_code("loop_begin",
+                """for(int i=0; i < sizeX; i++) {
+for(int j=0; i < sizeY; j++) {""")
+        self.code.add_code("loop_end",
+                """}
+}""")
+
+    def get_iter(self):
+        def iterator():
+            for i in range(0, self.code.acc.get_size_of(0)):
+                for j in range(0, self.code.acc.get_size_of(1)):
+                    yield (i, j)
+
 class LinearNondeterministicCellLoop(LinearCellLoop):
     """The LinearNondeterministicCellLoop iterates over all cells in order from
     0 to sizeX, but skips cells pseudo-randomly."""
