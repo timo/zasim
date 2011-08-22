@@ -35,14 +35,20 @@ class TestCAGen:
 
         assert_arrays_equal(br.getConf(), br2.cconf)
 
-    def test_run_nondeterministic(self, rule_num):
+    def test_run_nondeterministic_pure(self, rule_num):
         size = randrange(10, 30)
         br = cagen.BinRule(size-2, deterministic=False, rule=rule_num)
-        br2 = cagen.BinRule(size-2, deterministic=False, rule=rule_num)
+
+        for i in range(10):
+            br.step_inline()
+
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    def test_run_nondeterministic_weave(self, rule_num):
+        size = randrange(10, 30)
+        br = cagen.BinRule(size-2, deterministic=False, rule=rule_num)
 
         for i in range(10):
             br.step_pure_py()
-            br2.step_inline()
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
