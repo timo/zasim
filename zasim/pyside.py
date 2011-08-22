@@ -1,5 +1,12 @@
 from __future__ import absolute_import
+
+"""This module offers a display and interaction frontend with Qt.
+
+It will try importing PySide first, and if that fails PyQt. The code will
+constantly be tested with both bindings."""
+
 from .ca import binRule
+
 try:
     from PySide.QtCore import *
     from PySide.QtGui import *
