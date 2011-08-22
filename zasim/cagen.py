@@ -538,6 +538,10 @@ class LinearNeighbourhood(Neighbourhood):
 
 class LinearBorderCopier(BorderSizeEnsurer):
     def visit(self):
+        """Adds code to copy over cells from the right end to the left border
+        and vice versa.
+
+        See the source code for an insightful picture."""
         # copying works like this:
         #
         # conf: [e][f] [a][b][c][d][e][f] [a][b]
@@ -574,8 +578,10 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 "\n".join(copy_code))
 
     def new_config(self):
+        """Copies over the borders once."""
         super(LinearBorderCopier, self).new_config()
 
+        # TODO figure out if the generated code could be re-used for this.
         bbox = self.code.neigh.bounding_box()
         left_border = abs(bbox[0])
         right_border = abs(bbox[1])
