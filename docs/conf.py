@@ -92,6 +92,9 @@ autodoc_default_flags = ["members", "undoc-members", "show-inheritance"]
 
 autodoc_member_order = "bysource"
 
+# display both the docstring of the class as well as the docstring of __init__.
+autoclass_content = "both"
+
 # -- Options for HTML output ---------------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
