@@ -260,25 +260,27 @@ class StateAccessor(WeaveStepFuncVisitor):
     how to handle swapping or history of configs.
 
     Additionally, it knows how far to offset reads and writes, so that cells at
-    the lowest coordinates will have a border of data around them."""
+    the lowest coordinates will have a border of data around them.
 
-    # XXX add skip_border attributes, too!
-    def read_access(self, pos):
+    Supplying skip_border=True to any read or write function will remove the
+    border from the calculation. This is mainly useful for BorderHandler."""
+
+    def read_access(self, pos, skip_border=False):
         """Generate a bit of C code for reading from the old config at pos."""
 
-    def write_access(self, pos):
+    def write_access(self, pos, skip_border=False):
         """Generate a code bit to write to the new config at pos."""
 
-    def write_to(self, pos, value):
+    def write_to(self, pos, value, skip_border=False):
         """Directly write to the next config at pos."""
 
-    def write_to_current(self, pos, value):
+    def write_to_current(self, pos, value, skip_border=False):
         """Directly write a value to the current config at pos."""
 
-    def read_from(self, pos):
+    def read_from(self, pos, skip_border=False):
         """Directly read from the current config at pos."""
 
-    def read_from_next(self, pos):
+    def read_from_next(self, pos, skip_border=False):
         """Directly read from the next config at pos."""
 
     def get_size(self, dimension=0):
