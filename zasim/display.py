@@ -113,7 +113,7 @@ class HistoryDisplay(QWidget):
         :param size: The amount of lines of history to keep before wrapping.
         :param scale: The size of each pixel.
         :param parent: The QWidget to set as parent."""
-        super(PySideDisplay, self).__init__(parent)
+        super(HistoryDisplay, self).__init__(parent)
         self.sim = simulator
         self.scale = scale
         self.size = size
@@ -227,7 +227,7 @@ def main():
     sim = binRule(random.choice(
          [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
          sizex, 0, binRule.INIT_RAND)
-    disp = PySideDisplay(sim, sizey, scale)
+    disp = HistoryDisplay(sim, sizey, scale)
 
     window = QMainWindow()
 
@@ -241,7 +241,7 @@ def main():
     scroller.setWidget(disp)
     scroller.resize(800, 600)
 
-    control = PySideControl(sim, parent=central_widget)
+    control = Control(sim, parent=central_widget)
     window_l.addWidget(control)
     control.attach_display(disp)
 
