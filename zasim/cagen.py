@@ -257,7 +257,10 @@ class StateAccessor(WeaveStepFuncVisitor):
     """A StateAccessor will supply read and write access to the state array.
 
     It also knows things about how the config space is shaped and sized and
-    how to handle swapping or history of configs."""
+    how to handle swapping or history of configs.
+
+    Additionally, it knows how far to offset reads and writes, so that cells at
+    the lowest coordinates will have a border of data around them."""
 
     def read_access(self, pos):
         """Generate a bit of C code for reading from the old config at pos."""
