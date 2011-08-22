@@ -595,10 +595,9 @@ class LinearBorderCopier(BorderSizeEnsurer):
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
     :class:`WeaveStepFunc`."""
-    def __init__(self, size, rule=126, config=None, **kwargs):
+    def __init__(self, size, config=None, **kwargs):
         """:param size: The size of the config to generate. Alternatively the
                         size of the supplied config.
-           :param rule: The elementary cellular automaton rule number.
            :param config: An optional starting config."""
         super(TestTarget, self).__init__(**kwargs)
         self.size = size
@@ -610,15 +609,6 @@ class TestTarget(object):
         else:
             self.cconf = config.copy()
 
-        # XXX this will be done by the StepFunc in new_config.
-        self.nconf = self.cconf.copy()
-
-        # XXX the rule argument has no right to stay here.
-        self.rule = np.zeros( 8 )
-
-        for i in range( 8 ):
-            if ( rule & ( 1 << i ) ):
-                self.rule[i] = 1
 
 class BinRule(TestTarget):
     """A Target plus a WeaveStepFunc for elementary cellular automatons."""
@@ -629,13 +619,19 @@ class BinRule(TestTarget):
                                  randomly?
            :param rule: The rule number for the elementary cellular automaton.
            :param config: Optionally the configuration to use."""
-        super(BinRule, self).__init__(size, rule, config, **kwargs)
+        super(BinRule, self).__init__(size, config, **kwargs)
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
                 accessor=LinearStateAccessor(size=size),
                 neighbourhood=LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
                 extra_code=[LinearBorderCopier()])
+
+        self.rule = np.zeros( 8 )
+
+        for i in range( 8 ):
+            if ( rule & ( 1 << i ) ):
+                self.rule[i] = 1
 
         self.stepfunc.attrs.append("rule")
         self.stepfunc.add_code("localvars",
