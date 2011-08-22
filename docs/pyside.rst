@@ -1,4 +1,4 @@
-Qt-based display and user interface: the pyside module
+Qt-based display and user interface: the display module
 ======================================================
 
-.. automodule:: zasim.pyside
+.. automodule:: zasim.display
