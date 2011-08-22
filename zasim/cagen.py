@@ -29,14 +29,8 @@ the inlining capabilities of the PyPy JIT will compensate the amount of
 functions that take part in doing everything.
 """
 
-# TODO get some code in place that compares the run functions against the
-#      official implementation.
-
 # TODO separate the functions to make C code from the ones that do pure python
 #      computation
-
-# TODO instead of putting together lambdas, generate python code as strings
-#      and compare performance in pypy
 
 # TODO figure out how the code should handle resizing of configurations and
 #      other such things.
