@@ -372,13 +372,13 @@ class LinearStateAccessor(StateAccessor):
 
     def read_access(self, pos, skip_border=False):
         if skip_border:
-            return "cconf(%s, 0)" % (pos)
-        return "cconf(%s + %s, 0)" % (pos, self.border_l_name)
+            return "cconf(%s)" % (pos)
+        return "cconf(%s + %s)" % (pos, self.border_l_name)
 
     def write_access(self, pos, skip_border=False):
         if skip_border:
-            return "nconf(%s, 0)" % (pos)
-        return "nconf(%s + %s, 0)" % (pos, self.border_l_name)
+            return "nconf(%s)" % (pos)
+        return "nconf(%s + %s)" % (pos, self.border_l_name)
 
     def init_once(self):
         """Set the sizeX const and register nconf and cconf for extraction
