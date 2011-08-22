@@ -105,8 +105,14 @@ class Control(QWidget):
                 print last_step, diff
 
 
-class PySideDisplay(QWidget):
+class HistoryDisplay(QWidget):
+    """A Display that displays one-dimensional cellular automatons by drawing
+    consecutive configurations below each other, wrapping around to the top."""
     def __init__(self, simulator, size, scale=1, parent=None):
+        """:param simulator: The simulator to use.
+        :param size: The amount of lines of history to keep before wrapping.
+        :param scale: The size of each pixel.
+        :param parent: The QWidget to set as parent."""
         super(PySideDisplay, self).__init__(parent)
         self.sim = simulator
         self.scale = scale
@@ -126,11 +132,21 @@ class PySideDisplay(QWidget):
         self.timer_delay = 10
 
     def paintEvent(self, ev):
+        """Get new configurations, update the internal pixmap, refresh the
+        display.
+
+        This is called from Qt whenever a repaint is in order. Do not call it
+        yourself. :meth:`after_step` will call update, which will trigger a
+        :meth:`paintEvent`.
+
+        .. note::
+            In order not to turn into an endless loop, update at most 100
+            lines or :attr:`size` lines, whichever is lower."""
         rendered = 0
         y = self.last_step % self.size
         paint = QPainter(self.image)
         try:
-            while rendered < 100:
+            while rendered < min(100, self.size):
                 conf = self.display_queue.get_nowait()
                 self.queued_steps -= 1
                 ones = []
@@ -158,12 +174,11 @@ class PySideDisplay(QWidget):
 
 
     def _copy_pixmap(self, target, painter, damageRect=None):
-        """_copy_pixmap(self, target, painter, damageRect)
+        """Cleverly copy over a part of the stored image onto the widget.
 
-        cleverly copies over a part of the stored image onto the widget.
-        target is a the rect on the widget that's supposed to be updated,
-        painter is the painter to be used for drawing,
-        damageRect is an optional rect to limit the redrawing"""
+        :param target: The rect on the widget that's supposed to be updated.
+        :param painter: The painter to be used for drawing.
+        :param damageRect: An optional rect to limit the redrawing."""
         if damageRect:
             target = damageRect.intersected(target)
         if self.scale == 1:
@@ -181,6 +196,8 @@ class PySideDisplay(QWidget):
         painter.drawPixmap(target, self.image, src)
 
     def after_step(self):
+        """React to a single step. Copy the current configuration into the
+        :attr:`display_queue` and schedule a call to :meth:`paintEvent`."""
         conf = self.sim.getConf().copy()
         try:
             self.display_queue.put_nowait(conf)
