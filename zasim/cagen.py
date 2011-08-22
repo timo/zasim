@@ -583,8 +583,8 @@ class LinearNondeterministicCellLoop(LinearCellLoop, NondeterministicCellLoopMix
 class TwoDimNondeterministicCellLoop(TwoDimCellLoop, NondeterministicCellLoopMixin):
     pass
 
-class LinearNeighbourhood(Neighbourhood):
-    """The LinearNeighbourhood offers named access to any number of
+class SimpleNeighbourhood(Neighbourhood):
+    """The SimpleNeighbourhood offers named access to any number of
     neighbouring fields."""
     def __init__(self, names, offsets):
         """:param names: A list of names for the neighbouring cells.
@@ -604,8 +604,9 @@ class LinearNeighbourhood(Neighbourhood):
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
-        assignments = ["%s = self.acc.read_from(pos + %d)" % (
-                name, offset) for name, offset in zip(self.names, self.offsets)]
+        assignments = ["%s = self.acc.read_from(%s)" % (
+                name, gen_offset_pos(self.code.loop.get_pos(), offset))
+                for name, offset in zip(self.names, self.offsets)]
         self.code.add_py_hook("pre_compute",
                 "\n".join(assignments))
 
@@ -613,7 +614,27 @@ class LinearNeighbourhood(Neighbourhood):
         return self.names
 
     def bounding_box(self, steps=1):
-        return min(self.offsets * steps), max(self.offsets * steps)
+        # offsets looks like this:
+        # (-1, -1), (-1, 0), (-1, 1),
+        # (0, -1), (0, 0), (0, 1)
+
+        # there is at least one offset and that has to have the right number of
+        # dimensions already.
+        num_dimensions = len(self.offsets[0])
+
+        # initialise the maximums and minimums from the first offset
+        maxes = self.offsets[0][:]
+        mins = self.offsets[0][:]
+
+        # TODO write test cases for this!
+
+        # go through all offsets
+        for offset in self.offsets:
+            # for each offset, go through all dimensions it has
+            for dim in range(num_dimensions):
+                maxes[dim] = max(maxes[dim], offset[dim])
+                mins[dim] = min(mins[dim], offset[dim])
+        return zip(mins, maxes)
 
 class LinearBorderCopier(BorderSizeEnsurer):
     def visit(self):
