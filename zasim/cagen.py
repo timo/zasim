@@ -52,20 +52,20 @@ import sys
 import new
 
 class WeaveStepFunc(object):
-    """The WeaveStepFunc will compose different parts into a functioning
+    """The WeaveStepFunc composes different parts into a functioning
     step function."""
     def __init__(self, loop, accessor, neighbourhood, extra_code=[], target=None, **kwargs):
-        """create a weave-based step function from the specified parts.
+        """The Constructor creates a weave-based step function from the specified parts.
 
-        loop          -  a CellLoop, that adds a loop at loop_begin
+        loop          -  a :class:`CellLoop`, that adds a loop at loop_begin
                          and loop_end.
-        accessor      -  a StateAccessor, that handles accesses to the state
+        accessor      -  a :class:`StateAccessor`, that handles accesses to the state
                          array as well as setting the cell value during
                          the loop.
-        neighbourhood -  a Neighbourhood, that fetches neighbouring
+        neighbourhood -  a :class:`Neighbourhood`, that fetches neighbouring
                          cell values into known variables.
-        extra_code    -  further WeaveStepFuncVisitors, that add more
-                         behaviour."""
+        extra_code    -  further :class:`WeaveStepFuncVisitor`, that add more
+                         behaviour. Usually at least a :class:`BorderCopier`."""
 
         super(WeaveStepFunc, self).__init__(**kwargs)
 
