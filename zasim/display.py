@@ -20,17 +20,21 @@ import sys
 import random
 import time
 
-class PySideControl(QWidget):
+class Control(QWidget):
+    """Control a simulator with buttons or from the interactive console."""
     def __init__(self, simulator, parent=None):
-        super(PySideControl, self).__init__(parent)
+        """:param simulator: The simulator object to control.
+        :param parent: the QWidget to set as parent."""
+        super(Control, self).__init__(parent)
 
         self.sim = simulator
         self.timer_delay = 10
         self.attached_displays = []
 
-        self.setup_ui()
+        self._setup_ui()
 
-    def setup_ui(self):
+    def _setup_ui(self):
+        """Setup the widgets, connect the signals&slots."""
         l = QHBoxLayout(self)
         self.start_button = QPushButton("Start")
         self.stop_button = QPushButton("Stop")
@@ -44,38 +48,52 @@ class PySideControl(QWidget):
 
         self.start_button.clicked.connect(self.start)
         self.stop_button.clicked.connect(self.stop)
-        delay.valueChanged.connect(self.delay_changed)
+        delay.valueChanged.connect(self.change_delay)
 
     def start(self):
+        """Start running the simulator."""
         self.timer_id = self.startTimer(self.timer_delay)
         self.start_button.setDisabled(True)
         self.stop_button.setEnabled(True)
 
     def stop(self):
+        """Stop the simulator."""
         self.killTimer(self.timer_id)
         self.stop_button.setDisabled(True)
         self.start_button.setEnabled(True)
 
-    def delay_changed(self, delay):
+    def change_delay(self, delay):
+        """Change the timer delay of the simulator steps."""
         self.timer_delay = int(delay)
 
     def timerEvent(self, event):
+        """Step the simulator from the timer.
+
+        .. note::
+            This is called by the timer that is controlled by :meth:`start` and
+            :meth:`stop`. You should not call it yourself."""
         self.killTimer(self.timer_id)
         self.step()
         self.timer_id = self.startTimer(self.timer_delay)
 
     def step(self):
+        """Step the simulator, update all displays."""
         self.sim.step()
         for d in self.attached_displays:
             d.after_step()
 
     def attach_display(self, display):
+        """Attach a display to the control.
+
+        Those displays are updated whenever a step occurs."""
         self.attached_displays.append(display)
 
     def detach_display(self, display):
+        """Detach an attached display from the control."""
         self.attached_displays.remove(display)
 
     def fullspeed(self):
+        """Run the stepping function without any timer delays."""
         last_time = time.time()
         last_step = 0
         while self.isVisible():
