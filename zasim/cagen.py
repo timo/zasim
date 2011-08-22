@@ -410,7 +410,7 @@ class SimpleStateAccessor(StateAccessor):
         """Get the bounding box from the neighbourhood object."""
         super(SimpleStateAccessor, self).bind(target)
         bb = self.code.neigh.bounding_box()
-        mins = [[abs(b) for b in a] for a in bb[::2]]
+        mins = [min([abs(b) for b in a]) for a in bb[::2]]
         self.border = tuple(mins)
 
     def visit(self):
@@ -725,7 +725,7 @@ class BinRule(TestTarget):
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
-                accessor=LinearStateAccessor(size=size),
+                accessor=LinearStateAccessor(size=(size,)),
                 neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
                 extra_code=[LinearBorderCopier()])
 
