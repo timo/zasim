@@ -56,6 +56,19 @@ from random import Random
 import sys
 import new
 
+def offset_pos(pos, offset):
+    """Offset a position by an offset. Any amount of dimensions should work."""
+    return [a + b for a, b in zip(pos, offset)]
+
+def gen_offset_pos(pos, offset):
+    """Generate code to offset a position by an offset.
+
+    .. example::
+        pos = ["i", "j"]
+        offset = ["foo", "bar"]
+        result: "i + foo, j + bar" """
+    return ["%s + %s" % (a, b) for a, b in zip(pos, offset)]
+
 class WeaveStepFunc(object):
     """The WeaveStepFunc composes different parts into a functioning
     step function."""
@@ -369,37 +382,42 @@ class LinearStateAccessor(StateAccessor):
     def __init__(self, size):
         super(LinearStateAccessor, self).__init__()
         self.size = size
+        self.size_names = ["sizeX"]
+        self.border_names = ("BORDER_OFFSET",)
 
     def read_access(self, pos, skip_border=False):
         if skip_border:
             return "cconf(%s)" % (pos)
-        return "cconf(%s + %s)" % (pos, self.border_l_name)
+        return "cconf(%s)" % (gen_offset_pos(pos, self.border_names))
 
     def write_access(self, pos, skip_border=False):
         if skip_border:
             return "nconf(%s)" % (pos)
-        return "nconf(%s + %s)" % (pos, self.border_l_name)
+        return "nconf(%s)" % (gen_offset_pos(pos, self.border_names))
 
     def init_once(self):
         """Set the sizeX const and register nconf and cconf for extraction
         from the targen when running C code."""
         super(LinearStateAccessor, self).init_once()
-        self.code.consts["sizeX"] = self.size
+        for sizename, size in zip(self.size_names, self.size):
+            self.code.consts[sizename] = size
         self.code.attrs.extend(["nconf", "cconf"])
 
     def bind(self, target):
         """Get the bounding box from the neighbourhood object."""
         super(LinearStateAccessor, self).bind(target)
-        self.border_l = abs(self.code.neigh.bounding_box()[0])
-        self.border_l_name = "BORDER_OFFSET"
+        bb = self.code.neigh.bounding_box()
+        mins = [abs(a) for a in bb[::2]]
+        self.border = tuple(mins)
 
     def visit(self):
         """Take care for result and sizeX to exist in python and C code,
         for the result to be written to the config space and for the configs
         to be swapped by the python code."""
         super(LinearStateAccessor, self).visit()
-        self.code.add_code("headers",
-                "#define %s %d" % (self.border_l_name, self.border_l))
+        for name, value in zip(self.border_names, self.border):
+            self.code.add_code("headers",
+                    "#define %s %d" % (name, value))
         self.code.add_code("localvars",
                 """int result;""")
         self.code.add_code("post_compute",
@@ -407,8 +425,9 @@ class LinearStateAccessor(StateAccessor):
 
         self.code.add_py_hook("init",
                 """result = None""")
-        self.code.add_py_hook("init",
-                """sizeX = %d""" % (self.code.acc.get_size_of(0)))
+        for sizename, value in zip(self.size_names, self.size):
+            self.code.add_py_hook("init",
+                    """%s = %d""" % (sizename, value))
         self.code.add_py_hook("post_compute",
                 """self.acc.write_to(pos, result)""")
         self.code.add_py_hook("finalize",
@@ -417,27 +436,27 @@ class LinearStateAccessor(StateAccessor):
     def read_from(self, pos, skip_border=False):
         if skip_border:
             return self.target.cconf[pos]
-        return self.target.cconf[pos + self.border_l]
+        return self.target.cconf[offset_pos(pos, self.border)]
 
     def read_from_next(self, pos, skip_border=False):
         if skip_border:
             return self.target.nconf[pos]
-        return self.target.nconf[pos + self.border_l]
+        return self.target.nconf[offset_pos(pos, self.border)]
 
     def write_to(self, pos, value, skip_border=False):
         if skip_border:
             self.target.nconf[pos] = value
         else:
-            self.target.nconf[pos + self.border_l] = value
+            self.target.nconf[offset_pos(pos, self.border_l)] = value
 
     def write_to_current(self, pos, value, skip_border=False):
         if skip_border:
             self.target.cconf[pos] = value
         else:
-            self.target.cconf[pos + self.border_l] = value
+            self.target.cconf[offset_pos(pos, self.border_l)] = value
 
     def get_size_of(self, dimension=0):
-        return self.size
+        return self.size[dimension]
 
     def swap_configs(self):
         """Swaps nconf and cconf in the target."""
