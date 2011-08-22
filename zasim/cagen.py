@@ -726,7 +726,7 @@ class BinRule(TestTarget):
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
                 accessor=LinearStateAccessor(size=size),
-                neighbourhood=LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
+                neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
                 extra_code=[LinearBorderCopier()])
 
         self.rule = np.zeros( 8 )
