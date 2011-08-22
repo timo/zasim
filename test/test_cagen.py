@@ -40,7 +40,7 @@ class TestCAGen:
         br = cagen.BinRule(size-2, deterministic=False, rule=rule_num)
 
         for i in range(10):
-            br.step_inline()
+            br.step_pure_py()
 
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_run_nondeterministic_weave(self, rule_num):
@@ -48,7 +48,7 @@ class TestCAGen:
         br = cagen.BinRule(size-2, deterministic=False, rule=rule_num)
 
         for i in range(10):
-            br.step_pure_py()
+            br.step_pure_inline()
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
