@@ -1,6 +1,7 @@
+from __future__ import absolute_import
 from zasim import ca, cagen
 from random import randrange
-from testutil import *
+from .testutil import *
 
 import pytest
 
