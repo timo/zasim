@@ -536,8 +536,7 @@ class LinearNeighbourhood(Neighbourhood):
         return self.names
 
     def bounding_box(self, steps=1):
-        # XXX this currently ignores the steps parameter.
-        return min(self.offsets), max(self.offsets)
+        return min(self.offsets * steps), max(self.offsets * steps)
 
 class LinearBorderCopier(BorderSizeEnsurer):
     def visit(self):
