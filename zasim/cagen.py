@@ -48,126 +48,6 @@ from random import Random
 import sys
 import new
 
-class WeaveStepFuncVisitor(object):
-    def __init__(self):
-        self.code = None
-        self.target = None
-
-    def bind(self, code):
-        """bind the visitor to a StepFunc"""
-        assert self.code is None, "%r is already bound to %r" % (self, self.code)
-        self.code = code
-
-    def set_target(self, target):
-        """target a CA instance"""
-        assert self.target is None, "%r already targets %r" % (self, self.target)
-        self.target = target
-
-    def visit(self):
-        """add code snippets to the code object."""
-
-    def init_once(self):
-        """initialize data on the target.
-
-        this is pure python code that runs on init."""
-
-    def new_config(self):
-        """check and sanitize a new config.
-
-        this is pure python code that runs when a new config is loaded.
-        it only changes the current configuration "cconf" of the automaton.
-        after all new_config hooks have been run, they are multiplied."""
-
-class StateAccessor(WeaveStepFuncVisitor):
-    """A StateAccessor will supply read and write access to the state array.
-
-    it also knows things about how the config space is shaped and sized and
-    how to handle swapping or history of configs."""
-
-    def read_access(self, pos):
-        """generate a code bit for reading from the old config at pos.
-
-        example: cconf(pos, 0)"""
-
-    def write_access(self, pos):
-        """generate a code bit to write to the new config at pos.
-
-        example: nconf(pos, 0)"""
-
-    def write_to(self, pos, value):
-        """directly write to the next config at pos."""
-
-    def write_to_current(self, pos, value):
-        """directly write to the current config at pos."""
-
-    def read_from(self, pos):
-        """directly read from the current config at pos."""
-
-    def read_from_next(self, pos):
-        """directly read from the next config at pos."""
-
-    def get_size(self, dimension=0):
-        """generate a code bit to get the size of the config space in
-        the specified dimension"""
-
-    def get_size_of(self, dimension=0):
-        """get the size of the config space in the specified dimension."""
-
-    def multiplicate_config(self):
-        """take the current config "cconf" and multiply it over all
-        history slots that need to have duplicates at the beginning"""
-
-    def swap_configs(self):
-        """swap out all configs"""
-
-class CellLoop(WeaveStepFuncVisitor):
-    """A CellLoop is responsible for looping over cell space and giving access
-    to the current position."""
-    def get_pos(self, offset):
-        """returns a code bit to get the current position in config space"""
-
-    def get_pos_of(self, offset):
-        """returns the current position plus the offset in python."""
-
-    def get_iter(self):
-        """returns an iterator for iterating over the config space in python"""
-
-class Neighbourhood(WeaveStepFuncVisitor):
-    """A Neighbourhood is responsible for getting states from neighbouring cells."""
-
-    def neighbourhood_cells(self):
-        """Get the names of the neighbouring cells."""
-
-    def get_neighbourhood(self, pos):
-        """Get the values of the neighbouring cells for pos in python"""
-
-    def bounding_box(self, steps=1):
-        """Find out, how many cells, at most, have to be read after
-        a number of steps have been done.
-
-        It will return a tuple with relative values where 0 is the index of the
-        current cell. It will have a format like:
-
-            (minX, maxX,
-             [minY, maxY,
-              [minZ, maxZ]])"""
-
-class BorderHandler(WeaveStepFuncVisitor):
-    """The BorderHandler is responsible for treating the borders of the
-    configuration. One example is copying the leftmost border to the rightmost
-    border and vice versa or ensuring the border cells are always 0."""
-
-class BorderSizeEnsurer(BorderHandler):
-    def new_config(self):
-        # TODO all of this needs to be extended for multi-dim arrays
-        super(BorderSizeEnsurer, self).new_config()
-        bbox = self.code.neigh.bounding_box()
-        # FIXME if the bbox goes into the positive values, abs is wrong. use the 
-        # FIXME correct amount of minus signs instead?
-        new_conf = np.zeros(len(self.target.cconf) + abs(bbox[0]) + abs(bbox[1]))
-        new_conf[abs(bbox[0]):-abs(bbox[1])] = self.target.cconf
-        self.target.cconf = new_conf
-
 class WeaveStepFunc(object):
     """The WeaveStepFunc will compose different parts into a functioning
     step function."""
@@ -301,6 +181,126 @@ class WeaveStepFunc(object):
         """initialise all the visitors after a configuration has been set."""
         for code in self.visitors:
             code.init_once()
+
+class WeaveStepFuncVisitor(object):
+    def __init__(self):
+        self.code = None
+        self.target = None
+
+    def bind(self, code):
+        """bind the visitor to a StepFunc"""
+        assert self.code is None, "%r is already bound to %r" % (self, self.code)
+        self.code = code
+
+    def set_target(self, target):
+        """target a CA instance"""
+        assert self.target is None, "%r already targets %r" % (self, self.target)
+        self.target = target
+
+    def visit(self):
+        """add code snippets to the code object."""
+
+    def init_once(self):
+        """initialize data on the target.
+
+        this is pure python code that runs on init."""
+
+    def new_config(self):
+        """check and sanitize a new config.
+
+        this is pure python code that runs when a new config is loaded.
+        it only changes the current configuration "cconf" of the automaton.
+        after all new_config hooks have been run, they are multiplied."""
+
+class StateAccessor(WeaveStepFuncVisitor):
+    """A StateAccessor will supply read and write access to the state array.
+
+    it also knows things about how the config space is shaped and sized and
+    how to handle swapping or history of configs."""
+
+    def read_access(self, pos):
+        """generate a code bit for reading from the old config at pos.
+
+        example: cconf(pos, 0)"""
+
+    def write_access(self, pos):
+        """generate a code bit to write to the new config at pos.
+
+        example: nconf(pos, 0)"""
+
+    def write_to(self, pos, value):
+        """directly write to the next config at pos."""
+
+    def write_to_current(self, pos, value):
+        """directly write to the current config at pos."""
+
+    def read_from(self, pos):
+        """directly read from the current config at pos."""
+
+    def read_from_next(self, pos):
+        """directly read from the next config at pos."""
+
+    def get_size(self, dimension=0):
+        """generate a code bit to get the size of the config space in
+        the specified dimension"""
+
+    def get_size_of(self, dimension=0):
+        """get the size of the config space in the specified dimension."""
+
+    def multiplicate_config(self):
+        """take the current config "cconf" and multiply it over all
+        history slots that need to have duplicates at the beginning"""
+
+    def swap_configs(self):
+        """swap out all configs"""
+
+class CellLoop(WeaveStepFuncVisitor):
+    """A CellLoop is responsible for looping over cell space and giving access
+    to the current position."""
+    def get_pos(self, offset):
+        """returns a code bit to get the current position in config space"""
+
+    def get_pos_of(self, offset):
+        """returns the current position plus the offset in python."""
+
+    def get_iter(self):
+        """returns an iterator for iterating over the config space in python"""
+
+class Neighbourhood(WeaveStepFuncVisitor):
+    """A Neighbourhood is responsible for getting states from neighbouring cells."""
+
+    def neighbourhood_cells(self):
+        """Get the names of the neighbouring cells."""
+
+    def get_neighbourhood(self, pos):
+        """Get the values of the neighbouring cells for pos in python"""
+
+    def bounding_box(self, steps=1):
+        """Find out, how many cells, at most, have to be read after
+        a number of steps have been done.
+
+        It will return a tuple with relative values where 0 is the index of the
+        current cell. It will have a format like:
+
+            (minX, maxX,
+             [minY, maxY,
+              [minZ, maxZ]])"""
+
+class BorderHandler(WeaveStepFuncVisitor):
+    """The BorderHandler is responsible for treating the borders of the
+    configuration. One example is copying the leftmost border to the rightmost
+    border and vice versa or ensuring the border cells are always 0."""
+
+class BorderSizeEnsurer(BorderHandler):
+    def new_config(self):
+        # TODO all of this needs to be extended for multi-dim arrays
+        super(BorderSizeEnsurer, self).new_config()
+        bbox = self.code.neigh.bounding_box()
+        # FIXME if the bbox goes into the positive values, abs is wrong. use the 
+        # FIXME correct amount of minus signs instead?
+        new_conf = np.zeros(len(self.target.cconf) + abs(bbox[0]) + abs(bbox[1]))
+        new_conf[abs(bbox[0]):-abs(bbox[1])] = self.target.cconf
+        self.target.cconf = new_conf
 
 class LinearStateAccessor(StateAccessor):
     def __init__(self, size):
