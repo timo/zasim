@@ -177,7 +177,7 @@ class BorderSizeEnsurer(BorderHandler):
 class WeaveStepFunc(object):
     """The WeaveStepFunc will compose different parts into a functioning
     step function."""
-    def __init__(self, loop, accessor, neighbourhood, extra_code=[], target=None):
+    def __init__(self, loop, accessor, neighbourhood, extra_code=[], target=None, **kwargs):
         """create a weave-based step function from the specified parts.
 
         loop          -  a CellLoop, that adds a loop at loop_begin
@@ -189,6 +189,8 @@ class WeaveStepFunc(object):
                          cell values into known variables.
         extra_code    -  further WeaveStepFuncVisitors, that add more
                          behaviour."""
+
+        super(WeaveStepFunc, self).__init__(**kwargs)
 
         # those are for generated c code
         self.sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
@@ -499,7 +501,8 @@ class LinearBorderCopier(BorderSizeEnsurer):
                     value=self.code.acc.read_from(i))
 
 class TestTarget(object):
-    def __init__(self, size, rule=126, config=None):
+    def __init__(self, size, rule=126, config=None, **kwargs):
+        super(TestTarget, self).__init__(**kwargs)
         self.size = size
         if config is None:
             self.cconf = np.zeros(size)
@@ -515,6 +518,37 @@ class TestTarget(object):
         for i in range( 8 ):
             if ( rule & ( 1 << i ) ):
                 self.rule[i] = 1
+
+class BinRule(TestTarget):
+    def __init__(self, size, deterministic=True, rule=126, config=None, **kwargs):
+        super(BinRule, self).__init__(size, rule, config, **kwargs)
+        self.stepfunc = WeaveStepFunc(
+                loop=LinearCellLoop() if deterministic
+                     else LinearNondeterministicCellLoop(),
+                accessor=LinearStateAccessor(size=size),
+                neighbourhood=LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
+                extra_code=[LinearBorderCopier()])
+
+        self.stepfunc.attrs.append("rule")
+        self.stepfunc.add_code("localvars",
+                """int state;""")
+        self.stepfunc.add_code("compute",
+                """state =  l << 2;
+      state += m << 1;
+      state += r;
+      result = rule(state);""")
+
+        self.stepfunc.add_py_hook("compute",
+                """result = self.target.rule[int(l * 4 + m * 2 + r)]""")
+
+        self.stepfunc.set_target(self)
+        self.stepfunc.regen_code()
+
+    def step_inline(self):
+        self.stepfunc.step_inline()
+
+    def step_pure_py(self):
+        self.stepfunc.step_pure_py()
 
 def test():
     cell_shadow, cell_full = "%#"
@@ -533,43 +567,22 @@ def test():
 
     size = 75
 
-    binRuleTestCode = WeaveStepFunc(
-            #loop=LinearNondeterministicCellLoop(random_generator=Random(11)),
-            loop=LinearCellLoop(),
-            accessor=LinearStateAccessor(size=size),
-            neighbourhood=LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
-            extra_code=[LinearBorderCopier()])
+    bin_rule = BinRule(size, rule=110)
 
-    binRuleTestCode.attrs.append("rule")
-    binRuleTestCode.add_code("localvars",
-            """int state;""")
-    binRuleTestCode.add_code("compute",
-            """state =  l << 2;
-  state += m << 1;
-  state += r;
-  result = rule(state);""")
-
-    binRuleTestCode.add_py_hook("compute",
-            """result = self.target.rule[int(l * 4 + m * 2 + r)]""")
-
-    target = TestTarget(size)
-    binRuleTestCode.set_target(target)
-    binRuleTestCode.regen_code()
-
-    b_l, b_r = binRuleTestCode.neigh.bounding_box()
+    b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()
     pretty_print_array = build_array_pretty_printer(size, abs(b_l), abs(b_r), 20, 20)
 
-    print binRuleTestCode.code_text
+    print bin_rule.stepfunc.code_text
     if USE_WEAVE:
         print "weave"
         for i in range(10000):
-            binRuleTestCode.step_inline()
-            pretty_print_array(target.cconf)
+            bin_rule.step_inline()
+            pretty_print_array(bin_rule.cconf)
     else:
         print "pure"
         for i in range(10000):
-            binRuleTestCode.step_pure_py()
-            pretty_print_array(target.cconf)
+            bin_rule.step_pure_py()
+            pretty_print_array(bin_rule.cconf)
 
 if __name__ == "__main__":
     if "pure" in sys.argv:
