@@ -448,6 +448,105 @@ class LinearStateAccessor(StateAccessor):
         """Copy cconf to nconf in the target."""
         self.target.nconf = self.target.cconf.copy()
 
+class TwoDimStateAccessor(StateAccessor):
+    """The TwoDimStateAccessor offers access to a two-dimensional configuration
+    space."""
+    def __init__(self, sizeX, sizeY):
+        super(TwoDimStateAccessor, self).__init__()
+        self.size = (sizeX, sizeY)
+
+    def read_access(self, pos, skip_border=False):
+        if skip_border:
+            return "cconf(%s, %s)" % (pos)
+        return "cconf(%s + %s, %s + %s)" % (pos[0], self.border_l_name,
+                                            pos[1], self.border_u_name)
+
+    def write_access(self, pos, skip_border=False):
+        if skip_border:
+            return "nconf(%s, %s)" % (pos)
+        return "nconf(%s + %s, %s + %s)" % (pos[0], self.border_l_name,
+                                            pos[1], self.border_u_name)
+
+    def init_once(self):
+        """Set the sizeX const and register nconf and cconf for extraction
+        from the targen when running C code."""
+        super(TwoDimStateAccessor, self).init_once()
+        self.code.consts["sizeX"] = self.size[0]
+        self.code.consts["sizeY"] = self.size[1]
+        self.code.attrs.extend(["nconf", "cconf"])
+
+    def bind(self, target):
+        """Get the bounding box from the neighbourhood object."""
+        super(TwoDimStateAccessor, self).bind(target)
+        borders = self.code.neigh.bounding_box()
+        self.border_l = abs(borders[0])
+        self.border_l_name = "X_BORDER_OFFSET"
+        self.border_u = abs(borders[2])
+        self.border_u_name = "Y_BORDER_OFFSET"
+
+    def visit(self):
+        """Take care for result and sizeX to exist in python and C code,
+        for the result to be written to the config space and for the configs
+        to be swapped by the python code."""
+        super(TwoDimStateAccessor, self).visit()
+        self.code.add_code("headers",
+                "\n".join(["#define %s %d" % (name, value)
+                    for (name, value) in [(self.border_l_name, self.border_l),
+                                          (self.border_u_name, self.border_u)]]))
+
+        self.code.add_code("localvars",
+                """int result;""")
+        self.code.add_code("post_compute",
+                self.write_access(self.code.loop.get_pos()) + " = result;")
+
+        self.code.add_py_hook("init",
+                """result = None""")
+        for num, ax in enumerate("XY"):
+            self.code.add_py_hook("init",
+                    """size%s = %d""" % (ax, self.code.acc.get_size_of(num)))
+        self.code.add_py_hook("post_compute",
+                """self.acc.write_to(pos, result)""")
+        self.code.add_py_hook("finalize",
+                """self.acc.swap_configs()""")
+
+    def read_from(self, pos, skip_border=False):
+        if skip_border:
+            return self.target.cconf[pos]
+        return self.target.cconf[pos[0] + self.border_l,
+                                 pos[1] + self.border_u]
+
+    def read_from_next(self, pos, skip_border=False):
+        if skip_border:
+            return self.target.nconf[pos]
+        return self.target.nconf[pos[0] + self.border_l,
+                                 pos[1] + self.border_u]
+
+    def write_to(self, pos, value, skip_border=False):
+        if skip_border:
+            self.target.nconf[pos] = value
+        else:
+            self.target.nconf[pos[0] + self.border_l,
+                              pos[1] + self.border_u] = value
+
+    def write_to_current(self, pos, value, skip_border=False):
+        if skip_border:
+            self.target.cconf[pos] = value
+        else:
+            self.target.cconf[pos[0] + self.border_l,
+                              pos[1] + self.border_u] = value
+
+    def get_size_of(self, dimension=0):
+        return self.size[dimension]
+
+    def swap_configs(self):
+        """Swaps nconf and cconf in the target."""
+        self.target.nconf, self.target.cconf = \
+                self.target.cconf, self.target.nconf
+
+    def multiplicate_config(self):
+        """Copy cconf to nconf in the target."""
+        self.target.nconf = self.target.cconf.copy()
+
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
     def get_pos(self, offset=0):
