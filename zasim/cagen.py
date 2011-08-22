@@ -47,6 +47,11 @@ except ImportError:
     USE_WEAVE=False
     print "not using weave"
 
+try:
+    from numpy import ndarray
+except:
+    print "multi-dimensional arrays are not available"
+
 from random import Random
 import sys
 import new
@@ -341,13 +346,21 @@ class BorderSizeEnsurer(BorderHandler):
     cells will not access outside the bounds of the array."""
     def new_config(self):
         """Resizes the configuration array."""
-        # TODO all of this needs to be extended for multi-dim arrays
         super(BorderSizeEnsurer, self).new_config()
         bbox = self.code.neigh.bounding_box()
         # FIXME if the bbox goes into the positive values, abs is wrong. use the 
         # FIXME correct amount of minus signs instead?
-        new_conf = np.zeros(len(self.target.cconf) + abs(bbox[0]) + abs(bbox[1]))
-        new_conf[abs(bbox[0]):-abs(bbox[1])] = self.target.cconf
+        dims = len(bbox) / 2
+        shape = self.target.cconf.shape
+        if dims == 1:
+            new_conf = np.zeros(shape[0] + abs(bbox[0]) + abs(bbox[1]))
+            new_conf[abs(bbox[0]):-abs(bbox[1])] = self.target.cconf
+        elif dims == 2:
+            # TODO figure out how to create slice objects in a general way.
+            new_conf = np.zeros((shape[0] + abs(bbox[0]) + abs(bbox[1]),
+                                 shape[1] + abs(bbox[2]) + abs(bbox[3])))
+            new_conf[abs(bbox[0]):-abs(bbox[1]),
+                     abs(bbox[2]):-abs(bbox[3])] = self.target.cconf
         self.target.cconf = new_conf
 
 class LinearStateAccessor(StateAccessor):
