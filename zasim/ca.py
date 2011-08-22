@@ -12,31 +12,6 @@ except:
     print "weave is not available."
     HAVE_WEAVE = False
 
-copy = lambda x: x.copy()
-
-# pypy micronumpy does not have copy yet.
-try:
-    a = np.zeros(10)
-    b = copy(a)
-except AttributeError:
-    def slowcopy(arr):
-        return arr * 1
-    copy = slowcopy
-
-b = copy(a)
-
-if " 0." not in repr(np.zeros(10)):
-    print "using own repr version for arrays"
-    def repr_arr(arr):
-        r = "array(["
-        for i in range(len(arr)):
-            r += ", " + str(arr[i])
-        r += "])"
-        return r
-else:
-    def repr_array(arr):
-        return repr(arr)
-
 try:
     a = np.zeros((100,), int)
 except TypeError:
@@ -50,7 +25,6 @@ except TypeError:
     np.zeros = compatibility_zeros
 
 try:
-    raise ImportError("foo")
     import pygame
 except ImportError:
     # if pygame isn't installed, at least get the modifier values.
@@ -218,7 +192,7 @@ class CA(object):
                         raise ConfigurationParseError("Could not parse line. %r" %
                                 content)
                     self.currConf[i][j] = state
-        self.nextConf = copy(self.currConf)
+        self.nextConf = self.currConf.copy()
         return retVal
 
     ## Is called in every step of the simulation.
@@ -254,8 +228,8 @@ class CA(object):
     # This is used when switching between marked configurations and cellular automaton types.
     # @param conf The configuration to load.
     def setConf( self, conf ):
-        self.currConf = copy(conf)
-        self.nextConf = copy(conf)
+        self.currConf = conf.copy()
+        self.nextConf = conf.copy()
 
 
 ## A cellular automaton that simulates all one dimensional binary rule cellular automaton,
@@ -313,7 +287,7 @@ class binRule( CA ):
         self.currConf = conf.copy()
         self.currConf[0] = self.currConf[-2]
         self.currConf[-1] = self.currConf[1]
-        self.nextConf = copy(self.currConf)
+        self.nextConf = self.currConf.copy()
 
     ## What to do in every step.
     # sets loopFunc to the appropriate update function
@@ -417,7 +391,7 @@ class sandPile( CA ):
                     c = random.randint( 0, 3 )
                     self.currConf[ x, y ] = c
                     self.histogram[ c ] += 1
-            self.nextConf = copy(self.currConf)
+            self.nextConf = self.currConf.copy()
         else:
             raise ValueError("Initflag not supported for %s. Supported flags are:\n" +
                 "INIT_ZERO, INIT_RAND, INIT_FILE + filename" %
@@ -509,7 +483,7 @@ class sandPile( CA ):
                     self.nextConf[ x-1, y ] = self.currConf[ x-1, y ] + 1
                     self.nextConf[ x, y+1 ] = self.currConf[ x, y+1 ] + 1
                     self.nextConf[ x, y-1 ] = self.currConf[ x, y-1 ] + 1
-        self.currConf = copy(self.nextConf)
+        self.currConf = self.nextConf.copy()
 
     ## Updates all cells using scipy.weave.inline
     def updateAllCellsWeaveInline( self ):
@@ -533,7 +507,7 @@ for ( i = 1; i < sizeX-1; i++ ) {
         weave.inline( sandpileCode, ['cconf', 'nconf', 'sizeX', 'sizeY' ],
                       type_converters = converters.blitz,
                       compiler = 'gcc' )
-        self.currConf = copy(self.nextConf)
+        self.currConf = self.nextConf.copy()
 
 
 
