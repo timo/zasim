@@ -329,7 +329,12 @@ class BorderHandler(WeaveStepFuncVisitor):
     border and vice versa or ensuring the border cells are always 0."""
 
 class BorderSizeEnsurer(BorderHandler):
+    """The BorderSizeEnsurer ensures, that - depending on the bounding box
+    returned by :meth:`Neighbourhood.bounding_box` - the underlying config
+    array is big enough, so that getting the neighbourhood from the outermost
+    cells will not access outside the bounds of the array."""
     def new_config(self):
+        """Resizes the configuration array."""
         # TODO all of this needs to be extended for multi-dim arrays
         super(BorderSizeEnsurer, self).new_config()
         bbox = self.code.neigh.bounding_box()
