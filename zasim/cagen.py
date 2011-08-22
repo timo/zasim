@@ -623,8 +623,8 @@ class SimpleNeighbourhood(Neighbourhood):
         num_dimensions = len(self.offsets[0])
 
         # initialise the maximums and minimums from the first offset
-        maxes = self.offsets[0][:]
-        mins = self.offsets[0][:]
+        maxes = list(self.offsets[0])
+        mins = list(self.offsets[0])
 
         # TODO write test cases for this!
 
