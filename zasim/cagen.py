@@ -376,14 +376,14 @@ class BorderSizeEnsurer(BorderHandler):
                      abs(bbox[2]):-abs(bbox[3])] = self.target.cconf
         self.target.cconf = new_conf
 
-class LinearStateAccessor(StateAccessor):
-    """The LinearStateAccessor offers access to a one-dimensional configuration
+class SimpleStateAccessor(StateAccessor):
+    """The SimpleStateAccessor offers access to a one-dimensional configuration
     space."""
+    size_names = ["sizeX"]
+    border_names = ["BORDER_OFFSET"]
     def __init__(self, size):
-        super(LinearStateAccessor, self).__init__()
+        super(SimpleStateAccessor, self).__init__()
         self.size = size
-        self.size_names = ["sizeX"]
-        self.border_names = ("BORDER_OFFSET",)
 
     def read_access(self, pos, skip_border=False):
         if skip_border:
@@ -398,14 +398,14 @@ class LinearStateAccessor(StateAccessor):
     def init_once(self):
         """Set the sizeX const and register nconf and cconf for extraction
         from the targen when running C code."""
-        super(LinearStateAccessor, self).init_once()
+        super(SimpleStateAccessor, self).init_once()
         for sizename, size in zip(self.size_names, self.size):
             self.code.consts[sizename] = size
         self.code.attrs.extend(["nconf", "cconf"])
 
     def bind(self, target):
         """Get the bounding box from the neighbourhood object."""
-        super(LinearStateAccessor, self).bind(target)
+        super(SimpleStateAccessor, self).bind(target)
         bb = self.code.neigh.bounding_box()
         mins = [abs(a) for a in bb[::2]]
         self.border = tuple(mins)
@@ -414,7 +414,7 @@ class LinearStateAccessor(StateAccessor):
         """Take care for result and sizeX to exist in python and C code,
         for the result to be written to the config space and for the configs
         to be swapped by the python code."""
-        super(LinearStateAccessor, self).visit()
+        super(SimpleStateAccessor, self).visit()
         for name, value in zip(self.border_names, self.border):
             self.code.add_code("headers",
                     "#define %s %d" % (name, value))
