@@ -262,6 +262,7 @@ class StateAccessor(WeaveStepFuncVisitor):
     Additionally, it knows how far to offset reads and writes, so that cells at
     the lowest coordinates will have a border of data around them."""
 
+    # XXX add skip_border attributes, too!
     def read_access(self, pos):
         """Generate a bit of C code for reading from the old config at pos."""
 
@@ -348,6 +349,8 @@ class BorderSizeEnsurer(BorderHandler):
         self.target.cconf = new_conf
 
 class LinearStateAccessor(StateAccessor):
+    """The LinearStateAccessor offers access to a one-dimensional configuration
+    space."""
     def __init__(self, size):
         super(LinearStateAccessor, self).__init__()
         self.size = size
@@ -363,15 +366,22 @@ class LinearStateAccessor(StateAccessor):
         return "nconf(%s + %s, 0)" % (pos, self.border_l_name)
 
     def init_once(self):
+        """Set the sizeX const and register nconf and cconf for extraction
+        from the targen when running C code."""
+        # XXX call super, too!
         self.code.consts["sizeX"] = self.size
         self.code.attrs.extend(["nconf", "cconf"])
 
     def bind(self, target):
+        """Get the bounding box from the neighbourhood object."""
         super(LinearStateAccessor, self).bind(target)
         self.border_l = abs(self.code.neigh.bounding_box()[0])
         self.border_l_name = "BORDER_OFFSET"
 
     def visit(self):
+        """Take care for result and sizeX to exist in python and C code,
+        for the result to be written to the config space and for the configs
+        to be swapped by the python code."""
         self.code.add_code("headers",
                 "#define %s %d" % (self.border_l_name, self.border_l))
         self.code.add_code("localvars",
@@ -414,10 +424,12 @@ class LinearStateAccessor(StateAccessor):
         return self.size
 
     def swap_configs(self):
+        """Swaps nconf and cconf in the target."""
         self.target.nconf, self.target.cconf = \
                 self.target.cconf, self.target.nconf
 
     def multiplicate_config(self):
+        """Copy cconf to nconf in the target."""
         self.target.nconf = self.target.cconf.copy()
 
 class LinearCellLoop(CellLoop):
