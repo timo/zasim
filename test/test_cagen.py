@@ -51,6 +51,15 @@ class TestCAGen:
         for i in range(10):
             br.step_inline()
 
+    def test_immutability(self):
+        br = cagen.BinRule(size=10)
+        with pytest.raises(AssertionError):
+            br.stepfunc.set_target(br)
+        with pytest.raises(AttributeError):
+            br.stepfunc.add_code("headers", "int foo = 42")
+        with pytest.raises(AttributeError):
+            br.stepfunc.add_py_hook("pre_compute", "print 'hello'")
+
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
         for i in INTERESTING_BINRULES:

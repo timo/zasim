@@ -234,7 +234,7 @@ class WeaveStepFunc(object):
 
     def add_py_hook(self, hook, function):
         """add a string of python code to the section "hook"."""
-        assert isinstance(function, basestring)
+        assert isinstance(function, basestring), "py hooks must be strings now."
         function = function.split("\n")
         newfunc = []
 
@@ -243,17 +243,21 @@ class WeaveStepFunc(object):
 
         self.pycode[hook].append("\n".join(newfunc))
 
-    def regen_code(self):
+    def gen_code(self):
         """regenerate the C and python code from the bits"""
-        # TODO decide if this should maybe be mutable after regen_code or rename regen_code
+        # freeze visitors and code bits
         self.visitors = tuple(self.visitors)
+        for hook in self.code.keys():
+            self.code[hook] = tuple(self.code[hook])
+
         code_bits = []
         for section in self.sections:
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
 
-        #def step_pure_py(self):
-            #raise ValueError("pure python step function could not be compiled")
+        # freeze python code bits
+        for hook in self.pycode.keys():
+            self.pycode[hook] = tuple(self.pycode[hook])
 
         code_bits = ["""def step_pure_py(self):"""]
         def append_code(section):
@@ -536,7 +540,7 @@ class BinRule(TestTarget):
                 """result = self.target.rule[int(l * 4 + m * 2 + r)]""")
 
         self.stepfunc.set_target(self)
-        self.stepfunc.regen_code()
+        self.stepfunc.gen_code()
 
     def step_inline(self):
         self.stepfunc.step_inline()
