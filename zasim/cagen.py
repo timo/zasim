@@ -1,32 +1,35 @@
-""" This module tests slimming down the specification of cellular automaton
-step functions by using re-usable components.
+"""This module offers the ability to slim down the specification of
+cellular automaton step functions using re-usable components.
 
-Ideally, only the very core of the computation would have to be written
-once in C++ and once in python. The rest would then be done by the
-composite classes.
+You only need to write the core computation once in C and once in python,
+the rest will be done for you by the components offered in this module.
 
-Currently, the step function will only be generated as c++ code, but later,
-the step function will be runnable as pure python code as well.
+The parts the step function is decomposed into are all subclasses of
+:class:`WeaveStepFuncVisitor`. The base classes available are:
 
-The parts the step function is decomposed into are:
-
-  - A StateAccessor
+  - A :class:`StateAccessor`
 
     is responsible for writing to and reading from the configuration as
     well as knowing what shape and size the configuration has.
 
-  - A CellLoop
+  - A :class:`CellLoop`
 
     defines the order in which to loop over the configuration cells.
 
-  - A BorderHandler
+  - A :class:`Neighbourhood`
+
+    is responsible for getting the relevant fields for each local step.
+
+  - A :class:`BorderHandler`
 
     handles the borders of the configuration by copying over parts or writing
     data. Maybe, in the future, it could also resize configurations on demand.
 
-When these classes gain the capability to "generate" pure python code,
-the inlining capabilities of the PyPy JIT will compensate the amount of
-functions that take part in doing everything.
+
+All of those classes are used to initialise a :class:`WeaveStepFunc` object,
+which can then target a configuration object with the method 
+:meth:`~WeaveStepFunc.set_target`.
+
 """
 
 # TODO separate the functions to make C code from the ones that do pure python
