@@ -157,7 +157,6 @@ class WeaveStepFunc(object):
         for section in self.sections:
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
-        print self.code_text
 
         # freeze python code bits
         for hook in self.pycode.keys():
@@ -177,8 +176,8 @@ class WeaveStepFunc(object):
         append_code("finalize")
         code_bits.append("")
         code_text = "\n".join(code_bits)
-        code_object = compile(code_text, "<string>", "exec")
         print code_text
+        code_object = compile(code_text, "<string>", "exec")
 
         myglob = globals()
         myloc = locals()
@@ -321,9 +320,6 @@ class CellLoop(WeaveStepFuncVisitor):
     to the current position."""
     def get_pos(self, offset):
         """Returns a code bit to get the current position in config space."""
-
-    def get_pos_of(self, offset):
-        """Returns the current position plus the offset in python."""
 
     def get_iter(self):
         """Returns an iterator for iterating over the config space in python."""
@@ -498,7 +494,10 @@ class LinearCellLoop(CellLoop):
                 """}""")
 
     def get_iter(self):
-        return range(0, self.code.acc.get_size_of())
+        def generator():
+            for i in range(0, self.code.acc.get_size_of()):
+                yield (i,)
+        return iter(generator())
 
 class TwoDimCellLoop(CellLoop):
     """The TwoDimCellLoop iterates over all cells from left to right, then from
@@ -522,6 +521,7 @@ for(int j=0; i < sizeY; j++) {""")
             for i in range(0, self.code.acc.get_size_of(0)):
                 for j in range(0, self.code.acc.get_size_of(1)):
                     yield (i, j)
+        return iter(iterator())
 
 class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
     """Deriving from a CellLoop and this Mixin will cause every cell to be
@@ -593,6 +593,7 @@ class SimpleNeighbourhood(Neighbourhood):
         super(Neighbourhood, self).__init__()
         self.names = tuple(names)
         self.offsets = tuple(offsets)
+        print self.offsets, offsets
         assert len(self.names) == len(self.offsets)
 
     def visit(self):
@@ -605,8 +606,10 @@ class SimpleNeighbourhood(Neighbourhood):
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
+        print self.offsets
+        print " - ".join(["%s : %s" % (name, offset) for name, offset in zip(self.names, self.offsets)])
         assignments = ["%s = self.acc.read_from(%s)" % (
-                name, ", ".join(gen_offset_pos(self.code.loop.get_pos(), offset)))
+                name, "offset_pos(pos, %s)" % (offset,))
                 for name, offset in zip(self.names, self.offsets)]
         self.code.add_py_hook("pre_compute",
                 "\n".join(assignments))
