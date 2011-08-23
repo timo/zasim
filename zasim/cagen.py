@@ -646,12 +646,19 @@ class SimpleNeighbourhood(Neighbourhood):
         The return value will have an outer list with one tuple for
         each dimension. Each dimension will have a min and a max value.
 
+        Supplying the step argument will figure out, how far accesses will
+        reach when running step steps.
+
         >>> a = cagen.SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,)))
         >>> a.bounding_box()
         [(-1, 1)]
+        >>> a.bounding_box(2)
+        [(-2, 2)]
         >>> b = cagen.SimpleNeighbourhood(list("ab"), ((-5, 20), (99, 10)))
         >>> b.bounding_box()
         [(-5, 99), (10, 20)]
+        >>> b.bounding_box(10)
+        [(-50, 990), (100, 200)]
         """
         # there is at least one offset and that has to have the right number of
         # dimensions already.
@@ -667,6 +674,8 @@ class SimpleNeighbourhood(Neighbourhood):
             for dim in range(num_dimensions):
                 maxes[dim] = max(maxes[dim], offset[dim])
                 mins[dim] = min(mins[dim], offset[dim])
+        maxes = [m * steps for m in maxes]
+        mins = [m * steps for m in mins]
         return zip(mins, maxes)
 
 class LinearBorderCopier(BorderSizeEnsurer):
