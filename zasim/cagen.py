@@ -678,7 +678,29 @@ class SimpleNeighbourhood(Neighbourhood):
         mins = [m * steps for m in mins]
         return zip(mins, maxes)
 
-class LinearBorderCopier(BorderSizeEnsurer):
+class BaseBorderCopier(BorderSizeEnsurer):
+    def new_config(self):
+        """Copies over the borders once."""
+        super(BaseBorderCopier, self).new_config()
+
+        retargetted = "\n".join(self.copy_py_code)
+        retargetted = retargetted.replace("self.", "self.code.")
+        retargetted = retargetted.replace("write_to(", "write_to_current(")
+        retargetted = retargetted.replace("read_from_next(", "read_from(")
+        if not HAVE_TUPLE_ARRAY_INDEX:
+            retargetted = tuple_array_index_fixup(retargetted)
+
+        exec retargetted in globals(), locals()
+
+    def tee_copy_hook(self, code):
+        self.code.add_py_hook("after_step", code)
+        self.copy_py_code.append(code)
+
+    def visit(self):
+        self.copy_py_code = []
+        super(BaseBorderCopier, self).visit()
+
+class LinearBorderCopier(BaseBorderCopier):
     def visit(self):
         """Adds code to copy over cells from the right end to the left border
         and vice versa.
@@ -693,24 +715,20 @@ class LinearBorderCopier(BorderSizeEnsurer):
         # conf(i) <- conf(i + sizeX)
         # conf(offset + sizeX + i) <- conf(offset + i)
 
+        super(LinearBorderCopier, self).visit()
+
         bbox = self.code.neigh.bounding_box()
         left_border = abs(bbox[0][0])
         right_border = abs(bbox[0][1])
         copy_code = []
 
         # in order to reuse the code for new_config, tee it into an array
-        pycode = []
-        def tee_hook(section, code):
-            self.code.add_py_hook(section, code)
-            pycode.append(code)
-
         for i in range(left_border):
             copy_code.append("%s = %s;" % (
                 self.code.acc.write_access(i, skip_border=True),
                 self.code.acc.write_access("sizeX + %d" % (i), skip_border=True)))
 
-            tee_hook("after_step",
-                    """self.acc.write_to((%d,), skip_border=True,
+            self.tee_copy_hook("""self.acc.write_to((%d,), skip_border=True,
     value=self.acc.read_from_next((%d,), skip_border=True))""" % (i, self.code.acc.get_size_of(0) + i))
 
         for i in range(right_border):
@@ -718,26 +736,12 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 self.code.acc.write_access(["sizeX + " + str(i)]),
                 self.code.acc.write_access([str(i)])))
 
-            tee_hook("after_step",
-                    """self.acc.write_to((%d,),
+            self.tee_copy_hook("""self.acc.write_to((%d,),
     value=self.acc.read_from_next((%d,)))""" % (self.code.acc.get_size_of(0) + i, i))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
 
-        self.copy_py_code = "\n".join(pycode)
-
-    def new_config(self):
-        """Copies over the borders once."""
-        super(LinearBorderCopier, self).new_config()
-
-        retargetted = self.copy_py_code.replace("self.", "self.code.")
-        retargetted = retargetted.replace("write_to(", "write_to_current(")
-        retargetted = retargetted.replace("read_from_next(", "read_from(")
-        if not HAVE_TUPLE_ARRAY_INDEX:
-            retargetted = tuple_array_index_fixup(retargetted)
-
-        exec retargetted in globals(), locals()
 
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
