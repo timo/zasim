@@ -367,12 +367,13 @@ class Neighbourhood(WeaveStepFuncVisitor):
         """Find out, how many cells, at most, have to be read after
         a number of steps have been done.
 
-        It will return a tuple with relative values where 0 is the index of the
-        current cell. It will have a format like:
+        It will return a list of tuples with relative values where 0 is the
+        index of the current cell. It will have a format like:
 
-            (minX, maxX,
-             [minY, maxY,
-              [minZ, maxZ]])"""
+            [(minX, maxX),
+             (minY, maxY),
+             (minZ, maxZ),
+             ...]"""
 
 class BorderHandler(WeaveStepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
