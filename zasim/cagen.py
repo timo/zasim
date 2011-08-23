@@ -178,7 +178,6 @@ class WeaveStepFunc(object):
         for section in self.sections:
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
-        print self.code_text
 
         # freeze python code bits
         for hook in self.pycode.keys():
@@ -614,7 +613,6 @@ class SimpleNeighbourhood(Neighbourhood):
         super(Neighbourhood, self).__init__()
         self.names = tuple(names)
         self.offsets = tuple(offsets)
-        print self.offsets, offsets
         assert len(self.names) == len(self.offsets)
 
     def visit(self):
@@ -627,8 +625,6 @@ class SimpleNeighbourhood(Neighbourhood):
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
-        print self.offsets
-        print " - ".join(["%s : %s" % (name, offset) for name, offset in zip(self.names, self.offsets)])
         assignments = ["%s = self.acc.read_from(%s)" % (
                 name, "offset_pos(pos, %s)" % (offset,))
                 for name, offset in zip(self.names, self.offsets)]
@@ -720,7 +716,6 @@ class LinearBorderCopier(BorderSizeEnsurer):
         if not HAVE_TUPLE_ARRAY_INDEX:
             retargetted = tuple_array_index_fixup(retargetted)
 
-        print retargetted
         exec retargetted in globals(), locals()
 
 class TestTarget(object):
@@ -812,7 +807,6 @@ def test():
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()
     pretty_print_array = build_array_pretty_printer(size, abs(b_l), abs(b_r), 20, 20)
 
-    print bin_rule.stepfunc.code_text
     if USE_WEAVE:
         print "weave"
         for i in range(10000):
