@@ -49,8 +49,21 @@ except ImportError:
 
 try:
     from numpy import ndarray
+    HAVE_MULTIDIM = False
 except:
     print "multi-dimensional arrays are not available"
+    HAVE_MULTIDIM = False
+
+try:
+    arr = np.array(range(10))
+    foo = arr[(1,)]
+    HAVE_TUPLE_ARRAY_INDEX = True
+except TypeError:
+    HAVE_TUPLE_ARRAY_INDEX = False
+    import re
+    TUPLE_ACCESS_FIX = re.compile(r"\((\d+),\)")
+    def tuple_array_index_fixup(line):
+        return TUPLE_ACCESS_FIX.sub(r"\1", line)
 
 from random import Random
 import sys
@@ -141,6 +154,8 @@ class WeaveStepFunc(object):
         newfunc = []
 
         for line in function:
+            if TUPLE_ACCESS_FIX:
+                line = tuple_array_index_fixup(line)
             newfunc.append(" " * self.pycode_indent[hook] + line)
             if EXTREME_PURE_PY_DEBUG:
                 words = line.strip().split(" ")
@@ -705,6 +720,8 @@ class LinearBorderCopier(BorderSizeEnsurer):
         retargetted = self.copy_py_code.replace("self.", "self.code.")
         retargetted = retargetted.replace("write_to(", "write_to_current(")
         retargetted = retargetted.replace("read_from_next(", "read_from(")
+        if TUPLE_ACCESS_FIX:
+            retargetted = tuple_array_index_fixup(retargetted)
 
         print retargetted
         exec retargetted in globals(), locals()
