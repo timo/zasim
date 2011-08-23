@@ -742,6 +742,11 @@ class LinearBorderCopier(BaseBorderCopier):
         self.code.add_code("after_step",
                 "\n".join(copy_code))
 
+class TwoDimZeroReader(BorderSizeEnsurer):
+    """This BorderHandler makes sure that zeros will always be read when
+    peeking over the border."""
+    # there is no extra work at all to be done as compared to the
+    # BorderSizeEnsurer, because it embeds the confs into np.zero.
 
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
