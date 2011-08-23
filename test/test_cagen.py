@@ -19,6 +19,25 @@ class TestCAGen:
 
         assert_arrays_equal(br.getConf(), br2.cconf)
 
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    def test_gen_weave_only(self, tested_rule_num):
+        confs = TESTED_BINRULE[tested_rule_num]
+        br = cagen.BinRule(rule=tested_rule_num, config=confs[0][1:-1])
+        pretty_print_binrule(br.rule)
+        assert_arrays_equal(br.cconf, confs[0])
+        for conf in confs[1:]:
+            br.step_inline()
+            assert_arrays_equal(br.cconf, conf)
+
+    def test_gen_pure_only(self, tested_rule_num):
+        confs = TESTED_BINRULE[tested_rule_num]
+        br = cagen.BinRule(rule=tested_rule_num, config=confs[0][1:-1])
+        pretty_print_binrule(br.rule)
+        assert_arrays_equal(br.cconf, confs[0])
+        for conf in confs[1:]:
+            br.step_pure_py()
+            assert_arrays_equal(br.cconf, conf)
+
     def test_compare_pures(self, rule_num):
         size = randrange(10, 30)
         br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
@@ -64,3 +83,6 @@ def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
         for i in INTERESTING_BINRULES:
             metafunc.addcall(funcargs=dict(rule_num=i))
+    if "tested_rule_num" in metafunc.funcargnames:
+        for i in TESTED_BINRULE.keys():
+            metafunc.addcall(funcargs=dict(tested_rule_num=i))

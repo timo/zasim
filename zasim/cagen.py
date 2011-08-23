@@ -30,6 +30,9 @@ All of those classes are used to initialise a :class:`WeaveStepFunc` object,
 which can then target a configuration object with the method 
 :meth:`~WeaveStepFunc.set_target`.
 
+.. testsetup:: *
+
+    from zasim import cagen
 """
 
 # TODO separate the functions to make C code from the ones that do pure python
@@ -47,9 +50,49 @@ except ImportError:
     USE_WEAVE=False
     print "not using weave"
 
+try:
+    from numpy import ndarray
+    HAVE_MULTIDIM = False
+except:
+    print "multi-dimensional arrays are not available"
+    HAVE_MULTIDIM = False
+
+try:
+    arr = np.array(range(10))
+    foo = arr[(1,)]
+    HAVE_TUPLE_ARRAY_INDEX = True
+except TypeError:
+    HAVE_TUPLE_ARRAY_INDEX = False
+    import re
+    TUPLE_ACCESS_FIX = re.compile(r"\((\d+),\)")
+    def tuple_array_index_fixup(line):
+        return TUPLE_ACCESS_FIX.sub(r"\1", line)
+
 from random import Random
 import sys
 import new
+
+EXTREME_PURE_PY_DEBUG = False
+
+if HAVE_TUPLE_ARRAY_INDEX:
+    def offset_pos(pos, offset):
+        """Offset a position by an offset. Any amount of dimensions should work."""
+        return [a + b for a, b in zip(pos, offset)]
+else:
+    def offset_pos(pos, offset):
+        """Offset a position by an offset. Only works for 1d."""
+        if isinstance(pos, tuple):
+            pos = pos[0]
+        if isinstance(offset, tuple):
+            offset = offset[0]
+        return pos + offset
+
+def gen_offset_pos(pos, offset):
+    """Generate code to offset a position by an offset.
+
+    >>> cagen.gen_offset_pos(["i", "j"], ["foo", "bar"])
+    ['i + foo', 'j + bar']"""
+    return ["%s + %s" % (a, b) for a, b in zip(pos, offset)]
 
 class WeaveStepFunc(object):
     """The WeaveStepFunc composes different parts into a functioning
@@ -121,7 +164,13 @@ class WeaveStepFunc(object):
         newfunc = []
 
         for line in function:
+            if not HAVE_TUPLE_ARRAY_INDEX:
+                line = tuple_array_index_fixup(line)
             newfunc.append(" " * self.pycode_indent[hook] + line)
+            if EXTREME_PURE_PY_DEBUG:
+                words = line.strip().split(" ")
+                if len(words) > 1 and words[1] == "=":
+                    newfunc.append(" " * self.pycode_indent[hook] + "print " + words[0])
 
         self.pycode[hook].append("\n".join(newfunc))
 
@@ -159,7 +208,6 @@ class WeaveStepFunc(object):
         code_bits.append("")
         code_text = "\n".join(code_bits)
         code_object = compile(code_text, "<string>", "exec")
-        print code_text
 
         myglob = globals()
         myloc = locals()
@@ -300,11 +348,8 @@ class StateAccessor(WeaveStepFuncVisitor):
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
-    def get_pos(self, offset):
+    def get_pos(self):
         """Returns a code bit to get the current position in config space."""
-
-    def get_pos_of(self, offset):
-        """Returns the current position plus the offset in python."""
 
     def get_iter(self):
         """Returns an iterator for iterating over the config space in python."""
@@ -322,12 +367,13 @@ class Neighbourhood(WeaveStepFuncVisitor):
         """Find out, how many cells, at most, have to be read after
         a number of steps have been done.
 
-        It will return a tuple with relative values where 0 is the index of the
-        current cell. It will have a format like:
+        It will return a list of tuples with relative values where 0 is the
+        index of the current cell. It will have a format like:
 
-            (minX, maxX,
-             [minY, maxY,
-              [minZ, maxZ]])"""
+            [(minX, maxX),
+             (minY, maxY),
+             (minZ, maxZ),
+             ...]"""
 
 class BorderHandler(WeaveStepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
@@ -341,52 +387,68 @@ class BorderSizeEnsurer(BorderHandler):
     cells will not access outside the bounds of the array."""
     def new_config(self):
         """Resizes the configuration array."""
-        # TODO all of this needs to be extended for multi-dim arrays
         super(BorderSizeEnsurer, self).new_config()
         bbox = self.code.neigh.bounding_box()
         # FIXME if the bbox goes into the positive values, abs is wrong. use the 
         # FIXME correct amount of minus signs instead?
-        new_conf = np.zeros(len(self.target.cconf) + abs(bbox[0]) + abs(bbox[1]))
-        new_conf[abs(bbox[0]):-abs(bbox[1])] = self.target.cconf
+        dims = len(bbox[0]) / 2
+        shape = self.target.cconf.shape
+        if dims == 1:
+            new_conf = np.zeros(shape[0] + abs(bbox[0][0]) + abs(bbox[0][1]))
+            new_conf[abs(bbox[0][0]):-abs(bbox[0][1])] = self.target.cconf
+        elif dims == 2:
+            # TODO figure out how to create slice objects in a general way.
+            new_conf = np.zeros((shape[0] + abs(bbox[0]) + abs(bbox[1]),
+                                 shape[1] + abs(bbox[2]) + abs(bbox[3])))
+            new_conf[abs(bbox[0]):-abs(bbox[1]),
+                     abs(bbox[2]):-abs(bbox[3])] = self.target.cconf
         self.target.cconf = new_conf
 
-class LinearStateAccessor(StateAccessor):
-    """The LinearStateAccessor offers access to a one-dimensional configuration
+class SimpleStateAccessor(StateAccessor):
+    """The SimpleStateAccessor offers access to a one-dimensional configuration
     space."""
+    size_names = []
+    """The names to use in the C code"""
+    border_names = []
+    """The names of border offsets"""
+
     def __init__(self, size):
-        super(LinearStateAccessor, self).__init__()
+        super(SimpleStateAccessor, self).__init__()
         self.size = size
 
     def read_access(self, pos, skip_border=False):
         if skip_border:
-            return "cconf(%s, 0)" % (pos)
-        return "cconf(%s + %s, 0)" % (pos, self.border_l_name)
+            return "cconf(%s)" % (pos,)
+        return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names)),)
 
     def write_access(self, pos, skip_border=False):
         if skip_border:
-            return "nconf(%s, 0)" % (pos)
-        return "nconf(%s + %s, 0)" % (pos, self.border_l_name)
+            return "nconf(%s)" % (pos)
+        return "nconf(%s)" % (",".join(gen_offset_pos(pos, self.border_names)),)
 
     def init_once(self):
         """Set the sizeX const and register nconf and cconf for extraction
         from the targen when running C code."""
-        super(LinearStateAccessor, self).init_once()
-        self.code.consts["sizeX"] = self.size
+        super(SimpleStateAccessor, self).init_once()
+        for sizename, size in zip(self.size_names, self.size):
+            self.code.consts[sizename] = size
         self.code.attrs.extend(["nconf", "cconf"])
 
     def bind(self, target):
         """Get the bounding box from the neighbourhood object."""
-        super(LinearStateAccessor, self).bind(target)
-        self.border_l = abs(self.code.neigh.bounding_box()[0])
-        self.border_l_name = "BORDER_OFFSET"
+        super(SimpleStateAccessor, self).bind(target)
+        bb = self.code.neigh.bounding_box()
+        mins = [min([abs(b) for b in a]) for a in bb[::2]]
+        self.border = tuple(mins)
 
     def visit(self):
         """Take care for result and sizeX to exist in python and C code,
         for the result to be written to the config space and for the configs
         to be swapped by the python code."""
-        super(LinearStateAccessor, self).visit()
-        self.code.add_code("headers",
-                "#define %s %d" % (self.border_l_name, self.border_l))
+        super(SimpleStateAccessor, self).visit()
+        for name, value in zip(self.border_names, self.border):
+            self.code.add_code("headers",
+                    "#define %s %d" % (name, value))
         self.code.add_code("localvars",
                 """int result;""")
         self.code.add_code("post_compute",
@@ -394,8 +456,9 @@ class LinearStateAccessor(StateAccessor):
 
         self.code.add_py_hook("init",
                 """result = None""")
-        self.code.add_py_hook("init",
-                """sizeX = %d""" % (self.code.acc.get_size_of(0)))
+        for sizename, value in zip(self.size_names, self.size):
+            self.code.add_py_hook("init",
+                    """%s = %d""" % (sizename, value))
         self.code.add_py_hook("post_compute",
                 """self.acc.write_to(pos, result)""")
         self.code.add_py_hook("finalize",
@@ -404,27 +467,27 @@ class LinearStateAccessor(StateAccessor):
     def read_from(self, pos, skip_border=False):
         if skip_border:
             return self.target.cconf[pos]
-        return self.target.cconf[pos + self.border_l]
+        return self.target.cconf[offset_pos(pos, self.border)]
 
     def read_from_next(self, pos, skip_border=False):
         if skip_border:
             return self.target.nconf[pos]
-        return self.target.nconf[pos + self.border_l]
+        return self.target.nconf[offset_pos(pos, self.border)]
 
     def write_to(self, pos, value, skip_border=False):
         if skip_border:
             self.target.nconf[pos] = value
         else:
-            self.target.nconf[pos + self.border_l] = value
+            self.target.nconf[offset_pos(pos, self.border)] = value
 
     def write_to_current(self, pos, value, skip_border=False):
         if skip_border:
             self.target.cconf[pos] = value
         else:
-            self.target.cconf[pos + self.border_l] = value
+            self.target.cconf[offset_pos(pos, self.border)] = value
 
     def get_size_of(self, dimension=0):
-        return self.size
+        return self.size[dimension]
 
     def swap_configs(self):
         """Swaps nconf and cconf in the target."""
@@ -435,13 +498,22 @@ class LinearStateAccessor(StateAccessor):
         """Copy cconf to nconf in the target."""
         self.target.nconf = self.target.cconf.copy()
 
+class LinearStateAccessor(SimpleStateAccessor):
+    """The LinearStateAccessor offers access to a one-dimensional configuration
+    space."""
+    size_names = ["sizeX"]
+    border_names = ["BORDER_OFFSET"]
+
+class TwoDimStateAccessor(SimpleStateAccessor):
+    """The TwoDimStateAccessor offers access to a two-dimensional configuration
+    space."""
+    size_names = ["sizeX", "sizeY"]
+    border_names = ["LEFT_BORDER", "UPPER_BORDER"]
+
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
-    def get_pos(self, offset=0):
-        if offset == 0:
-            return "i"
-        else:
-            return "i + %d" % (offset)
+    def get_pos(self):
+        return "i"
 
     def visit(self):
         self.code.add_code("loop_begin",
@@ -450,11 +522,35 @@ class LinearCellLoop(CellLoop):
                 """}""")
 
     def get_iter(self):
-        return range(0, self.code.acc.get_size_of())
+        def generator():
+            for i in range(0, self.code.acc.get_size_of()):
+                yield (i,)
+        return iter(generator())
 
-class LinearNondeterministicCellLoop(LinearCellLoop):
-    """The LinearNondeterministicCellLoop iterates over all cells in order from
-    0 to sizeX, but skips cells pseudo-randomly."""
+class TwoDimCellLoop(CellLoop):
+    """The TwoDimCellLoop iterates over all cells from left to right, then from
+    top to bottom."""
+    def get_pos(self):
+        return "i, j"
+
+    def visit(self):
+        self.code.add_code("loop_begin",
+                """for(int i=0; i < sizeX; i++) {
+for(int j=0; i < sizeY; j++) {""")
+        self.code.add_code("loop_end",
+                """}
+}""")
+
+    def get_iter(self):
+        def iterator():
+            for i in range(0, self.code.acc.get_size_of(0)):
+                for j in range(0, self.code.acc.get_size_of(1)):
+                    yield (i, j)
+        return iter(iterator())
+
+class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
+    """Deriving from a CellLoop and this Mixin will cause every cell to be
+    skipped with a given probability"""
     def __init__(self, probab=0.5, random_generator=None, **kwargs):
         """:param probab: The probability of a cell to be computed.
         :param random_generator: If supplied, use this Random object for
@@ -473,7 +569,7 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
         .. warning::
             If reproducible randomness sequences are desired, do NOT mix the
             pure python and weave inline step functions!"""
-        super(LinearNondeterministicCellLoop, self).__init__(**kwargs)
+        super(NondeterministicCellLoopMixin, self).__init__(**kwargs)
         if random_generator is None:
             self.random = Random()
         else:
@@ -483,15 +579,16 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
     def get_iter(self):
         """The returned iterator will skip cells with a probability
         of self.probab."""
+        basic_iter = super(NondeterministicCellLoopMixin, self).get_iter()
         def generator():
-            for i in range(self.code.acc.get_size_of()):
+            for pos in basic_iter:
                 if self.random.random() < self.probab:
-                    yield i
+                    yield pos
         return iter(generator())
 
     def visit(self):
         """Adds C code for handling the randseed and skipping."""
-        super(LinearNondeterministicCellLoop, self).visit()
+        super(NondeterministicCellLoopMixin, self).visit()
         self.code.add_code("loop_begin",
                 """if(rand() >= RAND_MAX * %s) continue;""" % (self.probab))
         self.code.add_code("localvars",
@@ -502,12 +599,18 @@ class LinearNondeterministicCellLoop(LinearCellLoop):
 
     def set_target(self, target):
         """Adds the randseed attribute to the target."""
-        super(LinearNondeterministicCellLoop, self).set_target(target)
+        super(NondeterministicCellLoopMixin, self).set_target(target)
         # FIXME how do i get the randseed out without using np.array?
         target.randseed = np.array([self.random.random()])
 
-class LinearNeighbourhood(Neighbourhood):
-    """The LinearNeighbourhood offers named access to any number of
+class LinearNondeterministicCellLoop(LinearCellLoop, NondeterministicCellLoopMixin):
+    pass
+
+class TwoDimNondeterministicCellLoop(TwoDimCellLoop, NondeterministicCellLoopMixin):
+    pass
+
+class SimpleNeighbourhood(Neighbourhood):
+    """The SimpleNeighbourhood offers named access to any number of
     neighbouring fields."""
     def __init__(self, names, offsets):
         """:param names: A list of names for the neighbouring cells.
@@ -521,14 +624,16 @@ class LinearNeighbourhood(Neighbourhood):
         """Adds C and python code to get the neighbouring values and stores
         them in local variables."""
         for name, offset in zip(self.names, self.offsets):
-            self.code.add_code("pre_compute",
-                "%s = %s;" % (name,
-                             self.code.acc.read_access(self.code.loop.get_pos(offset))))
+            self.code.add_code("pre_compute", "%s = %s;" % (name,
+                     self.code.acc.read_access(
+                         gen_offset_pos(self.code.loop.get_pos(), offset))))
+
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
-        assignments = ["%s = self.acc.read_from(pos + %d)" % (
-                name, offset) for name, offset in zip(self.names, self.offsets)]
+        assignments = ["%s = self.acc.read_from(%s)" % (
+                name, "offset_pos(pos, %s)" % (offset,))
+                for name, offset in zip(self.names, self.offsets)]
         self.code.add_py_hook("pre_compute",
                 "\n".join(assignments))
 
@@ -536,9 +641,66 @@ class LinearNeighbourhood(Neighbourhood):
         return self.names
 
     def bounding_box(self, steps=1):
-        return min(self.offsets * steps), max(self.offsets * steps)
+        """Calculate a bounding box from a set of offsets.
 
-class LinearBorderCopier(BorderSizeEnsurer):
+        The return value will have an outer list with one tuple for
+        each dimension. Each dimension will have a min and a max value.
+
+        Supplying the step argument will figure out, how far accesses will
+        reach when running step steps.
+
+        >>> a = cagen.SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,)))
+        >>> a.bounding_box()
+        [(-1, 1)]
+        >>> a.bounding_box(2)
+        [(-2, 2)]
+        >>> b = cagen.SimpleNeighbourhood(list("ab"), ((-5, 20), (99, 10)))
+        >>> b.bounding_box()
+        [(-5, 99), (10, 20)]
+        >>> b.bounding_box(10)
+        [(-50, 990), (100, 200)]
+        """
+        # there is at least one offset and that has to have the right number of
+        # dimensions already.
+        num_dimensions = len(self.offsets[0])
+
+        # initialise the maximums and minimums from the first offset
+        maxes = list(self.offsets[0])
+        mins = list(self.offsets[0])
+
+        # go through all offsets
+        for offset in self.offsets:
+            # for each offset, go through all dimensions it has
+            for dim in range(num_dimensions):
+                maxes[dim] = max(maxes[dim], offset[dim])
+                mins[dim] = min(mins[dim], offset[dim])
+        maxes = [m * steps for m in maxes]
+        mins = [m * steps for m in mins]
+        return zip(mins, maxes)
+
+class BaseBorderCopier(BorderSizeEnsurer):
+    def new_config(self):
+        """Copies over the borders once."""
+        super(BaseBorderCopier, self).new_config()
+
+        retargetted = "\n".join(self.copy_py_code)
+        retargetted = retargetted.replace("self.", "self.code.")
+        retargetted = retargetted.replace("write_to(", "write_to_current(")
+        retargetted = retargetted.replace("read_from_next(", "read_from(")
+        if not HAVE_TUPLE_ARRAY_INDEX:
+            retargetted = tuple_array_index_fixup(retargetted)
+
+        exec retargetted in globals(), locals()
+
+    def tee_copy_hook(self, code):
+        self.code.add_py_hook("after_step", code)
+        self.copy_py_code.append(code)
+
+    def visit(self):
+        self.copy_py_code = []
+        super(BaseBorderCopier, self).visit()
+
+class LinearBorderCopier(BaseBorderCopier):
     def visit(self):
         """Adds code to copy over cells from the right end to the left border
         and vice versa.
@@ -553,46 +715,38 @@ class LinearBorderCopier(BorderSizeEnsurer):
         # conf(i) <- conf(i + sizeX)
         # conf(offset + sizeX + i) <- conf(offset + i)
 
+        super(LinearBorderCopier, self).visit()
+
         bbox = self.code.neigh.bounding_box()
-        left_border = abs(bbox[0])
-        right_border = abs(bbox[1])
+        left_border = abs(bbox[0][0])
+        right_border = abs(bbox[0][1])
         copy_code = []
+
+        # in order to reuse the code for new_config, tee it into an array
         for i in range(left_border):
             copy_code.append("%s = %s;" % (
                 self.code.acc.write_access(i, skip_border=True),
                 self.code.acc.write_access("sizeX + %d" % (i), skip_border=True)))
 
-            self.code.add_py_hook("after_step",
-                    """self.acc.write_to(%d, skip_border=True,
-    value=self.acc.read_from_next(%d, skip_border=True))""" % (i, self.code.acc.get_size_of(0) + i))
-
+            self.tee_copy_hook("""self.acc.write_to((%d,), skip_border=True,
+    value=self.acc.read_from_next((%d,), skip_border=True))""" % (i, self.code.acc.get_size_of(0) + i))
 
         for i in range(right_border):
             copy_code.append("%s = %s;" % (
-                self.code.acc.write_access("sizeX + " + str(i)),
-                self.code.acc.write_access(str(i))))
+                self.code.acc.write_access(["sizeX + " + str(i)]),
+                self.code.acc.write_access([str(i)])))
 
-            self.code.add_py_hook("after_step",
-                    """self.acc.write_to(%d,
-    value=self.acc.read_from_next(%d))""" % (self.code.acc.get_size_of(0) + i, i))
+            self.tee_copy_hook("""self.acc.write_to((%d,),
+    value=self.acc.read_from_next((%d,)))""" % (self.code.acc.get_size_of(0) + i, i))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
 
-    def new_config(self):
-        """Copies over the borders once."""
-        super(LinearBorderCopier, self).new_config()
-
-        # TODO figure out if the generated code could be re-used for this.
-        bbox = self.code.neigh.bounding_box()
-        left_border = abs(bbox[0])
-        right_border = abs(bbox[1])
-        for i in range(left_border):
-            self.code.acc.write_to_current(i, skip_border=True,
-                    value=self.code.acc.read_from(self.code.acc.get_size_of(0) + i, skip_border=True))
-        for i in range(right_border):
-            self.code.acc.write_to_current(self.code.acc.get_size_of(0) + i,
-                    value=self.code.acc.read_from(i))
+class TwoDimZeroReader(BorderSizeEnsurer):
+    """This BorderHandler makes sure that zeros will always be read when
+    peeking over the border."""
+    # there is no extra work at all to be done as compared to the
+    # BorderSizeEnsurer, because it embeds the confs into np.zero.
 
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
@@ -613,7 +767,6 @@ class TestTarget(object):
             self.cconf = config.copy()
             self.size = len(self.cconf)
 
-
 class BinRule(TestTarget):
     """A Target plus a WeaveStepFunc for elementary cellular automatons."""
     def __init__(self, size=None, deterministic=True, rule=126, config=None, **kwargs):
@@ -623,12 +776,14 @@ class BinRule(TestTarget):
                                  randomly?
            :param rule: The rule number for the elementary cellular automaton.
            :param config: Optionally the configuration to use."""
+        if size is None:
+            size = len(config)
         super(BinRule, self).__init__(size, config, **kwargs)
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
-                accessor=LinearStateAccessor(size=size),
-                neighbourhood=LinearNeighbourhood(list("lmr"), (-1, 0, 1)),
+                accessor=LinearStateAccessor(size=(size,)),
+                neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
                 extra_code=[LinearBorderCopier()])
 
         self.rule = np.zeros( 8 )
@@ -679,10 +834,9 @@ def test():
 
     bin_rule = BinRule(size, rule=110)
 
-    b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()
+    b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
     pretty_print_array = build_array_pretty_printer(size, abs(b_l), abs(b_r), 20, 20)
 
-    print bin_rule.stepfunc.code_text
     if USE_WEAVE:
         print "weave"
         for i in range(10000):
