@@ -762,6 +762,33 @@ class TwoDimZeroReader(BorderSizeEnsurer):
     # there is no extra work at all to be done as compared to the
     # BorderSizeEnsurer, because it embeds the confs into np.zero.
 
+class ElementaryCellularAutomatonBase(Computation):
+    max_value = 1
+
+    def visit(self):
+        super(ElementaryCellularAutomatonBase, self).visit()
+        neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
+        neigh.sort(key=lambda (offset, name): offset)
+        self.digits = len(neigh)
+        base = self.max_value + 1
+
+        compute_code = ["result = 0;"]
+        compute_py = ["result = 0"]
+        self.code.attrs.append("rule")
+
+        for digit_num, (offset, name) in zip(range(len(neigh) - 1, -1, -1), neigh):
+            code = "result += %s * %d" % (name, base ** digit_num)
+            compute_code.append(code + ";")
+            compute_py.append(code)
+
+        compute_code.append("result = rule(result);")
+        compute_py.append("result = self.target.rule[int(result)]")
+
+        self.code.add_code("compute", "\n".join(compute_code))
+        self.code.add_py_hook("compute", "\n".join(compute_py))
+        print "\n".join(compute_code)
+        print "\n".join(compute_py)
+
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
     :class:`WeaveStepFunc`."""
@@ -798,25 +825,14 @@ class BinRule(TestTarget):
                      else LinearNondeterministicCellLoop(),
                 accessor=LinearStateAccessor(size=(size,)),
                 neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
-                extra_code=[LinearBorderCopier()])
+                extra_code=[LinearBorderCopier(),
+                    ElementaryCellularAutomatonBase()])
 
         self.rule = np.zeros( 8 )
 
         for i in range( 8 ):
             if ( rule & ( 1 << i ) ):
                 self.rule[i] = 1
-
-        self.stepfunc.attrs.append("rule")
-        self.stepfunc.add_code("localvars",
-                """int state;""")
-        self.stepfunc.add_code("compute",
-                """state =  l << 2;
-      state += m << 1;
-      state += r;
-      result = rule(state);""")
-
-        self.stepfunc.add_py_hook("compute",
-                """result = self.target.rule[int(l * 4 + m * 2 + r)]""")
 
         self.stepfunc.set_target(self)
         self.stepfunc.gen_code()
