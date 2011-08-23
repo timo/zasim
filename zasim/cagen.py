@@ -707,7 +707,7 @@ class BaseBorderCopier(BorderSizeEnsurer):
         self.copy_py_code = []
         super(BaseBorderCopier, self).visit()
 
-class NewBorderCopier(BaseBorderCopier):
+class SimpleBorderCopier(BaseBorderCopier):
     """This is the new concept for the border copier:
 
     0) (BorderSizeEnsurer) make the array big enough so that no reads will
@@ -726,7 +726,7 @@ class NewBorderCopier(BaseBorderCopier):
     6) Write out code to do these operations in after_step.
     """
     def visit(self):
-        super(NewBorderCopier, self).visit()
+        super(SimpleBorderCopier, self).visit()
         # TODO iterate only over the relevant positions instead of all of them
         dims = len(self.code.neigh.bounding_box())
         neighbours = self.code.neigh.get_offsets()
@@ -831,8 +831,7 @@ class BinRule(TestTarget):
                      else LinearNondeterministicCellLoop(),
                 accessor=LinearStateAccessor(size=(size,)),
                 neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
-                extra_code=[NewBorderCopier()])
-                #extra_code=[LinearBorderCopier()])
+                extra_code=[SimpleBorderCopier()])
 
         self.rule = np.zeros( 8 )
 
