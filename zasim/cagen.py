@@ -804,7 +804,7 @@ def test():
 
     bin_rule = BinRule(size, rule=110)
 
-    b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()
+    b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
     pretty_print_array = build_array_pretty_printer(size, abs(b_l), abs(b_r), 20, 20)
 
     if USE_WEAVE:
