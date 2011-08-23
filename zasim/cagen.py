@@ -347,7 +347,7 @@ class StateAccessor(WeaveStepFuncVisitor):
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
-    def get_pos(self, offset):
+    def get_pos(self):
         """Returns a code bit to get the current position in config space."""
 
     def get_iter(self):
@@ -510,11 +510,8 @@ class TwoDimStateAccessor(SimpleStateAccessor):
 
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
-    def get_pos(self, offset=None):
-        if offset is None:
-            return "i"
-        else:
-            return "i + %s" % (offset,)
+    def get_pos(self):
+        return "i"
 
     def visit(self):
         self.code.add_code("loop_begin",
