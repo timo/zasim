@@ -30,6 +30,9 @@ All of those classes are used to initialise a :class:`WeaveStepFunc` object,
 which can then target a configuration object with the method 
 :meth:`~WeaveStepFunc.set_target`.
 
+.. testsetup:: *
+
+    from zasim import cagen
 """
 
 # TODO separate the functions to make C code from the ones that do pure python
@@ -87,11 +90,9 @@ else:
 def gen_offset_pos(pos, offset):
     """Generate code to offset a position by an offset.
 
-    .. example::
-        pos = ["i", "j"]
-        offset = ["foo", "bar"]
-        result: "i + foo, j + bar" """
-    return ["%s + %s" % (a, b) for a, b in zip(pos, offset)]
+    >>> cagen.gen_offset_pos(["i", "j"], ["foo", "bar"])
+    'i + foo, j + bar'"""
+    return ", ".join(["%s + %s" % (a, b) for a, b in zip(pos, offset)])
 
 class WeaveStepFunc(object):
     """The WeaveStepFunc composes different parts into a functioning
@@ -417,12 +418,12 @@ class SimpleStateAccessor(StateAccessor):
     def read_access(self, pos, skip_border=False):
         if skip_border:
             return "cconf(%s)" % (pos,)
-        return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names)))
+        return "cconf(%s)" % (gen_offset_pos(pos, self.border_names))
 
     def write_access(self, pos, skip_border=False):
         if skip_border:
             return "nconf(%s)" % (pos)
-        return "nconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names)))
+        return "nconf(%s)" % (gen_offset_pos(pos, self.border_names))
 
     def init_once(self):
         """Set the sizeX const and register nconf and cconf for extraction
