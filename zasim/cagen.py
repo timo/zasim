@@ -25,9 +25,13 @@ The parts the step function is decomposed into are all subclasses of
     handles the borders of the configuration by copying over parts or writing
     data. Maybe, in the future, it could also resize configurations on demand.
 
+  - A :class:`Computation`
+
+    handles the computation that turns the data from the neighbourhood into
+    the result that goes into the value for the next step.
 
 All of those classes are used to initialise a :class:`WeaveStepFunc` object,
-which can then target a configuration object with the method 
+which can then target a configuration object with the method
 :meth:`~WeaveStepFunc.set_target`.
 
 .. testsetup:: *
@@ -382,6 +386,10 @@ class BorderHandler(WeaveStepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
     configuration. One example is copying the leftmost border to the rightmost
     border and vice versa or ensuring the border cells are always 0."""
+
+class Computation(WeaveStepFuncVisitor):
+    """The Computation is responsible for calculating the result from the data
+    gathered from the neighbourhood."""
 
 class BorderSizeEnsurer(BorderHandler):
     """The BorderSizeEnsurer ensures, that - depending on the bounding box
