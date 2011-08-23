@@ -5,10 +5,12 @@ from .testutil import *
 
 import pytest
 
+MIN_SIZE, MAX_SIZE = 5, 25
+
 class TestCAGen:
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_compare_weaves(self, rule_num):
-        size = randrange(10, 30)
+        size = randrange(MIN_SIZE, MAX_SIZE)
         br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
         br2 = cagen.BinRule(size-2, rule=rule_num, config=br.getConf().copy()[1:-1])
 
@@ -39,7 +41,7 @@ class TestCAGen:
             assert_arrays_equal(br.cconf, conf)
 
     def test_compare_pures(self, rule_num):
-        size = randrange(10, 30)
+        size = randrange(MIN_SIZE, MAX_SIZE)
         br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
         br2 = cagen.BinRule(size-2, rule=rule_num, config=br.getConf().copy()[1:-1])
 
@@ -56,7 +58,7 @@ class TestCAGen:
         assert_arrays_equal(br.getConf(), br2.cconf)
 
     def test_run_nondeterministic_pure(self, rule_num):
-        size = randrange(10, 30)
+        size = randrange(MIN_SIZE, MAX_SIZE)
         br = cagen.BinRule(size-2, deterministic=False, rule=rule_num)
 
         for i in range(10):
@@ -64,7 +66,7 @@ class TestCAGen:
 
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_run_nondeterministic_weave(self, rule_num):
-        size = randrange(10, 30)
+        size = randrange(MIN_SIZE, MAX_SIZE)
         br = cagen.BinRule(size-2, deterministic=False, rule=rule_num)
 
         for i in range(10):
