@@ -157,6 +157,7 @@ class WeaveStepFunc(object):
         for section in self.sections:
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
+        print self.code_text
 
         # freeze python code bits
         for hook in self.pycode.keys():
@@ -363,11 +364,11 @@ class BorderSizeEnsurer(BorderHandler):
         bbox = self.code.neigh.bounding_box()
         # FIXME if the bbox goes into the positive values, abs is wrong. use the 
         # FIXME correct amount of minus signs instead?
-        dims = len(bbox) / 2
+        dims = len(bbox[0]) / 2
         shape = self.target.cconf.shape
         if dims == 1:
-            new_conf = np.zeros(shape[0] + abs(bbox[0]) + abs(bbox[1]))
-            new_conf[abs(bbox[0]):-abs(bbox[1])] = self.target.cconf
+            new_conf = np.zeros(shape[0] + abs(bbox[0][0]) + abs(bbox[0][1]))
+            new_conf[abs(bbox[0][0]):-abs(bbox[0][1])] = self.target.cconf
         elif dims == 2:
             # TODO figure out how to create slice objects in a general way.
             new_conf = np.zeros((shape[0] + abs(bbox[0]) + abs(bbox[1]),
@@ -391,12 +392,12 @@ class SimpleStateAccessor(StateAccessor):
     def read_access(self, pos, skip_border=False):
         if skip_border:
             return "cconf(%s)" % (pos)
-        return "cconf(%s)" % (gen_offset_pos(pos, self.border_names))
+        return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names)))
 
     def write_access(self, pos, skip_border=False):
         if skip_border:
             return "nconf(%s)" % (pos)
-        return "nconf(%s)" % (gen_offset_pos(pos, self.border_names))
+        return "nconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names)))
 
     def init_once(self):
         """Set the sizeX const and register nconf and cconf for extraction
@@ -424,7 +425,7 @@ class SimpleStateAccessor(StateAccessor):
         self.code.add_code("localvars",
                 """int result;""")
         self.code.add_code("post_compute",
-                self.write_access(self.code.loop.get_pos()) + " = result;")
+                self.write_access(self.code.loop.get_pos(0)) + " = result;")
 
         self.code.add_py_hook("init",
                 """result = None""")
@@ -450,13 +451,13 @@ class SimpleStateAccessor(StateAccessor):
         if skip_border:
             self.target.nconf[pos] = value
         else:
-            self.target.nconf[offset_pos(pos, self.border_l)] = value
+            self.target.nconf[offset_pos(pos, self.border)] = value
 
     def write_to_current(self, pos, value, skip_border=False):
         if skip_border:
             self.target.cconf[pos] = value
         else:
-            self.target.cconf[offset_pos(pos, self.border_l)] = value
+            self.target.cconf[offset_pos(pos, self.border)] = value
 
     def get_size_of(self, dimension=0):
         return self.size[dimension]
@@ -605,7 +606,7 @@ class SimpleNeighbourhood(Neighbourhood):
                 "int " + ", ".join(self.names) + ";")
 
         assignments = ["%s = self.acc.read_from(%s)" % (
-                name, gen_offset_pos(self.code.loop.get_pos(), offset))
+                name, ", ".join(gen_offset_pos(self.code.loop.get_pos(), offset)))
                 for name, offset in zip(self.names, self.offsets)]
         self.code.add_py_hook("pre_compute",
                 "\n".join(assignments))
@@ -652,8 +653,8 @@ class LinearBorderCopier(BorderSizeEnsurer):
         # conf(offset + sizeX + i) <- conf(offset + i)
 
         bbox = self.code.neigh.bounding_box()
-        left_border = abs(bbox[0])
-        right_border = abs(bbox[1])
+        left_border = abs(bbox[0][0])
+        right_border = abs(bbox[0][1])
         copy_code = []
 
         # in order to reuse the code for new_config, tee it into an array
@@ -668,18 +669,18 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 self.code.acc.write_access("sizeX + %d" % (i), skip_border=True)))
 
             tee_hook("after_step",
-                    """self.acc.write_to(%d, skip_border=True,
-    value=self.acc.read_from_next(%d, skip_border=True))""" % (i, self.code.acc.get_size_of(0) + i))
+                    """self.acc.write_to((%d,), skip_border=True,
+    value=self.acc.read_from_next((%d,), skip_border=True))""" % (i, self.code.acc.get_size_of(0) + i))
 
 
         for i in range(right_border):
             copy_code.append("%s = %s;" % (
-                self.code.acc.write_access("sizeX + " + str(i)),
-                self.code.acc.write_access(str(i))))
+                self.code.acc.write_access(["sizeX + " + str(i)]),
+                self.code.acc.write_access([str(i)])))
 
             tee_hook("after_step",
-                    """self.acc.write_to(%d,
-    value=self.acc.read_from_next(%d))""" % (self.code.acc.get_size_of(0) + i, i))
+                    """self.acc.write_to((%d,),
+    value=self.acc.read_from_next((%d,)))""" % (self.code.acc.get_size_of(0) + i, i))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
@@ -690,7 +691,12 @@ class LinearBorderCopier(BorderSizeEnsurer):
         """Copies over the borders once."""
         super(LinearBorderCopier, self).new_config()
 
-        exec self.copy_py_code in globals(), locals()
+        retargetted = self.copy_py_code.replace("self.", "self.code.")
+        retargetted = retargetted.replace("write_to(", "write_to_current(")
+        retargetted = retargetted.replace("read_from_next(", "read_from(")
+
+        print retargetted
+        exec retargetted in globals(), locals()
 
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
