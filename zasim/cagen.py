@@ -364,6 +364,9 @@ class Neighbourhood(WeaveStepFuncVisitor):
     def get_offsets(self):
         """Get the offsets of the neighbourhood cells."""
 
+    def get_offsets(self):
+        """Get all the offsets."""
+
     def bounding_box(self, steps=1):
         """Find out, how many cells, at most, have to be read after
         a number of steps have been done.
