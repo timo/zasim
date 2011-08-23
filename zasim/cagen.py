@@ -211,11 +211,9 @@ class WeaveStepFunc(object):
         local_dict=dict((k, getattr(self.target, k)) for k in self.attrs)
         local_dict.update(self.consts)
         attrs = self.attrs + self.consts.keys()
-        print local_dict, attrs
         weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
                       type_converters = converters.blitz)
         self.acc.swap_configs()
-        print self.target.nconf, self.target.cconf
 
     def step_pure_py(self):
         """Run a step using the compiled python code.
@@ -505,7 +503,6 @@ class TwoDimStateAccessor(SimpleStateAccessor):
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
     def get_pos(self, offset=None):
-        print "get_pos offset is", offset
         if offset is None:
             return "i"
         else:
