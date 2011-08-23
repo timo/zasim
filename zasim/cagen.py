@@ -655,12 +655,19 @@ class LinearBorderCopier(BorderSizeEnsurer):
         left_border = abs(bbox[0])
         right_border = abs(bbox[1])
         copy_code = []
+
+        # in order to reuse the code for new_config, tee it into an array
+        pycode = []
+        def tee_hook(section, code):
+            self.code.add_py_hook(section, code)
+            pycode.append(code)
+
         for i in range(left_border):
             copy_code.append("%s = %s;" % (
                 self.code.acc.write_access(i, skip_border=True),
                 self.code.acc.write_access("sizeX + %d" % (i), skip_border=True)))
 
-            self.code.add_py_hook("after_step",
+            tee_hook("after_step",
                     """self.acc.write_to(%d, skip_border=True,
     value=self.acc.read_from_next(%d, skip_border=True))""" % (i, self.code.acc.get_size_of(0) + i))
 
@@ -670,27 +677,20 @@ class LinearBorderCopier(BorderSizeEnsurer):
                 self.code.acc.write_access("sizeX + " + str(i)),
                 self.code.acc.write_access(str(i))))
 
-            self.code.add_py_hook("after_step",
+            tee_hook("after_step",
                     """self.acc.write_to(%d,
     value=self.acc.read_from_next(%d))""" % (self.code.acc.get_size_of(0) + i, i))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
 
+        self.copy_py_code = "\n".join(pycode)
+
     def new_config(self):
         """Copies over the borders once."""
         super(LinearBorderCopier, self).new_config()
 
-        # TODO figure out if the generated code could be re-used for this.
-        bbox = self.code.neigh.bounding_box()
-        left_border = abs(bbox[0])
-        right_border = abs(bbox[1])
-        for i in range(left_border):
-            self.code.acc.write_to_current(i, skip_border=True,
-                    value=self.code.acc.read_from(self.code.acc.get_size_of(0) + i, skip_border=True))
-        for i in range(right_border):
-            self.code.acc.write_to_current(self.code.acc.get_size_of(0) + i,
-                    value=self.code.acc.read_from(i))
+        exec self.copy_py_code in globals(), locals()
 
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
