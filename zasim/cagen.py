@@ -764,20 +764,23 @@ class TwoDimZeroReader(BorderSizeEnsurer):
 
 class ElementaryCellularAutomatonBase(Computation):
     max_value = 1
+    def __init__(self, rule, **kwargs):
+        super(ElementaryCellularAutomatonBase, self).__init__(**kwargs)
+        self.rule = rule
 
     def visit(self):
         super(ElementaryCellularAutomatonBase, self).visit()
         neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
         neigh.sort(key=lambda (offset, name): offset)
         self.digits = len(neigh)
-        base = self.max_value + 1
+        self.base = self.max_value + 1
 
         compute_code = ["result = 0;"]
         compute_py = ["result = 0"]
         self.code.attrs.append("rule")
 
         for digit_num, (offset, name) in zip(range(len(neigh) - 1, -1, -1), neigh):
-            code = "result += %s * %d" % (name, base ** digit_num)
+            code = "result += %s * %d" % (name, self.base ** digit_num)
             compute_code.append(code + ";")
             compute_py.append(code)
 
@@ -788,6 +791,15 @@ class ElementaryCellularAutomatonBase(Computation):
         self.code.add_py_hook("compute", "\n".join(compute_py))
         print "\n".join(compute_code)
         print "\n".join(compute_py)
+
+    def init_once(self):
+        super(ElementaryCellularAutomatonBase, self).init_once()
+
+        entries = self.base ** self.digits
+        self.target.rule = np.zeros(entries, int)
+        for digit in range(entries):
+            if self.rule & (self.base ** digit) > 0:
+                self.target.rule[digit] = 1
 
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
@@ -820,19 +832,16 @@ class BinRule(TestTarget):
         if size is None:
             size = len(config)
         super(BinRule, self).__init__(size, config, **kwargs)
+
+        self.rule = None
+
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
                 accessor=LinearStateAccessor(size=(size,)),
                 neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
                 extra_code=[LinearBorderCopier(),
-                    ElementaryCellularAutomatonBase()])
-
-        self.rule = np.zeros( 8 )
-
-        for i in range( 8 ):
-            if ( rule & ( 1 << i ) ):
-                self.rule[i] = 1
+                    ElementaryCellularAutomatonBase(rule)])
 
         self.stepfunc.set_target(self)
         self.stepfunc.gen_code()
