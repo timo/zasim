@@ -56,6 +56,8 @@ from random import Random
 import sys
 import new
 
+EXTREME_PURE_PY_DEBUG = False
+
 def offset_pos(pos, offset):
     """Offset a position by an offset. Any amount of dimensions should work."""
     return [a + b for a, b in zip(pos, offset)]
@@ -140,6 +142,10 @@ class WeaveStepFunc(object):
 
         for line in function:
             newfunc.append(" " * self.pycode_indent[hook] + line)
+            if EXTREME_PURE_PY_DEBUG:
+                words = line.strip().split(" ")
+                if len(words) > 1 and words[1] == "=":
+                    newfunc.append(" " * self.pycode_indent[hook] + "print " + words[0])
 
         self.pycode[hook].append("\n".join(newfunc))
 
@@ -157,6 +163,7 @@ class WeaveStepFunc(object):
         for section in self.sections:
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
+        print self.code_text
 
         # freeze python code bits
         for hook in self.pycode.keys():
@@ -176,7 +183,6 @@ class WeaveStepFunc(object):
         append_code("finalize")
         code_bits.append("")
         code_text = "\n".join(code_bits)
-        print code_text
         code_object = compile(code_text, "<string>", "exec")
 
         myglob = globals()
@@ -190,9 +196,11 @@ class WeaveStepFunc(object):
         local_dict=dict((k, getattr(self.target, k)) for k in self.attrs)
         local_dict.update(self.consts)
         attrs = self.attrs + self.consts.keys()
+        print local_dict, attrs
         weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
                       type_converters = converters.blitz)
         self.acc.swap_configs()
+        print self.target.nconf, self.target.cconf
 
     def step_pure_py(self):
         """Run a step using the compiled python code.
@@ -387,7 +395,7 @@ class SimpleStateAccessor(StateAccessor):
 
     def read_access(self, pos, skip_border=False):
         if skip_border:
-            return "cconf(%s)" % (pos)
+            return "cconf(%s)" % (pos,)
         return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names)))
 
     def write_access(self, pos, skip_border=False):
@@ -481,11 +489,12 @@ class TwoDimStateAccessor(SimpleStateAccessor):
 
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
-    def get_pos(self, offset=0):
-        if offset == 0:
+    def get_pos(self, offset=None):
+        print "get_pos offset is", offset
+        if offset is None:
             return "i"
         else:
-            return "i + %d" % (offset)
+            return "i + %s" % (offset,)
 
     def visit(self):
         self.code.add_code("loop_begin",
@@ -602,7 +611,7 @@ class SimpleNeighbourhood(Neighbourhood):
         for name, offset in zip(self.names, self.offsets):
             self.code.add_code("pre_compute",
                 "%s = %s;" % (name,
-                             self.code.acc.read_access(self.code.loop.get_pos(offset))))
+                             self.code.acc.read_access(gen_offset_pos(self.code.loop.get_pos(), offset))))
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
@@ -675,7 +684,6 @@ class LinearBorderCopier(BorderSizeEnsurer):
                     """self.acc.write_to((%d,), skip_border=True,
     value=self.acc.read_from_next((%d,), skip_border=True))""" % (i, self.code.acc.get_size_of(0) + i))
 
-
         for i in range(right_border):
             copy_code.append("%s = %s;" % (
                 self.code.acc.write_access(["sizeX + " + str(i)]),
@@ -720,7 +728,6 @@ class TestTarget(object):
             self.cconf = config.copy()
             self.size = len(self.cconf)
 
-
 class BinRule(TestTarget):
     """A Target plus a WeaveStepFunc for elementary cellular automatons."""
     def __init__(self, size=None, deterministic=True, rule=126, config=None, **kwargs):
@@ -730,6 +737,8 @@ class BinRule(TestTarget):
                                  randomly?
            :param rule: The rule number for the elementary cellular automaton.
            :param config: Optionally the configuration to use."""
+        if size is None:
+            size = len(config)
         super(BinRule, self).__init__(size, config, **kwargs)
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
