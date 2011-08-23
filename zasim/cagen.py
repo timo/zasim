@@ -450,7 +450,7 @@ class SimpleStateAccessor(StateAccessor):
         self.code.add_code("localvars",
                 """int result;""")
         self.code.add_code("post_compute",
-                self.write_access(self.code.loop.get_pos(0)) + " = result;")
+                self.write_access(self.code.loop.get_pos()) + " = result;")
 
         self.code.add_py_hook("init",
                 """result = None""")
@@ -528,11 +528,8 @@ class LinearCellLoop(CellLoop):
 class TwoDimCellLoop(CellLoop):
     """The TwoDimCellLoop iterates over all cells from left to right, then from
     top to bottom."""
-    def get_pos(self, offset=(0, 0)):
-        if offset == (0, 0):
-            return "i, j"
-        else:
-            return "i + %d, j + %d" % (offset)
+    def get_pos(self):
+        return "i, j"
 
     def visit(self):
         self.code.add_code("loop_begin",
