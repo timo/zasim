@@ -91,8 +91,8 @@ def gen_offset_pos(pos, offset):
     """Generate code to offset a position by an offset.
 
     >>> cagen.gen_offset_pos(["i", "j"], ["foo", "bar"])
-    'i + foo, j + bar'"""
-    return ", ".join(["%s + %s" % (a, b) for a, b in zip(pos, offset)])
+    ['i + foo', 'j + bar']"""
+    return ["%s + %s" % (a, b) for a, b in zip(pos, offset)]
 
 class WeaveStepFunc(object):
     """The WeaveStepFunc composes different parts into a functioning
@@ -418,12 +418,12 @@ class SimpleStateAccessor(StateAccessor):
     def read_access(self, pos, skip_border=False):
         if skip_border:
             return "cconf(%s)" % (pos,)
-        return "cconf(%s)" % (gen_offset_pos(pos, self.border_names))
+        return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names)),)
 
     def write_access(self, pos, skip_border=False):
         if skip_border:
             return "nconf(%s)" % (pos)
-        return "nconf(%s)" % (gen_offset_pos(pos, self.border_names))
+        return "nconf(%s)" % (",".join(gen_offset_pos(pos, self.border_names)),)
 
     def init_once(self):
         """Set the sizeX const and register nconf and cconf for extraction
@@ -623,9 +623,10 @@ class SimpleNeighbourhood(Neighbourhood):
         """Adds C and python code to get the neighbouring values and stores
         them in local variables."""
         for name, offset in zip(self.names, self.offsets):
-            self.code.add_code("pre_compute",
-                "%s = %s;" % (name,
-                             self.code.acc.read_access(gen_offset_pos(self.code.loop.get_pos(), offset))))
+            self.code.add_code("pre_compute", "%s = %s;" % (name,
+                     self.code.acc.read_access(
+                         gen_offset_pos(self.code.loop.get_pos(), offset))))
+
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
