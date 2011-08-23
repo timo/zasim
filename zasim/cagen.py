@@ -772,17 +772,25 @@ class NewBorderCopier(BaseBorderCopier):
         self.dimension_sizes = [self.code.acc.get_size_of(dim) for dim in range(dims)]
         ranges = [range(size) for size in self.dimension_sizes]
 
-        def is_beyond_border(pos):
-            for dimension, size in zip(pos, self.dimension_sizes):
-                if dimension < 0 or dimension >= size:
-                    return True
-            return False
+        if not HAVE_TUPLE_ARRAY_INDEX:
+            # more pypy compatibility
+            def is_beyond_border(pos):
+                dimension, size = pos, self.dimension_sizes[0]
+                return (dimension < 0 or dimension >= size)
+        else:
+            def is_beyond_border(pos):
+                for dimension, size in zip(pos, self.dimension_sizes):
+                    if dimension < 0 or dimension >= size:
+                        return True
+                return False
 
         over_border= {}
 
         for pos in product(*ranges):
             for neighbour in neighbours:
                 target = offset_pos(pos, neighbour)
+                if isinstance(target, int): # pack this into a tuple for pypy
+                    target = (target,)
                 if is_beyond_border(target):
                     over_border[tuple(target)] = self.wrap_around_border(target)
 
