@@ -154,7 +154,7 @@ class WeaveStepFunc(object):
         newfunc = []
 
         for line in function:
-            if TUPLE_ACCESS_FIX:
+            if not HAVE_TUPLE_ARRAY_INDEX:
                 line = tuple_array_index_fixup(line)
             newfunc.append(" " * self.pycode_indent[hook] + line)
             if EXTREME_PURE_PY_DEBUG:
@@ -717,7 +717,7 @@ class LinearBorderCopier(BorderSizeEnsurer):
         retargetted = self.copy_py_code.replace("self.", "self.code.")
         retargetted = retargetted.replace("write_to(", "write_to_current(")
         retargetted = retargetted.replace("read_from_next(", "read_from(")
-        if TUPLE_ACCESS_FIX:
+        if not HAVE_TUPLE_ARRAY_INDEX:
             retargetted = tuple_array_index_fixup(retargetted)
 
         print retargetted
