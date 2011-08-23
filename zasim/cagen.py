@@ -640,10 +640,18 @@ class SimpleNeighbourhood(Neighbourhood):
         return self.names
 
     def bounding_box(self, steps=1):
-        # offsets looks like this:
-        # (-1, -1), (-1, 0), (-1, 1),
-        # (0, -1), (0, 0), (0, 1)
+        """Calculate a bounding box from a set of offsets.
 
+        The return value will have an outer list with one tuple for
+        each dimension. Each dimension will have a min and a max value.
+
+        >>> a = cagen.SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,)))
+        >>> a.bounding_box()
+        [(-1, 1)]
+        >>> b = cagen.SimpleNeighbourhood(list("ab"), ((-5, 20), (99, 10)))
+        >>> b.bounding_box()
+        [(-5, 99), (10, 20)]
+        """
         # there is at least one offset and that has to have the right number of
         # dimensions already.
         num_dimensions = len(self.offsets[0])
@@ -651,8 +659,6 @@ class SimpleNeighbourhood(Neighbourhood):
         # initialise the maximums and minimums from the first offset
         maxes = list(self.offsets[0])
         mins = list(self.offsets[0])
-
-        # TODO write test cases for this!
 
         # go through all offsets
         for offset in self.offsets:
