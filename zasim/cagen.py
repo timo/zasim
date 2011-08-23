@@ -71,9 +71,18 @@ import new
 
 EXTREME_PURE_PY_DEBUG = False
 
-def offset_pos(pos, offset):
-    """Offset a position by an offset. Any amount of dimensions should work."""
-    return [a + b for a, b in zip(pos, offset)]
+if HAVE_TUPLE_ARRAY_INDEX:
+    def offset_pos(pos, offset):
+        """Offset a position by an offset. Any amount of dimensions should work."""
+        return [a + b for a, b in zip(pos, offset)]
+else:
+    def offset_pos(pos, offset):
+        """Offset a position by an offset. Only works for 1d."""
+        if isinstance(pos, tuple):
+            pos = pos[0]
+        if isinstance(offset, tuple):
+            offset = offset[0]
+        return pos + offset
 
 def gen_offset_pos(pos, offset):
     """Generate code to offset a position by an offset.
