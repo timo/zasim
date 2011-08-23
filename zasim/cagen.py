@@ -691,6 +691,9 @@ class BaseBorderCopier(BorderSizeEnsurer):
         retargetted = retargetted.replace("self.", "self.code.")
         retargetted = retargetted.replace("write_to(", "write_to_current(")
         retargetted = retargetted.replace("read_from_next(", "read_from(")
+        for dim, size_name in enumerate(self.code.acc.size_names):
+            size = self.code.acc.get_size_of(dim)
+            retargetted = retargetted.replace(size_name, str(size))
         if not HAVE_TUPLE_ARRAY_INDEX:
             retargetted = tuple_array_index_fixup(retargetted)
 
@@ -786,42 +789,46 @@ class NewBorderCopier(BaseBorderCopier):
 
         over_border= {}
 
+        # FIXME Even though sizeX and friends are now variables in the code,
+        #       the positions at the edges are still absolute, so even though
+        #       sizeX is pumped into the c code from the outside, the right,
+        #       lower, ... border positions still cause new C code to be
+        #       compiled each time.
+        #
+        #       Maybe iterating "only over the relevant parts" can help this by
+        #       passing the positions not as absolute values, but as relatives
+        #       to the relevant sizeFoo variable.
         for pos in product(*ranges):
             for neighbour in neighbours:
                 target = offset_pos(pos, neighbour)
                 if isinstance(target, int): # pack this into a tuple for pypy
                     target = (target,)
                 if is_beyond_border(target):
-                    over_border[tuple(target)] = self.wrap_around_border(target)
+                    over_border[tuple(target)] = ", ".join(self.wrap_around_border(target))
 
         copy_code = []
-
-        # FIXME until now, sizeX and friends were not written directly into the
-        #       C code, but now they are because of the way wrap_around_border
-        #       works. It should instead generate code, that generates the
-        #       coordinates based off of the sizeX, ... local variables.
 
         for write, read in over_border.iteritems():
             copy_code.append("%s = %s;" % (
                 self.code.acc.write_access(write),
-                self.code.acc.write_access(read)))
+                self.code.acc.write_access((read,))))
 
             self.tee_copy_hook("""self.acc.write_to(%s,
-    value=self.acc.read_from_next(%s))""" % (write, read))
+    value=self.acc.read_from_next((%s,)))""" % (write, read))
 
-        print "\n".join(copy_code)
         self.code.add_code("after_step",
                 "\n".join(copy_code))
 
     def wrap_around_border(self, pos):
         newpos = []
-        for val, size in zip(pos, self.dimension_sizes):
+        for val, size, size_name in zip(pos,
+                     self.dimension_sizes, self.code.acc.size_names):
             if val < 0:
-                newpos.append(size + val)
+                newpos.append("%s + %s" % (size_name, val))
             elif val >= size:
-                newpos.append(val - size)
+                newpos.append("%s - %s" % (val, size_name))
             else:
-                newpos.append(val)
+                newpos.append("%s" % (val,))
         return tuple(newpos)
 
 class TwoDimZeroReader(BorderSizeEnsurer):
