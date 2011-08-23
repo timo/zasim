@@ -708,25 +708,32 @@ class BaseBorderCopier(BorderSizeEnsurer):
         super(BaseBorderCopier, self).visit()
 
 class SimpleBorderCopier(BaseBorderCopier):
-    """This is the new concept for the border copier:
+    """Copy over cell values, so that reading from a cell at the border over
+    the border yields a sensible result.
 
-    0) (BorderSizeEnsurer) make the array big enough so that no reads will
-       ever read outside the array
-    1) Find out from the bounding box, what areas of the "inner" array are in
-       need of getting data copied over.
-    2) Iterate over all those and add all reads to out-of-array positions into
-       a set. Name that set "outside_reads"
-    3) Iterate over all outside_reads and figure out where they need to end up.
-       For instance on the other side of the array, or maybe mirrored or
-       something entirely different
-    4) Create a dictionary copy_ops with the positions to copy to as keys and
-       the positions to copy from as values
-    5) Maybe/Someday, order the copy ops so that they turn into slices for
-       numpy or so that they are especially cache efficient or anything
-    6) Write out code to do these operations in after_step.
-    """
+    In the case of the SimpleBorderCopier, the borders act like "portals" to
+    the opposite side of the field.
+
+    This class should work with any number of dimensions."""
     def visit(self):
         super(SimpleBorderCopier, self).visit()
+        # This is the new concept for the border copier:
+
+        # 0) (BorderSizeEnsurer) make the array big enough so that no reads will
+        #    ever read outside the array
+        # 1) Find out from the bounding box, what areas of the "inner" array are in
+        #    need of getting data copied over.
+        # 2) Iterate over all those and add all reads to out-of-array positions into
+        #    a set. Name that set "outside_reads"
+        # 3) Iterate over all outside_reads and figure out where they need to end up.
+        #    For instance on the other side of the array, or maybe mirrored or
+        #    something entirely different
+        # 4) Create a dictionary copy_ops with the positions to copy to as keys and
+        #    the positions to copy from as values
+        # 5) Maybe/Someday, order the copy ops so that they turn into slices for
+        #    numpy or so that they are especially cache efficient or anything
+        # 6) Write out code to do these operations in after_step.
+
         # TODO iterate only over the relevant positions instead of all of them
         dims = len(self.code.neigh.bounding_box())
         neighbours = self.code.neigh.get_offsets()
@@ -778,6 +785,9 @@ class SimpleBorderCopier(BaseBorderCopier):
                 "\n".join(copy_code))
 
     def wrap_around_border(self, pos):
+        """Create a piece of py/c code, that calculates the source for a read
+        that would set the right value at position pos, which is beyond the
+        border."""
         newpos = []
         for val, size, size_name in zip(pos,
                      self.dimension_sizes, self.code.acc.size_names):
