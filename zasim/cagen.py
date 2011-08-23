@@ -69,6 +69,7 @@ except TypeError:
         return TUPLE_ACCESS_FIX.sub(r"\1", line)
 
 from random import Random
+from itertools import product
 import sys
 import new
 
@@ -360,8 +361,8 @@ class Neighbourhood(WeaveStepFuncVisitor):
     def neighbourhood_cells(self):
         """Get the names of the neighbouring cells."""
 
-    def get_neighbourhood(self, pos):
-        """Get the values of the neighbouring cells for pos in python"""
+    def get_offsets(self):
+        """Get the offsets of the neighbourhood cells."""
 
     def bounding_box(self, steps=1):
         """Find out, how many cells, at most, have to be read after
@@ -640,6 +641,9 @@ class SimpleNeighbourhood(Neighbourhood):
     def neighbourhood_cells(self):
         return self.names
 
+    def get_offsets(self):
+        return self.offsets
+
     def bounding_box(self, steps=1):
         """Calculate a bounding box from a set of offsets.
 
@@ -760,6 +764,57 @@ class NewBorderCopier(BaseBorderCopier):
        numpy or so that they are especially cache efficient or anything
     6) Write out code to do these operations in after_step.
     """
+    def visit(self):
+        super(NewBorderCopier, self).visit()
+        # TODO iterate only over the relevant positions instead of all of them
+        dims = len(self.code.neigh.bounding_box())
+        neighbours = self.code.neigh.get_offsets()
+        self.dimension_sizes = [self.code.acc.get_size_of(dim) for dim in range(dims)]
+        ranges = [range(size) for size in self.dimension_sizes]
+
+        def is_beyond_border(pos):
+            for dimension, size in zip(pos, self.dimension_sizes):
+                if dimension < 0 or dimension >= size:
+                    return True
+            return False
+
+        over_border= {}
+
+        for pos in product(*ranges):
+            for neighbour in neighbours:
+                target = offset_pos(pos, neighbour)
+                if is_beyond_border(target):
+                    over_border[tuple(target)] = self.wrap_around_border(target)
+
+        copy_code = []
+
+        # FIXME until now, sizeX and friends were not written directly into the
+        #       C code, but now they are because of the way wrap_around_border
+        #       works. It should instead generate code, that generates the
+        #       coordinates based off of the sizeX, ... local variables.
+
+        for write, read in over_border.iteritems():
+            copy_code.append("%s = %s;" % (
+                self.code.acc.write_access(write),
+                self.code.acc.write_access(read)))
+
+            self.tee_copy_hook("""self.acc.write_to(%s,
+    value=self.acc.read_from_next(%s))""" % (write, read))
+
+        print "\n".join(copy_code)
+        self.code.add_code("after_step",
+                "\n".join(copy_code))
+
+    def wrap_around_border(self, pos):
+        newpos = []
+        for val, size in zip(pos, self.dimension_sizes):
+            if val < 0:
+                newpos.append(size + val)
+            elif val >= size:
+                newpos.append(val - size)
+            else:
+                newpos.append(val)
+        return tuple(newpos)
 
 class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
@@ -803,7 +858,8 @@ class BinRule(TestTarget):
                      else LinearNondeterministicCellLoop(),
                 accessor=LinearStateAccessor(size=(size,)),
                 neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
-                extra_code=[LinearBorderCopier()])
+                extra_code=[NewBorderCopier()])
+                #extra_code=[LinearBorderCopier()])
 
         self.rule = np.zeros( 8 )
 
