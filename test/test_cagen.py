@@ -93,11 +93,9 @@ class TestCAGen:
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
     def test_pretty_print_2d(self):
-        1515361445
         l = cagen.LinearCellLoop()
         acc = cagen.TwoDimStateAccessor((10, 10))
-        neigh = cagen.SimpleNeighbourhood(list("udlrc"),
-                [(0,-1), (0,1), (-1,0), (1,0), (0,0)])
+        neigh = cagen.VonNeumannNeighbourhood()
         compute = cagen.ElementaryCellularAutomatonBase(1515361445)
         copier = cagen.SimpleBorderCopier()
         sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
