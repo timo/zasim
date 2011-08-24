@@ -941,6 +941,71 @@ class ElementaryCellularAutomatonBase(Computation):
         """This method is generated upon init_once and pretty-prints the rules
         that this elementary cellular automaton uses for local steps."""
 
+class CountBasedComputationBase(Computation):
+    """This base class counts the amount of nonzero neighbours excluding the
+    center cell and offers the result as a local variable called
+    nonzerocount of type int.
+
+    The name of the central neighbour will be provided as self.central_name."""
+    def visit(self):
+        super(CountBasedComputationBase, self).visit()
+        names = self.code.neigh.neighbourhood_cells()
+        offsets = self.code.neigh.get_offsets()
+
+        # kick out the center cell, if any.
+        zero_offset = tuple([0] * len(offsets[0]))
+        zero_position = offsets.find(zero_offset)
+        if zero_position != -1:
+            self.central_name = names.pop(zero_position)
+        else:
+            self.central_name = None
+
+        self.code.add_code("localvars", "int nonzerocount;")
+        code = "nonzerocount = %s" % (" + ".join(names))
+
+        self.code.add_code("compute", code + ";")
+        self.code.add_py_hook("compute", code)
+
+class LifeCellularAutomatonBase(CountBasedComputationBase):
+    """This computation base is useful for any life-like step function in which
+    the number of ones in the neighbourhood of a cell are counted to decide
+    wether to change a 0 into a 1 or the other way around."""
+    def __init__(self, reproduce_min=3, reproduce_max=3,
+                 stay_alive_min=2, stay_alive_max=3, **kwargs):
+        """:param reproduce_min: The minimal number of alive cells needed to
+                                 reproduce to this cell.
+           :param reproduce_max: The maximal number of alive cells that still
+                                 cause a reproduction.
+           :param stay_alive_min: The minimal number of alive neighbours needed
+                                  for a cell to survive.
+           :param stay_alive_max: The maximal number of alive neighbours that
+                                  still allow the cell to survive."""
+        super(ElementaryCellularAutomatonBase, self).__init__(**kwargs)
+        self.params = dict(reproduce_min = reproduce_min,
+                reproduce_max = reproduce_max,
+                stay_alive_min = stay_alive_min,
+                stay_alive_max = stay_alive_max)
+
+    def visit(self):
+        super(LifeCellularAutomatonBase, self).visit()
+        assert self.central_name is not None, "Need a neighbourhood with a named zero offset"
+        self.params.update(central_name=self.central_name)
+        self.code.add_code("compute",
+                """if (%(central_name)s == 0) {
+      if (nonzerocount >= %(reproduce_min)d && nonzerocount <= %(reproduce_max)d) {
+        result = 1;
+    }} else {
+      if (nonzerocount < %(stay_alive_min)d || nonzerocount > %(stay_alive_max)d) {
+        result = 0;
+      }}""" % self.params)
+        self.code.add_py_hook("compute","""
+if %(central_name)s == 0:
+    if %(reproduce_min)d <= nonzerocount <= %(reproduce_max)d:
+      result = 1
+else:
+    if not (%(stay_alive_min)d <= nonzerocount <= %(stay_alive_max)d):
+      result = 0""" % self.params)
+
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
     :class:`WeaveStepFunc`."""
