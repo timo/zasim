@@ -402,17 +402,17 @@ class BorderSizeEnsurer(BorderHandler):
         bbox = self.code.neigh.bounding_box()
         # FIXME if the bbox goes into the positive values, abs is wrong. use the 
         # FIXME correct amount of minus signs instead?
-        dims = len(bbox[0]) / 2
+        dims = len(bbox)
         shape = self.target.cconf.shape
         if dims == 1:
             new_conf = np.zeros(shape[0] + abs(bbox[0][0]) + abs(bbox[0][1]))
             new_conf[abs(bbox[0][0]):-abs(bbox[0][1])] = self.target.cconf
         elif dims == 2:
             # TODO figure out how to create slice objects in a general way.
-            new_conf = np.zeros((shape[0] + abs(bbox[0]) + abs(bbox[1]),
-                                 shape[1] + abs(bbox[2]) + abs(bbox[3])))
-            new_conf[abs(bbox[0]):-abs(bbox[1]),
-                     abs(bbox[2]):-abs(bbox[3])] = self.target.cconf
+            new_conf = np.zeros((shape[0] + abs(bbox[0][0]) + abs(bbox[0][1]),
+                                 shape[1] + abs(bbox[1][0]) + abs(bbox[1][1])))
+            new_conf[abs(bbox[0][0]):-abs(bbox[0][1]),
+                     abs(bbox[1][0]):-abs(bbox[1][1])] = self.target.cconf
         self.target.cconf = new_conf
 
 class SimpleStateAccessor(StateAccessor):
