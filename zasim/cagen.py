@@ -994,7 +994,9 @@ class LifeCellularAutomatonBase(CountBasedComputationBase):
         assert self.central_name is not None, "Need a neighbourhood with a named zero offset"
         self.params.update(central_name=self.central_name)
         self.code.add_code("compute",
-                """if (%(central_name)s == 0) {
+                """
+    result = %(central_name)s;
+    if (%(central_name)s == 0) {
       if (nonzerocount >= %(reproduce_min)d && nonzerocount <= %(reproduce_max)d) {
         result = 1;
     }} else {
@@ -1002,6 +1004,7 @@ class LifeCellularAutomatonBase(CountBasedComputationBase):
         result = 0;
       }}""" % self.params)
         self.code.add_py_hook("compute","""
+result = %(central_name)s
 if %(central_name)s == 0:
     if %(reproduce_min)d <= nonzerocount <= %(reproduce_max)d:
       result = 1
