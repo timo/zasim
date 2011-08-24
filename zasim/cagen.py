@@ -555,6 +555,7 @@ class LinearCellLoop(CellLoop):
         return "i"
 
     def visit(self):
+        super(LinearCellLoop, self).visit()
         self.code.add_code("loop_begin",
                 """for(int i=0; i < sizeX; i++) {""")
         self.code.add_code("loop_end",
@@ -573,6 +574,7 @@ class TwoDimCellLoop(CellLoop):
         return "i", "j"
 
     def visit(self):
+        super(TwoDimCellLoop, self).visit()
         size_names = self.code.acc.size_names
         self.code.add_code("loop_begin",
                 """for(int i=0; i < %s; i++) {
@@ -628,9 +630,16 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
 
     def visit(self):
         """Adds C code for handling the randseed and skipping."""
+        print "visited"
         super(NondeterministicCellLoopMixin, self).visit()
         self.code.add_code("loop_begin",
-                """if(rand() >= RAND_MAX * %s) continue;""" % (self.probab))
+                """if(rand() >= RAND_MAX * %(probab)s) {
+                    %(write_current)s = %(read_current)s;
+                    continue;
+                };""" % dict(probab=self.probab,
+                    write_current=self.code.acc.write_access(self.code.loop.get_pos()),
+                    read_current=self.code.acc.read_access(self.code.loop.get_pos())
+                    ))
         self.code.add_code("localvars",
                 """srand(randseed(0));""")
         self.code.add_code("after_step",
@@ -643,12 +652,12 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
         # FIXME how do i get the randseed out without using np.array?
         target.randseed = np.array([self.random.random()])
 
-class LinearNondeterministicCellLoop(LinearCellLoop, NondeterministicCellLoopMixin):
+class LinearNondeterministicCellLoop(NondeterministicCellLoopMixin,LinearCellLoop):
     """This Nondeterministic Cell Loop loops over one dimension, skipping cells
     with a probability of probab."""
     pass
 
-class TwoDimNondeterministicCellLoop(TwoDimCellLoop, NondeterministicCellLoopMixin):
+class TwoDimNondeterministicCellLoop(NondeterministicCellLoopMixin, TwoDimCellLoop):
     """This Nondeterministic Cell Loop loops over two dimensions, skipping cells
     with a probability of probab."""
     pass
