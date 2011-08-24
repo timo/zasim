@@ -549,7 +549,7 @@ class TwoDimCellLoop(CellLoop):
     def visit(self):
         self.code.add_code("loop_begin",
                 """for(int i=0; i < sizeX; i++) {
-for(int j=0; i < sizeY; j++) {""")
+for(int j=0; j < sizeY; j++) {""")
         self.code.add_code("loop_end",
                 """}
 }""")
