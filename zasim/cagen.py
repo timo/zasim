@@ -863,17 +863,17 @@ class SimpleBorderCopier(BaseBorderCopier):
                 if isinstance(target, int): # pack this into a tuple for pypy
                     target = (target,)
                 if is_beyond_border(target):
-                    over_border[tuple(target)] = ", ".join(self.wrap_around_border(target))
+                    over_border[tuple(target)] = self.wrap_around_border(target)
 
         copy_code = []
 
         for write, read in over_border.iteritems():
             copy_code.append("%s = %s;" % (
                 self.code.acc.write_access(write),
-                self.code.acc.write_access((read,))))
+                self.code.acc.write_access(read)))
 
             self.tee_copy_hook("""self.acc.write_to(%s,
-    value=self.acc.read_from_next((%s,)))""" % (write, read))
+    value=self.acc.read_from_next((%s)))""" % (write, ", ".join(read)))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
