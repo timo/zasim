@@ -801,6 +801,57 @@ class ElementaryCellularAutomatonBase(Computation):
             if self.rule & (self.base ** digit) > 0:
                 self.target.rule[digit] = 1
 
+        # and now do some heavy work to generate a pretty-printer!
+        bbox = self.code.neigh.bounding_box()
+        offsets = self.code.neigh.get_offsets()
+        offset_to_name = dict(self.neigh)
+        ordered_names = [a[1] for a in self.neigh]
+
+        if len(bbox) == 1:
+            h = 3
+        else:
+            h = bbox[1][1] - bbox[1][0] + 2
+        protolines = [[] for i in range(h)]
+        lines = [line[:] for line in protolines]
+        w = bbox[0][1] + 1 - bbox[0][0]
+
+        for y in range(h):
+            for x in range(bbox[0][0], bbox[0][1] + 1):
+                if h == 3 and (x,) in offsets and y == 0:
+                    lines[y].append("%(" + offset_to_name[(x,)]
+                               + ")d")
+                elif h > 3 and (x, y) in offsets:
+                    lines[y].append("%(" + offset_to_name[(x, y)]
+                               + ")d")
+                else:
+                    lines[y].append(" ")
+            lines[y] = "".join(lines[y]) + "  "
+
+        lines[-1] = ("X".center(w) + "  ").replace("X", "%(result_value)d")
+
+        template = [line[:] for line in lines]
+
+        def pretty_printer(self):
+            lines = [line[:] for line in protolines]
+            for i in range(self.base ** self.digits):
+                values = [1 if (i & (self.base ** k)) > 0 else 0
+                        for k in range(len(offsets))]
+                asdict = dict(zip(ordered_names, values))
+                asdict.update(result_value = self.target.rule[i])
+
+                for line, tmpl_line in zip(lines, template):
+                    line.append(tmpl_line % asdict)
+
+            return "\n".join(["".join(line) for line in lines])
+
+            # TODO print the result of each one, too.
+
+        self.pretty_print = new.instancemethod(pretty_printer, self, self.__class__)
+
+    def pretty_print(self):
+        """This method is generated upon init_once and pretty-prints the rules
+        that this elementary cellular automaton uses for local steps."""
+
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
     :class:`WeaveStepFunc`."""
@@ -820,6 +871,9 @@ class TestTarget(object):
             self.cconf = config.copy()
             self.size = len(self.cconf)
 
+    def pretty_print(self):
+        """pretty-print the configuration and such"""
+
 class BinRule(TestTarget):
     """A Target plus a WeaveStepFunc for elementary cellular automatons."""
     def __init__(self, size=None, deterministic=True, rule=126, config=None, **kwargs):
@@ -834,6 +888,7 @@ class BinRule(TestTarget):
         super(BinRule, self).__init__(size, config, **kwargs)
 
         self.rule = None
+        self.computer = ElementaryCellularAutomatonBase(rule)
 
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
@@ -841,7 +896,7 @@ class BinRule(TestTarget):
                 accessor=LinearStateAccessor(size=(size,)),
                 neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
                 extra_code=[LinearBorderCopier(),
-                    ElementaryCellularAutomatonBase(rule)])
+                    self.computer])
 
         self.stepfunc.set_target(self)
         self.stepfunc.gen_code()
@@ -853,6 +908,9 @@ class BinRule(TestTarget):
     def step_pure_py(self):
         """Use the step function to step with pure python code."""
         self.stepfunc.step_pure_py()
+
+    def pretty_print(self):
+        return self.computer.pretty_print()
 
 def test():
     cell_shadow, cell_full = "%#"
