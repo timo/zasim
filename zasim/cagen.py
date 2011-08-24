@@ -82,7 +82,7 @@ EXTREME_PURE_PY_DEBUG = False
 if HAVE_TUPLE_ARRAY_INDEX:
     def offset_pos(pos, offset):
         """Offset a position by an offset. Any amount of dimensions should work."""
-        return [a + b for a, b in zip(pos, offset)]
+        return tuple([a + b for a, b in zip(pos, offset)])
 else:
     def offset_pos(pos, offset):
         """Offset a position by an offset. Only works for 1d."""
@@ -173,9 +173,10 @@ class WeaveStepFunc(object):
                 line = tuple_array_index_fixup(line)
             newfunc.append(" " * self.pycode_indent[hook] + line)
             if EXTREME_PURE_PY_DEBUG:
+                indent = len(line) - len(line.lstrip(" "))
                 words = line.strip().split(" ")
                 if len(words) > 1 and words[1] == "=":
-                    newfunc.append(" " * self.pycode_indent[hook] + "print " + words[0])
+                    newfunc.append(" " * (self.pycode_indent[hook] + indent) + "print " + words[0])
 
         self.pycode[hook].append("\n".join(newfunc))
 
@@ -217,6 +218,7 @@ class WeaveStepFunc(object):
         myglob = globals()
         myloc = locals()
         exec code_object in myglob, myloc
+        self.pure_py_code_text = code_text
         self.step_pure_py = new.instancemethod(myloc["step_pure_py"], self, self.__class__)
 
     def step_inline(self):
@@ -448,7 +450,8 @@ class SimpleStateAccessor(StateAccessor):
         """Get the bounding box from the neighbourhood object."""
         super(SimpleStateAccessor, self).bind(target)
         bb = self.code.neigh.bounding_box()
-        mins = [min([abs(b) for b in a]) for a in bb[::2]]
+        #mins = [min([abs(b) for b in a]) for a in bb[::2]]
+        mins = [abs(a[0]) for a in bb]
         self.border = tuple(mins)
 
     def visit(self):
@@ -541,12 +544,12 @@ class TwoDimCellLoop(CellLoop):
     """The TwoDimCellLoop iterates over all cells from left to right, then from
     top to bottom."""
     def get_pos(self):
-        return "i, j"
+        return "i", "j"
 
     def visit(self):
         self.code.add_code("loop_begin",
                 """for(int i=0; i < sizeX; i++) {
-for(int j=0; i < sizeY; j++) {""")
+for(int j=0; j < sizeY; j++) {""")
         self.code.add_code("loop_end",
                 """}
 }""")
@@ -690,6 +693,41 @@ class SimpleNeighbourhood(Neighbourhood):
         maxes = [m * steps for m in maxes]
         mins = [m * steps for m in mins]
         return zip(mins, maxes)
+
+class ElementaryFlatNeighbourhood(SimpleNeighbourhood):
+    """This is the neighbourhood used by the elementary cellular automatons.
+
+    The neighbours are called l, m and r for left, middle and right."""
+    def __init__(self, **kwargs):
+        super(ElementaryFlatNeighbourhood, self).__init__(
+                list("lmr"),
+                [[-1], [0], [1]], **kwargs)
+
+class VonNeumannNeighbourhood(SimpleNeighbourhood):
+    """This is the Von Neumann Neighbourhood, in which the cell itself and the
+    left, upper, lower and right neighbours are considered.
+
+    The neighbours are called l, u, m, d and r for left, up, middle, down and
+    right respectively."""
+    def __init__(self, **kwargs):
+        super(VonNeumannNeighbourhood, self).__init__(
+                list("lumdr"),
+                [(0,-1), (0,1), (-1,0), (1,0), (0,0)],
+                **kwargs)
+
+class MooreNeighbourhood(SimpleNeighbourhood):
+    """This is the Moore Neighbourhood. The cell and all of its 8 neighbours
+    are considered for computation.
+
+    The fields are called lu, u, ru, l, m, r, ld, d and rd for left-up, up,
+    right-up, left, middle, right, left-down, down and right-down
+    respectively."""
+
+    def __init__(self, **kwargs):
+        super(MooreNeighbourhood, self).__init__(
+                "lu u ru l m r ld d rd".split(" "),
+                list(product([-1, 0, 1], [-1, 0, 1])),
+                **kwargs)
 
 class BaseBorderCopier(BorderSizeEnsurer):
     def new_config(self):
@@ -861,8 +899,10 @@ class ElementaryCellularAutomatonBase(Computation):
 
         if len(bbox) == 1:
             h = 3
+            y_offset = None
         else:
-            h = bbox[1][1] - bbox[1][0] + 2
+            h = bbox[1][1] - bbox[1][0] + 3
+            y_offset = bbox[1][0]
         protolines = [[] for i in range(h)]
         lines = [line[:] for line in protolines]
         w = bbox[0][1] + 1 - bbox[0][0]
@@ -872,8 +912,8 @@ class ElementaryCellularAutomatonBase(Computation):
                 if h == 3 and (x,) in offsets and y == 0:
                     lines[y].append("%(" + offset_to_name[(x,)]
                                + ")d")
-                elif h > 3 and (x, y) in offsets:
-                    lines[y].append("%(" + offset_to_name[(x, y)]
+                elif h > 3 and (x, y + y_offset) in offsets:
+                    lines[y].append("%(" + offset_to_name[(x, y + y_offset)]
                                + ")d")
                 else:
                     lines[y].append(" ")
@@ -904,6 +944,74 @@ class ElementaryCellularAutomatonBase(Computation):
         """This method is generated upon init_once and pretty-prints the rules
         that this elementary cellular automaton uses for local steps."""
 
+class CountBasedComputationBase(Computation):
+    """This base class counts the amount of nonzero neighbours excluding the
+    center cell and offers the result as a local variable called
+    nonzerocount of type int.
+
+    The name of the central neighbour will be provided as self.central_name."""
+    def visit(self):
+        super(CountBasedComputationBase, self).visit()
+        names = list(self.code.neigh.neighbourhood_cells())
+        offsets = self.code.neigh.get_offsets()
+
+        # kick out the center cell, if any.
+        zero_offset = tuple([0] * len(offsets[0]))
+        zero_position = offsets.index(zero_offset)
+        if zero_position != -1:
+            self.central_name = names.pop(zero_position)
+        else:
+            self.central_name = None
+
+        self.code.add_code("localvars", "int nonzerocount;")
+        code = "nonzerocount = %s" % (" + ".join(names))
+
+        self.code.add_code("compute", code + ";")
+        self.code.add_py_hook("compute", code)
+
+class LifeCellularAutomatonBase(CountBasedComputationBase):
+    """This computation base is useful for any life-like step function in which
+    the number of ones in the neighbourhood of a cell are counted to decide
+    wether to change a 0 into a 1 or the other way around."""
+    def __init__(self, reproduce_min=3, reproduce_max=3,
+                 stay_alive_min=2, stay_alive_max=3, **kwargs):
+        """:param reproduce_min: The minimal number of alive cells needed to
+                                 reproduce to this cell.
+           :param reproduce_max: The maximal number of alive cells that still
+                                 cause a reproduction.
+           :param stay_alive_min: The minimal number of alive neighbours needed
+                                  for a cell to survive.
+           :param stay_alive_max: The maximal number of alive neighbours that
+                                  still allow the cell to survive."""
+        super(LifeCellularAutomatonBase, self).__init__(**kwargs)
+        self.params = dict(reproduce_min = reproduce_min,
+                reproduce_max = reproduce_max,
+                stay_alive_min = stay_alive_min,
+                stay_alive_max = stay_alive_max)
+
+    def visit(self):
+        super(LifeCellularAutomatonBase, self).visit()
+        assert self.central_name is not None, "Need a neighbourhood with a named zero offset"
+        self.params.update(central_name=self.central_name)
+        self.code.add_code("compute",
+                """
+    result = %(central_name)s;
+    if (%(central_name)s == 0) {
+      if (nonzerocount >= %(reproduce_min)d && nonzerocount <= %(reproduce_max)d) {
+        result = 1;
+    }} else {
+      if (nonzerocount < %(stay_alive_min)d || nonzerocount > %(stay_alive_max)d) {
+        result = 0;
+      }}""" % self.params)
+        self.code.add_py_hook("compute","""
+result = %(central_name)s
+if %(central_name)s == 0:
+    if %(reproduce_min)d <= nonzerocount <= %(reproduce_max)d:
+      result = 1
+else:
+    if not (%(stay_alive_min)d <= nonzerocount <= %(stay_alive_max)d):
+      result = 0""" % self.params)
+
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
     :class:`WeaveStepFunc`."""
@@ -921,7 +1029,7 @@ class TestTarget(object):
             self.size = size
         else:
             self.cconf = config.copy()
-            self.size = len(self.cconf)
+            self.size = self.cconf.shape
 
     def pretty_print(self):
         """pretty-print the configuration and such"""

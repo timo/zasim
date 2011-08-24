@@ -1,5 +1,16 @@
 import numpy as np
 
+def compare_ndim_arrays(arr1, arr2):
+    print "arr1:"
+    print arr1
+    print "arr2:"
+    print arr2
+
+def assert_ndim_arrays_equal(arr1, arr2):
+    arr1 = arr1.flatten()
+    arr2 = arr2.flatten()
+    assert_arrays_equal(arr1, arr2)
+
 def generate_pretty_printed_comparison(arr1, arr2):
     """return a pretty-printed comparison of two arrays as well as its equality:
 
@@ -26,6 +37,9 @@ def generate_pretty_printed_comparison(arr1, arr2):
     return (equal, l1, mid, l2)
 
 def compare_arrays(arr1, arr2):
+    if len(arr1.shape) > 1:
+        compare_ndim_arrays(arr1, arr2)
+        return
     (equal, l1, mid, l2) = generate_pretty_printed_comparison(arr1, arr2)
     if equal:
         print l1
@@ -38,7 +52,11 @@ def assert_arrays_equal(arr1, arr2):
     highlights different array cells if they differ.
     outputs the array if they are the same"""
     # are the arrays the same size?
-    assert len(arr1) == len(arr2)
+    assert arr1.shape == arr2.shape
+
+    if len(arr1.shape) > 1:
+        assert_ndim_arrays_equal(arr1, arr2)
+        return
 
     (equal, l1, mid, l2) = generate_pretty_printed_comparison(arr1, arr2)
 
@@ -77,3 +95,28 @@ TESTED_BINRULE = {
             [1,0,1,0,0,0,0,1,1,0],
             [1,1,1,0,0,0,1,1,1,1]]}
 TESTED_BINRULE = dict((k, [np.array(arr) for arr in v]) for k, v in TESTED_BINRULE.iteritems())
+GLIDER = [
+    [[0,1,0,0,0],
+     [0,0,1,0,0],
+     [1,1,1,0,0],
+     [0,0,0,0,0],
+     [0,0,0,0,0]],
+    [[0,0,0,0,0],
+     [1,0,1,0,0],
+     [0,1,1,0,0],
+     [0,1,0,0,0],
+     [0,0,0,0,0]],
+    [[0,0,0,0,0],
+     [0,0,1,0,0],
+     [1,0,1,0,0],
+     [0,1,1,0,0],
+     [0,0,0,0,0]],
+    [[0,0,0,0,0],
+     [0,1,0,0,0],
+     [0,0,1,1,0],
+     [0,1,1,0,0],
+     [0,0,0,0,0]],]
+try:
+    GLIDER = [np.array(a) for a in GLIDER]
+except:
+    pass

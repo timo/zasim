@@ -91,6 +91,65 @@ class TestCAGen:
 
 0    1    1    1    0    1    1    0"""
 
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_pretty_print_2d(self):
+        l = cagen.LinearCellLoop()
+        acc = cagen.TwoDimStateAccessor((10, 10))
+        neigh = cagen.VonNeumannNeighbourhood()
+        compute = cagen.ElementaryCellularAutomatonBase(1515361445)
+        copier = cagen.SimpleBorderCopier()
+        sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                           extra_code=[copier, compute])
+        conf = np.zeros((10, 10), int)
+        t = cagen.TestTarget(config=conf)
+        sf.set_target(t)
+        res = compute.pretty_print()
+        res = "\n".join(a.strip() for a in res.split("\n"))
+        assert res == """0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1
+000  100  000  100  010  110  010  110  000  100  000  100  010  110  010  110  001  101  001  101  011  111  011  111  001  101  001  101  011  111  011  111
+0    0    0    0    0    0    0    0    1    1    1    1    1    1    1    1    0    0    0    0    0    0    0    0    1    1    1    1    1    1    1    1
+
+1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    1    0    1    0"""
+
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    def test_weave_game_of_life(self):
+        t = cagen.TestTarget(config=GLIDER[0])
+
+        l = cagen.TwoDimCellLoop()
+        acc = cagen.TwoDimStateAccessor(size=GLIDER[0].shape)
+        neigh = cagen.MooreNeighbourhood()
+        compute = cagen.LifeCellularAutomatonBase()
+        copier = cagen.TwoDimZeroReader()
+        sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                    extra_code=[copier, compute])
+
+        sf.set_target(t)
+        sf.gen_code()
+
+        for glider_conf in GLIDER[1:]:
+            sf.step_inline()
+            assert_arrays_equal(glider_conf, t.cconf[1:-1, 1:-1])
+
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_pure_game_of_life(self):
+        t = cagen.TestTarget(config=GLIDER[0])
+
+        l = cagen.TwoDimCellLoop()
+        acc = cagen.TwoDimStateAccessor(size=GLIDER[0].shape)
+        neigh = cagen.MooreNeighbourhood()
+        compute = cagen.LifeCellularAutomatonBase()
+        copier = cagen.TwoDimZeroReader()
+        sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                    extra_code=[copier, compute])
+
+        sf.set_target(t)
+        sf.gen_code()
+
+        for glider_conf in GLIDER[1:]:
+            sf.step_pure_py()
+            assert_arrays_equal(glider_conf, t.cconf[1:-1,1:-1])
+
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
         for i in INTERESTING_BINRULES:
