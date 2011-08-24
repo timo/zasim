@@ -104,7 +104,7 @@ class WeaveStepFunc(object):
     """The WeaveStepFunc composes different parts into a functioning
     step function."""
     def __init__(self, loop, accessor, neighbourhood, extra_code=[],
-                 target=None, **kwargs):
+                 target=None, size=None, **kwargs):
         """The Constructor creates a weave-based step function from the
         specified parts.
 
@@ -117,7 +117,10 @@ class WeaveStepFunc(object):
                               neighbouring cell values into known variables.
         :param extra_code: Further :class:`WeaveStepFuncVisitor` classes, that
                            add more behaviour. 
-                           Usually at least a :class:`BorderCopier`."""
+                           Usually at least a :class:`BorderCopier`.
+        :param target: The object to target.
+        :param size: If the target is not supplied, the size has to be
+                     specified here."""
 
         super(WeaveStepFunc, self).__init__(**kwargs)
 
@@ -135,23 +138,26 @@ class WeaveStepFunc(object):
 
         self.attrs = []
         self.consts = {}
+        self.target = None
 
         self.acc = accessor
         self.neigh = neighbourhood
         self.loop = loop
+
+        if size is None:
+            size = target.cconf.shape
+        self.acc.set_size(size)
 
         self.visitors = [self.acc, self.neigh, self.loop] + extra_code
 
         for code in self.visitors:
             code.bind(self)
 
-        self.target = target
-        if self.target is not None:
-            for code in self.visitors:
-                code.set_target(self.target)
-
         for code in self.visitors:
             code.visit()
+
+        if target is not None:
+            self.set_target(target)
 
     def add_code(self, hook, code):
         """Add a snippet of C code to the section "hook".
@@ -354,6 +360,9 @@ class StateAccessor(WeaveStepFuncVisitor):
     def swap_configs(self):
         """Swap out all configs"""
 
+    def set_size(self, size):
+        """Set the size of the target."""
+
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
@@ -427,16 +436,15 @@ class BorderSizeEnsurer(BorderHandler):
         self.target.cconf = new_conf
 
 class SimpleStateAccessor(StateAccessor):
-    """The SimpleStateAccessor offers access to a one-dimensional configuration
-    space."""
+    """The SimpleStateAccessor offers a base for classes that just linearly
+    grant access to any-dimensional configuration space."""
     size_names = []
     """The names to use in the C code"""
     border_names = []
     """The names of border offsets"""
 
-    def __init__(self, size):
-        super(SimpleStateAccessor, self).__init__()
-        self.size = size
+    def __init__(self, **kwargs):
+        super(SimpleStateAccessor, self).__init__(**kwargs)
 
     def read_access(self, pos, skip_border=False):
         if skip_border:
@@ -462,6 +470,12 @@ class SimpleStateAccessor(StateAccessor):
         bb = self.code.neigh.bounding_box()
         mins = [abs(a[0]) for a in bb]
         self.border = tuple(mins)
+
+    def set_target(self, target):
+        """Get the size from the target objects config."""
+        super(SimpleStateAccessor, self).set_target(target)
+        if self.size is None:
+            self.size = self.target.cconf.shape
 
     def visit(self):
         """Take care for result and sizeX to exist in python and C code,
@@ -519,6 +533,10 @@ class SimpleStateAccessor(StateAccessor):
     def multiplicate_config(self):
         """Copy cconf to nconf in the target."""
         self.target.nconf = self.target.cconf.copy()
+
+    def set_size(self, size):
+        super(SimpleStateAccessor, self).set_size(size)
+        self.size = size
 
 class LinearStateAccessor(SimpleStateAccessor):
     """The LinearStateAccessor offers access to a one-dimensional configuration
@@ -905,8 +923,8 @@ class ElementaryCellularAutomatonBase(Computation):
         Finally, create code, that sums up all the values and looks up the
         target value from the rule lookup array.
         """
-
         super(ElementaryCellularAutomatonBase, self).visit()
+
         self.neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
         self.neigh.sort(key=lambda (offset, name): offset)
         self.digits = len(self.neigh)
@@ -931,7 +949,6 @@ class ElementaryCellularAutomatonBase(Computation):
     def init_once(self):
         """Generate the rule lookup array and a pretty printer."""
         super(ElementaryCellularAutomatonBase, self).init_once()
-
         entries = self.base ** self.digits
         self.target.rule = np.zeros(entries, int)
         for digit in range(entries):
@@ -1096,7 +1113,7 @@ class BinRule(TestTarget):
            :param rule: The rule number for the elementary cellular automaton.
            :param config: Optionally the configuration to use."""
         if size is None:
-            size = len(config)
+            size = config.shape
         super(BinRule, self).__init__(size, config, **kwargs)
 
         self.rule = None
@@ -1105,12 +1122,11 @@ class BinRule(TestTarget):
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
-                accessor=LinearStateAccessor(size=(size,)),
+                accessor=LinearStateAccessor(),
                 neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
                 extra_code=[SimpleBorderCopier(),
-                    self.computer])
+                    self.computer], target=self)
 
-        self.stepfunc.set_target(self)
         self.stepfunc.gen_code()
 
     def step_inline(self):
