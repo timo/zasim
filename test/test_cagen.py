@@ -8,6 +8,28 @@ import pytest
 MIN_SIZE, MAX_SIZE = 5, 25
 
 class TestCAGen:
+    glider = [np.array(a) for a in [
+        [[0,1,0,0,0],
+         [0,0,1,0,0],
+         [1,1,1,0,0],
+         [0,0,0,0,0],
+         [0,0,0,0,0]],
+        [[0,0,0,0,0],
+         [1,0,1,0,0],
+         [0,1,1,0,0],
+         [0,1,0,0,0],
+         [0,0,0,0,0]],
+        [[0,0,0,0,0],
+         [0,0,1,0,0],
+         [1,0,1,0,0],
+         [0,1,1,0,0],
+         [0,0,0,0,0]],
+        [[0,0,0,0,0],
+         [0,1,0,0,0],
+         [0,0,1,1,0],
+         [0,1,1,0,0],
+         [0,0,0,0,0]],]]
+
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_compare_weaves(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
@@ -110,6 +132,23 @@ class TestCAGen:
 0    0    0    0    0    0    0    0    1    1    1    1    1    1    1    1    0    0    0    0    0    0    0    0    1    1    1    1    1    1    1    1
 
 1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    1    0    1    0"""
+
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_game_of_life(self):
+        from pdb import set_trace; set_trace()
+        t = cagen.TestTarget(config=self.glider[0])
+
+        l = cagen.TwoDimCellLoop()
+        acc = cagen.TwoDimStateAccessor(size=self.glider[0].shape)
+        neigh = cagen.MooreNeighbourhood()
+        compute = cagen.LifeCellularAutomatonBase()
+        copier = cagen.TwoDimZeroReader()
+        sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                    extra_code=[copier, compute], target=t)
+
+        for glider_conf in self.glider[1:]:
+            sf.step_inline()
+            assert_arrays_equal(glider_conf)
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:

@@ -541,7 +541,7 @@ class TwoDimCellLoop(CellLoop):
     """The TwoDimCellLoop iterates over all cells from left to right, then from
     top to bottom."""
     def get_pos(self):
-        return "i, j"
+        return "i", "j"
 
     def visit(self):
         self.code.add_code("loop_begin",
@@ -723,7 +723,7 @@ class MooreNeighbourhood(SimpleNeighbourhood):
     def __init__(self, **kwargs):
         super(MooreNeighbourhood, self).__init__(
                 "lu u ru l m r ld d rd".split(" "),
-                [product(list([-1, 0, 1]) * 2)],
+                list(product([-1, 0, 1], [-1, 0, 1])),
                 **kwargs)
 
 class BaseBorderCopier(BorderSizeEnsurer):
@@ -949,12 +949,12 @@ class CountBasedComputationBase(Computation):
     The name of the central neighbour will be provided as self.central_name."""
     def visit(self):
         super(CountBasedComputationBase, self).visit()
-        names = self.code.neigh.neighbourhood_cells()
+        names = list(self.code.neigh.neighbourhood_cells())
         offsets = self.code.neigh.get_offsets()
 
         # kick out the center cell, if any.
         zero_offset = tuple([0] * len(offsets[0]))
-        zero_position = offsets.find(zero_offset)
+        zero_position = offsets.index(zero_offset)
         if zero_position != -1:
             self.central_name = names.pop(zero_position)
         else:
@@ -980,7 +980,7 @@ class LifeCellularAutomatonBase(CountBasedComputationBase):
                                   for a cell to survive.
            :param stay_alive_max: The maximal number of alive neighbours that
                                   still allow the cell to survive."""
-        super(ElementaryCellularAutomatonBase, self).__init__(**kwargs)
+        super(LifeCellularAutomatonBase, self).__init__(**kwargs)
         self.params = dict(reproduce_min = reproduce_min,
                 reproduce_max = reproduce_max,
                 stay_alive_min = stay_alive_min,
@@ -1023,7 +1023,7 @@ class TestTarget(object):
             self.size = size
         else:
             self.cconf = config.copy()
-            self.size = len(self.cconf)
+            self.size = self.cconf.shape
 
     def pretty_print(self):
         """pretty-print the configuration and such"""
