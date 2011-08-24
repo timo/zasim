@@ -132,8 +132,10 @@ class BaseDisplay(QWidget):
 
     def create_image_surf(self):
         """Create the image surface when the display is created."""
-        self.image = QBitmap(self.img_width, self.img_height)
-        self.image.clear()
+        self.image = QImage(self.img_width * self.img_scale,
+                            self.img_height * self.img_scale,
+                            QImage.Format_RGB444)
+        self.image.fill(0)
 
 class HistoryDisplay(BaseDisplay):
     """A Display that displays one-dimensional cellular automatons by drawing
@@ -163,56 +165,33 @@ class HistoryDisplay(BaseDisplay):
             lines or :attr:`size` lines, whichever is lower."""
         rendered = 0
         y = self.last_step % self.img_height
-        paint = QPainter(self.image)
+        w = self.img_width
+        scale = self.img_scale
         try:
+            painter = QPainter(self.image)
             while rendered < min(100, self.img_height):
                 conf = self.display_queue.get_nowait()
+                nconf = np.empty((w, 1, 2), np.uint8, "C")
+                nconf[...,0,0] = conf * 255
+                nconf[...,1] = nconf[...,0]
+
+                image = QImage(nconf.data, w, 1, QImage.Format_RGB444).scaled(w * scale, scale)
+                painter.drawImage(QPoint(0, y * scale), image)
+
                 self.queued_steps -= 1
-                ones = []
-                paint.setPen(Qt.color0)
-                for x, field in enumerate(conf):
-                    if field == 1:
-                        ones.append(x)
-                    else:
-                        paint.drawPoint(x, y)
-                paint.setPen(Qt.color1)
-                for x in ones:
-                    paint.drawPoint(x, y)
                 rendered += 1
                 self.last_step += 1
                 y = self.last_step % self.img_height
         except Queue.Empty:
             pass
+        finally:
+            del painter
 
         copier = QPainter(self)
-        copier.setPen(QColor("white"))
-        copier.setBackground(QColor("black"))
-        copier.setBackgroundMode(Qt.OpaqueMode)
+        copier.drawImage(QPoint(0, 0), self.image)
 
-        self._copy_pixmap(ev.rect(), copier)
+        del copier
 
-
-    def _copy_pixmap(self, target, painter, damageRect=None):
-        """Cleverly copy over a part of the stored image onto the widget.
-
-        :param target: The rect on the widget that's supposed to be updated.
-        :param painter: The painter to be used for drawing.
-        :param damageRect: An optional rect to limit the redrawing."""
-        if damageRect:
-            target = damageRect.intersected(target)
-        if self.img_scale == 1:
-            src = target
-        else:
-            target.setX(int(target.x() / self.img_scale) * self.img_scale)
-            target.setY(int(target.y() / self.img_scale) * self.img_scale)
-            target.setWidth(int(target.width() / self.img_scale) * self.img_scale + self.img_scale)
-            target.setHeight(int(target.height() / self.img_scale) * self.img_scale + self.img_scale)
-            src = QRect(target.x() / self.img_scale,
-                        target.y() / self.img_scale,
-                        target.width() / self.img_scale,
-                        target.height() / self.img_scale)
-
-        painter.drawPixmap(target, self.image, src)
 
     def after_step(self):
         """React to a single step. Copy the current configuration into the
@@ -242,16 +221,17 @@ def main():
     app = QApplication(sys.argv)
 
     scale = 2
-    sizex, sizey = 800 / scale, 600 / scale
+    w, h = 300, 300
 
     # get a random beautiful CA
     sim = binRule(random.choice(
          [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
-         sizex, 0, binRule.INIT_RAND)
-    disp = HistoryDisplay(sim, sizey, scale)
+         w, 0, binRule.INIT_RAND)
+
+    disp = HistoryDisplay(sim, h, scale)
+    disp.after_step()
 
     window = QMainWindow()
-
 
     central_widget = QWidget(window)
 
