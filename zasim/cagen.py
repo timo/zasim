@@ -173,9 +173,10 @@ class WeaveStepFunc(object):
                 line = tuple_array_index_fixup(line)
             newfunc.append(" " * self.pycode_indent[hook] + line)
             if EXTREME_PURE_PY_DEBUG:
+                indent = len(line) - len(line.lstrip(" "))
                 words = line.strip().split(" ")
                 if len(words) > 1 and words[1] == "=":
-                    newfunc.append(" " * self.pycode_indent[hook] + "print " + words[0])
+                    newfunc.append(" " * (self.pycode_indent[hook] + indent) + "print " + words[0])
 
         self.pycode[hook].append("\n".join(newfunc))
 
