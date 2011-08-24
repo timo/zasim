@@ -218,6 +218,7 @@ class WeaveStepFunc(object):
         myglob = globals()
         myloc = locals()
         exec code_object in myglob, myloc
+        self.pure_py_code_text = code_text
         self.step_pure_py = new.instancemethod(myloc["step_pure_py"], self, self.__class__)
 
     def step_inline(self):
@@ -449,7 +450,8 @@ class SimpleStateAccessor(StateAccessor):
         """Get the bounding box from the neighbourhood object."""
         super(SimpleStateAccessor, self).bind(target)
         bb = self.code.neigh.bounding_box()
-        mins = [min([abs(b) for b in a]) for a in bb[::2]]
+        #mins = [min([abs(b) for b in a]) for a in bb[::2]]
+        mins = [abs(a[0]) for a in bb]
         self.border = tuple(mins)
 
     def visit(self):
