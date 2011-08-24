@@ -147,7 +147,7 @@ class TestCAGen:
 
         for glider_conf in GLIDER[1:]:
             sf.step_pure_py()
-            assert_arrays_equal(glider_conf, t.cconf)
+            assert_arrays_equal(glider_conf, t.cconf[1:-1,1:-1])
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
