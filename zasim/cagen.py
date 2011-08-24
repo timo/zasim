@@ -691,6 +691,41 @@ class SimpleNeighbourhood(Neighbourhood):
         mins = [m * steps for m in mins]
         return zip(mins, maxes)
 
+class ElementaryFlatNeighbourhood(SimpleNeighbourhood):
+    """This is the neighbourhood used by the elementary cellular automatons.
+
+    The neighbours are called l, m and r for left, middle and right."""
+    def __init__(self, **kwargs):
+        super(ElementaryFlatNeighbourhood, self).__init__(
+                list("lmr"),
+                [[-1], [0], [1]], **kwargs)
+
+class VonNeumannNeighbourhood(SimpleNeighbourhood):
+    """This is the Von Neumann Neighbourhood, in which the cell itself and the
+    left, upper, lower and right neighbours are considered.
+
+    The neighbours are called l, u, m, d and r for left, up, middle, down and
+    right respectively."""
+    def __init__(self, **kwargs):
+        super(VonNeumannNeighbourhood, self).__init__(
+                list("lumdr"),
+                [(0,-1), (0,1), (-1,0), (1,0), (0,0)],
+                **kwargs)
+
+class MooreNeighbourhood(SimpleNeighbourhood):
+    """This is the Moore Neighbourhood. The cell and all of its 8 neighbours
+    are considered for computation.
+
+    The fields are called lu, u, ru, l, m, r, ld, d and rd for left-up, up,
+    right-up, left, middle, right, left-down, down and right-down
+    respectively."""
+
+    def __init__(self, **kwargs):
+        super(MooreNeighbourhood, self).__init__(
+                "lu u ru l m r ld d rd".split(" "),
+                [product(list([-1, 0, 1]) * 2)],
+                **kwargs)
+
 class BaseBorderCopier(BorderSizeEnsurer):
     def new_config(self):
         """Copies over the borders once."""
