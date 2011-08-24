@@ -79,6 +79,16 @@ class TestCAGen:
         with pytest.raises(AttributeError):
             br.stepfunc.add_py_hook("pre_compute", "print 'hello'")
 
+    def test_pretty_print(self):
+        br = cagen.BinRule(size=10,rule=110)
+
+        res = br.pretty_print()
+        res = "\n".join(a.strip() for a in res.split("\n"))
+
+        assert res == """000  100  010  110  001  101  011  111
+
+0    1    1    1    0    1    1    0"""
+
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
         for i in INTERESTING_BINRULES:

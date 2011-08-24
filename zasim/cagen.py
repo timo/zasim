@@ -25,9 +25,13 @@ The parts the step function is decomposed into are all subclasses of
     handles the borders of the configuration by copying over parts or writing
     data. Maybe, in the future, it could also resize configurations on demand.
 
+  - A :class:`Computation`
+
+    handles the computation that turns the data from the neighbourhood into
+    the result that goes into the value for the next step.
 
 All of those classes are used to initialise a :class:`WeaveStepFunc` object,
-which can then target a configuration object with the method 
+which can then target a configuration object with the method
 :meth:`~WeaveStepFunc.set_target`.
 
 .. testsetup:: *
@@ -52,7 +56,7 @@ except ImportError:
 
 try:
     from numpy import ndarray
-    HAVE_MULTIDIM = False
+    HAVE_MULTIDIM = True
 except:
     print "multi-dimensional arrays are not available"
     HAVE_MULTIDIM = False
@@ -363,6 +367,9 @@ class Neighbourhood(WeaveStepFuncVisitor):
     def get_neighbourhood(self, pos):
         """Get the values of the neighbouring cells for pos in python"""
 
+    def get_offsets(self):
+        """Get all the offsets."""
+
     def bounding_box(self, steps=1):
         """Find out, how many cells, at most, have to be read after
         a number of steps have been done.
@@ -380,6 +387,10 @@ class BorderHandler(WeaveStepFuncVisitor):
     configuration. One example is copying the leftmost border to the rightmost
     border and vice versa or ensuring the border cells are always 0."""
 
+class Computation(WeaveStepFuncVisitor):
+    """The Computation is responsible for calculating the result from the data
+    gathered from the neighbourhood."""
+
 class BorderSizeEnsurer(BorderHandler):
     """The BorderSizeEnsurer ensures, that - depending on the bounding box
     returned by :meth:`Neighbourhood.bounding_box` - the underlying config
@@ -391,17 +402,17 @@ class BorderSizeEnsurer(BorderHandler):
         bbox = self.code.neigh.bounding_box()
         # FIXME if the bbox goes into the positive values, abs is wrong. use the 
         # FIXME correct amount of minus signs instead?
-        dims = len(bbox[0]) / 2
+        dims = len(bbox)
         shape = self.target.cconf.shape
         if dims == 1:
             new_conf = np.zeros(shape[0] + abs(bbox[0][0]) + abs(bbox[0][1]))
             new_conf[abs(bbox[0][0]):-abs(bbox[0][1])] = self.target.cconf
         elif dims == 2:
             # TODO figure out how to create slice objects in a general way.
-            new_conf = np.zeros((shape[0] + abs(bbox[0]) + abs(bbox[1]),
-                                 shape[1] + abs(bbox[2]) + abs(bbox[3])))
-            new_conf[abs(bbox[0]):-abs(bbox[1]),
-                     abs(bbox[2]):-abs(bbox[3])] = self.target.cconf
+            new_conf = np.zeros((shape[0] + abs(bbox[0][0]) + abs(bbox[0][1]),
+                                 shape[1] + abs(bbox[1][0]) + abs(bbox[1][1])))
+            new_conf[abs(bbox[0][0]):-abs(bbox[0][1]),
+                     abs(bbox[1][0]):-abs(bbox[1][1])] = self.target.cconf
         self.target.cconf = new_conf
 
 class SimpleStateAccessor(StateAccessor):
@@ -640,6 +651,9 @@ class SimpleNeighbourhood(Neighbourhood):
     def neighbourhood_cells(self):
         return self.names
 
+    def get_offsets(self):
+        return self.offsets
+
     def bounding_box(self, steps=1):
         """Calculate a bounding box from a set of offsets.
 
@@ -748,6 +762,96 @@ class TwoDimZeroReader(BorderSizeEnsurer):
     # there is no extra work at all to be done as compared to the
     # BorderSizeEnsurer, because it embeds the confs into np.zero.
 
+class ElementaryCellularAutomatonBase(Computation):
+    max_value = 1
+    def __init__(self, rule, **kwargs):
+        super(ElementaryCellularAutomatonBase, self).__init__(**kwargs)
+        self.rule = rule
+
+    def visit(self):
+        super(ElementaryCellularAutomatonBase, self).visit()
+        self.neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
+        self.neigh.sort(key=lambda (offset, name): offset)
+        self.digits = len(self.neigh)
+        self.base = self.max_value + 1
+
+        compute_code = ["result = 0;"]
+        compute_py = ["result = 0"]
+        self.code.attrs.append("rule")
+
+        for digit_num, (offset, name) in zip(range(len(self.neigh) - 1, -1, -1), self.neigh):
+            code = "result += %s * %d" % (name, self.base ** digit_num)
+            compute_code.append(code + ";")
+            compute_py.append(code)
+
+        compute_code.append("result = rule(result);")
+        compute_py.append("result = self.target.rule[int(result)]")
+
+        self.code.add_code("compute", "\n".join(compute_code))
+        self.code.add_py_hook("compute", "\n".join(compute_py))
+        print "\n".join(compute_code)
+        print "\n".join(compute_py)
+
+    def init_once(self):
+        super(ElementaryCellularAutomatonBase, self).init_once()
+
+        entries = self.base ** self.digits
+        self.target.rule = np.zeros(entries, int)
+        for digit in range(entries):
+            if self.rule & (self.base ** digit) > 0:
+                self.target.rule[digit] = 1
+
+        # and now do some heavy work to generate a pretty-printer!
+        bbox = self.code.neigh.bounding_box()
+        offsets = self.code.neigh.get_offsets()
+        offset_to_name = dict(self.neigh)
+        ordered_names = [a[1] for a in self.neigh]
+
+        if len(bbox) == 1:
+            h = 3
+        else:
+            h = bbox[1][1] - bbox[1][0] + 2
+        protolines = [[] for i in range(h)]
+        lines = [line[:] for line in protolines]
+        w = bbox[0][1] + 1 - bbox[0][0]
+
+        for y in range(h):
+            for x in range(bbox[0][0], bbox[0][1] + 1):
+                if h == 3 and (x,) in offsets and y == 0:
+                    lines[y].append("%(" + offset_to_name[(x,)]
+                               + ")d")
+                elif h > 3 and (x, y) in offsets:
+                    lines[y].append("%(" + offset_to_name[(x, y)]
+                               + ")d")
+                else:
+                    lines[y].append(" ")
+            lines[y] = "".join(lines[y]) + "  "
+
+        lines[-1] = ("X".center(w) + "  ").replace("X", "%(result_value)d")
+
+        template = [line[:] for line in lines]
+
+        def pretty_printer(self):
+            lines = [line[:] for line in protolines]
+            for i in range(self.base ** self.digits):
+                values = [1 if (i & (self.base ** k)) > 0 else 0
+                        for k in range(len(offsets))]
+                asdict = dict(zip(ordered_names, values))
+                asdict.update(result_value = self.target.rule[i])
+
+                for line, tmpl_line in zip(lines, template):
+                    line.append(tmpl_line % asdict)
+
+            return "\n".join(["".join(line) for line in lines])
+
+            # TODO print the result of each one, too.
+
+        self.pretty_print = new.instancemethod(pretty_printer, self, self.__class__)
+
+    def pretty_print(self):
+        """This method is generated upon init_once and pretty-prints the rules
+        that this elementary cellular automaton uses for local steps."""
+
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
     :class:`WeaveStepFunc`."""
@@ -767,6 +871,9 @@ class TestTarget(object):
             self.cconf = config.copy()
             self.size = len(self.cconf)
 
+    def pretty_print(self):
+        """pretty-print the configuration and such"""
+
 class BinRule(TestTarget):
     """A Target plus a WeaveStepFunc for elementary cellular automatons."""
     def __init__(self, size=None, deterministic=True, rule=126, config=None, **kwargs):
@@ -779,30 +886,17 @@ class BinRule(TestTarget):
         if size is None:
             size = len(config)
         super(BinRule, self).__init__(size, config, **kwargs)
+
+        self.rule = None
+        self.computer = ElementaryCellularAutomatonBase(rule)
+
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
                 accessor=LinearStateAccessor(size=(size,)),
                 neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
-                extra_code=[LinearBorderCopier()])
-
-        self.rule = np.zeros( 8 )
-
-        for i in range( 8 ):
-            if ( rule & ( 1 << i ) ):
-                self.rule[i] = 1
-
-        self.stepfunc.attrs.append("rule")
-        self.stepfunc.add_code("localvars",
-                """int state;""")
-        self.stepfunc.add_code("compute",
-                """state =  l << 2;
-      state += m << 1;
-      state += r;
-      result = rule(state);""")
-
-        self.stepfunc.add_py_hook("compute",
-                """result = self.target.rule[int(l * 4 + m * 2 + r)]""")
+                extra_code=[LinearBorderCopier(),
+                    self.computer])
 
         self.stepfunc.set_target(self)
         self.stepfunc.gen_code()
@@ -814,6 +908,9 @@ class BinRule(TestTarget):
     def step_pure_py(self):
         """Use the step function to step with pure python code."""
         self.stepfunc.step_pure_py()
+
+    def pretty_print(self):
+        return self.computer.pretty_print()
 
 def test():
     cell_shadow, cell_full = "%#"
