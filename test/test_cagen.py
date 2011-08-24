@@ -8,28 +8,6 @@ import pytest
 MIN_SIZE, MAX_SIZE = 5, 25
 
 class TestCAGen:
-    glider = [np.array(a) for a in [
-        [[0,1,0,0,0],
-         [0,0,1,0,0],
-         [1,1,1,0,0],
-         [0,0,0,0,0],
-         [0,0,0,0,0]],
-        [[0,0,0,0,0],
-         [1,0,1,0,0],
-         [0,1,1,0,0],
-         [0,1,0,0,0],
-         [0,0,0,0,0]],
-        [[0,0,0,0,0],
-         [0,0,1,0,0],
-         [1,0,1,0,0],
-         [0,1,1,0,0],
-         [0,0,0,0,0]],
-        [[0,0,0,0,0],
-         [0,1,0,0,0],
-         [0,0,1,1,0],
-         [0,1,1,0,0],
-         [0,0,0,0,0]],]]
-
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_compare_weaves(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
@@ -135,10 +113,10 @@ class TestCAGen:
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
     def test_weave_game_of_life(self):
-        t = cagen.TestTarget(config=self.glider[0])
+        t = cagen.TestTarget(config=GLIDER[0])
 
         l = cagen.TwoDimCellLoop()
-        acc = cagen.TwoDimStateAccessor(size=self.glider[0].shape)
+        acc = cagen.TwoDimStateAccessor(size=GLIDER[0].shape)
         neigh = cagen.MooreNeighbourhood()
         compute = cagen.LifeCellularAutomatonBase()
         copier = cagen.TwoDimZeroReader()
@@ -148,16 +126,16 @@ class TestCAGen:
         sf.set_target(t)
         sf.gen_code()
 
-        for glider_conf in self.glider[1:]:
+        for glider_conf in GLIDER[1:]:
             sf.step_inline()
             assert_arrays_equal(glider_conf)
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
     def test_pure_game_of_life(self):
-        t = cagen.TestTarget(config=self.glider[0])
+        t = cagen.TestTarget(config=GLIDER[0])
 
         l = cagen.TwoDimCellLoop()
-        acc = cagen.TwoDimStateAccessor(size=self.glider[0].shape)
+        acc = cagen.TwoDimStateAccessor(size=GLIDER[0].shape)
         neigh = cagen.MooreNeighbourhood()
         compute = cagen.LifeCellularAutomatonBase()
         copier = cagen.TwoDimZeroReader()
@@ -167,7 +145,7 @@ class TestCAGen:
         sf.set_target(t)
         sf.gen_code()
 
-        for glider_conf in self.glider[1:]:
+        for glider_conf in GLIDER[1:]:
             sf.step_pure_py()
             assert_arrays_equal(glider_conf, t.cconf)
 
