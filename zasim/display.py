@@ -6,6 +6,7 @@ It will try importing PySide first, and if that fails PyQt. The code will
 constantly be tested with both bindings."""
 
 from .ca import binRule
+from . import cagen
 
 try:
     from PySide.QtCore import *
@@ -19,6 +20,8 @@ import Queue
 import sys
 import random
 import time
+from itertools import product
+import numpy as np
 
 class Control(QWidget):
     """Control a simulator with buttons or from the interactive console."""
@@ -28,7 +31,7 @@ class Control(QWidget):
         super(Control, self).__init__(parent)
 
         self.sim = simulator
-        self.timer_delay = 10
+        self.timer_delay = 1
         self.attached_displays = []
 
         self._setup_ui()
@@ -216,6 +219,49 @@ class HistoryDisplay(BaseDisplay):
             QPoint(0, ((self.last_step + self.queued_steps - 1) % self.img_height) * self.img_scale),
             QSize(self.img_width * self.img_scale, self.img_scale)))
 
+class TwoDimDisplay(BaseDisplay):
+    def __init__(self, simulator, scale=1, **kwargs):
+        super(TwoDimDisplay, self).__init__(width=simulator.sizeX,
+                    height=simulator.sizeY,
+                    queue_size=1,
+                    scale=scale,
+                    **kwargs)
+
+        self.sim = simulator
+
+    def paintEvent(self, ev):
+        """Get new configurations, update the internal pixmap, refresh the
+        display.
+
+        This is called from Qt whenever a repaint is in order. Do not call it
+        yourself. :meth:`after_step` will call update, which will trigger a
+        :meth:`paintEvent`.
+
+        .. note::
+            Only the very latest config will be displayed. All others will be
+            dropped immediately."""
+        if self.conf_new:
+            conf = self.queued_conf
+            self.conf_new = False
+            w, h = conf.shape
+            nconf = np.empty((w, h, 2), np.uint8, "C")
+            nconf[...,0] = conf * 255
+            nconf[...,1] = nconf[...,0]
+            self.image = QImage(nconf.data, w, h, QImage.Format_RGB444).scaled(
+                    w * self.img_scale, h * self.img_scale)
+
+        copier = QPainter(self)
+        copier.drawImage(QPoint(0, 0), self.image)
+        del copier
+
+    def after_step(self):
+        """React to a single step. Copy the current configuration into the
+        :attr:`display_queue` and schedule a call to :meth:`paintEvent`."""
+        conf = self.sim.getConf().copy()
+        self.queued_conf = conf
+        self.conf_new = True
+
+        self.update()
 
 def main():
     app = QApplication(sys.argv)
@@ -223,13 +269,36 @@ def main():
     scale = 2
     w, h = 300, 300
 
-    # get a random beautiful CA
-    sim = binRule(random.choice(
-         [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
-         w, 0, binRule.INIT_RAND)
+    dimensions = 2
 
-    disp = HistoryDisplay(sim, h, scale)
-    disp.after_step()
+    if dimensions == 1:
+        # get a random beautiful CA
+        sim = binRule(random.choice(
+             [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
+             w, 0, binRule.INIT_RAND)
+
+        disp = HistoryDisplay(sim, h, scale)
+        disp.after_step()
+    elif dimensions == 2:
+        twodim_rand = np.zeros((w, h), int)
+        for x, y in product(range(w), range(h)):
+            twodim_rand[x, y] = random.choice([0, 0, 0, 1])
+
+        t = cagen.TestTarget(config=twodim_rand)
+
+        compute = cagen.LifeCellularAutomatonBase()
+        l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
+        acc = cagen.TwoDimStateAccessor()
+        neigh = cagen.MooreNeighbourhood()
+        copier = cagen.SimpleBorderCopier()
+        #copier = cagen.TwoDimZeroReader()
+        sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                        extra_code=[copier, compute], target=t)
+
+        sim.gen_code()
+
+        sim.sizeX, sim.sizeY = acc.size
+        disp = TwoDimDisplay(sim, scale)
 
     window = QMainWindow()
 
