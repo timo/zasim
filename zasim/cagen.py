@@ -82,7 +82,7 @@ EXTREME_PURE_PY_DEBUG = False
 if HAVE_TUPLE_ARRAY_INDEX:
     def offset_pos(pos, offset):
         """Offset a position by an offset. Any amount of dimensions should work."""
-        return [a + b for a, b in zip(pos, offset)]
+        return tuple([a + b for a, b in zip(pos, offset)])
 else:
     def offset_pos(pos, offset):
         """Offset a position by an offset. Only works for 1d."""
