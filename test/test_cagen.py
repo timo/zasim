@@ -127,10 +127,9 @@ class TestCAGen:
         sf.set_target(t)
         sf.gen_code()
 
-        pytest.skip("i was gonna segfault, but i skipped it.")
         for glider_conf in GLIDER[1:]:
             sf.step_inline()
-            assert_arrays_equal(glider_conf)
+            assert_arrays_equal(glider_conf, t.cconf[1:-1, 1:-1])
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
     def test_pure_game_of_life(self):
