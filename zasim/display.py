@@ -117,11 +117,11 @@ class BaseDisplay(QWidget):
                            forcing a redraw.
         """
         super(BaseDisplay, self).__init__(**kwargs)
-        self.img_size = width, height
+        self.img_width, self.img_height = width, height
         self.img_scale = scale
 
-        self.resize(self.img_size[0] * self.img_scale,
-                    self.img_size[1] * self.img_scale)
+        self.resize(self.img_width * self.img_scale,
+                    self.img_height * self.img_scale)
 
         self.create_image_surf()
         self.display_queue = Queue.Queue(queue_size)
@@ -150,7 +150,7 @@ class HistoryDisplay(BaseDisplay):
         self.timer_delay = 50
 
     def create_image_surf(self):
-        self.image = QBitmap(*self.img_size)
+        self.image = QBitmap(self.img_width, self.img_height)
         self.image.clear()
 
     def paintEvent(self, ev):
@@ -165,10 +165,10 @@ class HistoryDisplay(BaseDisplay):
             In order not to turn into an endless loop, update at most 100
             lines or :attr:`size` lines, whichever is lower."""
         rendered = 0
-        y = self.last_step % self.img_size[1]
+        y = self.last_step % self.img_height
         paint = QPainter(self.image)
         try:
-            while rendered < min(100, self.img_size[1]):
+            while rendered < min(100, self.img_height):
                 conf = self.display_queue.get_nowait()
                 self.queued_steps -= 1
                 ones = []
@@ -183,7 +183,7 @@ class HistoryDisplay(BaseDisplay):
                     paint.drawPoint(x, y)
                 rendered += 1
                 self.last_step += 1
-                y = self.last_step % self.img_size[1]
+                y = self.last_step % self.img_height
         except Queue.Empty:
             pass
 
@@ -237,8 +237,8 @@ class HistoryDisplay(BaseDisplay):
 
         self.queued_steps += 1
         self.update(QRect(
-            QPoint(0, ((self.last_step + self.queued_steps - 1) % self.img_size[1]) * self.img_scale),
-            QSize(self.img_size[0] * self.img_scale, self.img_scale)))
+            QPoint(0, ((self.last_step + self.queued_steps - 1) % self.img_height) * self.img_scale),
+            QSize(self.img_width * self.img_scale, self.img_scale)))
 
 
 def main():
