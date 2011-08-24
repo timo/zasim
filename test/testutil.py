@@ -82,8 +82,8 @@ def pretty_print_binrule(rule_arr):
     print " " + "   ".join(l2)
 
 INTERESTING_BINRULES = [
-        26, 30, 60, 90, 122, 126, 150, 184, # triangles of different sorts
-        45, 54, 73, 105, # other pretty rules
+        26, 30, 122, 184, # triangles of different sorts
+        45, 54, # other pretty rules
         110, # this one's actually able to calculate things
         ]
 

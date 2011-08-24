@@ -104,7 +104,7 @@ class WeaveStepFunc(object):
     """The WeaveStepFunc composes different parts into a functioning
     step function."""
     def __init__(self, loop, accessor, neighbourhood, extra_code=[],
-                 target=None, **kwargs):
+                 target=None, size=None, **kwargs):
         """The Constructor creates a weave-based step function from the
         specified parts.
 
@@ -117,7 +117,10 @@ class WeaveStepFunc(object):
                               neighbouring cell values into known variables.
         :param extra_code: Further :class:`WeaveStepFuncVisitor` classes, that
                            add more behaviour. 
-                           Usually at least a :class:`BorderCopier`."""
+                           Usually at least a :class:`BorderCopier`.
+        :param target: The object to target.
+        :param size: If the target is not supplied, the size has to be
+                     specified here."""
 
         super(WeaveStepFunc, self).__init__(**kwargs)
 
@@ -135,23 +138,26 @@ class WeaveStepFunc(object):
 
         self.attrs = []
         self.consts = {}
+        self.target = None
 
         self.acc = accessor
         self.neigh = neighbourhood
         self.loop = loop
+
+        if size is None:
+            size = target.cconf.shape
+        self.acc.set_size(size)
 
         self.visitors = [self.acc, self.neigh, self.loop] + extra_code
 
         for code in self.visitors:
             code.bind(self)
 
-        self.target = target
-        if self.target is not None:
-            for code in self.visitors:
-                code.set_target(self.target)
-
         for code in self.visitors:
             code.visit()
+
+        if target is not None:
+            self.set_target(target)
 
     def add_code(self, hook, code):
         """Add a snippet of C code to the section "hook".
@@ -240,6 +246,18 @@ class WeaveStepFunc(object):
         raise ValueError("Cannot run pure python step until gen_code has been"
                          "called")
 
+    def step(self):
+        try:
+            self.step_inline()
+            self.step = self.step_inline
+        except:
+            print "OOOOOOOOOOOOOOMMMMMMMMMMMMMGGGGGGGGGGGGGGGGGGGGGG"
+
+            self.step_pure_py()
+            self.step = self.step_pure_py
+
+    def getConf(self):
+        return self.target.cconf.copy()
 
     def set_target(self, target):
         """Set the target of the step function. The target contains,
@@ -278,6 +296,14 @@ class WeaveStepFuncVisitor(object):
             Once bonded, the visitor object will refuse to be rebound."""
         assert self.code is None, "%r is already bound to %r" % (self, self.code)
         self.code = code
+    def visit(self):
+        """Adds code to the bound step func.
+
+        This will be called directly after bind.
+
+        .. note::
+            Never call this function on your own.
+            This method will be called by :meth:`WeaveStepFunc.__init__`."""
 
     def set_target(self, target):
         """Target a CA instance
@@ -286,15 +312,6 @@ class WeaveStepFuncVisitor(object):
             Once a target has been set, the visitor object will refuse to retarget."""
         assert self.target is None, "%r already targets %r" % (self, self.target)
         self.target = target
-
-    def visit(self):
-        """Adds code to the bound step func.
-
-        This will be called after bind, but not necessarily after set_target.
-
-        .. note::
-            Never call this function on your own.
-            This method will be called by :meth:`WeaveStepFunc.__init__`."""
 
     def init_once(self):
         """Initialize data on the target.
@@ -353,6 +370,9 @@ class StateAccessor(WeaveStepFuncVisitor):
 
     def swap_configs(self):
         """Swap out all configs"""
+
+    def set_size(self, size):
+        """Set the size of the target."""
 
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
@@ -427,15 +447,18 @@ class BorderSizeEnsurer(BorderHandler):
         self.target.cconf = new_conf
 
 class SimpleStateAccessor(StateAccessor):
-    """The SimpleStateAccessor offers access to a one-dimensional configuration
-    space."""
+    """The SimpleStateAccessor offers a base for classes that just linearly
+    grant access to any-dimensional configuration space."""
     size_names = []
     """The names to use in the C code"""
     border_names = []
     """The names of border offsets"""
 
-    def __init__(self, size):
-        super(SimpleStateAccessor, self).__init__()
+    def __init__(self, **kwargs):
+        super(SimpleStateAccessor, self).__init__(**kwargs)
+
+    def set_size(self, size):
+        super(SimpleStateAccessor, self).set_size(size)
         self.size = size
 
     def read_access(self, pos, skip_border=False):
@@ -485,6 +508,12 @@ class SimpleStateAccessor(StateAccessor):
                 """self.acc.write_to(pos, result)""")
         self.code.add_py_hook("finalize",
                 """self.acc.swap_configs()""")
+
+    def set_target(self, target):
+        """Get the size from the target objects config."""
+        super(SimpleStateAccessor, self).set_target(target)
+        if self.size is None:
+            self.size = self.target.cconf.shape
 
     def read_from(self, pos, skip_border=False):
         if skip_border:
@@ -538,6 +567,7 @@ class LinearCellLoop(CellLoop):
         return "i"
 
     def visit(self):
+        super(LinearCellLoop, self).visit()
         self.code.add_code("loop_begin",
                 """for(int i=0; i < sizeX; i++) {""")
         self.code.add_code("loop_end",
@@ -556,6 +586,7 @@ class TwoDimCellLoop(CellLoop):
         return "i", "j"
 
     def visit(self):
+        super(TwoDimCellLoop, self).visit()
         size_names = self.code.acc.size_names
         self.code.add_code("loop_begin",
                 """for(int i=0; i < %s; i++) {
@@ -611,9 +642,16 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
 
     def visit(self):
         """Adds C code for handling the randseed and skipping."""
+        print "visited"
         super(NondeterministicCellLoopMixin, self).visit()
         self.code.add_code("loop_begin",
-                """if(rand() >= RAND_MAX * %s) continue;""" % (self.probab))
+                """if(rand() >= RAND_MAX * %(probab)s) {
+                    %(write_current)s = %(read_current)s;
+                    continue;
+                };""" % dict(probab=self.probab,
+                    write_current=self.code.acc.write_access(self.code.loop.get_pos()),
+                    read_current=self.code.acc.read_access(self.code.loop.get_pos())
+                    ))
         self.code.add_code("localvars",
                 """srand(randseed(0));""")
         self.code.add_code("after_step",
@@ -626,12 +664,12 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
         # FIXME how do i get the randseed out without using np.array?
         target.randseed = np.array([self.random.random()])
 
-class LinearNondeterministicCellLoop(LinearCellLoop, NondeterministicCellLoopMixin):
+class LinearNondeterministicCellLoop(NondeterministicCellLoopMixin,LinearCellLoop):
     """This Nondeterministic Cell Loop loops over one dimension, skipping cells
     with a probability of probab."""
     pass
 
-class TwoDimNondeterministicCellLoop(TwoDimCellLoop, NondeterministicCellLoopMixin):
+class TwoDimNondeterministicCellLoop(NondeterministicCellLoopMixin, TwoDimCellLoop):
     """This Nondeterministic Cell Loop loops over two dimensions, skipping cells
     with a probability of probab."""
     pass
@@ -753,6 +791,11 @@ class BaseBorderCopier(BorderSizeEnsurer):
         In order for this to work you have to use :meth:`tee_copy_hook` instead
         of :meth:`WeaveStepFunc.add_py_hook` for creating the border fixup
         code, so that it can be retargetted and reused."""
+    def visit(self):
+        """Initialise :attr:`copy_py_code`."""
+        self.copy_py_code = []
+        super(BaseBorderCopier, self).visit()
+
     def new_config(self):
         """Runs the retargetted version of the border copy code created in
         :meth:`visit`."""
@@ -775,11 +818,6 @@ class BaseBorderCopier(BorderSizeEnsurer):
         code piece that gets retargetted and run in :meth:`new_config`."""
         self.code.add_py_hook("after_step", code)
         self.copy_py_code.append(code)
-
-    def visit(self):
-        """Initialise :attr:`copy_py_code`."""
-        self.copy_py_code = []
-        super(BaseBorderCopier, self).visit()
 
 class SimpleBorderCopier(BaseBorderCopier):
     """Copy over cell values, so that reading from a cell at the border over
@@ -846,17 +884,17 @@ class SimpleBorderCopier(BaseBorderCopier):
                 if isinstance(target, int): # pack this into a tuple for pypy
                     target = (target,)
                 if is_beyond_border(target):
-                    over_border[tuple(target)] = ", ".join(self.wrap_around_border(target))
+                    over_border[tuple(target)] = self.wrap_around_border(target)
 
         copy_code = []
 
         for write, read in over_border.iteritems():
             copy_code.append("%s = %s;" % (
                 self.code.acc.write_access(write),
-                self.code.acc.write_access((read,))))
+                self.code.acc.write_access(read)))
 
             self.tee_copy_hook("""self.acc.write_to(%s,
-    value=self.acc.read_from_next((%s,)))""" % (write, read))
+    value=self.acc.read_from_next((%s,)))""" % (write, ", ".join(read)))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
@@ -905,8 +943,8 @@ class ElementaryCellularAutomatonBase(Computation):
         Finally, create code, that sums up all the values and looks up the
         target value from the rule lookup array.
         """
-
         super(ElementaryCellularAutomatonBase, self).visit()
+
         self.neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
         self.neigh.sort(key=lambda (offset, name): offset)
         self.digits = len(self.neigh)
@@ -925,13 +963,10 @@ class ElementaryCellularAutomatonBase(Computation):
 
         self.code.add_code("compute", "\n".join(compute_code))
         self.code.add_py_hook("compute", "\n".join(compute_py))
-        print "\n".join(compute_code)
-        print "\n".join(compute_py)
 
     def init_once(self):
         """Generate the rule lookup array and a pretty printer."""
         super(ElementaryCellularAutomatonBase, self).init_once()
-
         entries = self.base ** self.digits
         self.target.rule = np.zeros(entries, int)
         for digit in range(entries):
@@ -1096,7 +1131,7 @@ class BinRule(TestTarget):
            :param rule: The rule number for the elementary cellular automaton.
            :param config: Optionally the configuration to use."""
         if size is None:
-            size = len(config)
+            size = config.shape
         super(BinRule, self).__init__(size, config, **kwargs)
 
         self.rule = None
@@ -1105,12 +1140,11 @@ class BinRule(TestTarget):
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
-                accessor=LinearStateAccessor(size=(size,)),
+                accessor=LinearStateAccessor(),
                 neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
                 extra_code=[SimpleBorderCopier(),
-                    self.computer])
+                    self.computer], target=self)
 
-        self.stepfunc.set_target(self)
         self.stepfunc.gen_code()
 
     def step_inline(self):

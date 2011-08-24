@@ -93,16 +93,18 @@ class TestCAGen:
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
     def test_pretty_print_2d(self):
+        conf = np.zeros((10, 10), int)
+        t = cagen.TestTarget(config=conf)
+
         l = cagen.LinearCellLoop()
-        acc = cagen.TwoDimStateAccessor((10, 10))
+        acc = cagen.TwoDimStateAccessor()
         neigh = cagen.VonNeumannNeighbourhood()
         compute = cagen.ElementaryCellularAutomatonBase(1515361445)
         copier = cagen.SimpleBorderCopier()
+
         sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                           extra_code=[copier, compute])
-        conf = np.zeros((10, 10), int)
-        t = cagen.TestTarget(config=conf)
-        sf.set_target(t)
+                           extra_code=[copier, compute], target=t)
+
         res = compute.pretty_print()
         res = "\n".join(a.strip() for a in res.split("\n"))
         assert res == """0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1
@@ -117,14 +119,13 @@ class TestCAGen:
         t = cagen.TestTarget(config=GLIDER[0])
 
         l = cagen.TwoDimCellLoop()
-        acc = cagen.TwoDimStateAccessor(size=GLIDER[0].shape)
+        acc = cagen.TwoDimStateAccessor()
         neigh = cagen.MooreNeighbourhood()
         compute = cagen.LifeCellularAutomatonBase()
         copier = cagen.TwoDimZeroReader()
         sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                    extra_code=[copier, compute])
+                    extra_code=[copier, compute], target=t)
 
-        sf.set_target(t)
         sf.gen_code()
 
         for glider_conf in GLIDER[1:]:
@@ -136,14 +137,13 @@ class TestCAGen:
         t = cagen.TestTarget(config=GLIDER[0])
 
         l = cagen.TwoDimCellLoop()
-        acc = cagen.TwoDimStateAccessor(size=GLIDER[0].shape)
+        acc = cagen.TwoDimStateAccessor()
         neigh = cagen.MooreNeighbourhood()
         compute = cagen.LifeCellularAutomatonBase()
         copier = cagen.TwoDimZeroReader()
         sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                    extra_code=[copier, compute])
+                    extra_code=[copier, compute], target=t)
 
-        sf.set_target(t)
         sf.gen_code()
 
         for glider_conf in GLIDER[1:]:

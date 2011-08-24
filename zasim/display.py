@@ -6,6 +6,7 @@ It will try importing PySide first, and if that fails PyQt. The code will
 constantly be tested with both bindings."""
 
 from .ca import binRule
+from . import cagen
 
 try:
     from PySide.QtCore import *
@@ -19,6 +20,8 @@ import Queue
 import sys
 import random
 import time
+from itertools import product
+import numpy as np
 
 class Control(QWidget):
     """Control a simulator with buttons or from the interactive console."""
@@ -28,7 +31,7 @@ class Control(QWidget):
         super(Control, self).__init__(parent)
 
         self.sim = simulator
-        self.timer_delay = 10
+        self.timer_delay = 1
         self.attached_displays = []
 
         self._setup_ui()
@@ -40,6 +43,7 @@ class Control(QWidget):
         self.stop_button = QPushButton("Stop")
         self.stop_button.setDisabled(True)
         delay = QSpinBox()
+        delay.setValue(self.timer_delay)
 
         l.addWidget(self.start_button)
         l.addWidget(self.stop_button)
@@ -104,32 +108,52 @@ class Control(QWidget):
                 diff, last_time = time.time() - last_time, time.time()
                 print last_step, diff
 
+class BaseDisplay(QWidget):
+    """A base class for different types of displays.
 
-class HistoryDisplay(QWidget):
+    Manages the config display queue, scrolling, ..."""
+    def __init__(self, width, height, queue_size=1, scale=1, **kwargs):
+        """Initialize the BaseDisplay.
+
+        :param width: The width of the image to build.
+        :param height: The height of the image to build.
+        :param queue_size: The amount of histories that may pile up before
+                           forcing a redraw.
+        """
+        super(BaseDisplay, self).__init__(**kwargs)
+        self.img_width, self.img_height = width, height
+        self.img_scale = scale
+
+        self.resize(self.img_width * self.img_scale,
+                    self.img_height * self.img_scale)
+
+        self.create_image_surf()
+        self.display_queue = Queue.Queue(queue_size)
+
+        self.last_step = 0
+        self.queued_steps = 0
+
+    def create_image_surf(self):
+        """Create the image surface when the display is created."""
+        self.image = QImage(self.img_width * self.img_scale,
+                            self.img_height * self.img_scale,
+                            QImage.Format_RGB444)
+        self.image.fill(0)
+
+class HistoryDisplay(BaseDisplay):
     """A Display that displays one-dimensional cellular automatons by drawing
     consecutive configurations below each other, wrapping around to the top."""
-    def __init__(self, simulator, size, scale=1, parent=None):
+    def __init__(self, simulator, size, scale=1, **kwargs):
         """:param simulator: The simulator to use.
         :param size: The amount of lines of history to keep before wrapping.
         :param scale: The size of each pixel.
         :param parent: The QWidget to set as parent."""
-        super(HistoryDisplay, self).__init__(parent)
+        super(HistoryDisplay, self).__init__(width=simulator.sizeX,
+                      height=size,
+                      queue_size=size,
+                      scale=scale,
+                      **kwargs)
         self.sim = simulator
-        self.scale = scale
-        self.size = size
-        self.width = self.sim.sizeX
-
-        self.image = QBitmap(self.sim.sizeX, self.size)
-        self.image.clear()
-
-        self.display_queue = Queue.Queue(self.size)
-        self.last_step = 0
-        self.queued_steps = 0
-
-        self.resize(self.sim.sizeX * self.scale,
-                    self.size * self.scale)
-
-        self.timer_delay = 10
 
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
@@ -143,57 +167,34 @@ class HistoryDisplay(QWidget):
             In order not to turn into an endless loop, update at most 100
             lines or :attr:`size` lines, whichever is lower."""
         rendered = 0
-        y = self.last_step % self.size
-        paint = QPainter(self.image)
+        y = self.last_step % self.img_height
+        w = self.img_width
+        scale = self.img_scale
         try:
-            while rendered < min(100, self.size):
+            painter = QPainter(self.image)
+            while rendered < min(100, self.img_height):
                 conf = self.display_queue.get_nowait()
+                nconf = np.empty((w, 1, 2), np.uint8, "C")
+                nconf[...,0,0] = conf * 255
+                nconf[...,1] = nconf[...,0]
+
+                image = QImage(nconf.data, w, 1, QImage.Format_RGB444).scaled(w * scale, scale)
+                painter.drawImage(QPoint(0, y * scale), image)
+
                 self.queued_steps -= 1
-                ones = []
-                paint.setPen(Qt.color0)
-                for x, field in enumerate(conf):
-                    if field == 1:
-                        ones.append(x)
-                    else:
-                        paint.drawPoint(x, y)
-                paint.setPen(Qt.color1)
-                for x in ones:
-                    paint.drawPoint(x, y)
                 rendered += 1
                 self.last_step += 1
-                y = self.last_step % self.size
+                y = self.last_step % self.img_height
         except Queue.Empty:
             pass
+        finally:
+            del painter
 
         copier = QPainter(self)
-        copier.setPen(QColor("white"))
-        copier.setBackground(QColor("black"))
-        copier.setBackgroundMode(Qt.OpaqueMode)
+        copier.drawImage(QPoint(0, 0), self.image)
 
-        self._copy_pixmap(ev.rect(), copier)
+        del copier
 
-
-    def _copy_pixmap(self, target, painter, damageRect=None):
-        """Cleverly copy over a part of the stored image onto the widget.
-
-        :param target: The rect on the widget that's supposed to be updated.
-        :param painter: The painter to be used for drawing.
-        :param damageRect: An optional rect to limit the redrawing."""
-        if damageRect:
-            target = damageRect.intersected(target)
-        if self.scale == 1:
-            src = target
-        else:
-            target.setX(int(target.x() / self.scale) * self.scale)
-            target.setY(int(target.y() / self.scale) * self.scale)
-            target.setWidth(int(target.width() / self.scale) * self.scale + self.scale)
-            target.setHeight(int(target.height() / self.scale) * self.scale + self.scale)
-            src = QRect(target.x() / self.scale,
-                        target.y() / self.scale,
-                        target.width() / self.scale,
-                        target.height() / self.scale)
-
-        painter.drawPixmap(target, self.image, src)
 
     def after_step(self):
         """React to a single step. Copy the current configuration into the
@@ -214,23 +215,92 @@ class HistoryDisplay(QWidget):
             # don't need to care at all.
 
         self.queued_steps += 1
-        self.update(QRect(QPoint(0, ((self.last_step + self.queued_steps - 1) % self.size) * self.scale), QSize(self.width * self.scale, self.scale)))
+        self.update(QRect(
+            QPoint(0, ((self.last_step + self.queued_steps - 1) % self.img_height) * self.img_scale),
+            QSize(self.img_width * self.img_scale, self.img_scale)))
 
+class TwoDimDisplay(BaseDisplay):
+    def __init__(self, simulator, scale=1, **kwargs):
+        super(TwoDimDisplay, self).__init__(width=simulator.sizeX,
+                    height=simulator.sizeY,
+                    queue_size=1,
+                    scale=scale,
+                    **kwargs)
+
+        self.sim = simulator
+
+    def paintEvent(self, ev):
+        """Get new configurations, update the internal pixmap, refresh the
+        display.
+
+        This is called from Qt whenever a repaint is in order. Do not call it
+        yourself. :meth:`after_step` will call update, which will trigger a
+        :meth:`paintEvent`.
+
+        .. note::
+            Only the very latest config will be displayed. All others will be
+            dropped immediately."""
+        if self.conf_new:
+            conf = self.queued_conf
+            self.conf_new = False
+            w, h = conf.shape
+            nconf = np.empty((w, h, 2), np.uint8, "C")
+            nconf[...,0] = conf * 255
+            nconf[...,1] = nconf[...,0]
+            self.image = QImage(nconf.data, w, h, QImage.Format_RGB444).scaled(
+                    w * self.img_scale, h * self.img_scale)
+
+        copier = QPainter(self)
+        copier.drawImage(QPoint(0, 0), self.image)
+        del copier
+
+    def after_step(self):
+        """React to a single step. Copy the current configuration into the
+        :attr:`display_queue` and schedule a call to :meth:`paintEvent`."""
+        conf = self.sim.getConf().copy()
+        self.queued_conf = conf
+        self.conf_new = True
+
+        self.update()
 
 def main():
     app = QApplication(sys.argv)
 
     scale = 2
-    sizex, sizey = 800 / scale, 600 / scale
+    w, h = 300, 300
 
-    # get a random beautiful CA
-    sim = binRule(random.choice(
-         [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
-         sizex, 0, binRule.INIT_RAND)
-    disp = HistoryDisplay(sim, sizey, scale)
+    dimensions = 2
+
+    if dimensions == 1:
+        # get a random beautiful CA
+        sim = binRule(random.choice(
+             [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
+             w, 0, binRule.INIT_RAND)
+
+        disp = HistoryDisplay(sim, h, scale)
+        disp.after_step()
+    elif dimensions == 2:
+        twodim_rand = np.zeros((w, h), int)
+        for x, y in product(range(w), range(h)):
+            twodim_rand[x, y] = random.choice([0, 0, 0, 1])
+
+        t = cagen.TestTarget(config=twodim_rand)
+
+        compute = cagen.LifeCellularAutomatonBase()
+        l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
+        acc = cagen.TwoDimStateAccessor()
+        neigh = cagen.MooreNeighbourhood()
+        copier = cagen.SimpleBorderCopier()
+        #copier = cagen.TwoDimZeroReader()
+        sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                        extra_code=[copier, compute], target=t)
+
+        sim.gen_code()
+
+        sim.sizeX, sim.sizeY = acc.size
+        disp = TwoDimDisplay(sim, scale)
 
     window = QMainWindow()
-
 
     central_widget = QWidget(window)
 
