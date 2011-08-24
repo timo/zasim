@@ -770,16 +770,16 @@ class ElementaryCellularAutomatonBase(Computation):
 
     def visit(self):
         super(ElementaryCellularAutomatonBase, self).visit()
-        neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
-        neigh.sort(key=lambda (offset, name): offset)
-        self.digits = len(neigh)
+        self.neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
+        self.neigh.sort(key=lambda (offset, name): offset)
+        self.digits = len(self.neigh)
         self.base = self.max_value + 1
 
         compute_code = ["result = 0;"]
         compute_py = ["result = 0"]
         self.code.attrs.append("rule")
 
-        for digit_num, (offset, name) in zip(range(len(neigh) - 1, -1, -1), neigh):
+        for digit_num, (offset, name) in zip(range(len(self.neigh) - 1, -1, -1), self.neigh):
             code = "result += %s * %d" % (name, self.base ** digit_num)
             compute_code.append(code + ";")
             compute_py.append(code)
