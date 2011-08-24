@@ -246,6 +246,18 @@ class WeaveStepFunc(object):
         raise ValueError("Cannot run pure python step until gen_code has been"
                          "called")
 
+    def step(self):
+        try:
+            self.step_inline()
+            self.step = self.step_inline
+        except:
+            print "OOOOOOOOOOOOOOMMMMMMMMMMMMMGGGGGGGGGGGGGGGGGGGGGG"
+
+            self.step_pure_py()
+            self.step = self.step_pure_py
+
+    def getConf(self):
+        return self.target.cconf.copy()
 
     def set_target(self, target):
         """Set the target of the step function. The target contains,
@@ -951,8 +963,6 @@ class ElementaryCellularAutomatonBase(Computation):
 
         self.code.add_code("compute", "\n".join(compute_code))
         self.code.add_py_hook("compute", "\n".join(compute_py))
-        print "\n".join(compute_code)
-        print "\n".join(compute_py)
 
     def init_once(self):
         """Generate the rule lookup array and a pretty printer."""
