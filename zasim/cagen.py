@@ -861,12 +861,13 @@ class ElementaryCellularAutomatonBase(Computation):
 
         if len(bbox) == 1:
             h = 3
+            y_offset = None
         else:
             h = bbox[1][1] - bbox[1][0] + 3
+            y_offset = bbox[1][0]
         protolines = [[] for i in range(h)]
         lines = [line[:] for line in protolines]
         w = bbox[0][1] + 1 - bbox[0][0]
-        y_offset = bbox[1][0]
 
         for y in range(h):
             for x in range(bbox[0][0], bbox[0][1] + 1):
