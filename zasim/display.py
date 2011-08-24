@@ -40,6 +40,7 @@ class Control(QWidget):
         self.stop_button = QPushButton("Stop")
         self.stop_button.setDisabled(True)
         delay = QSpinBox()
+        delay.setValue(self.timer_delay)
 
         l.addWidget(self.start_button)
         l.addWidget(self.stop_button)
