@@ -111,6 +111,8 @@ class TestCAGen:
 
 1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    1    0    1    0"""
 
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_weave_game_of_life(self):
         t = cagen.TestTarget(config=GLIDER[0])
 
