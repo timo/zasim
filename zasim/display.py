@@ -132,6 +132,8 @@ class BaseDisplay(QWidget):
 
     def create_image_surf(self):
         """Create the image surface when the display is created."""
+        self.image = QBitmap(self.img_width, self.img_height)
+        self.image.clear()
 
 class HistoryDisplay(BaseDisplay):
     """A Display that displays one-dimensional cellular automatons by drawing
@@ -147,12 +149,6 @@ class HistoryDisplay(BaseDisplay):
                       scale=scale,
                       **kwargs)
         self.sim = simulator
-
-        self.timer_delay = 50
-
-    def create_image_surf(self):
-        self.image = QBitmap(self.img_width, self.img_height)
-        self.image.clear()
 
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
