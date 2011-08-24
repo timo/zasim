@@ -1,3 +1,4 @@
+# coding: utf-8
 """This module offers the ability to slim down the specification of
 cellular automaton step functions using re-usable components.
 
@@ -318,7 +319,8 @@ class StateAccessor(WeaveStepFuncVisitor):
     the lowest coordinates will have a border of data around them.
 
     Supplying skip_border=True to any read or write function will remove the
-    border from the calculation. This is mainly useful for BorderHandler."""
+    border from the calculation. This is mainly useful for
+    :class:`BorderHandler` subclasses."""
 
     def read_access(self, pos, skip_border=False):
         """Generate a bit of C code for reading from the old config at pos."""
@@ -370,18 +372,26 @@ class Neighbourhood(WeaveStepFuncVisitor):
     def get_offsets(self):
         """Get the offsets of the neighbourhood cells."""
 
+    def recalc_bounding_box(self):
+        """Recalculate the bounding box."""
+        self.bb = ((-99, 100),
+                   (-1, 1))
 
     def bounding_box(self, steps=1):
         """Find out, how many cells, at most, have to be read after
         a number of steps have been done.
 
-        It will return a list of tuples with relative values where 0 is the
+        It will return a tuple of tuples with relative values where 0 is the
         index of the current cell. It will have a format like:
 
-            [(minX, maxX),
+            ((minX, maxX),
              (minY, maxY),
              (minZ, maxZ),
-             ...]"""
+             ...)"""
+        if steps == 1:
+            return self.bb
+        else:
+            return tuple((low * steps, high * steps) for (low, high) in self.bb)
 
 class BorderHandler(WeaveStepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
@@ -401,7 +411,7 @@ class BorderSizeEnsurer(BorderHandler):
         """Resizes the configuration array."""
         super(BorderSizeEnsurer, self).new_config()
         bbox = self.code.neigh.bounding_box()
-        # FIXME if the bbox goes into the positive values, abs is wrong. use the 
+        # FIXME if the bbox goes into the positive values, abs is wrong. use the
         # FIXME correct amount of minus signs instead?
         dims = len(bbox)
         shape = self.target.cconf.shape
@@ -450,7 +460,6 @@ class SimpleStateAccessor(StateAccessor):
         """Get the bounding box from the neighbourhood object."""
         super(SimpleStateAccessor, self).bind(target)
         bb = self.code.neigh.bounding_box()
-        #mins = [min([abs(b) for b in a]) for a in bb[::2]]
         mins = [abs(a[0]) for a in bb]
         self.border = tuple(mins)
 
@@ -514,14 +523,14 @@ class SimpleStateAccessor(StateAccessor):
 class LinearStateAccessor(SimpleStateAccessor):
     """The LinearStateAccessor offers access to a one-dimensional configuration
     space."""
-    size_names = ["sizeX"]
-    border_names = ["BORDER_OFFSET"]
+    size_names = ("sizeX",)
+    border_names = ("BORDER_OFFSET",)
 
 class TwoDimStateAccessor(SimpleStateAccessor):
     """The TwoDimStateAccessor offers access to a two-dimensional configuration
     space."""
-    size_names = ["sizeX", "sizeY"]
-    border_names = ["LEFT_BORDER", "UPPER_BORDER"]
+    size_names = ("sizeX", "sizeY")
+    border_names = ("LEFT_BORDER", "UPPER_BORDER")
 
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
@@ -547,9 +556,10 @@ class TwoDimCellLoop(CellLoop):
         return "i", "j"
 
     def visit(self):
+        size_names = self.code.acc.size_names
         self.code.add_code("loop_begin",
-                """for(int i=0; i < sizeX; i++) {
-for(int j=0; j < sizeY; j++) {""")
+                """for(int i=0; i < %s; i++) {
+for(int j=0; j < %s; j++) {""" % (size_names))
         self.code.add_code("loop_end",
                 """}
 }""")
@@ -617,14 +627,18 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
         target.randseed = np.array([self.random.random()])
 
 class LinearNondeterministicCellLoop(LinearCellLoop, NondeterministicCellLoopMixin):
+    """This Nondeterministic Cell Loop loops over one dimension, skipping cells
+    with a probability of probab."""
     pass
 
 class TwoDimNondeterministicCellLoop(TwoDimCellLoop, NondeterministicCellLoopMixin):
+    """This Nondeterministic Cell Loop loops over two dimensions, skipping cells
+    with a probability of probab."""
     pass
 
 class SimpleNeighbourhood(Neighbourhood):
     """The SimpleNeighbourhood offers named access to any number of
-    neighbouring fields."""
+    neighbouring fields with any number of dimensions."""
     def __init__(self, names, offsets):
         """:param names: A list of names for the neighbouring cells.
         :param offsets: A list of offsets for each of the neighbouring cells."""
@@ -632,6 +646,7 @@ class SimpleNeighbourhood(Neighbourhood):
         self.names = tuple(names)
         self.offsets = tuple(offsets)
         assert len(self.names) == len(self.offsets)
+        self.recalc_bounding_box()
 
     def visit(self):
         """Adds C and python code to get the neighbouring values and stores
@@ -656,26 +671,8 @@ class SimpleNeighbourhood(Neighbourhood):
     def get_offsets(self):
         return self.offsets
 
-    def bounding_box(self, steps=1):
-        """Calculate a bounding box from a set of offsets.
-
-        The return value will have an outer list with one tuple for
-        each dimension. Each dimension will have a min and a max value.
-
-        Supplying the step argument will figure out, how far accesses will
-        reach when running step steps.
-
-        >>> a = cagen.SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,)))
-        >>> a.bounding_box()
-        [(-1, 1)]
-        >>> a.bounding_box(2)
-        [(-2, 2)]
-        >>> b = cagen.SimpleNeighbourhood(list("ab"), ((-5, 20), (99, 10)))
-        >>> b.bounding_box()
-        [(-5, 99), (10, 20)]
-        >>> b.bounding_box(10)
-        [(-50, 990), (100, 200)]
-        """
+    def recalc_bounding_box(self):
+        """Calculate a bounding box from a set of offsets."""
         # there is at least one offset and that has to have the right number of
         # dimensions already.
         num_dimensions = len(self.offsets[0])
@@ -690,9 +687,27 @@ class SimpleNeighbourhood(Neighbourhood):
             for dim in range(num_dimensions):
                 maxes[dim] = max(maxes[dim], offset[dim])
                 mins[dim] = min(mins[dim], offset[dim])
-        maxes = [m * steps for m in maxes]
-        mins = [m * steps for m in mins]
-        return zip(mins, maxes)
+
+        self.bb = tuple(zip(mins, maxes))
+
+    def bounding_box(self, steps=1):
+        """Get the bounding box resulting from step successive reads.
+
+        The return value will have an outer tuple with one tuple for
+        each dimension. Each dimension will have a min and a max value.
+
+        >>> a = cagen.SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,)))
+        >>> a.bounding_box()
+        ((-1, 1))
+        >>> a.bounding_box(2)
+        ((-2, 2))
+        >>> b = cagen.SimpleNeighbourhood(list("ab"), ((-5, 20), (99, 10)))
+        >>> b.bounding_box()
+        ((-5, 99), (10, 20))
+        >>> b.bounding_box(10)
+        ((-50, 990), (100, 200))
+        """
+        return super(SimpleNeighbourhood, self).bounding_box(steps)
 
 class ElementaryFlatNeighbourhood(SimpleNeighbourhood):
     """This is the neighbourhood used by the elementary cellular automatons.
@@ -730,8 +745,17 @@ class MooreNeighbourhood(SimpleNeighbourhood):
                 **kwargs)
 
 class BaseBorderCopier(BorderSizeEnsurer):
+    """This base class for border copiers executes a retargetted version of the
+    pure-py code,that was generated for ensuring the borders are neat after a
+    full step, when new_config is called.
+
+    .. note::
+        In order for this to work you have to use :meth:`tee_copy_hook` instead
+        of :meth:`WeaveStepFunc.add_py_hook` for creating the border fixup
+        code, so that it can be retargetted and reused."""
     def new_config(self):
-        """Copies over the borders once."""
+        """Runs the retargetted version of the border copy code created in
+        :meth:`visit`."""
         super(BaseBorderCopier, self).new_config()
 
         retargetted = "\n".join(self.copy_py_code)
@@ -747,10 +771,13 @@ class BaseBorderCopier(BorderSizeEnsurer):
         exec retargetted in globals(), locals()
 
     def tee_copy_hook(self, code):
+        """Append a piece of code to the "after_step" hook as well as the local
+        code piece that gets retargetted and run in :meth:`new_config`."""
         self.code.add_py_hook("after_step", code)
         self.copy_py_code.append(code)
 
     def visit(self):
+        """Initialise :attr:`copy_py_code`."""
         self.copy_py_code = []
         super(BaseBorderCopier, self).visit()
 
@@ -763,6 +790,8 @@ class SimpleBorderCopier(BaseBorderCopier):
 
     This class should work with any number of dimensions."""
     def visit(self):
+        """Generate code for copying over or otherwise handling data from the
+        borders."""
         super(SimpleBorderCopier, self).visit()
         # This is the new concept for the border copier:
 
@@ -810,6 +839,7 @@ class SimpleBorderCopier(BaseBorderCopier):
         #       Maybe iterating "only over the relevant parts" can help this by
         #       passing the positions not as absolute values, but as relatives
         #       to the relevant sizeFoo variable.
+
         for pos in product(*ranges):
             for neighbour in neighbours:
                 target = offset_pos(pos, neighbour)
@@ -853,17 +883,33 @@ class TwoDimZeroReader(BorderSizeEnsurer):
     # BorderSizeEnsurer, because it embeds the confs into np.zero.
 
 class ElementaryCellularAutomatonBase(Computation):
-    max_value = 1
+    """Infer a 'Gödel numbering' from the used :class:`Neighbourhood` and
+    create a computation that corresponds to the rule'th possible combination
+    of values for the neighbourhood cells.
+
+    This works with any number of dimensions."""
+    base = 2
+    """The number of different values each cell can have."""
     def __init__(self, rule, **kwargs):
         super(ElementaryCellularAutomatonBase, self).__init__(**kwargs)
         self.rule = rule
 
     def visit(self):
+        """Get the rule'th cellular automaton for the given neighbourhood.
+
+        First, find out, how many possible combinations there are.
+        That's simply the nuber of cells in the neighbourhood as the exponent
+        of :attr:`base`.
+        Then, normalise the neighbourhood cells by sorting their positions
+        first by X, then by Y axis.
+        Finally, create code, that sums up all the values and looks up the
+        target value from the rule lookup array.
+        """
+
         super(ElementaryCellularAutomatonBase, self).visit()
         self.neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
         self.neigh.sort(key=lambda (offset, name): offset)
         self.digits = len(self.neigh)
-        self.base = self.max_value + 1
 
         compute_code = ["result = 0;"]
         compute_py = ["result = 0"]
@@ -883,12 +929,13 @@ class ElementaryCellularAutomatonBase(Computation):
         print "\n".join(compute_py)
 
     def init_once(self):
+        """Generate the rule lookup array and a pretty printer."""
         super(ElementaryCellularAutomatonBase, self).init_once()
 
         entries = self.base ** self.digits
         self.target.rule = np.zeros(entries, int)
         for digit in range(entries):
-            if self.rule & (self.base ** digit) > 0:
+            if self.rule & (self.base** digit) > 0:
                 self.target.rule[digit] = 1
 
         # and now do some heavy work to generate a pretty-printer!
@@ -900,9 +947,12 @@ class ElementaryCellularAutomatonBase(Computation):
         if len(bbox) == 1:
             h = 3
             y_offset = None
-        else:
+        elif len(bbox) == 2:
             h = bbox[1][1] - bbox[1][0] + 3
             y_offset = bbox[1][0]
+        else:
+            # for higher dimensions, just fall back to the dummy pretty-printer
+            return
         protolines = [[] for i in range(h)]
         lines = [line[:] for line in protolines]
         w = bbox[0][1] + 1 - bbox[0][0]
@@ -943,6 +993,8 @@ class ElementaryCellularAutomatonBase(Computation):
     def pretty_print(self):
         """This method is generated upon init_once and pretty-prints the rules
         that this elementary cellular automaton uses for local steps."""
+        return ["cannot pretty-print with neighbourhoods of more than",
+                "two dimensions"]
 
 class CountBasedComputationBase(Computation):
     """This base class counts the amount of nonzero neighbours excluding the
