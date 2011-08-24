@@ -91,6 +91,28 @@ class TestCAGen:
 
 0    1    1    1    0    1    1    0"""
 
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_pretty_print_2d(self):
+        1515361445
+        l = cagen.LinearCellLoop()
+        acc = cagen.TwoDimStateAccessor((10, 10))
+        neigh = cagen.SimpleNeighbourhood(list("udlrc"),
+                [(0,-1), (0,1), (-1,0), (1,0), (0,0)])
+        compute = cagen.ElementaryCellularAutomatonBase(1515361445)
+        copier = cagen.SimpleBorderCopier()
+        sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                           extra_code=[copier, compute])
+        conf = np.zeros((10, 10), int)
+        t = cagen.TestTarget(config=conf)
+        sf.set_target(t)
+        res = compute.pretty_print()
+        res = "\n".join(a.strip() for a in res.split("\n"))
+        assert res == """0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1    0    0    1    1
+000  100  000  100  010  110  010  110  000  100  000  100  010  110  010  110  001  101  001  101  011  111  011  111  001  101  001  101  011  111  011  111
+0    0    0    0    0    0    0    0    1    1    1    1    1    1    1    1    0    0    0    0    0    0    0    0    1    1    1    1    1    1    1    1
+
+1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    1    0    1    0"""
+
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
         for i in INTERESTING_BINRULES:

@@ -862,18 +862,19 @@ class ElementaryCellularAutomatonBase(Computation):
         if len(bbox) == 1:
             h = 3
         else:
-            h = bbox[1][1] - bbox[1][0] + 2
+            h = bbox[1][1] - bbox[1][0] + 3
         protolines = [[] for i in range(h)]
         lines = [line[:] for line in protolines]
         w = bbox[0][1] + 1 - bbox[0][0]
+        y_offset = bbox[1][0]
 
         for y in range(h):
             for x in range(bbox[0][0], bbox[0][1] + 1):
                 if h == 3 and (x,) in offsets and y == 0:
                     lines[y].append("%(" + offset_to_name[(x,)]
                                + ")d")
-                elif h > 3 and (x, y) in offsets:
-                    lines[y].append("%(" + offset_to_name[(x, y)]
+                elif h > 3 and (x, y + y_offset) in offsets:
+                    lines[y].append("%(" + offset_to_name[(x, y + y_offset)]
                                + ")d")
                 else:
                     lines[y].append(" ")
