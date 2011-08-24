@@ -104,32 +104,54 @@ class Control(QWidget):
                 diff, last_time = time.time() - last_time, time.time()
                 print last_step, diff
 
+class BaseDisplay(QWidget):
+    """A base class for different types of displays.
 
-class HistoryDisplay(QWidget):
+    Manages the config display queue, scrolling, ..."""
+    def __init__(self, width, height, queue_size=1, scale=1, **kwargs):
+        """Initialize the BaseDisplay.
+
+        :param width: The width of the image to build.
+        :param height: The height of the image to build.
+        :param queue_size: The amount of histories that may pile up before
+                           forcing a redraw.
+        """
+        super(BaseDisplay, self).__init__(**kwargs)
+        self.img_size = width, height
+        self.img_scale = scale
+
+        self.resize(self.img_size[0] * self.img_scale,
+                    self.img_size[1] * self.img_scale)
+
+        self.create_image_surf()
+        self.display_queue = Queue.Queue(queue_size)
+
+        self.last_step = 0
+        self.queued_steps = 0
+
+    def create_image_surf(self):
+        """Create the image surface when the display is created."""
+
+class HistoryDisplay(BaseDisplay):
     """A Display that displays one-dimensional cellular automatons by drawing
     consecutive configurations below each other, wrapping around to the top."""
-    def __init__(self, simulator, size, scale=1, parent=None):
+    def __init__(self, simulator, size, scale=1, **kwargs):
         """:param simulator: The simulator to use.
         :param size: The amount of lines of history to keep before wrapping.
         :param scale: The size of each pixel.
         :param parent: The QWidget to set as parent."""
-        super(HistoryDisplay, self).__init__(parent)
+        super(HistoryDisplay, self).__init__(width=simulator.sizeX,
+                      height=size,
+                      queue_size=size,
+                      scale=scale,
+                      **kwargs)
         self.sim = simulator
-        self.scale = scale
-        self.size = size
-        self.width = self.sim.sizeX
 
-        self.image = QBitmap(self.sim.sizeX, self.size)
+        self.timer_delay = 50
+
+    def create_image_surf(self):
+        self.image = QBitmap(*self.img_size)
         self.image.clear()
-
-        self.display_queue = Queue.Queue(self.size)
-        self.last_step = 0
-        self.queued_steps = 0
-
-        self.resize(self.sim.sizeX * self.scale,
-                    self.size * self.scale)
-
-        self.timer_delay = 10
 
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
@@ -143,10 +165,10 @@ class HistoryDisplay(QWidget):
             In order not to turn into an endless loop, update at most 100
             lines or :attr:`size` lines, whichever is lower."""
         rendered = 0
-        y = self.last_step % self.size
+        y = self.last_step % self.img_size[1]
         paint = QPainter(self.image)
         try:
-            while rendered < min(100, self.size):
+            while rendered < min(100, self.img_size[1]):
                 conf = self.display_queue.get_nowait()
                 self.queued_steps -= 1
                 ones = []
@@ -161,7 +183,7 @@ class HistoryDisplay(QWidget):
                     paint.drawPoint(x, y)
                 rendered += 1
                 self.last_step += 1
-                y = self.last_step % self.size
+                y = self.last_step % self.img_size[1]
         except Queue.Empty:
             pass
 
@@ -181,17 +203,17 @@ class HistoryDisplay(QWidget):
         :param damageRect: An optional rect to limit the redrawing."""
         if damageRect:
             target = damageRect.intersected(target)
-        if self.scale == 1:
+        if self.img_scale == 1:
             src = target
         else:
-            target.setX(int(target.x() / self.scale) * self.scale)
-            target.setY(int(target.y() / self.scale) * self.scale)
-            target.setWidth(int(target.width() / self.scale) * self.scale + self.scale)
-            target.setHeight(int(target.height() / self.scale) * self.scale + self.scale)
-            src = QRect(target.x() / self.scale,
-                        target.y() / self.scale,
-                        target.width() / self.scale,
-                        target.height() / self.scale)
+            target.setX(int(target.x() / self.img_scale) * self.img_scale)
+            target.setY(int(target.y() / self.img_scale) * self.img_scale)
+            target.setWidth(int(target.width() / self.img_scale) * self.img_scale + self.img_scale)
+            target.setHeight(int(target.height() / self.img_scale) * self.img_scale + self.img_scale)
+            src = QRect(target.x() / self.img_scale,
+                        target.y() / self.img_scale,
+                        target.width() / self.img_scale,
+                        target.height() / self.img_scale)
 
         painter.drawPixmap(target, self.image, src)
 
@@ -214,7 +236,9 @@ class HistoryDisplay(QWidget):
             # don't need to care at all.
 
         self.queued_steps += 1
-        self.update(QRect(QPoint(0, ((self.last_step + self.queued_steps - 1) % self.size) * self.scale), QSize(self.width * self.scale, self.scale)))
+        self.update(QRect(
+            QPoint(0, ((self.last_step + self.queued_steps - 1) % self.img_size[1]) * self.img_scale),
+            QSize(self.img_size[0] * self.img_scale, self.img_scale)))
 
 
 def main():
