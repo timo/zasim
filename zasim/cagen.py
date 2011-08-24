@@ -73,6 +73,7 @@ except TypeError:
         return TUPLE_ACCESS_FIX.sub(r"\1", line)
 
 from random import Random
+from itertools import product
 import sys
 import new
 
@@ -364,11 +365,9 @@ class Neighbourhood(WeaveStepFuncVisitor):
     def neighbourhood_cells(self):
         """Get the names of the neighbouring cells."""
 
-    def get_neighbourhood(self, pos):
-        """Get the values of the neighbouring cells for pos in python"""
-
     def get_offsets(self):
-        """Get all the offsets."""
+        """Get the offsets of the neighbourhood cells."""
+
 
     def bounding_box(self, steps=1):
         """Find out, how many cells, at most, have to be read after
@@ -701,6 +700,9 @@ class BaseBorderCopier(BorderSizeEnsurer):
         retargetted = retargetted.replace("self.", "self.code.")
         retargetted = retargetted.replace("write_to(", "write_to_current(")
         retargetted = retargetted.replace("read_from_next(", "read_from(")
+        for dim, size_name in enumerate(self.code.acc.size_names):
+            size = self.code.acc.get_size_of(dim)
+            retargetted = retargetted.replace(size_name, str(size))
         if not HAVE_TUPLE_ARRAY_INDEX:
             retargetted = tuple_array_index_fixup(retargetted)
 
@@ -714,47 +716,97 @@ class BaseBorderCopier(BorderSizeEnsurer):
         self.copy_py_code = []
         super(BaseBorderCopier, self).visit()
 
-class LinearBorderCopier(BaseBorderCopier):
+class SimpleBorderCopier(BaseBorderCopier):
+    """Copy over cell values, so that reading from a cell at the border over
+    the border yields a sensible result.
+
+    In the case of the SimpleBorderCopier, the borders act like "portals" to
+    the opposite side of the field.
+
+    This class should work with any number of dimensions."""
     def visit(self):
-        """Adds code to copy over cells from the right end to the left border
-        and vice versa.
+        super(SimpleBorderCopier, self).visit()
+        # This is the new concept for the border copier:
 
-        See the source code for an insightful picture."""
-        # copying works like this:
+        # 0) (BorderSizeEnsurer) make the array big enough so that no reads will
+        #    ever read outside the array
+        # 1) Find out from the bounding box, what areas of the "inner" array are in
+        #    need of getting data copied over.
+        # 2) Iterate over all those and add all reads to out-of-array positions into
+        #    a set. Name that set "outside_reads"
+        # 3) Iterate over all outside_reads and figure out where they need to end up.
+        #    For instance on the other side of the array, or maybe mirrored or
+        #    something entirely different
+        # 4) Create a dictionary copy_ops with the positions to copy to as keys and
+        #    the positions to copy from as values
+        # 5) Maybe/Someday, order the copy ops so that they turn into slices for
+        #    numpy or so that they are especially cache efficient or anything
+        # 6) Write out code to do these operations in after_step.
+
+        # TODO iterate only over the relevant positions instead of all of them
+        dims = len(self.code.neigh.bounding_box())
+        neighbours = self.code.neigh.get_offsets()
+        self.dimension_sizes = [self.code.acc.get_size_of(dim) for dim in range(dims)]
+        ranges = [range(size) for size in self.dimension_sizes]
+
+        if not HAVE_TUPLE_ARRAY_INDEX:
+            # more pypy compatibility
+            def is_beyond_border(pos):
+                dimension, size = pos, self.dimension_sizes[0]
+                return (dimension < 0 or dimension >= size)
+        else:
+            def is_beyond_border(pos):
+                for dimension, size in zip(pos, self.dimension_sizes):
+                    if dimension < 0 or dimension >= size:
+                        return True
+                return False
+
+        over_border= {}
+
+        # FIXME Even though sizeX and friends are now variables in the code,
+        #       the positions at the edges are still absolute, so even though
+        #       sizeX is pumped into the c code from the outside, the right,
+        #       lower, ... border positions still cause new C code to be
+        #       compiled each time.
         #
-        # conf: [e][f] [a][b][c][d][e][f] [a][b]
-        #       |----> |---------------->
-        #       offset    sizeX           |---->
-        #        l_b                        r_b
-        # conf(i) <- conf(i + sizeX)
-        # conf(offset + sizeX + i) <- conf(offset + i)
+        #       Maybe iterating "only over the relevant parts" can help this by
+        #       passing the positions not as absolute values, but as relatives
+        #       to the relevant sizeFoo variable.
+        for pos in product(*ranges):
+            for neighbour in neighbours:
+                target = offset_pos(pos, neighbour)
+                if isinstance(target, int): # pack this into a tuple for pypy
+                    target = (target,)
+                if is_beyond_border(target):
+                    over_border[tuple(target)] = ", ".join(self.wrap_around_border(target))
 
-        super(LinearBorderCopier, self).visit()
-
-        bbox = self.code.neigh.bounding_box()
-        left_border = abs(bbox[0][0])
-        right_border = abs(bbox[0][1])
         copy_code = []
 
-        # in order to reuse the code for new_config, tee it into an array
-        for i in range(left_border):
+        for write, read in over_border.iteritems():
             copy_code.append("%s = %s;" % (
-                self.code.acc.write_access(i, skip_border=True),
-                self.code.acc.write_access("sizeX + %d" % (i), skip_border=True)))
+                self.code.acc.write_access(write),
+                self.code.acc.write_access((read,))))
 
-            self.tee_copy_hook("""self.acc.write_to((%d,), skip_border=True,
-    value=self.acc.read_from_next((%d,), skip_border=True))""" % (i, self.code.acc.get_size_of(0) + i))
-
-        for i in range(right_border):
-            copy_code.append("%s = %s;" % (
-                self.code.acc.write_access(["sizeX + " + str(i)]),
-                self.code.acc.write_access([str(i)])))
-
-            self.tee_copy_hook("""self.acc.write_to((%d,),
-    value=self.acc.read_from_next((%d,)))""" % (self.code.acc.get_size_of(0) + i, i))
+            self.tee_copy_hook("""self.acc.write_to(%s,
+    value=self.acc.read_from_next((%s,)))""" % (write, read))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
+
+    def wrap_around_border(self, pos):
+        """Create a piece of py/c code, that calculates the source for a read
+        that would set the right value at position pos, which is beyond the
+        border."""
+        newpos = []
+        for val, size, size_name in zip(pos,
+                     self.dimension_sizes, self.code.acc.size_names):
+            if val < 0:
+                newpos.append("%s + %s" % (size_name, val))
+            elif val >= size:
+                newpos.append("%s - %s" % (val, size_name))
+            else:
+                newpos.append("%s" % (val,))
+        return tuple(newpos)
 
 class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
@@ -895,7 +947,7 @@ class BinRule(TestTarget):
                      else LinearNondeterministicCellLoop(),
                 accessor=LinearStateAccessor(size=(size,)),
                 neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
-                extra_code=[LinearBorderCopier(),
+                extra_code=[SimpleBorderCopier(),
                     self.computer])
 
         self.stepfunc.set_target(self)
