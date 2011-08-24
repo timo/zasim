@@ -56,7 +56,7 @@ except ImportError:
 
 try:
     from numpy import ndarray
-    HAVE_MULTIDIM = False
+    HAVE_MULTIDIM = True
 except:
     print "multi-dimensional arrays are not available"
     HAVE_MULTIDIM = False
