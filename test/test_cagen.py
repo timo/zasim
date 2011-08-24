@@ -144,7 +144,10 @@ class TestCAGen:
         compute = cagen.LifeCellularAutomatonBase()
         copier = cagen.TwoDimZeroReader()
         sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                    extra_code=[copier, compute], target=t)
+                    extra_code=[copier, compute])
+
+        sf.set_target(t)
+        sf.gen_code()
 
         for glider_conf in self.glider[1:]:
             sf.step_inline()
