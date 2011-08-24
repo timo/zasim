@@ -284,6 +284,14 @@ class WeaveStepFuncVisitor(object):
             Once bonded, the visitor object will refuse to be rebound."""
         assert self.code is None, "%r is already bound to %r" % (self, self.code)
         self.code = code
+    def visit(self):
+        """Adds code to the bound step func.
+
+        This will be called directly after bind.
+
+        .. note::
+            Never call this function on your own.
+            This method will be called by :meth:`WeaveStepFunc.__init__`."""
 
     def set_target(self, target):
         """Target a CA instance
@@ -292,15 +300,6 @@ class WeaveStepFuncVisitor(object):
             Once a target has been set, the visitor object will refuse to retarget."""
         assert self.target is None, "%r already targets %r" % (self, self.target)
         self.target = target
-
-    def visit(self):
-        """Adds code to the bound step func.
-
-        This will be called after bind, but not necessarily after set_target.
-
-        .. note::
-            Never call this function on your own.
-            This method will be called by :meth:`WeaveStepFunc.__init__`."""
 
     def init_once(self):
         """Initialize data on the target.
@@ -446,6 +445,10 @@ class SimpleStateAccessor(StateAccessor):
     def __init__(self, **kwargs):
         super(SimpleStateAccessor, self).__init__(**kwargs)
 
+    def set_size(self, size):
+        super(SimpleStateAccessor, self).set_size(size)
+        self.size = size
+
     def read_access(self, pos, skip_border=False):
         if skip_border:
             return "cconf(%s)" % (pos,)
@@ -471,12 +474,6 @@ class SimpleStateAccessor(StateAccessor):
         mins = [abs(a[0]) for a in bb]
         self.border = tuple(mins)
 
-    def set_target(self, target):
-        """Get the size from the target objects config."""
-        super(SimpleStateAccessor, self).set_target(target)
-        if self.size is None:
-            self.size = self.target.cconf.shape
-
     def visit(self):
         """Take care for result and sizeX to exist in python and C code,
         for the result to be written to the config space and for the configs
@@ -499,6 +496,12 @@ class SimpleStateAccessor(StateAccessor):
                 """self.acc.write_to(pos, result)""")
         self.code.add_py_hook("finalize",
                 """self.acc.swap_configs()""")
+
+    def set_target(self, target):
+        """Get the size from the target objects config."""
+        super(SimpleStateAccessor, self).set_target(target)
+        if self.size is None:
+            self.size = self.target.cconf.shape
 
     def read_from(self, pos, skip_border=False):
         if skip_border:
@@ -533,10 +536,6 @@ class SimpleStateAccessor(StateAccessor):
     def multiplicate_config(self):
         """Copy cconf to nconf in the target."""
         self.target.nconf = self.target.cconf.copy()
-
-    def set_size(self, size):
-        super(SimpleStateAccessor, self).set_size(size)
-        self.size = size
 
 class LinearStateAccessor(SimpleStateAccessor):
     """The LinearStateAccessor offers access to a one-dimensional configuration
@@ -771,6 +770,11 @@ class BaseBorderCopier(BorderSizeEnsurer):
         In order for this to work you have to use :meth:`tee_copy_hook` instead
         of :meth:`WeaveStepFunc.add_py_hook` for creating the border fixup
         code, so that it can be retargetted and reused."""
+    def visit(self):
+        """Initialise :attr:`copy_py_code`."""
+        self.copy_py_code = []
+        super(BaseBorderCopier, self).visit()
+
     def new_config(self):
         """Runs the retargetted version of the border copy code created in
         :meth:`visit`."""
@@ -793,11 +797,6 @@ class BaseBorderCopier(BorderSizeEnsurer):
         code piece that gets retargetted and run in :meth:`new_config`."""
         self.code.add_py_hook("after_step", code)
         self.copy_py_code.append(code)
-
-    def visit(self):
-        """Initialise :attr:`copy_py_code`."""
-        self.copy_py_code = []
-        super(BaseBorderCopier, self).visit()
 
 class SimpleBorderCopier(BaseBorderCopier):
     """Copy over cell values, so that reading from a cell at the border over
