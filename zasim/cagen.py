@@ -698,9 +698,9 @@ class SimpleNeighbourhood(Neighbourhood):
 
         >>> a = cagen.SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,)))
         >>> a.bounding_box()
-        ((-1, 1))
+        ((-1, 1),)
         >>> a.bounding_box(2)
-        ((-2, 2))
+        ((-2, 2),)
         >>> b = cagen.SimpleNeighbourhood(list("ab"), ((-5, 20), (99, 10)))
         >>> b.bounding_box()
         ((-5, 99), (10, 20))
