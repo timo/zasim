@@ -256,7 +256,7 @@ class WeaveStepFunc(object):
             self.step_inline()
             self.step = self.step_inline
         except:
-            print "OOOOOOOOOOOOOOMMMMMMMMMMMMMGGGGGGGGGGGGGGGGGGGGGG"
+            print "falling back to pure python step function"
 
             self.step_pure_py()
             self.step = self.step_pure_py
