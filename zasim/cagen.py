@@ -1111,6 +1111,61 @@ else:
     if not (%(stay_alive_min)d <= nonzerocount <= %(stay_alive_max)d):
       result = 0""" % self.params)
 
+CELL_SHADOW, CELL_FULL = "%#"
+BACK_SHADOW, BACK_FULL = ", "
+def build_array_pretty_printer(size, border, extra=((0, 0),)):
+    """Generate a function that pretty-prints a configuration together with its
+    border and additional fields from beyond the border.
+
+    :attr size: A tuple describing the size of the configuration.
+    :attr border: The amount of cells on each side of the configuration
+                  that are beyond the border. It is formed just like the
+                  output of :meth:`Neighbourhood.bounding_box`, but all values
+                  have to be positive.
+    :attr extra: The amount of fields to copy over in addition to the border.
+
+    .. warning ::
+        If any BorderHandler is used, that does not simply copy over fields
+        from beyond the border, the output with any extra value will be wrong."""
+    if len(extra) == 1:
+        extra = (extra[0], (0, 0))
+    if len(border) == 1:
+        border = (border[0], (0, 0))
+    def pretty_print_line(arr, sizex=size[0],
+            border_left=border[0][0], border_right=border[0][1],
+            extra_left=extra[0][0], extra_right=extra[0][1]):
+        for cell in arr[border_left + sizex - extra_left - border_left:
+                        border_left + sizex]:
+            sys.stdout.write(CELL_SHADOW if cell > 0.5 else BACK_SHADOW)
+        for cell in arr[border_left:border_left + sizex]:
+            sys.stdout.write(CELL_FULL if cell > 0.5 else BACK_FULL)
+        for cell in arr[border_left:border_left + border_right + extra_right]:
+            sys.stdout.write(CELL_SHADOW if cell > 0.5 else BACK_SHADOW)
+        sys.stdout.write("\n")
+
+    if len(size) == 1:
+        return pretty_print_line
+    elif len(size) == 2:
+        if extra != ((0, 0), (0, 0)):
+            raise NotImplementedError("Can only pretty-print 2d without"
+                                 "extra fields.")
+        def pretty_print_array(arr):
+            linesize = size[0]
+            # draw the first and last lines as if the size were 0, but the
+            # border was all of the arrays content. this way we'll get shadow
+            # cells drawn above and below the arrays content.
+            for y in range(0, border[1][0]):
+                pretty_print_line(arr[y], 0, linesize, 0, 0)
+            for y in range(border[1][0], size[1] - border[1][1]):
+                pretty_print_line(arr[y])
+            for y in range(size[1] - border[1][1], size[1]):
+                pretty_print_line(arr[y], 0, linesize, 0, 0)
+
+        return pretty_print_array
+    else:
+        raise NotImplementedError("Can't handle arrays of %d dimensions yet" %\
+                             len(size))
+
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
     :class:`WeaveStepFunc`."""
@@ -1171,18 +1226,6 @@ class BinRule(TestTarget):
         return self.computer.pretty_print()
 
 def test():
-    cell_shadow, cell_full = "%#"
-    back_shadow, back_full = ", "
-    def build_array_pretty_printer(sizex, border_left, border_right, extra_left=0, extra_right=0):
-        def pretty_print_array(arr):
-            for cell in arr[border_left + sizex - extra_left - border_left:border_left + sizex]:
-                sys.stdout.write(cell_shadow if cell > 0.5 else back_shadow)
-            for cell in arr[border_left:border_left + sizex]:
-                sys.stdout.write(cell_full if cell > 0.5 else back_full)
-            for cell in arr[border_left:border_left + border_right + extra_right]:
-                sys.stdout.write(cell_shadow if cell > 0.5 else back_shadow)
-            sys.stdout.write("\n")
-        return pretty_print_array
 
 
     size = 75

@@ -81,7 +81,7 @@ class TestCAGen:
         with pytest.raises(AttributeError):
             br.stepfunc.add_py_hook("pre_compute", "print 'hello'")
 
-    def test_pretty_print(self):
+    def test_pretty_print_rules_1d(self):
         br = cagen.BinRule(size=10,rule=110)
 
         res = br.pretty_print()
@@ -92,7 +92,7 @@ class TestCAGen:
 0    1    1    1    0    1    1    0"""
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
-    def test_pretty_print_2d(self):
+    def test_pretty_print_rules_2d(self):
         conf = np.zeros((10, 10), int)
         t = cagen.TestTarget(config=conf)
 
@@ -149,6 +149,25 @@ class TestCAGen:
         for glider_conf in GLIDER[1:]:
             sf.step_pure_py()
             assert_arrays_equal(glider_conf, t.cconf[1:-1,1:-1])
+
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_pretty_print_config_2d(self, capsys):
+        conf = GLIDER[0]
+        pp = cagen.build_array_pretty_printer(conf.shape, ((1, 1), (1, 1)))
+        pp(conf)
+        out, err = capsys.readouterr()
+        assert out == """,%,,,
+, # ,
+%## ,
+,,,,,
+     """
+
+    def test_pretty_print_config_1d(self, capsys):
+        conf = np.array([1, 1, 0, 1, 0, 1, 1, 0])
+        pp = cagen.build_array_pretty_printer(conf.shape, ((2, 1),))
+        pp(conf)
+        out, err = capsys.readouterr()
+        assert out == """%% # ##,"""
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
