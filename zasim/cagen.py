@@ -1135,10 +1135,10 @@ def build_array_pretty_printer(size, border, extra=((0, 0),)):
             border_left=border[0][0], border_right=border[0][1],
             extra_left=extra[0][0], extra_right=extra[0][1]):
 
-        for cell in arr[sizex - extra_left - border_left:
-                        border_left + sizex]:
+        for cell in arr[sizex - extra_left - border_left - border_right:
+                        sizex - border_right]:
             sys.stdout.write(CELL_SHADOW if cell > 0.5 else BACK_SHADOW)
-        for cell in arr[border_left:sizex - border_left]:
+        for cell in arr[border_left:sizex - border_right]:
             sys.stdout.write(CELL_FULL if cell > 0.5 else BACK_FULL)
         for cell in arr[border_left:border_left + border_right + extra_right]:
             sys.stdout.write(CELL_SHADOW if cell > 0.5 else BACK_SHADOW)
@@ -1156,11 +1156,11 @@ def build_array_pretty_printer(size, border, extra=((0, 0),)):
             # border was all of the arrays content. this way we'll get shadow
             # cells drawn above and below the arrays content.
             for y in range(0, border[1][0]):
-                pretty_print_line(arr[y], 0, linesize, 0, 0)
+                pretty_print_line(arr[y], linesize, linesize, 0, 0)
             for y in range(border[1][0], size[1] - border[1][1]):
                 pretty_print_line(arr[y])
             for y in range(size[1] - border[1][1], size[1]):
-                pretty_print_line(arr[y], 0, linesize, 0, 0)
+                pretty_print_line(arr[y], linesize, linesize, 0, 0)
 
         return pretty_print_array
     else:

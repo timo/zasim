@@ -169,6 +169,7 @@ class TestCAGen:
 ,  #  ,
 ,###  %
 ,     ,
+,     ,
 ,,%,,,,
 """
 
@@ -177,7 +178,7 @@ class TestCAGen:
         pp = cagen.build_array_pretty_printer(conf.shape, ((2, 1),))
         pp(conf)
         out, err = capsys.readouterr()
-        assert out == """%% # ##%"""
+        assert out == """%% # ##,\n"""
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
