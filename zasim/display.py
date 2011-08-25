@@ -31,7 +31,7 @@ class Control(QWidget):
         super(Control, self).__init__(parent)
 
         self.sim = simulator
-        self.timer_delay = 1
+        self.timer_delay = 0
         self.attached_displays = []
 
         self._setup_ui()
@@ -43,6 +43,8 @@ class Control(QWidget):
         self.stop_button = QPushButton("Stop")
         self.stop_button.setDisabled(True)
         delay = QSpinBox()
+        delay.setMinimum(0)
+        delay.setMaximum(10000)
         delay.setValue(self.timer_delay)
 
         l.addWidget(self.start_button)
@@ -228,6 +230,8 @@ class TwoDimDisplay(BaseDisplay):
                     **kwargs)
 
         self.sim = simulator
+        self.conf_new = True
+        self.queued_conf = simulator.getConf()
 
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
