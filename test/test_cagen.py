@@ -152,22 +152,32 @@ class TestCAGen:
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
     def test_pretty_print_config_2d(self, capsys):
-        conf = GLIDER[0]
+        gconf = GLIDER[0]
+        conf = np.zeros((gconf.shape[0] + 2, gconf.shape[1] + 2))
+        conf[1:-1,1:-1] = gconf
+
+        # manually create the border.
+        conf[3,6] = 1
+        conf[6,2] = 1
+
         pp = cagen.build_array_pretty_printer(conf.shape, ((1, 1), (1, 1)))
         pp(conf)
         out, err = capsys.readouterr()
-        assert out == """,%,,,
-, # ,
-%## ,
-,,,,,
-     """
+        assert out == """\
+,,,,,,,
+, #   ,
+,  #  ,
+,###  %
+,     ,
+,,%,,,,
+"""
 
     def test_pretty_print_config_1d(self, capsys):
-        conf = np.array([1, 1, 0, 1, 0, 1, 1, 0])
+        conf = np.array([1, 1, 0, 1, 0, 1, 1, 1])
         pp = cagen.build_array_pretty_printer(conf.shape, ((2, 1),))
         pp(conf)
         out, err = capsys.readouterr()
-        assert out == """%% # ##,"""
+        assert out == """%% # ##%"""
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:

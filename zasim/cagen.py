@@ -1134,10 +1134,11 @@ def build_array_pretty_printer(size, border, extra=((0, 0),)):
     def pretty_print_line(arr, sizex=size[0],
             border_left=border[0][0], border_right=border[0][1],
             extra_left=extra[0][0], extra_right=extra[0][1]):
-        for cell in arr[border_left + sizex - extra_left - border_left:
+
+        for cell in arr[sizex - extra_left - border_left:
                         border_left + sizex]:
             sys.stdout.write(CELL_SHADOW if cell > 0.5 else BACK_SHADOW)
-        for cell in arr[border_left:border_left + sizex]:
+        for cell in arr[border_left:sizex - border_left]:
             sys.stdout.write(CELL_FULL if cell > 0.5 else BACK_FULL)
         for cell in arr[border_left:border_left + border_right + extra_right]:
             sys.stdout.write(CELL_SHADOW if cell > 0.5 else BACK_SHADOW)
