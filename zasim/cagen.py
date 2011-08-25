@@ -37,7 +37,7 @@ which can then target a configuration object with the method
 
 .. testsetup:: *
 
-    from zasim import cagen
+    from zasim.cagen import *
 """
 
 # TODO separate the functions to make C code from the ones that do pure python
@@ -82,7 +82,12 @@ EXTREME_PURE_PY_DEBUG = False
 
 if HAVE_TUPLE_ARRAY_INDEX:
     def offset_pos(pos, offset):
-        """Offset a position by an offset. Any amount of dimensions should work."""
+        """Offset a position by an offset. Any amount of dimensions should work.
+
+        >>> offset_pos((1, ), (5, ))
+        (6,)
+        >>> offset_pos((1, 2, 3), (9, 8, 7))
+        (10, 10, 10)"""
         return tuple([a + b for a, b in zip(pos, offset)])
 else:
     def offset_pos(pos, offset):
@@ -96,7 +101,7 @@ else:
 def gen_offset_pos(pos, offset):
     """Generate code to offset a position by an offset.
 
-    >>> cagen.gen_offset_pos(["i", "j"], ["foo", "bar"])
+    >>> gen_offset_pos(["i", "j"], ["foo", "bar"])
     ['i + foo', 'j + bar']"""
     return ["%s + %s" % (a, b) for a, b in zip(pos, offset)]
 
@@ -734,12 +739,12 @@ class SimpleNeighbourhood(Neighbourhood):
         The return value will have an outer tuple with one tuple for
         each dimension. Each dimension will have a min and a max value.
 
-        >>> a = cagen.SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,)))
+        >>> a = SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,)))
         >>> a.bounding_box()
         ((-1, 1),)
         >>> a.bounding_box(2)
         ((-2, 2),)
-        >>> b = cagen.SimpleNeighbourhood(list("ab"), ((-5, 20), (99, 10)))
+        >>> b = SimpleNeighbourhood(list("ab"), ((-5, 20), (99, 10)))
         >>> b.bounding_box()
         ((-5, 99), (10, 20))
         >>> b.bounding_box(10)
@@ -1036,7 +1041,13 @@ class CountBasedComputationBase(Computation):
     center cell and offers the result as a local variable called
     nonzerocount of type int.
 
-    The name of the central neighbour will be provided as self.central_name."""
+    The name of the central neighbour will be provided as self.central_name.
+
+    .. warning::
+        If the values are not limited to 0 and 1, the value of nonzerocount
+        will be the sum of the neighbourhood cells values, rather than the
+        count of nonzero neighbourhood cells."""
+
     def visit(self):
         super(CountBasedComputationBase, self).visit()
         names = list(self.code.neigh.neighbourhood_cells())
@@ -1057,9 +1068,10 @@ class CountBasedComputationBase(Computation):
         self.code.add_py_hook("compute", code)
 
 class LifeCellularAutomatonBase(CountBasedComputationBase):
-    """This computation base is useful for any life-like step function in which
-    the number of ones in the neighbourhood of a cell are counted to decide
-    wether to change a 0 into a 1 or the other way around."""
+    """This computation base is useful for any game-of-life-like step function
+    in which the number of ones in the neighbourhood of a cell are counted to
+    decide wether to change a 0 into a 1 or the other way around."""
+
     def __init__(self, reproduce_min=3, reproduce_max=3,
                  stay_alive_min=2, stay_alive_max=3, **kwargs):
         """:param reproduce_min: The minimal number of alive cells needed to
