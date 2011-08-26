@@ -74,7 +74,7 @@ except TypeError:
         return TUPLE_ACCESS_FIX.sub(r"\1", line)
 
 from random import Random
-from itertools import product
+from itertools import product, chain
 import sys
 import new
 
@@ -853,11 +853,29 @@ class SimpleBorderCopier(BaseBorderCopier):
         #    numpy or so that they are especially cache efficient or anything
         # 6) Write out code to do these operations in after_step.
 
-        # TODO iterate only over the relevant positions instead of all of them
-        dims = len(self.code.neigh.bounding_box())
+        bbox = self.code.neigh.bounding_box()
+        dims = len(bbox)
         neighbours = self.code.neigh.get_offsets()
         self.dimension_sizes = [self.code.acc.get_size_of(dim) for dim in range(dims)]
-        ranges = [range(size) for size in self.dimension_sizes]
+
+        slices = []
+        # get only the values from the borders in a lazy manner
+        #
+        # this is the way it works:
+        # select the dimension to consider the borders of. (dim)
+        # all other dimensions will be considered fully.
+        # then go through all dimensions. (subdim)
+        # if subdim == dim, only put in the values at the borders
+        # else, put in all values
+        for dim in range(dims):
+            slices.append(product(*[range(0, self.dimension_sizes[sd]) if sd != dim else
+                                chain(range(0, abs(bbox[dim][1])),
+                                      range(self.dimension_sizes[sd] - abs(bbox[dim][0]),
+                                            self.dimension_sizes[sd]))
+                                for sd in range(dims)]))
+        # now we have a lot of product iterators in a list. we want to chain
+        # these lists together, so they form one long iterator.
+        slices = chain(*slices)
 
         if not HAVE_TUPLE_ARRAY_INDEX:
             # more pypy compatibility
@@ -883,7 +901,7 @@ class SimpleBorderCopier(BaseBorderCopier):
         #       passing the positions not as absolute values, but as relatives
         #       to the relevant sizeFoo variable.
 
-        for pos in product(*ranges):
+        for pos in slices:
             for neighbour in neighbours:
                 target = offset_pos(pos, neighbour)
                 if isinstance(target, int): # pack this into a tuple for pypy
