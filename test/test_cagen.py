@@ -174,11 +174,27 @@ class TestCAGen:
 """
 
     def test_pretty_print_config_1d(self, capsys):
-        conf = np.array([1, 1, 0, 1, 0, 1, 1, 1])
+        # test pretty-printing with left-border 2 and right-border 1
+        # without any extra at the side
+        conf = np.array([1,1, 0,1,0,1,1, 1])
         pp = cagen.build_array_pretty_printer(conf.shape, ((2, 1),))
         pp(conf)
         out, err = capsys.readouterr()
         assert out == """%% # ##,\n"""
+
+        # test pretty-printing with left-border and right-border 3
+        conf = np.array([1,1,0, 1,0,1,1,0,  1,0,1])
+        pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((0, 0),))
+        pp(conf)
+        out, err = capsys.readouterr()
+        assert out == """%%,# ## %,%\n"""
+
+    def test_pretty_print_config_1d_extra(self, capsys):
+        conf = np.array([1,1,1, 0,0,0,1,1,1, 0,0,0])
+        pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((1, 1),))
+        pp(conf)
+        out, err = capsys.readouterr()
+        assert out == ",%%%   ###,,,%\n"
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
