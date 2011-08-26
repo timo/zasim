@@ -687,7 +687,7 @@ class SimpleNeighbourhood(Neighbourhood):
         :param offsets: A list of offsets for each of the neighbouring cells."""
         super(Neighbourhood, self).__init__()
         self.names = tuple(names)
-        self.offsets = tuple(offsets)
+        self.offsets = tuple([tuple(offset) for offset in offsets])
         assert len(self.names) == len(self.offsets)
         self.recalc_bounding_box()
 
