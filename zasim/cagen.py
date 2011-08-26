@@ -379,6 +379,15 @@ class StateAccessor(WeaveStepFuncVisitor):
     def set_size(self, size):
         """Set the size of the target."""
 
+    def gen_copy_code(self):
+        """Generate a bit of C code to copy the current field over from the old
+        config. This is necessary for instance for nondeterministic step funcs
+        combined with swapping two confs around."""
+
+    def gen_copy_py_code(self):
+        """Generate a bit of py code to copy the current field over from the
+        old config."""
+
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
@@ -554,6 +563,18 @@ class SimpleStateAccessor(StateAccessor):
         """Copy cconf to nconf in the target."""
         self.target.nconf = self.target.cconf.copy()
 
+    def gen_copy_code(self):
+        """Generate a bit of C code to copy the current field over from the old
+        config. This is necessary for instance for nondeterministic step funcs
+        combined with swapping two confs around."""
+        return "%s = %s;" % (self.write_access(self.code.loop.get_pos()),
+                            self.read_access(self.code.loop.get_pos()))
+
+    def gen_copy_py_code(self):
+        """Generate a bit of py code to copy the current field over from the
+        old config."""
+        return "self.acc.write_to(pos, self.acc.read_from(pos))"
+
 class LinearStateAccessor(SimpleStateAccessor):
     """The LinearStateAccessor offers access to a one-dimensional configuration
     space."""
@@ -635,27 +656,16 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
             self.random = random_generator
         self.probab = probab
 
-    def get_iter(self):
-        """The returned iterator will skip cells with a probability
-        of self.probab."""
-        basic_iter = super(NondeterministicCellLoopMixin, self).get_iter()
-        def generator():
-            for pos in basic_iter:
-                if self.random.random() < self.probab:
-                    yield pos
-        return iter(generator())
-
     def visit(self):
         """Adds C code for handling the randseed and skipping."""
         print "visited"
         super(NondeterministicCellLoopMixin, self).visit()
         self.code.add_code("loop_begin",
                 """if(rand() >= RAND_MAX * %(probab)s) {
-                    %(write_current)s = %(read_current)s;
+                    %(copy_code)s
                     continue;
                 };""" % dict(probab=self.probab,
-                    write_current=self.code.acc.write_access(self.code.loop.get_pos()),
-                    read_current=self.code.acc.read_access(self.code.loop.get_pos())
+                    copy_code=self.code.acc.gen_copy_code(),
                     ))
         self.code.add_code("localvars",
                 """srand(randseed(0));""")
@@ -663,11 +673,21 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
                 """randseed(0) = rand();""")
         self.code.attrs.append("randseed")
 
+        self.code.add_py_hook("pre_compute",
+                """if self.random.random() >= %(probab)f:
+    %(copy_code)s
+    continue""" % dict(probab=self.probab,
+                       copy_code=self.code.acc.gen_copy_py_code()))
+
     def set_target(self, target):
         """Adds the randseed attribute to the target."""
         super(NondeterministicCellLoopMixin, self).set_target(target)
         # FIXME how do i get the randseed out without using np.array?
         target.randseed = np.array([self.random.random()])
+
+    def bind(self, stepfunc):
+        super(NondeterministicCellLoopMixin, self).bind(stepfunc)
+        stepfunc.random = self.random
 
 class LinearNondeterministicCellLoop(NondeterministicCellLoopMixin,LinearCellLoop):
     """This Nondeterministic Cell Loop loops over one dimension, skipping cells
