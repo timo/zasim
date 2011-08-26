@@ -303,7 +303,7 @@ class TestCAGen:
                     return 1.0
 
         rand = EvilRandom(101)
-        conf = np.ones((100,))
+        conf = np.ones(100)
 
         t = cagen.TestTarget(config=conf)
         computer = cagen.ElementaryCellularAutomatonBase(0)
