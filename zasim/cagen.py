@@ -1144,7 +1144,8 @@ def build_array_pretty_printer(size, border, extra=((0, 0),)):
 
     .. warning ::
         If any BorderHandler is used, that does not simply copy over fields
-        from beyond the border, the output with any extra value will be wrong."""
+        from beyond the border, the output with a border or extra cells will be
+        wrong!"""
     if len(extra) == 1:
         extra = (extra[0], (0, 0))
     if len(border) == 1:
