@@ -239,11 +239,6 @@ class TestCAGen:
         assert not br2.cconf.any(), "huh, rule0 was supposed to set all"\
                              " fields to zero!"
 
-        # when the nondeterministic cell func just skips the loop for a cell
-        # and the state accessor just swaps the configs, then the config can
-        # "oscilate".
-        # TODO come up with a way to test this.
-
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_weave_nondeterministic_stepfunc_id(self):
         self.body_weave_nondeterministic_stepfunc_1d()
@@ -285,8 +280,6 @@ class TestCAGen:
         assert not dos.getConf().any(), "rule 0 was supposed to turn all"\
                                     "fields into 0. huh?"
 
-        # TODO test for the oscillation problem here, too. (see above)
-
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
@@ -296,6 +289,42 @@ class TestCAGen:
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
     def test_pure_nondeterministic_stepfunc_2d(self):
         self.body_nondeterministic_stepfunc_2d(False)
+
+    def test_nondeterministic_leak_data_1d(self):
+        class EvilRandom(object):
+            def __init__(self, zeros):
+                self.zeros = zeros
+
+            def random(self):
+                self.zeros -= 1
+                if self.zeros >= 0:
+                    return 0.0
+                else:
+                    return 1.0
+
+        rand = EvilRandom(101)
+        conf = np.ones((100,))
+
+        t = cagen.TestTarget(config=conf)
+        computer = cagen.ElementaryCellularAutomatonBase(0)
+
+        stepfunc = cagen.WeaveStepFunc(
+                loop=cagen.LinearNondeterministicCellLoop(random_generator=rand),
+                accessor=cagen.LinearStateAccessor(),
+                neighbourhood=cagen.ElementaryFlatNeighbourhood(),
+                extra_code=[cagen.SimpleBorderCopier(),
+                    computer], target=t)
+
+        stepfunc.gen_code()
+        stepfunc.step_pure_py()
+        assert not stepfunc.getConf().any(), "the step func should have"\
+                                            " turned all fields into zeros"
+        stepfunc.step_pure_py()
+        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+                                            " config at all."
+        stepfunc.step_pure_py()
+        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+                                            " config at all."
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
