@@ -108,6 +108,22 @@ def gen_offset_pos(pos, offset):
 class WeaveStepFunc(object):
     """The WeaveStepFunc composes different parts into a functioning
     step function."""
+
+    neigh = None
+    """The :class:`Neighbourhood` object in use."""
+
+    acc = None
+    """The :class:`StateAccessor` object in use."""
+
+    loop = None
+    """The :class:`CellLoop` object in use."""
+
+    visitors = None
+    """All :class:`WeaveStepFuncVisitor` objects."""
+
+    target = None
+    """The configuration object that is targetted."""
+
     def __init__(self, loop, accessor, neighbourhood, extra_code=[],
                  target=None, size=None, **kwargs):
         """The Constructor creates a weave-based step function from the
@@ -143,7 +159,6 @@ class WeaveStepFunc(object):
 
         self.attrs = []
         self.consts = {}
-        self.target = None
 
         self.acc = accessor
         self.neigh = neighbourhood
@@ -290,9 +305,12 @@ class WeaveStepFunc(object):
 
 class WeaveStepFuncVisitor(object):
     """Base class for step function visitor objects."""
-    def __init__(self):
-        self.code = None
-        self.target = None
+
+    code = None
+    """The :class:`WeaveStepFunc` instance this visitor is bound to."""
+
+    target = None
+    """The configuration object that is being targetted."""
 
     def bind(self, code):
         """Bind the visitor to a StepFunc.
@@ -400,11 +418,19 @@ class CellLoop(WeaveStepFuncVisitor):
 class Neighbourhood(WeaveStepFuncVisitor):
     """A Neighbourhood is responsible for getting states from neighbouring cells."""
 
+    names = ()
+    """The names of neighbourhood fields."""
+
+    offsets = ()
+    """The offsets of neighbourhood fields."""
+
     def neighbourhood_cells(self):
         """Get the names of the neighbouring cells."""
+        return self.names
 
     def get_offsets(self):
         """Get the offsets of the neighbourhood cells."""
+        return self.offsets
 
     def recalc_bounding_box(self):
         """Recalculate the bounding box."""
@@ -463,10 +489,15 @@ class BorderSizeEnsurer(BorderHandler):
 class SimpleStateAccessor(StateAccessor):
     """The SimpleStateAccessor offers a base for classes that just linearly
     grant access to any-dimensional configuration space."""
-    size_names = []
+
+    size_names = ()
     """The names to use in the C code"""
-    border_names = []
+
+    border_names = ()
     """The names of border offsets"""
+
+    size = None
+    """The size of the target configuration."""
 
     def __init__(self, **kwargs):
         super(SimpleStateAccessor, self).__init__(**kwargs)
@@ -631,6 +662,10 @@ for(int j=0; j < %s; j++) {""" % (size_names))
 class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
     """Deriving from a CellLoop and this Mixin will cause every cell to be
     skipped with a given probability"""
+
+    probab = 0.5
+    """The probability with which to execute each cell."""
+
     def __init__(self, probab=0.5, random_generator=None, **kwargs):
         """:param probab: The probability of a cell to be computed.
         :param random_generator: If supplied, use this Random object for
@@ -702,6 +737,13 @@ class TwoDimNondeterministicCellLoop(NondeterministicCellLoopMixin, TwoDimCellLo
 class SimpleNeighbourhood(Neighbourhood):
     """The SimpleNeighbourhood offers named access to any number of
     neighbouring fields with any number of dimensions."""
+
+    names = ()
+    """The names of neighbourhood fields."""
+
+    offsets = ()
+    """The offsets of neighbourhood fields."""
+
     def __init__(self, names, offsets):
         """:param names: A list of names for the neighbouring cells.
         :param offsets: A list of offsets for each of the neighbouring cells."""
@@ -727,12 +769,6 @@ class SimpleNeighbourhood(Neighbourhood):
                 for name, offset in zip(self.names, self.offsets)]
         self.code.add_py_hook("pre_compute",
                 "\n".join(assignments))
-
-    def neighbourhood_cells(self):
-        return self.names
-
-    def get_offsets(self):
-        return self.offsets
 
     def recalc_bounding_box(self):
         """Calculate a bounding box from a set of offsets."""
@@ -961,7 +997,8 @@ class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
     peeking over the border."""
     # there is no extra work at all to be done as compared to the
-    # BorderSizeEnsurer, because it embeds the confs into np.zero.
+    # BorderSizeEnsurer, because it already just embeds the confs into
+    # np.zero and does that for one or two dimensions.
 
 class ElementaryCellularAutomatonBase(Computation):
     """Infer a 'Gödel numbering' from the used :class:`Neighbourhood` and
@@ -969,8 +1006,15 @@ class ElementaryCellularAutomatonBase(Computation):
     of values for the neighbourhood cells.
 
     This works with any number of dimensions."""
+
     base = 2
     """The number of different values each cell can have."""
+
+    rule = 0
+    """The elementary cellular automaton rule to use.
+
+    See :meth:`visit` for details on how it's used."""
+
     def __init__(self, rule, **kwargs):
         super(ElementaryCellularAutomatonBase, self).__init__(**kwargs)
         self.rule = rule
@@ -1064,8 +1108,6 @@ class ElementaryCellularAutomatonBase(Computation):
 
             return "\n".join(["".join(line) for line in lines])
 
-            # TODO print the result of each one, too.
-
         self.pretty_print = new.instancemethod(pretty_printer, self, self.__class__)
 
     def pretty_print(self):
@@ -1087,6 +1129,8 @@ class CountBasedComputationBase(Computation):
         count of nonzero neighbourhood cells."""
 
     def visit(self):
+        """Generate code that calculates nonzerocount from all neighbourhood
+        values."""
         super(CountBasedComputationBase, self).visit()
         names = list(self.code.neigh.neighbourhood_cells())
         offsets = self.code.neigh.get_offsets()
@@ -1127,6 +1171,10 @@ class LifeCellularAutomatonBase(CountBasedComputationBase):
                 stay_alive_max = stay_alive_max)
 
     def visit(self):
+        """Generates the code that turns a 0 into a 1 if nonzerocount exceeds
+        reproduce_min and doesn't exceed reproduce_max and turns a 1 into a 0
+        if nonzerocount is lower than stay_alive_min or higher than
+        stay_alive_max."""
         super(LifeCellularAutomatonBase, self).visit()
         assert self.central_name is not None, "Need a neighbourhood with a named zero offset"
         self.params.update(central_name=self.central_name)
@@ -1213,6 +1261,14 @@ def build_array_pretty_printer(size, border, extra=((0, 0),)):
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
     :class:`WeaveStepFunc`."""
+
+    cconf = None
+    """The current config the cellular automaton works on."""
+
+    nconf = None
+    """During the step, this is the 'next configuration', otherwise it's the
+    previous configuration, because nconf and cconf are swapped after steps."""
+
     def __init__(self, size=None, config=None, **kwargs):
         """:param size: The size of the config to generate. Alternatively the
                         size of the supplied config.
@@ -1234,6 +1290,10 @@ class TestTarget(object):
 
 class BinRule(TestTarget):
     """A Target plus a WeaveStepFunc for elementary cellular automatons."""
+
+    rule = None
+    """The number of the elementary cellular automaton to simulate."""
+
     def __init__(self, size=None, deterministic=True, rule=126, config=None, **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied.
