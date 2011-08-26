@@ -222,6 +222,9 @@ class WeaveStepFunc(object):
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
 
+        # TODO figure out if the code for weave can be compiled without
+        #      having to run it.
+
         # freeze python code bits
         for hook in self.pycode.keys():
             self.pycode[hook] = tuple(self.pycode[hook])
