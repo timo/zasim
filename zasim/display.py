@@ -25,6 +25,16 @@ import numpy as np
 
 class Control(QWidget):
     """Control a simulator with buttons or from the interactive console."""
+
+    attached_displays = []
+    """All displays that have been attached using attach_display"""
+
+    display_attached = pyqtSignal(["BaseDisplay"])
+    """Emitted when a new display has been attached"""
+
+    display_detached = pyqtSignal(["BaseDisplay"])
+    """Emitted when a display has been detached"""
+
     def __init__(self, simulator, parent=None):
         """:param simulator: The simulator object to control.
         :param parent: the QWidget to set as parent."""
@@ -97,6 +107,7 @@ class Control(QWidget):
     def detach_display(self, display):
         """Detach an attached display from the control."""
         self.attached_displays.remove(display)
+        self.display_detached.emit(display)
 
     def fullspeed(self):
         """Run the stepping function without any timer delays."""
