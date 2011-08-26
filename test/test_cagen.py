@@ -191,10 +191,27 @@ class TestCAGen:
 
     def test_pretty_print_config_1d_extra(self, capsys):
         conf = np.array([1,1,1, 0,0,0,1,1,1, 0,0,0])
+
+        # add one extra cell from beyond the border
         pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((1, 1),))
         pp(conf)
         out, err = capsys.readouterr()
         assert out == ",%%%   ###,,,%\n"
+
+        # two extra cells on the left, none on the right
+        pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((2, 0),))
+        pp(conf)
+        out, err = capsys.readouterr()
+        assert out == ",,%%%   ###,,,\n"
+
+        # six extra fields. this is the maximum possible
+        pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((6, 6),))
+        pp(conf)
+        out,err = capsys.readouterr()
+        assert out == "%%%,,,%%%   ###,,,%%%,,,\n"
+
+        with pytest.raises(AssertionError):
+            pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((7, 6),))
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:

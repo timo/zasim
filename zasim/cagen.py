@@ -1163,6 +1163,10 @@ def build_array_pretty_printer(size, border, extra=((0, 0),)):
         sys.stdout.write("\n")
 
     if len(size) == 1:
+        assert size[0] - extra[0][0] - border[0][0] - border[0][1] >= 0,\
+                """Cannot put this much extra on the left"""
+        assert border[0][0] + border[0][1] + extra[0][1] <= size[0],\
+                """Cannot put this much extra on the left"""
         return pretty_print_line
     elif len(size) == 2:
         if extra != ((0, 0), (0, 0)):
