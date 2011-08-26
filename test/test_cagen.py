@@ -239,6 +239,11 @@ class TestCAGen:
         assert not br2.cconf.any(), "huh, rule0 was supposed to set all"\
                              " fields to zero!"
 
+        # when the nondeterministic cell func just skips the loop for a cell
+        # and the state accessor just swaps the configs, then the config can
+        # "oscilate".
+        # TODO come up with a way to test this.
+
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_weave_nondeterministic_stepfunc_id(self):
         self.body_weave_nondeterministic_stepfunc_1d()
@@ -270,6 +275,7 @@ class TestCAGen:
         assert not uno.getConf().all(), "oops, no cells have been executed :("
         assert uno.getConf().any(), "oops, all cells have been executed :("
 
+        # this is just a sanity check to see if the stepfunc does what we think
         t = cagen.TestTarget(config=conf.copy())
         dos = make_stepfunc(t, True)
         if inline:
@@ -278,6 +284,8 @@ class TestCAGen:
             dos.step_pure_py()
         assert not dos.getConf().any(), "rule 0 was supposed to turn all"\
                                     "fields into 0. huh?"
+
+        # TODO test for the oscillation problem here, too. (see above)
 
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
