@@ -1232,7 +1232,7 @@ class BinRule(TestTarget):
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
                 accessor=LinearStateAccessor(),
-                neighbourhood=SimpleNeighbourhood(list("lmr"), ((-1,), (0,), (1,))),
+                neighbourhood=ElementaryFlatNeighbourhood(),
                 extra_code=[SimpleBorderCopier(),
                     self.computer], target=self)
 
