@@ -2,10 +2,23 @@ from __future__ import absolute_import
 from zasim import ca, cagen
 from random import randrange
 from .testutil import *
+from itertools import repeat, chain
 
 import pytest
 
 MIN_SIZE, MAX_SIZE = 5, 25
+
+class EvilRandom(object):
+    def __init__(self, iterator):
+        self.iterator = iter(iterator)
+
+    def random(self):
+        return self.iterator.next()
+
+class ZerosThenOnesRandom(EvilRandom):
+    def __init__(self, zeros):
+        super(ZerosThenOnesRandom, self).__init__(
+            chain(repeat(0.0, zeros), repeat(1.0)))
 
 class TestCAGen:
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
@@ -302,7 +315,7 @@ class TestCAGen:
                 else:
                     return 1.0
 
-        rand = EvilRandom(101)
+        rand = ZerosThenOnesRandom(101)
         conf = np.ones(100)
 
         t = cagen.TestTarget(config=conf)
@@ -312,6 +325,32 @@ class TestCAGen:
                 loop=cagen.LinearNondeterministicCellLoop(random_generator=rand),
                 accessor=cagen.LinearStateAccessor(),
                 neighbourhood=cagen.ElementaryFlatNeighbourhood(),
+                extra_code=[cagen.SimpleBorderCopier(),
+                    computer], target=t)
+
+        stepfunc.gen_code()
+        stepfunc.step_pure_py()
+        assert not stepfunc.getConf().any(), "the step func should have"\
+                                            " turned all fields into zeros"
+        stepfunc.step_pure_py()
+        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+                                            " config at all."
+        stepfunc.step_pure_py()
+        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+                                            " config at all."
+
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_nondeterministic_leak_data_2d(self):
+        rand = ZerosThenOnesRandom(101)
+        conf = np.ones((10,10))
+
+        t = cagen.TestTarget(config=conf)
+        computer = cagen.ElementaryCellularAutomatonBase(0)
+
+        stepfunc = cagen.WeaveStepFunc(
+                loop=cagen.TwoDimNondeterministicCellLoop(random_generator=rand),
+                accessor=cagen.TwoDimStateAccessor(),
+                neighbourhood=cagen.VonNeumannNeighbourhood(),
                 extra_code=[cagen.SimpleBorderCopier(),
                     computer], target=t)
 
