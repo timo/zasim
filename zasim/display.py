@@ -259,8 +259,8 @@ class TwoDimDisplay(BaseDisplay):
         del copier
 
     def after_step(self):
-        """React to a single step. Copy the current configuration into the
-        :attr:`display_queue` and schedule a call to :meth:`paintEvent`."""
+        """React to a single step. Set the :attr:`queued_conf` to a copy of the
+        current config and trigger a :meth:`paintEvent`."""
         conf = self.sim.getConf().copy()
         self.queued_conf = conf
         self.conf_new = True
