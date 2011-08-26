@@ -213,6 +213,82 @@ class TestCAGen:
         with pytest.raises(AssertionError):
             pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((7, 6),))
 
+    def body_weave_nondeterministic_stepfunc_1d(self, inline=True):
+        conf = np.ones(1000)
+        # this rule would set all fields to 1 at every step.
+        # since we use a nondeterministic step func, this will amount to about
+        # half ones, half zeros
+        br = cagen.BinRule(deterministic=False, config=conf, rule=0)
+        if inline:
+            br.step_inline()
+        else:
+            br.step_pure_py()
+        assert not br.cconf.all(), "oops, all fields have been executed in the"\
+                                  " nondeterministic step function"
+        assert br.cconf.any(), "oops, no fields have been executed in the"\
+                              " nondeterministic step function"
+
+        # and now a sanity check for rule 0
+        br2 = cagen.BinRule(size=1000, rule=0)
+        assert not br2.cconf.all(), "why was the random config all ones?"
+        assert br2.cconf.any(), "why was the random config all zeros?"
+        if inline:
+            br2.step_inline()
+        else:
+            br2.step_pure_py()
+        assert not br2.cconf.any(), "huh, rule0 was supposed to set all"\
+                             " fields to zero!"
+
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    def test_weave_nondeterministic_stepfunc_id(self):
+        self.body_weave_nondeterministic_stepfunc_1d()
+
+    def test_pure_nondeterministic_stepfunc_id(self):
+        self.body_weave_nondeterministic_stepfunc_1d(False)
+
+    def body_nondeterministic_stepfunc_2d(self, inline=True):
+        conf = np.ones((100, 100))
+
+        def make_stepfunc(target, deterministic=False):
+            computer = cagen.ElementaryCellularAutomatonBase(rule=0)
+            sf = cagen.WeaveStepFunc(
+                    loop=cagen.TwoDimCellLoop() if deterministic else
+                          cagen.TwoDimNondeterministicCellLoop(),
+                    accessor=cagen.TwoDimStateAccessor(),
+                    neighbourhood=cagen.VonNeumannNeighbourhood(),
+                    extra_code=[cagen.SimpleBorderCopier(),
+                        computer], target=target)
+            sf.gen_code()
+            return sf
+
+        t = cagen.TestTarget(config=conf.copy())
+        uno = make_stepfunc(t)
+        if inline:
+            uno.step_inline()
+        else:
+            uno.step_pure_py()
+        assert not uno.getConf().all(), "oops, no cells have been executed :("
+        assert uno.getConf().any(), "oops, all cells have been executed :("
+
+        t = cagen.TestTarget(config=conf.copy())
+        dos = make_stepfunc(t, True)
+        if inline:
+            dos.step_inline()
+        else:
+            dos.step_pure_py()
+        assert not dos.getConf().any(), "rule 0 was supposed to turn all"\
+                                    "fields into 0. huh?"
+
+
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    def test_weave_nondeterministic_stepfunc_2d(self):
+        self.body_nondeterministic_stepfunc_2d()
+
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_pure_nondeterministic_stepfunc_2d(self):
+        self.body_nondeterministic_stepfunc_2d(False)
+
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
         for i in INTERESTING_BINRULES:
