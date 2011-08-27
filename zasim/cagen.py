@@ -1285,8 +1285,15 @@ class TestTarget(object):
             assert size is not None
             self.cconf = np.zeros(size)
             rand = Random()
-            for pos in product(*[range(siz) for siz in size]):
-                self.cconf[pos] = rand.choice([0, 1])
+            if HAVE_TUPLE_ARRAY_INDEX:
+                for pos in product(*[range(siz) for siz in size]):
+                    self.cconf[pos] = rand.choice([0, 1])
+            else:
+                if len(size) != 1:
+                    raise NotImplementedError("Can only create random configs"\
+                            "in %dd with HAVE_TUPLE_ARRAY_INDEX." % len(size))
+                for pos in range(size[0]):
+                    self.cconf[pos] = rand.choice([0, 1])
             self.size = size
         else:
             self.cconf = config.copy()
