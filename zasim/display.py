@@ -24,22 +24,26 @@ from itertools import product
 import numpy as np
 
 class ZasimDisplay(object):
+
+    simulator = None
+    """The :class:`Simulator` object for this display."""
+
+    display = None
+    """The :class:`BaseDisplayWidget` in use."""
+
+    window = None
+    """The :class:`ZasimMainWindow` instance in use."""
+
+    control = None
+    """The :class:`ControlWidget` in use."""
+
     def __init__(self, simulator):#, display_widget=None, main_window=None, control_widget=None):
         """Instantiate a Display (thas is: a window with a display widget and
         simulation controls) from a simulator.
 
-        :param simulator: The simulator to use.
-        #:param display_widget: The display widget to use. If None is supplied,
-                               #a matching one will be created.
-        #:param main_window: The :class:`ZasimMainWindow` instance to use, if no
-                            #new instance should be created.
-        #:param control_widget: The :class:`ontrolWidget` instance to use, if no
-                               #new instance should be created."""
+        :param simulator: The simulator to use."""
 
         self.simulator = simulator
-        self.display = None # display_widget
-        self.window = None #main_window
-        self.control = None #control_widget
 
         if not self.display:
             if len(simulator.shape) == 1:
