@@ -5,8 +5,8 @@ from __future__ import absolute_import
 It will try importing PySide first, and if that fails PyQt. The code will
 constantly be tested with both bindings."""
 
-from .ca import binRule
 from . import cagen
+from .simulator import CagenSimulator
 
 try:
     from PySide.QtCore import *
@@ -23,26 +23,118 @@ import time
 from itertools import product
 import numpy as np
 
-class Control(QWidget):
-    """Control a simulator with buttons or from the interactive console."""
+class ZasimDisplay(object):
+    def __init__(self, simulator):#, display_widget=None, main_window=None, control_widget=None):
+        """Instantiate a Display (thas is: a window with a display widget and
+        simulation controls) from a simulator.
 
-    attached_displays = []
-    """All displays that have been attached using attach_display"""
+        :param simulator: The simulator to use.
+        #:param display_widget: The display widget to use. If None is supplied,
+                               #a matching one will be created.
+        #:param main_window: The :class:`ZasimMainWindow` instance to use, if no
+                            #new instance should be created.
+        #:param control_widget: The :class:`ontrolWidget` instance to use, if no
+                               #new instance should be created."""
 
-    display_attached = pyqtSignal(["BaseDisplay"])
+        self.simulator = simulator
+        self.display = None # display_widget
+        self.window = None #main_window
+        self.control = None #control_widget
+
+        if not self.display:
+            if len(simulator.shape) == 1:
+                self.display = HistoryDisplayWidget(self.simulator,
+                            self.simulator.shape[0])
+            elif len(simulator.shape) == 2:
+                self.display = TwoDimDisplayWidget(self.simulator)
+            else:
+                raise ValueError("Unsupported shape size: %d" % len(simulator.shape))
+
+        if self.control is None:
+            self.control = ControlWidget(self.simulator)
+
+        if self.window is None:
+            self.window = ZasimMainWindow(self.simulator, self.display, self.control)
+        self.window.show()
+
+    def set_scale(self, scale):
+        """Sets the scale of the display component."""
+        self.display.set_scale(scale)
+
+class ZasimMainWindow(QMainWindow):
+    """This is a window that manages one simulator. It holds one
+    :class:`Control`, at least one :class:`BaseDisplayWidget` and any number of
+    additional views embedded in QDockWidgets."""
+
+    control = None
+    """The control widget responsible for this window."""
+
+    simulator = None
+    """The simulator that is controlled in this window."""
+
+    display = None
+    """The main display for the simulator."""
+
+    extra_displays = []
+    """Additional displays in docks."""
+
+
+    display_attached = Signal(["BaseDisplayWidget"])
     """Emitted when a new display has been attached"""
 
-    display_detached = pyqtSignal(["BaseDisplay"])
+    display_detached = Signal(["BaseDisplayWidget"])
     """Emitted when a display has been detached"""
 
-    def __init__(self, simulator, parent=None):
-        """:param simulator: The simulator object to control.
-        :param parent: the QWidget to set as parent."""
-        super(Control, self).__init__(parent)
+    def __init__(self, simulator, display, control=None, **kwargs):
+        """Sets up this window with a simulator, a display and optionally a
+        control widget.
+
+        :param simulator: The simulator object to use.
+        :param display: A :class:`BaseDisplayWidget` instance.
+        :param control: Optionally, a :class:`ControlWidget` instance."""
+        super(ZasimMainWindow, self).__init__(**kwargs)
+        self.simulator = simulator
+        self.display = display
+        self.control = control
+
+        central_widget = QWidget(self)
+
+        if self.control is None:
+            self.control = ControlWidget(self.simulator, parent=central_widget)
+
+        layout = QVBoxLayout(central_widget)
+
+        scroller = QScrollArea()
+        scroller.setWidget(self.display)
+
+        layout.addWidget(scroller)
+        layout.addWidget(self.control)
+
+        self.setCentralWidget(central_widget)
+
+        self.simulator.updated.connect(self.display.after_step)
+
+    def attach_display(self, display):
+        """Attach an extra display to the control.
+
+        Those displays are updated whenever a step occurs."""
+        self.attached_displays.append(display)
+        self.display_attached.emit(display)
+
+    def detach_display(self, display):
+        """Detach an extra attached display from the control."""
+        self.attached_displays.remove(display)
+        self.display_detached.emit(display)
+
+class ControlWidget(QWidget):
+    """Control a simulator with buttons or from the interactive console."""
+
+    def __init__(self, simulator, **kwargs):
+        """:param simulator: The simulator object to control."""
+        super(ControlWidget, self).__init__(**kwargs)
 
         self.sim = simulator
         self.timer_delay = 0
-        self.attached_displays = []
 
         self._setup_ui()
 
@@ -95,19 +187,6 @@ class Control(QWidget):
     def step(self):
         """Step the simulator, update all displays."""
         self.sim.step()
-        for d in self.attached_displays:
-            d.after_step()
-
-    def attach_display(self, display):
-        """Attach a display to the control.
-
-        Those displays are updated whenever a step occurs."""
-        self.attached_displays.append(display)
-
-    def detach_display(self, display):
-        """Detach an attached display from the control."""
-        self.attached_displays.remove(display)
-        self.display_detached.emit(display)
 
     def fullspeed(self):
         """Run the stepping function without any timer delays."""
@@ -121,24 +200,21 @@ class Control(QWidget):
                 diff, last_time = time.time() - last_time, time.time()
                 print last_step, diff
 
-class BaseDisplay(QWidget):
+class BaseDisplayWidget(QWidget):
     """A base class for different types of displays.
 
     Manages the config display queue, scrolling, ..."""
     def __init__(self, width, height, queue_size=1, scale=1, **kwargs):
-        """Initialize the BaseDisplay.
+        """Initialize the BaseDisplayWidget.
 
         :param width: The width of the image to build.
         :param height: The height of the image to build.
         :param queue_size: The amount of histories that may pile up before
                            forcing a redraw.
         """
-        super(BaseDisplay, self).__init__(**kwargs)
+        super(BaseDisplayWidget, self).__init__(**kwargs)
         self.img_width, self.img_height = width, height
-        self.img_scale = scale
-
-        self.resize(self.img_width * self.img_scale,
-                    self.img_height * self.img_scale)
+        self.set_scale(scale)
 
         self.create_image_surf()
         self.display_queue = Queue.Queue(queue_size)
@@ -153,17 +229,25 @@ class BaseDisplay(QWidget):
                             QImage.Format_RGB444)
         self.image.fill(0)
 
-class HistoryDisplay(BaseDisplay):
+    def set_scale(self, scale):
+        """Change the scale of the display."""
+        self.img_scale = scale
+        self.resize(self.img_width * self.img_scale,
+                    self.img_height * self.img_scale)
+        self.create_image_surf()
+
+
+class HistoryDisplayWidget(BaseDisplayWidget):
     """A Display that displays one-dimensional cellular automatons by drawing
     consecutive configurations below each other, wrapping around to the top."""
-    def __init__(self, simulator, size, scale=1, **kwargs):
+    def __init__(self, simulator, height, scale=1, **kwargs):
         """:param simulator: The simulator to use.
-        :param size: The amount of lines of history to keep before wrapping.
+        :param height: The amount of lines of history to keep before wrapping.
         :param scale: The size of each pixel.
         :param parent: The QWidget to set as parent."""
-        super(HistoryDisplay, self).__init__(width=simulator.sizeX,
-                      height=size,
-                      queue_size=size,
+        super(HistoryDisplayWidget, self).__init__(width=simulator.shape[0],
+                      height=height,
+                      queue_size=height,
                       scale=scale,
                       **kwargs)
         self.sim = simulator
@@ -200,13 +284,9 @@ class HistoryDisplay(BaseDisplay):
                 y = self.last_step % self.img_height
         except Queue.Empty:
             pass
-        finally:
-            del painter
 
         copier = QPainter(self)
         copier.drawImage(QPoint(0, 0), self.image)
-
-        del copier
 
 
     def after_step(self):
@@ -232,10 +312,10 @@ class HistoryDisplay(BaseDisplay):
             QPoint(0, ((self.last_step + self.queued_steps - 1) % self.img_height) * self.img_scale),
             QSize(self.img_width * self.img_scale, self.img_scale)))
 
-class TwoDimDisplay(BaseDisplay):
+class TwoDimDisplayWidget(BaseDisplayWidget):
     def __init__(self, simulator, scale=1, **kwargs):
-        super(TwoDimDisplay, self).__init__(width=simulator.sizeX,
-                    height=simulator.sizeY,
+        super(TwoDimDisplayWidget, self).__init__(width=simulator.shape[0],
+                    height=simulator.shape[1],
                     queue_size=1,
                     scale=scale,
                     **kwargs)
@@ -278,23 +358,28 @@ class TwoDimDisplay(BaseDisplay):
 
         self.update()
 
+def display_for(simulator):
+    si
+
 def main():
     app = QApplication(sys.argv)
 
     scale = 2
     w, h = 300, 300
 
-    dimensions = 2
+    onedim, twodim = True, True
 
-    if dimensions == 1:
+    if onedim:
         # get a random beautiful CA
-        sim = binRule(random.choice(
+        sim = cagen.BinRule(rule=random.choice(
              [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
-             w, 0, binRule.INIT_RAND)
+             size=(w,))
 
-        disp = HistoryDisplay(sim, h, scale)
-        disp.after_step()
-    elif dimensions == 2:
+        sim_obj = CagenSimulator(sim.stepfunc, sim)
+        display_a = ZasimDisplay(sim_obj)
+        display_a.set_scale(scale)
+
+    if twodim:
         twodim_rand = np.zeros((w, h), int)
         for x, y in product(range(w), range(h)):
             twodim_rand[x, y] = random.choice([0, 0, 0, 1])
@@ -312,26 +397,10 @@ def main():
 
         sim.gen_code()
 
-        sim.sizeX, sim.sizeY = acc.size
-        disp = TwoDimDisplay(sim, scale)
+        sim_obj = CagenSimulator(sim, t)
 
-    window = QMainWindow()
-
-    central_widget = QWidget(window)
-
-    window_l = QVBoxLayout(central_widget)
-
-    scroller = QScrollArea()
-    window_l.addWidget(scroller)
-    scroller.setWidget(disp)
-    scroller.resize(800, 600)
-
-    control = Control(sim, parent=central_widget)
-    window_l.addWidget(control)
-    control.attach_display(disp)
-
-    window.setCentralWidget(central_widget)
-    window.show()
+        display_b = ZasimDisplay(sim_obj)
+        display_b.set_scale(scale)
 
     sys.exit(app.exec_())
 

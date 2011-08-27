@@ -124,6 +124,9 @@ class WeaveStepFunc(object):
     target = None
     """The configuration object that is targetted."""
 
+    prepared = False
+    """Is the step function ready?"""
+
     def __init__(self, loop, accessor, neighbourhood, extra_code=[],
                  target=None, size=None, **kwargs):
         """The Constructor creates a weave-based step function from the
@@ -137,7 +140,7 @@ class WeaveStepFunc(object):
         :param neighbourhood: A :class:`Neighbourhood`, that fetches
                               neighbouring cell values into known variables.
         :param extra_code: Further :class:`WeaveStepFuncVisitor` classes, that
-                           add more behaviour. 
+                           add more behaviour.
                            Usually at least a :class:`BorderCopier`.
         :param target: The object to target.
         :param size: If the target is not supplied, the size has to be
@@ -260,6 +263,7 @@ class WeaveStepFunc(object):
         weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
                       type_converters = converters.blitz)
         self.acc.swap_configs()
+        self.prepared = True
 
     def step_pure_py(self):
         """Run a step using the compiled python code.
@@ -1280,9 +1284,9 @@ class TestTarget(object):
         if config is None:
             assert size is not None
             self.cconf = np.zeros(size)
-            rand = Random(11)
-            for i in range(size):
-                self.cconf[i] = rand.choice([0, 1])
+            rand = Random()
+            for pos in product(*[range(siz) for siz in size]):
+                self.cconf[pos] = rand.choice([0, 1])
             self.size = size
         else:
             self.cconf = config.copy()

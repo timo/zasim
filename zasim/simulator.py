@@ -5,10 +5,13 @@ try:
     from PySide.QtCore import QObject, Signal
 except ImportError:
     try:
-        from PyQt4.QtCore import pyqtSignal as QObject, Signal
+        from PyQt4.QtCore import pyqtSignal as Signal
+        from PyQt4.QtCore import QObject
+        print "using PyQt4 signal"
     except ImportError:
         from zasim.lightweight_signal import Signal
         QObject = object
+        print "using lightweight signal"
 
 class BaseSimulator(QObject):
     """This class serves as the base for simulator objects."""
@@ -55,8 +58,9 @@ class BaseSimulator(QObject):
     """Is emitted when a snapshot is restored."""
 
     def getConf(self):
-        """Returns the configuration space as a numpy array. Its shape matches
-        up with :attr:`shape`, so it also does not include any borders."""
+        """Returns a copy of the configuration space as a numpy array.
+        Its shape matches up with :attr:`shape`, so it also does not
+        include any borders."""
 
     def step(self):
         """Step the simulator once."""
@@ -68,10 +72,12 @@ class BaseSimulator(QObject):
     def start(self):
         """Call this to notify views, that continuous updates have
         been started."""
+        self.started.emit()
 
     def stop(self):
         """Call this to notify views, that continuous updates have
         been stopped."""
+        self.stopped.emit()
 
     def snapshot(self):
         """Get a lightweight snapshot of this simulator, that can be restored
@@ -79,9 +85,42 @@ class BaseSimulator(QObject):
 
         .. note ::
             This emits the :attr:`snapshot_taken` signal."""
+        self.snapshot_taken.emit()
 
     def restore(self, snapshot):
         """Restore the simulator to an earlier state.
 
         .. note ::
             This emits the :attr:`sanpshot_restored` signal."""
+        raise NotImplementedError("restoring of snapshots not implemented"\
+                                  "for %s" % (self.__class__))
+
+class CagenSimulator(BaseSimulator):
+    def __init__(self, step_func, target):
+        super(CagenSimulator, self).__init__()
+        self._step_func = step_func
+        self._target = target
+        self._size = self._target.size
+        self._bbox = self._step_func.neigh.bounding_box()
+
+        #self.shape = list(self._size)
+        #for dim, (low, high) in enumerate(self._bbox):
+            #reduction = abs(low) + abs(high)
+            #self.shape[dim] -= reduction
+            #print "reduced %d by %d" % (dim, reduction)
+        self.shape = tuple(self._size)
+
+        self.prepared = self._step_func.prepared
+
+    def getConf(self):
+        if len(self.shape) == 1:
+            ((l, r),) = self._bbox
+            return self._target.cconf[abs(l):-abs(r)].copy()
+        elif len(self.shape) == 2:
+            (l, r), (u, d) = self._bbox
+            return self._target.cconf[abs(u):-abs(d),abs(l):-abs(r)].copy()
+
+    def step(self):
+        self._step_func.step()
+        self.prepared = True
+        self.updated.emit()
