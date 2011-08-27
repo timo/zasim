@@ -22,14 +22,6 @@
    inkscape:export-ydpi="61.523438">
   <defs
      id="defs4">
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect3101"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect6369"
-       is_visible="true" />
     <linearGradient
        id="linearGradient5514"
        osb:paint="gradient">
@@ -42,115 +34,6 @@
          offset="1"
          style="stop-color:#7cff13;stop-opacity:1;" />
     </linearGradient>
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect5238"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect5234"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect5218"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect4367"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect4351"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect4347"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect4333"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect4317"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect4313"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect4764"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect4749"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect4742"
-       is_visible="true" />
-    <marker
-       inkscape:stockid="Arrow1Lstart"
-       orient="auto"
-       refY="0"
-       refX="0"
-       id="Arrow1Lstart"
-       style="overflow:visible">
-      <path
-         id="path4112"
-         d="M 0,0 5,-5 -12.5,0 5,5 0,0 z"
-         style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt;marker-start:none"
-         transform="matrix(0.8,0,0,0.8,10,0)"
-         inkscape:connector-curvature="0" />
-    </marker>
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect3922"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect3918"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect3914"
-       is_visible="true" />
-    <inkscape:path-effect
-       effect="spiro"
-       id="path-effect3910"
-       is_visible="true" />
-    <clipPath
-       clipPathUnits="userSpaceOnUse"
-       id="clipPath4007">
-      <path
-         style="font-size:medium;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-indent:0;text-align:start;text-decoration:none;line-height:normal;letter-spacing:normal;word-spacing:normal;text-transform:none;direction:ltr;block-progression:tb;writing-mode:lr-tb;text-anchor:start;baseline-shift:baseline;color:#000000;fill:#008000;fill-opacity:1;stroke:none;stroke-width:30;marker:none;visibility:visible;display:inline;overflow:visible;enable-background:accumulate;font-family:Sans;-inkscape-font-specification:Sans"
-         d="m 92.5625,809.7372 c -0.416895,0.003 -0.833475,0.0144 -1.25,0.0312 -2.320949,0.54446 -4.680874,1.94198 -5.53125,4.28125 -1.046963,2.79821 -0.407475,5.98313 1,8.53125 1.966651,3.35142 4.525372,6.29494 6.875,9.375 1.7002,2.18454 3.233992,4.51868 4.40625,7.03125 2.18988,4.35559 4.21154,8.7924 6.84375,12.90625 1.22393,1.79078 2.49903,3.57821 4.125,5.03125 1.2532,1.31724 2.644,2.5539 4.3125,3.3125 2.7825,1.55703 5.96503,2.45141 9.15625,2.53125 3.17159,0.29164 6.36629,-0.15344 9.53125,0.21875 2.66619,0.44031 4.81979,2.28721 6.59375,4.21875 3.13743,3.44328 5.88021,7.25814 8.375,11.1875 2.46182,3.90726 4.69598,7.94498 6.59375,12.15625 3.36567,7.55065 5.68852,15.50943 8.1875,23.375 1.00337,7.15534 1.17513,14.42104 0.5,21.59375 -1.36456,6.19613 -4.45869,12.18475 -8.78125,16.8125 -4.4766,4.79268 -10.48306,8.40797 -16.8125,10.125 -6.32943,1.71702 -13.34007,1.62333 -19.625,-0.25 -6.28492,-1.87332 -12.20602,-5.62912 -16.5625,-10.53125 -7.527792,-8.47065 -10.724983,-21.77391 -7.90625,-32.75 2.818731,-10.97608 12.00972,-21.04841 22.6875,-24.84375 A 15.003792,15.003792 0 1 0 105.25,865.7997 c -20.558145,7.30724 -36.291791,24.55504 -41.71875,45.6875 -5.426957,21.13247 0.06909,43.78504 14.5625,60.09375 8.132011,9.15055 18.674475,15.87816 30.40625,19.375 11.73177,3.49685 24.21644,3.64258 36.03125,0.4375 11.8148,-3.20507 22.54999,-9.64749 30.90625,-18.59375 8.35625,-8.94625 14.04467,-20.05682 16.4375,-32.0625 l 0.15625,-0.71875 0.0625,-0.6875 c 1.61983,-15.80451 0.13301,-31.85944 -4.375,-47.09375 -6.00274,-20.28559 -17.35175,-38.64904 -32.4375,-53.21875 -0.67572,-0.90737 -1.31715,-1.82453 -1.96875,-2.75 -0.73653,-1.00121 -1.32942,-2.08871 -1.6875,-3.28125 -0.96862,-2.90743 -1.32192,-5.9915 -2.15625,-8.9375 -0.77876,-2.96895 -1.9166,-6.01304 -4.3125,-8.0625 -2.84495,-2.53201 -6.67165,-3.78145 -10.4375,-3.9375 -6.089,-0.52004 -12.22093,-0.0466 -18.3125,-0.53125 -7.54644,-0.45022 -15.03186,-1.52541 -22.59375,-1.75 -0.416464,-0.0233 -0.833105,-0.0342 -1.25,-0.0312 z"
-         id="path4009"
-         inkscape:connector-curvature="0" />
-    </clipPath>
-    <filter
-       id="filter5220"
-       inkscape:label="Ripple"
-       inkscape:menu="Distort"
-       inkscape:menu-tooltip="Horizontal rippling of edges"
-       color-interpolation-filters="sRGB">
-      <feTurbulence
-         id="feTurbulence5222"
-         numOctaves="1"
-         baseFrequency="0.002 0.107" />
-      <feColorMatrix
-         id="feColorMatrix5224"
-         values="2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.5 0.5"
-         result="result91" />
-      <feDisplacementMap
-         id="feDisplacementMap5226"
-         in2="result91"
-         yChannelSelector="A"
-         xChannelSelector="R"
-         scale="14.3"
-         in="SourceGraphic" />
-    </filter>
     <clipPath
        clipPathUnits="userSpaceOnUse"
        id="clipPath5481">
@@ -214,9 +97,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5"
-     inkscape:cx="129.12669"
-     inkscape:cy="96.809291"
+     inkscape:zoom="4"
+     inkscape:cx="134.25478"
+     inkscape:cy="106.08388"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -247,8 +130,9 @@
      id="layer1"
      transform="translate(0,-877.3622)">
     <g
-       id="g5718"
-       transform="matrix(0.61684398,0.61684398,-0.61684398,0.61684398,624.78833,271.94258)">
+       id="what"
+       transform="matrix(0.61684398,0.61684398,-0.61684398,0.61684398,624.78833,271.94258)"
+       inkscape:label="#what">
       <path
          style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:5.59701204;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1"
          d="m 81.044249,928.9621 -0.424038,0.81274 -3.0036,5.68918 -14.43495,27.3681 33.905348,17.86258 7.137961,-13.53387 2.26153,-4.31105 8.44542,-16.04276 -33.887671,-17.84492 z"
@@ -299,8 +183,7 @@
          style="fill:#000000;fill-opacity:1;stroke:#000000;stroke-width:5.59701204;stroke-linejoin:round;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none" />
       <g
          id="snake"
-         inkscape:label="#snake"
-         sodipodi:insensitive="true">
+         inkscape:label="#snake">
         <path
            sodipodi:nodetypes="ccccccccccccccc"
            inkscape:connector-curvature="0"
@@ -357,7 +240,7 @@
            style="fill:#ffffff;fill-opacity:1;stroke:#009300;stroke-width:2.29266;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none">
           <path
              transform="matrix(1.0118714,-0.58420423,0.58420423,1.0118714,-10.75565,870.0615)"
-             d="m 131.87542,32.200703 a 6.0104074,6.0104074 0 1 1 -12.02081,0 6.0104074,6.0104074 0 1 1 12.02081,0 z"
+             d="m 131.87542,32.200703 c 0,3.319456 -2.69095,6.010407 -6.01041,6.010407 -3.31945,0 -6.0104,-2.690951 -6.0104,-6.010407 0,-3.319457 2.69095,-6.010408 6.0104,-6.010408 3.31946,0 6.01041,2.690951 6.01041,6.010408 z"
              sodipodi:ry="6.0104074"
              sodipodi:rx="6.0104074"
              sodipodi:cy="32.200703"
@@ -373,12 +256,12 @@
              sodipodi:cy="32.200703"
              sodipodi:rx="6.0104074"
              sodipodi:ry="6.0104074"
-             d="m 131.87542,32.200703 a 6.0104074,6.0104074 0 1 1 -12.02081,0 6.0104074,6.0104074 0 1 1 12.02081,0 z"
+             d="m 131.87542,32.200703 c 0,3.319456 -2.69095,6.010407 -6.01041,6.010407 -3.31945,0 -6.0104,-2.690951 -6.0104,-6.010407 0,-3.319457 2.69095,-6.010408 6.0104,-6.010408 3.31946,0 6.01041,2.690951 6.01041,6.010408 z"
              transform="matrix(1.0118714,-0.58420423,0.58420423,1.0118714,5.6487497,846.09336)" />
         </g>
         <path
            transform="matrix(0.35289366,-0.20374325,0.20374325,0.35289366,75.43763,934.84453)"
-           d="m 131.87542,32.200703 a 6.0104074,6.0104074 0 1 1 -12.02081,0 6.0104074,6.0104074 0 1 1 12.02081,0 z"
+           d="m 131.87542,32.200703 c 0,3.319456 -2.69095,6.010407 -6.01041,6.010407 -3.31945,0 -6.0104,-2.690951 -6.0104,-6.010407 0,-3.319457 2.69095,-6.010408 6.0104,-6.010408 3.31946,0 6.01041,2.690951 6.01041,6.010408 z"
            sodipodi:ry="6.0104074"
            sodipodi:rx="6.0104074"
            sodipodi:cy="32.200703"
@@ -394,7 +277,7 @@
            sodipodi:cy="32.200703"
            sodipodi:rx="6.0104074"
            sodipodi:ry="6.0104074"
-           d="m 131.87542,32.200703 a 6.0104074,6.0104074 0 1 1 -12.02081,0 6.0104074,6.0104074 0 1 1 12.02081,0 z"
+           d="m 131.87542,32.200703 c 0,3.319456 -2.69095,6.010407 -6.01041,6.010407 -3.31945,0 -6.0104,-2.690951 -6.0104,-6.010407 0,-3.319457 2.69095,-6.010408 6.0104,-6.010408 3.31946,0 6.01041,2.690951 6.01041,6.010408 z"
            transform="matrix(0.35289366,-0.20374325,0.20374325,0.35289366,86.879813,918.12659)" />
       </g>
       <rect
