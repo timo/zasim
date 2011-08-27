@@ -16,22 +16,24 @@ from weakref import WeakValueDictionary
 
 
 class Signal(object):
+    """A lightweight Signal class when Qt is not installed."""
     def __init__(self, *types):
+        """Create the Signal object. The type signatures are ignored."""
         self.__slots = WeakValueDictionary()
 
-    def __call__(self, *args, **kargs):
+    def emit(self, *args, **kwargs):
+        """Emit the signal, call all slots that are connected."""
         for key in self.__slots:
             func, _ = key
-            func(self.__slots[key], *args, **kargs)
+            func(self.__slots[key], *args, **kwargs)
 
     def connect(self, slot):
+        """Connect this signal to a slot."""
         key = (slot.im_func, id(slot.im_self))
         self.__slots[key] = slot.im_self
 
     def disconnect(self, slot):
+        """Disconnect this signal from a slot."""
         key = (slot.im_func, id(slot.im_self))
         if key in self.__slots:
             self.__slots.pop(key)
-
-    def clear(self):
-        self.__slots.clear()
