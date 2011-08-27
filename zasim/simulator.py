@@ -106,13 +106,6 @@ class CagenSimulator(BaseSimulator):
         self._size = self._target.size
         self._bbox = self._step_func.neigh.bounding_box()
 
-        #self.shape = list(self._size)
-        #for dim, (low, high) in enumerate(self._bbox):
-            #reduction = abs(low) + abs(high)
-            #self.shape[dim] -= reduction
-            #print "reduced %d by %d" % (dim, reduction)
-        self.shape = tuple(self._size)
-
         self.prepared = self._step_func.prepared
 
     def getConf(self):
