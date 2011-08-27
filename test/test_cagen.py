@@ -25,7 +25,7 @@ class TestCAGen:
     def test_compare_weaves(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
         br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
-        br2 = cagen.BinRule(size-2, rule=rule_num, config=br.getConf().copy()[1:-1])
+        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.getConf().copy()[1:-1])
 
         for i in range(10):
             br.updateAllCellsWeaveInline()
@@ -56,7 +56,7 @@ class TestCAGen:
     def test_compare_pures(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
         br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
-        br2 = cagen.BinRule(size-2, rule=rule_num, config=br.getConf().copy()[1:-1])
+        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.getConf().copy()[1:-1])
 
         # are the rules the same?
         assert_arrays_equal(br.ruleIdx, br2.rule)
@@ -72,7 +72,7 @@ class TestCAGen:
 
     def test_run_nondeterministic_pure(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
-        br = cagen.BinRule(size-2, deterministic=False, rule=rule_num)
+        br = cagen.BinRule((size-2,), deterministic=False, rule=rule_num)
 
         for i in range(10):
             br.step_pure_py()
@@ -80,13 +80,13 @@ class TestCAGen:
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_run_nondeterministic_weave(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
-        br = cagen.BinRule(size-2, deterministic=False, rule=rule_num)
+        br = cagen.BinRule((size-2,), deterministic=False, rule=rule_num)
 
         for i in range(10):
             br.step_inline()
 
     def test_immutability(self):
-        br = cagen.BinRule(size=10)
+        br = cagen.BinRule(size=(10,))
         with pytest.raises(AssertionError):
             br.stepfunc.set_target(br)
         with pytest.raises(AttributeError):
@@ -95,7 +95,7 @@ class TestCAGen:
             br.stepfunc.add_py_hook("pre_compute", "print 'hello'")
 
     def test_pretty_print_rules_1d(self):
-        br = cagen.BinRule(size=10,rule=110)
+        br = cagen.BinRule(size=(10,),rule=110)
 
         res = br.pretty_print()
         res = "\n".join(a.strip() for a in res.split("\n"))
@@ -242,7 +242,7 @@ class TestCAGen:
                               " nondeterministic step function"
 
         # and now a sanity check for rule 0
-        br2 = cagen.BinRule(size=1000, rule=0)
+        br2 = cagen.BinRule(size=(1000,), rule=0)
         assert not br2.cconf.all(), "why was the random config all ones?"
         assert br2.cconf.any(), "why was the random config all zeros?"
         if inline:

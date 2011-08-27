@@ -1303,7 +1303,7 @@ class BinRule(TestTarget):
 
     def __init__(self, size=None, deterministic=True, rule=126, config=None, **kwargs):
         """:param size: The size of the config to generate if no config
-                        is supplied.
+                        is supplied. Must be a tuple.
            :param deterministic: Go over every cell every time or skip cells
                                  randomly?
            :param rule: The rule number for the elementary cellular automaton.
