@@ -96,6 +96,9 @@ class BaseSimulator(QObject):
                                   "for %s" % (self.__class__))
 
 class CagenSimulator(BaseSimulator):
+    """This Simulator takes a :class:`WeaveStepFunc` and a :class:`TestTarget`
+    instance and packs them together so they are compatible with the
+    :class:`BaseSimulator` interface."""
     def __init__(self, step_func, target):
         super(CagenSimulator, self).__init__()
         self._step_func = step_func
@@ -113,6 +116,7 @@ class CagenSimulator(BaseSimulator):
         self.prepared = self._step_func.prepared
 
     def getConf(self):
+        """Return the config, sans borders."""
         if len(self.shape) == 1:
             ((l, r),) = self._bbox
             return self._target.cconf[abs(l):-abs(r)].copy()
@@ -121,6 +125,8 @@ class CagenSimulator(BaseSimulator):
             return self._target.cconf[abs(u):-abs(d),abs(l):-abs(r)].copy()
 
     def step(self):
+        """Delegate the stepping to the :meth:`WeaveStepFunc.step` method, then
+        emit :attr:`updated`."""
         self._step_func.step()
         self.prepared = True
         self.updated.emit()
