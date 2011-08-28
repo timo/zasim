@@ -1,0 +1,4 @@
+# create the compilation animation picture like this:
+inkscape -f docs/logo.svg -i snake -j -C -e zasim/idle.png
+# create the logo for the documentation with this command:
+inkscape -e docs/_templates/logo.png -C -w 175 -h 175 docs/logo.svg
