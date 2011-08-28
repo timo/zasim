@@ -105,6 +105,7 @@ class CagenSimulator(BaseSimulator):
         self._target = target
         self._size = self._target.size
         self._bbox = self._step_func.neigh.bounding_box()
+        self.shape = self._size
 
         self.prepared = self._step_func.prepared
 
