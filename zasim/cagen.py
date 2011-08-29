@@ -1052,7 +1052,10 @@ class ElementaryCellularAutomatonBase(Computation):
         self.digits = len(self.neigh)
 
         if self.rule is None:
-            self.rule = randrange(0, self.base ** (self.base ** self.digits))
+            self.rule = randrange(0, self.base ** self.base ** self.digits)
+
+        if self.rule >= self.base ** self.base ** self.digits:
+            self.rule = self.rule % (self.base ** self.base ** self.digits)
 
         compute_code = ["result = 0;"]
         compute_py = ["result = 0"]
