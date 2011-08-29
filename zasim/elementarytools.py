@@ -11,6 +11,20 @@ except ImportError:
 
 from itertools import product
 
+class CellDisplayWidget(QLabel):
+    def __init__(self, value, size=32, **kwargs):
+        super(CellDisplayWidget, self).__init__(**kwargs)
+        self.setFixedSize(size, size)
+        self.setPixmap(self.__pixmap_for_value(value))
+
+    def __pixmap_for_value(self, value):
+        pixmap = QPixmap(QSize(self.width(), self.height()))
+        color = {1: "white",
+                 0: "black",
+                 self.gap: "gray"}
+        pixmap.fill(QColor(color[value]))
+        return pixmap
+
 class BaseNeighbourhoodDisplay(QWidget):
     """The BaseNeighbourhoodDisplay offers a skeleton for different ways of
     displaying neighbourhoods.
@@ -88,22 +102,62 @@ class BaseNeighbourhoodDisplay(QWidget):
                (self.bbox[0][0], self.bbox[1][0]))
 
     def create_subwidget(self, offset, value):
-        subwidget = QLabel(self)
-        pixmap = QPixmap(QSize(32, 32))
-        color = {1: "white",
-                 0: "black",
-                 self.gap: "gray"}
-        pixmap.fill(QColor(color[value]))
-        subwidget.setPixmap(pixmap)
-        subwidget.setFixedSize(32, 32)
-        return subwidget
+        """Create a widget for a cell in the neighbourhood.
+
+        :param offset: A tuple of (x, y) for the position of the cell
+        :param value: The value of the cell, as per the values dictionary, or
+                      if the widget is to be created for an empty space,
+                      :attr:`self.gap`.
+        :returns: a QWidget initialised for the cell. Alternatively, None."""
+        return CellDisplayWidget(value)
+
+    def update_value(self, widget, offset, new_value):
+        """Manipulate the given widget for the new value.
+
+        :returns: None, if the widget was manipulated, alternatively a new
+                  QWidget to take its place."""
+
+        widget.setPixmap(self.__pixmap_for_value(new_value))
+
+class NextToResult(QWidget):
+    def __init__(self, neighbourhood_widget, result_widget, direction="l", **kwargs):
+        super(NextToResult, self).__init__(**kwargs)
+        assert direction in "udlr"
+        if direction in "lr":
+            layout = QHBoxWidget()
+        else:
+            layout = QVBoxWidget()
+
+        self.result_widget = result_widget
+        self.neighbourhood_widget = neighbourhood_widget
+
+        if direction in "lu":
+            layout.addWidget(self.result_widget)
+        layout.addWidget(self.neighbourhood_widget)
+        if direction in "rd":
+            layout.addWidget(self.result_widget)
+
+        self.setLayout(layout)
 
 class ElementaryRuleWindow(QWidget):
     def __init__(self, neighbourhood, rule=0):
         self.neighbourhood = neighbourhood
         self.rule = rule
 
-        
+        self.n_r_widgets = []
+        layout = QHBoxLayout()
+
+        for data in self.neighbourhood.digits_and_values:
+            data = data.copy()
+            result = data["result"]
+            del data["result"]
+            n_w = BaseNeighbourhoodDisplay(neighbourhood, data, parent=self)
+            r_w = CellDisplayWidget(result, parent=self)
+            n_r_w = NextToResult(n_w, r_w, parent=self)
+            self.n_r_widgets.append(n_r_w)
+            layout.addWidget(n_r_w)
+
+        self.setLayout(layout)
 
 def main():
     from .cagen import VonNeumannNeighbourhood, MooreNeighbourhood
@@ -117,12 +171,8 @@ def main():
 
     from pudb import set_trace; set_trace()
 
-    dvn = BaseNeighbourhoodDisplay(vn, dict((n, choice([0, 1])) for n
-                                   in vn.names))
-    dvn.show()
-    dmn = BaseNeighbourhoodDisplay(mn, dict((n, choice([0, 1])) for n
-                                   in mn.names))
-    dmn.show()
+    dvw = ElementaryRuleWindow(vn)
+    dvw.show()
 
     sys.exit(app.exec_())
 

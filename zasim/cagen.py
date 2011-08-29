@@ -73,7 +73,7 @@ except TypeError:
     def tuple_array_index_fixup(line):
         return TUPLE_ACCESS_FIX.sub(r"\1", line)
 
-from random import Random
+from random import Random, randrange
 from itertools import product, chain
 import sys
 import new
@@ -1022,7 +1022,15 @@ class ElementaryCellularAutomatonBase(Computation):
 
     See :meth:`visit` for details on how it's used."""
 
-    def __init__(self, rule, **kwargs):
+    digits_and_values = []
+    """This list stores a list of dictionaries that for each combination of
+    values for the neighbourhood cells stores the 'result', too."""
+
+
+    def __init__(self, rule=None, **kwargs):
+        """Create the computation.
+
+        Supply None as the rule to get a random one."""
         super(ElementaryCellularAutomatonBase, self).__init__(**kwargs)
         self.rule = rule
 
@@ -1042,6 +1050,9 @@ class ElementaryCellularAutomatonBase(Computation):
         self.neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
         self.neigh.sort(key=lambda (offset, name): offset)
         self.digits = len(self.neigh)
+
+        if self.rule is None:
+            self.rule = randrange(0, self.base ** (self.base ** self.digits))
 
         compute_code = ["result = 0;"]
         compute_py = ["result = 0"]
@@ -1102,16 +1113,20 @@ class ElementaryCellularAutomatonBase(Computation):
 
         template = [line[:] for line in lines]
 
+        digits_and_values = []
+        for i in range(self.base ** self.digits):
+            values = [1 if (i & (self.base ** k)) > 0 else 0
+                    for k in range(len(offsets))]
+            asdict = dict(zip(ordered_names, values))
+            asdict.update(result_value = self.target.rule[i])
+            digits_and_values.append(asdict)
+        self.digits_and_values = digits_and_values
+
         def pretty_printer(self):
             lines = [line[:] for line in protolines]
-            for i in range(self.base ** self.digits):
-                values = [1 if (i & (self.base ** k)) > 0 else 0
-                        for k in range(len(offsets))]
-                asdict = dict(zip(ordered_names, values))
-                asdict.update(result_value = self.target.rule[i])
-
+            for thedict in self.digits_and_values:
                 for line, tmpl_line in zip(lines, template):
-                    line.append(tmpl_line % asdict)
+                    line.append(tmpl_line % thedict)
 
             return "\n".join(["".join(line) for line in lines])
 
@@ -1308,7 +1323,7 @@ class BinRule(TestTarget):
     rule = None
     """The number of the elementary cellular automaton to simulate."""
 
-    def __init__(self, size=None, deterministic=True, rule=126, config=None, **kwargs):
+    def __init__(self, size=None, deterministic=True, rule=None, config=None, **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
            :param deterministic: Go over every cell every time or skip cells
@@ -1329,6 +1344,8 @@ class BinRule(TestTarget):
                 neighbourhood=ElementaryFlatNeighbourhood(),
                 extra_code=[SimpleBorderCopier(),
                     self.computer], target=self)
+
+        self.rule_number = self.computer.rule
 
         self.stepfunc.gen_code()
 
