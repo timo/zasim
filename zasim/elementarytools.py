@@ -16,7 +16,8 @@ class BaseNeighbourhoodDisplay(QWidget):
     displaying neighbourhoods.
 
     Subclass this and implement create_subwidget, which will be fed an offset
-    and the corresponding entry from the values dictionary and will then be
+    and the corresponding entry from the values dictionary, or :attr:`gap` if
+    there is no spot in the neighbourhood at that position, and will then be
     put into a QGridLayout.
 
     This class itself displays white or black blocks in the shape of the
@@ -54,25 +55,22 @@ class BaseNeighbourhoodDisplay(QWidget):
         self.layout = QGridLayout(self)
         self.layout.setContentsMargins(0, 0, 0, 0)
         self.layout.setSpacing(0)
-        print self.bbox[1][1] - self.bbox[1][0]
-        widths  = [[] for _ in range(self.bbox[1][1] - self.bbox[1][0]+1)]
-        heights = [[] for _ in range(self.bbox[0][1] - self.bbox[0][0]+1)]
-        print widths
-        print heights
-        positions = product(range(self.bbox[0][0], self.bbox[0][1]+1),
-                            range(self.bbox[1][0], self.bbox[1][1]+1))
-        for offset in positions:
+
+        (grid_w, grid_h), (offs_x, offs_y) = self.determine_size()
+
+        widths  = [[] for _ in range(grid_h)]
+        heights = [[] for _ in range(grid_w)]
+        positions = product(range(grid_w),
+                            range(grid_h))
+        for (row, col) in positions:
+            offset = (row + offs_x, col + offs_y)
             subwidget = self.create_subwidget(offset, self.values.get(offset, self.gap))
             self.subwidgets[offset] = subwidget
-            row, col = offset
-            row -= self.bbox[0][0]
-            col -= self.bbox[1][0]
             if subwidget is not None:
                 self.layout.addWidget(subwidget, row, col)
                 w, h = subwidget.width(), subwidget.height()
             else:
                 w, h = 0, 0
-            print row, col
             widths[row].append(w)
             heights[col].append(h)
 
@@ -80,12 +78,22 @@ class BaseNeighbourhoodDisplay(QWidget):
         height = max([sum(part) for part in heights])
         self.setFixedSize(width, height)
 
+    def determine_size(self):
+        """Determine how many fields to allocate in the grid.
+        Subclass this, if you want more gaps around the edges.
+
+        Return a tuple of width, height and a tuple of x-offset and y-offset."""
+        return ((self.bbox[1][1] - self.bbox[1][0] + 1,
+                self.bbox[0][1] - self.bbox[0][0] + 1),
+               (self.bbox[0][0], self.bbox[1][0]))
+
     def create_subwidget(self, offset, value):
-        if value == self.gap:
-            return
         subwidget = QLabel(self)
         pixmap = QPixmap(QSize(32, 32))
-        pixmap.fill(QColor("white" if value == 1 else "black"))
+        color = {1: "white",
+                 0: "black",
+                 self.gap: "gray"}
+        pixmap.fill(QColor(color[value]))
         subwidget.setPixmap(pixmap)
         subwidget.setFixedSize(32, 32)
         return subwidget
@@ -95,6 +103,7 @@ class ElementaryRuleWindow(QWidget):
         self.neighbourhood = neighbourhood
         self.rule = rule
 
+        
 
 def main():
     from .cagen import VonNeumannNeighbourhood, MooreNeighbourhood
