@@ -431,14 +431,6 @@ class Neighbourhood(WeaveStepFuncVisitor):
     offsets = ()
     """The offsets of neighbourhood fields."""
 
-    def neighbourhood_cells(self):
-        """Get the names of the neighbouring cells."""
-        return self.names
-
-    def get_offsets(self):
-        """Get the offsets of the neighbourhood cells."""
-        return self.offsets
-
     def recalc_bounding_box(self):
         """Recalculate the bounding box."""
         self.bb = ((-99, 100),
@@ -918,7 +910,7 @@ class SimpleBorderCopier(BaseBorderCopier):
 
         bbox = self.code.neigh.bounding_box()
         dims = len(bbox)
-        neighbours = self.code.neigh.get_offsets()
+        neighbours = self.code.neigh.offsets
         self.dimension_sizes = [self.code.acc.get_size_of(dim) for dim in range(dims)]
 
         slices = []
@@ -1067,7 +1059,7 @@ class ElementaryCellularAutomatonBase(Computation):
         """
         super(ElementaryCellularAutomatonBase, self).visit()
 
-        self.neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
+        self.neigh = zip(self.code.neigh.offsets, self.code.neigh.names)
         self.neigh.sort(key=lambda (offset, name): offset)
         self.digits = len(self.neigh)
 
@@ -1103,7 +1095,7 @@ class ElementaryCellularAutomatonBase(Computation):
 
         # and now do some heavy work to generate a pretty-printer!
         bbox = self.code.neigh.bounding_box()
-        offsets = self.code.neigh.get_offsets()
+        offsets = self.code.neigh.offsets
         offset_to_name = dict(self.neigh)
 
         if len(bbox) == 1:
@@ -1170,8 +1162,8 @@ class CountBasedComputationBase(Computation):
         """Generate code that calculates nonzerocount from all neighbourhood
         values."""
         super(CountBasedComputationBase, self).visit()
-        names = list(self.code.neigh.neighbourhood_cells())
-        offsets = self.code.neigh.get_offsets()
+        names = list(self.code.neigh.names)
+        offsets = self.code.neigh.offsets
 
         # kick out the center cell, if any.
         zero_offset = tuple([0] * len(offsets[0]))
