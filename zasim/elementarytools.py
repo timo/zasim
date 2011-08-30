@@ -275,8 +275,12 @@ class ElementaryRuleWindow(QWidget):
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidget(self.display_widget)
 
-        layout = QHBoxLayout(self)
+        layout = QVBoxLayout(self)
+
+        self.rule_nr_display = QLabel("Editing rule %d" % (self.rule_nr), self)
+        layout.addWidget(self.rule_nr_display)
         layout.addWidget(self.scroll_area)
+
         self.setLayout(layout)
 
     def _result_changed(self, position, value):
@@ -292,6 +296,7 @@ class ElementaryRuleWindow(QWidget):
         for digit, values in enumerate(self.digits_and_values):
             num += values["result_value"] * (self.base ** digit)
         self.rule_nr = num
+        self.rule_nr_display.setText("Editing rule %d" % (self.rule_nr))
         return self.rule_nr
 
     def _rewrap_grid(self, old_width=None):
