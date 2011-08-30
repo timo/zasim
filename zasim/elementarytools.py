@@ -44,9 +44,20 @@ class CellDisplayWidget(QLabel):
         return pixmap
 
 class EditableCellDisplayWidget(QPushButton):
+    """A clickable and keyboard-operatable display widget for cells."""
+
     value_changed = Signal([int, int])
+    """This signal will be emitted when the user changed the value of the
+    cell. It will emit the position and the new value."""
 
     def __init__(self, value, position, base=2, size=16, **kwargs):
+        """Create the editable display widget.
+
+        :attr value: The start value.
+        :attr position: The position in the result list, used in the
+                        :attr:`value_changed` signal.
+        :attr base: The maximum value of the cell.
+        :attr size: The size for the display, used for both width and height."""
         super(EditableCellDisplayWidget, self).__init__(**kwargs)
         self.value = value
         self.base = base
@@ -56,15 +67,18 @@ class EditableCellDisplayWidget(QPushButton):
         self.bg_color = QColor(CELL_COL[self.value])
         self.position = position
 
-        self.clicked.connect(self.change_value)
+        self.clicked.connect(self._change_value)
 
-    def change_value(self):
+    def _change_value(self):
+        """Called by the clicked signal of the underlying QPushButton."""
         self.value = (self.value + 1) % self.base
         self.bg_color = QColor(CELL_COL[self.value])
         self.update()
         self.value_changed.emit(self.position, self.value)
 
     def paintEvent(self, event):
+        """Redraw the button, add a rectangle inside the button if it has the
+        focus."""
         paint = QPainter(self)
         paint.fillRect(event.rect(), self.bg_color)
         if self.hasFocus():
