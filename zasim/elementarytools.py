@@ -18,6 +18,9 @@ Ideas for further utilities:
  * A graphical editing mode that allows adding "pattern matching" for rules with
    "dontcare fields" or something of that sort.
  * A graphical editing mode with zooming UI.
+ * A bit of functionality to generate a rule number from arbitrary step
+   functions by running them on a pre-generated target and finding out how it
+   behaved.
  * ...
 """
 from __future__ import absolute_import
