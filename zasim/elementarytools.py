@@ -8,9 +8,11 @@ Ideas for further utilities:
  * Make up some rules to find a "canonical" rule number for all those that just
    differ by horizontal/vertical mirroring, rotation, flipping all results, ...
  * An editing mode, that handles simple binary logic, like::
+
      c == 1 then result = 1
      c == 0 then result = 0
      l == 0 and r == 1 then result = 0
+
  * A graphical editing mode that allows adding "pattern matching" for rules with
    "dontcare fields" or something of that sort.
  * A graphical editing mode with zooming UI.
