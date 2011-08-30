@@ -7,6 +7,8 @@ Ideas for further utilities:
    symmetry, ...
  * Make up some rules to find a "canonical" rule number for all those that just
    differ by horizontal/vertical mirroring, rotation, flipping all results, ...
+ * Likewise, buttons for mirroring, rotating and flipping and otherwise
+   manipulating the whole table at once.
  * An editing mode, that handles simple binary logic, like::
 
      c == 1 then result = 1
