@@ -1,4 +1,3 @@
-from __future__ import absolute_import
 """This module offers methods and user interaction widgets/windows for handling
 the table-like step functions of elementary cellular automatons.
 
@@ -17,6 +16,7 @@ Ideas for further utilities:
  * A graphical editing mode with zooming UI.
  * ...
 """
+from __future__ import absolute_import
 
 try:
     from PySide.QtCore import *
