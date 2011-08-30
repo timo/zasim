@@ -10,9 +10,15 @@ except ImportError:
     print "using pyqt4"
 
 from itertools import product
+import numpy as np
+from .cagen import elementary_digits_and_values
+
+gap = object()
+"""The value passed to create_subwidget when a position is not held by a
+field."""
 
 class CellDisplayWidget(QLabel):
-    def __init__(self, value, size=32, **kwargs):
+    def __init__(self, value, size=16, **kwargs):
         super(CellDisplayWidget, self).__init__(**kwargs)
         self.setFixedSize(size, size)
         self.setPixmap(self.__pixmap_for_value(value))
@@ -21,7 +27,7 @@ class CellDisplayWidget(QLabel):
         pixmap = QPixmap(QSize(self.width(), self.height()))
         color = {1: "white",
                  0: "black",
-                 self.gap: "gray"}
+                 gap: "gray"}
         pixmap.fill(QColor(color[value]))
         return pixmap
 
@@ -36,10 +42,6 @@ class BaseNeighbourhoodDisplay(QWidget):
 
     This class itself displays white or black blocks in the shape of the
     neighbourhood."""
-
-    gap = object()
-    """The value passed to create_subwidget when a position is not held by a
-    field."""
 
     def __init__(self, neighbourhood, values=None, **kwargs):
         super(BaseNeighbourhoodDisplay, self).__init__(**kwargs)
@@ -78,7 +80,7 @@ class BaseNeighbourhoodDisplay(QWidget):
                             range(grid_h))
         for (row, col) in positions:
             offset = (row + offs_x, col + offs_y)
-            subwidget = self.create_subwidget(offset, self.values.get(offset, self.gap))
+            subwidget = self.create_subwidget(offset, self.values.get(offset, gap))
             self.subwidgets[offset] = subwidget
             if subwidget is not None:
                 self.layout.addWidget(subwidget, row, col)
@@ -107,7 +109,7 @@ class BaseNeighbourhoodDisplay(QWidget):
         :param offset: A tuple of (x, y) for the position of the cell
         :param value: The value of the cell, as per the values dictionary, or
                       if the widget is to be created for an empty space,
-                      :attr:`self.gap`.
+                      :data:`gap`.
         :returns: a QWidget initialised for the cell. Alternatively, None."""
         return CellDisplayWidget(value)
 
@@ -123,45 +125,72 @@ class NextToResult(QWidget):
     def __init__(self, neighbourhood_widget, result_widget, direction="l", **kwargs):
         super(NextToResult, self).__init__(**kwargs)
         assert direction in "udlr"
-        if direction in "lr":
-            layout = QHBoxWidget()
-        else:
-            layout = QVBoxWidget()
 
         self.result_widget = result_widget
         self.neighbourhood_widget = neighbourhood_widget
 
+        if direction in "lr":
+            layout = QHBoxLayout()
+            spacing = self.result_widget.width()
+        else:
+            layout = QVBoxLayout()
+            spacing = self.result_widget.height()
+
+
         if direction in "lu":
             layout.addWidget(self.result_widget)
+            layout.addSpacing(spacing)
         layout.addWidget(self.neighbourhood_widget)
         if direction in "rd":
+            layout.addSpacing(spacing)
             layout.addWidget(self.result_widget)
 
         self.setLayout(layout)
 
 class ElementaryRuleWindow(QWidget):
-    def __init__(self, neighbourhood, rule=0):
+    def __init__(self, neighbourhood, rule=0, base=2, **kwargs):
+        super(ElementaryRuleWindow, self).__init__(**kwargs)
         self.neighbourhood = neighbourhood
-        self.rule = rule
+        self.rule_nr = rule
+
+        self.base = base
+        self.entries = len(self.neighbourhood.offsets)
+
+        self.rule = np.zeros(self.base ** self.entries)
+        for digit in range(len(self.rule)):
+            if self.rule_nr & (self.base** digit) > 0:
+                self.rule[digit] = 1
 
         self.n_r_widgets = []
-        layout = QHBoxLayout()
+        self.display_widget = QWidget(self)
+        layout = QVBoxLayout()
 
-        for data in self.neighbourhood.digits_and_values:
+        digits_and_values = elementary_digits_and_values(self.neighbourhood,
+                self.base, self.rule)
+
+        for data in digits_and_values:
             data = data.copy()
-            result = data["result"]
-            del data["result"]
+            result = data["result_value"]
+            del data["result_value"]
             n_w = BaseNeighbourhoodDisplay(neighbourhood, data, parent=self)
             r_w = CellDisplayWidget(result, parent=self)
-            n_r_w = NextToResult(n_w, r_w, parent=self)
+            n_r_w = NextToResult(n_w, r_w, parent=self, direction="r")
             self.n_r_widgets.append(n_r_w)
             layout.addWidget(n_r_w)
 
+        self.display_widget.setLayout(layout)
+
+        self.scroll_area = QScrollArea(self)
+        self.scroll_area.setWidget(self.display_widget)
+
+        layout = QHBoxLayout(self)
+        layout.addWidget(self.scroll_area)
         self.setLayout(layout)
+
 
 def main():
     from .cagen import VonNeumannNeighbourhood, MooreNeighbourhood
-    from random import choice
+    from random import randrange
     import sys
 
     app = QApplication(sys.argv)
@@ -169,9 +198,7 @@ def main():
     vn = VonNeumannNeighbourhood()
     mn = MooreNeighbourhood()
 
-    from pudb import set_trace; set_trace()
-
-    dvw = ElementaryRuleWindow(vn)
+    dvw = ElementaryRuleWindow(vn, rule=randrange(1024))
     dvw.show()
 
     sys.exit(app.exec_())
