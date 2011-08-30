@@ -20,15 +20,25 @@ field."""
 CELL_COL = {1: "white",
             0: "black",
             GAP: "gray"}
+"""What colors to use for what field values."""
 
 class CellDisplayWidget(QLabel):
+    """A little Widget that displays a cell in a neighbourhood."""
+
     def __init__(self, value, position=None, size=16, **kwargs):
+        """Create the DisplayWidget.
+
+        :attr value: The cell value to show.
+        :attr position: Alternatively, the position of the cell in the result
+                        list, to be used for communication to the outside.
+        :attr size: The size of the cell, used for both width and height."""
         super(CellDisplayWidget, self).__init__(**kwargs)
         self.setFixedSize(size, size)
         self.setPixmap(self.__pixmap_for_value(value))
         self.position = position
 
     def __pixmap_for_value(self, value):
+        """Create a pixmap for the value of the cell."""
         pixmap = QPixmap(QSize(self.width(), self.height()))
         pixmap.fill(QColor(CELL_COL[value]))
         return pixmap
