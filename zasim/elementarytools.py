@@ -46,10 +46,10 @@ class CellDisplayWidget(QLabel):
     def __init__(self, value, position=None, size=16, **kwargs):
         """Create the DisplayWidget.
 
-        :attr value: The cell value to show.
-        :attr position: Alternatively, the position of the cell in the result
+        :param value: The cell value to show.
+        :param position: Alternatively, the position of the cell in the result
                         list, to be used for communication to the outside.
-        :attr size: The size of the cell, used for both width and height."""
+        :param size: The size of the cell, used for both width and height."""
         super(CellDisplayWidget, self).__init__(**kwargs)
         self.setFixedSize(size, size)
         self.setPixmap(self.__pixmap_for_value(value))
@@ -71,11 +71,11 @@ class EditableCellDisplayWidget(QPushButton):
     def __init__(self, value, position, base=2, size=16, **kwargs):
         """Create the editable display widget.
 
-        :attr value: The start value.
-        :attr position: The position in the result list, used in the
-                        :attr:`value_changed` signal.
-        :attr base: The numerical base for values.
-        :attr size: The size for the display, used for both width and height."""
+        :param value: The start value.
+        :param position: The position in the result list, used in the
+                         :attr:`value_changed` signal.
+        :param base: The numerical base for values.
+        :param size: The size for the display, used for both width and height."""
         super(EditableCellDisplayWidget, self).__init__(**kwargs)
         self.value = value
         self.base = base
@@ -199,9 +199,9 @@ class NextToResult(QWidget):
     def __init__(self, neighbourhood_widget, result_widget, direction="l", **kwargs):
         """Create the widget.
 
-        :attr neighbourhood_widget: The neighbourhood widget to put in.
-        :attr result_widget: The result widget to put in.
-        :attr direction: The direction the neighbourhood widget to put at.
+        :param neighbourhood_widget: The neighbourhood widget to put in.
+        :param result_widget: The result widget to put in.
+        :param direction: The direction the neighbourhood widget to put at.
                Valid directions are l, u, d and r for left, up, down and right
                respectively."""
         super(NextToResult, self).__init__(**kwargs)
@@ -231,10 +231,10 @@ class NextToResult(QWidget):
 class ElementaryRuleWindow(QWidget):
     """A window usable to modify the table of an elementary step function."""
     def __init__(self, neighbourhood, rule=0, base=2, **kwargs):
-        """:attr neighbourhood: The :class:`Neighbourhood` instance to get the
+        """:param neighbourhood: The :class:`Neighbourhood` instance to get the
                 data from.
-           :attr rule: The rule to set at the beginning.
-           :attr base: The numerical base for the cells."""
+           :param rule: The rule to set at the beginning.
+           :param base: The numerical base for the cells."""
         super(ElementaryRuleWindow, self).__init__(**kwargs)
         self.neighbourhood = neighbourhood
         self.rule_nr = rule
