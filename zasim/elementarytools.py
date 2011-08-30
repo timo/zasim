@@ -7,7 +7,7 @@ Ideas for further utilities:
    symmetry, ...
  * Make up some rules to find a "canonical" rule number for all those that just
    differ by horizontal/vertical mirroring, rotation, flipping all results, ...
- * An editing mode, that handles simple binary logic, like:
+ * An editing mode, that handles simple binary logic, like::
      c == 1 then result = 1
      c == 0 then result = 0
      l == 0 and r == 1 then result = 0
