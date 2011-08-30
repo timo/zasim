@@ -22,10 +22,11 @@ CELL_COL = {1: "white",
             GAP: "gray"}
 
 class CellDisplayWidget(QLabel):
-    def __init__(self, value, size=16, **kwargs):
+    def __init__(self, value, position=None, size=16, **kwargs):
         super(CellDisplayWidget, self).__init__(**kwargs)
         self.setFixedSize(size, size)
         self.setPixmap(self.__pixmap_for_value(value))
+        self.position = position
 
     def __pixmap_for_value(self, value):
         pixmap = QPixmap(QSize(self.width(), self.height()))
@@ -33,9 +34,9 @@ class CellDisplayWidget(QLabel):
         return pixmap
 
 class EditableCellDisplayWidget(QPushButton):
-    value_changed = Signal([int])
+    value_changed = Signal([int, int])
 
-    def __init__(self, value, base=2, size=16, **kwargs):
+    def __init__(self, value, position, base=2, size=16, **kwargs):
         super(EditableCellDisplayWidget, self).__init__(**kwargs)
         self.value = value
         self.base = base
@@ -43,6 +44,7 @@ class EditableCellDisplayWidget(QPushButton):
         self.setFlat(True)
         self.setAutoFillBackground(True)
         self.bg_color = QColor(CELL_COL[self.value])
+        self.position = position
 
         self.clicked.connect(self.change_value)
 
@@ -50,7 +52,7 @@ class EditableCellDisplayWidget(QPushButton):
         self.value = (self.value + 1) % self.base
         self.bg_color = QColor(CELL_COL[self.value])
         self.update()
-        self.value_changed.emit(self.value)
+        self.value_changed.emit(self.position, self.value)
 
     def paintEvent(self, event):
         paint = QPainter(self)
@@ -197,14 +199,19 @@ class ElementaryRuleWindow(QWidget):
         digits_and_values = elementary_digits_and_values(self.neighbourhood,
                 self.base, self.rule)
 
-        for data in digits_and_values:
+        for pos, data in enumerate(digits_and_values):
             data = data.copy()
             result = data["result_value"]
             del data["result_value"]
             n_w = BaseNeighbourhoodDisplay(neighbourhood, data, parent=self)
-            r_w = EditableCellDisplayWidget(result, base=base, parent=self)
+            r_w = EditableCellDisplayWidget(result, pos, base=base, parent=self)
             n_r_w = NextToResult(n_w, r_w, parent=self, direction="r")
+
+            r_w.value_changed.connect(self.result_changed)
+
             self.n_r_widgets.append(n_r_w)
+
+        self.digits_and_values = digits_and_values
 
         self._rewrap_grid()
         self.display_widget.setLayout(self.display_layout)
@@ -215,6 +222,17 @@ class ElementaryRuleWindow(QWidget):
         layout = QHBoxLayout(self)
         layout.addWidget(self.scroll_area)
         self.setLayout(layout)
+
+    def result_changed(self, position, value):
+        self.digits_and_values[position]["result_value"] = value
+        self.recalculate_rule_number()
+
+    def recalculate_rule_number(self):
+        num = 0
+        for digit, values in enumerate(self.digits_and_values):
+            num += values["result_value"] * (self.base ** digit)
+        self.rule_nr = num
+        print "new rule_nr is %d" % num
 
     def _rewrap_grid(self, old_width=None):
         count = len(self.n_r_widgets)
