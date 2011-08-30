@@ -164,6 +164,7 @@ class ElementaryRuleWindow(QWidget):
         self.n_r_widgets = []
         self.display_widget = QWidget(self)
         self.display_layout = QGridLayout(self.display_widget)
+        self.display_layout.setSizeConstraint(QLayout.SetFixedSize)
 
         digits_and_values = elementary_digits_and_values(self.neighbourhood,
                 self.base, self.rule)
@@ -190,35 +191,38 @@ class ElementaryRuleWindow(QWidget):
     def _rewrap_grid(self, old_width=None):
         count = len(self.n_r_widgets)
         # all items should have the same size actually
-        width_per_bit = self.n_r_widgets[0].sizeHint().width()
+        width_per_bit = self.n_r_widgets[0].sizeHint().width() + \
+                self.display_layout.spacing()
         spacing = self.display_layout.horizontalSpacing()
         if spacing == -1:
-            spacing = 0
+            spacing = 11
 
-        available_width = self.width()
-        columns = available_width / (width_per_bit + spacing + 11)
+        available_width = self.contentsRect().width()
+        columns = available_width / (width_per_bit) - 1
 
         if old_width is not None:
-            old_columns = old_width / (width_per_bit + spacing)
+            old_columns = old_width / (width_per_bit) - 1
             if old_columns == columns:
                 return
+        if columns <= 0:
+            columns = 1
 
-        items_per_column = count / columns
+        items_per_column = int(count / columns) + 1
         for widget in self.n_r_widgets:
             self.display_layout.removeWidget(widget)
 
         for num, widget in enumerate(self.n_r_widgets):
             col = num / items_per_column
             row = num % items_per_column
-            print "put %s into %d, %d" % (widget, row, col)
             self.display_layout.addWidget(widget, row, col)
+            print row, items_per_column, col, columns
 
         height_per_bit = self.n_r_widgets[0].sizeHint().height()
         v_spacing = self.display_layout.verticalSpacing()
         if v_spacing == -1:
-            v_spacing = 0
+            v_spacing = 11
         height = (height_per_bit + v_spacing) * items_per_column
-        self.display_widget.resize(available_width, height)
+        self.display_widget.setFixedSize(available_width, height)
 
     def resizeEvent(self, event):
         self._rewrap_grid(old_width = event.oldSize().width())
