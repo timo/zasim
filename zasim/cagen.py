@@ -1134,7 +1134,7 @@ class ElementaryCellularAutomatonBase(Computation):
         template = [line[:] for line in lines]
 
         self.digits_and_values = \
-                elementary_digits_and_values(self.code.neigh, self.base, self.rule)
+                elementary_digits_and_values(self.code.neigh, self.base, self.target.rule)
 
         def pretty_printer(self):
             lines = [line[:] for line in protolines]
