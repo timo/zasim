@@ -213,7 +213,12 @@ class NextToResult(QWidget):
         self.setLayout(layout)
 
 class ElementaryRuleWindow(QWidget):
+    """A window usable to modify the table of an elementary step function."""
     def __init__(self, neighbourhood, rule=0, base=2, **kwargs):
+        """:attr neighbourhood: The :class:`Neighbourhood` instance to get the
+                data from.
+           :attr rule: The rule to set at the beginning.
+           :attr base: The numerical base for the cells."""
         super(ElementaryRuleWindow, self).__init__(**kwargs)
         self.neighbourhood = neighbourhood
         self.rule_nr = rule
@@ -242,7 +247,7 @@ class ElementaryRuleWindow(QWidget):
             r_w = EditableCellDisplayWidget(result, pos, base=base, parent=self)
             n_r_w = NextToResult(n_w, r_w, parent=self, direction="r")
 
-            r_w.value_changed.connect(self.result_changed)
+            r_w.value_changed.connect(self._result_changed)
 
             self.n_r_widgets.append(n_r_w)
 
@@ -258,18 +263,24 @@ class ElementaryRuleWindow(QWidget):
         layout.addWidget(self.scroll_area)
         self.setLayout(layout)
 
-    def result_changed(self, position, value):
+    def _result_changed(self, position, value):
+        """React to a change in the results."""
         self.digits_and_values[position]["result_value"] = value
         self.recalculate_rule_number()
 
     def recalculate_rule_number(self):
+        """Recalculate what number corresponds to the result values saved in
+        :attr:`digits_and_values`.
+        :returns: the new rule number."""
         num = 0
         for digit, values in enumerate(self.digits_and_values):
             num += values["result_value"] * (self.base ** digit)
         self.rule_nr = num
-        print "new rule_nr is %d" % num
+        return self.rule_nr
 
     def _rewrap_grid(self, old_width=None):
+        """Put all the widgets into a grid, so that they fill just enough of
+        the width, so that there is no horizontal scroll bar."""
         count = len(self.n_r_widgets)
         # all items should have the same size actually
         width_per_bit = self.n_r_widgets[0].sizeHint().width() + \
@@ -305,6 +316,7 @@ class ElementaryRuleWindow(QWidget):
         self.display_widget.setFixedSize(available_width, height)
 
     def resizeEvent(self, event):
+        """React to a size change of the widget."""
         self._rewrap_grid(old_width = event.oldSize().width())
 
 def main():
