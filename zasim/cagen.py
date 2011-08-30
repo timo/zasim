@@ -1013,8 +1013,10 @@ def elementary_digits_and_values(neighbourhood, base, rule_arr):
     list of dictionaries with the neighbourhood values paired with their
     result_value ordered by the position ordered like the rule array."""
     digits_and_values = []
-    offsets = neighbourhood.offsets
-    ordered_names = neighbourhood.neighbourhood_cells()
+    neigh = zip(neighbourhood.offsets, neighbourhood.names)
+    neigh.sort(key=lambda (offs, name): offs)
+    offsets = [n[0] for n in neigh]
+    ordered_names = [n[1] for n in neigh]
     digits = len(offsets)
 
     for i in range(base ** digits):
