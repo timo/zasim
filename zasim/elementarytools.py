@@ -178,7 +178,16 @@ class BaseNeighbourhoodDisplay(QWidget):
         widget.setPixmap(self.__pixmap_for_value(new_value))
 
 class NextToResult(QWidget):
+    """A simple utility class to display a neighbourhood widget and a result
+    widget next to each other in different relations."""
     def __init__(self, neighbourhood_widget, result_widget, direction="l", **kwargs):
+        """Create the widget.
+
+        :attr neighbourhood_widget: The neighbourhood widget to put in.
+        :attr result_widget: The result widget to put in.
+        :attr direction: The direction the neighbourhood widget to put at.
+               Valid directions are l, u, d and r for left, up, down and right
+               respectively."""
         super(NextToResult, self).__init__(**kwargs)
         assert direction in "udlr"
 
