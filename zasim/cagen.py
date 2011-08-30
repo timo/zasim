@@ -423,7 +423,15 @@ class CellLoop(WeaveStepFuncVisitor):
         """Returns an iterator for iterating over the config space in python."""
 
 class Neighbourhood(WeaveStepFuncVisitor):
-    """A Neighbourhood is responsible for getting states from neighbouring cells."""
+    """A Neighbourhood is responsible for getting states from neighbouring cells.
+
+    :attr:`names` and :attr:`offsets` are sorted by the position of the offset,
+    starting at the top-left (negative X, negative Y), going down through
+    ascending Y values, then to the next X value.
+
+    .. note ::
+        If you subclass from Neighbourhood, all you have to do to get the
+        sorting right is to call :meth:`_sort_names_offsets`."""
 
     names = ()
     """The names of neighbourhood fields."""
