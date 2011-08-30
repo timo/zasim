@@ -1007,6 +1007,24 @@ class TwoDimZeroReader(BorderSizeEnsurer):
     # BorderSizeEnsurer, because it already just embeds the confs into
     # np.zero and does that for one or two dimensions.
 
+def elementary_digits_and_values(neighbourhood, base, rule_arr):
+    """From a neighbourhood, the base of the values used and the array that
+    holds the results for each combination of neighbourhood values, create a
+    list of dictionaries with the neighbourhood values paired with their
+    result_value ordered by the position ordered like the rule array."""
+    digits_and_values = []
+    offsets = neighbourhood.offsets
+    ordered_names = neighbourhood.neighbourhood_cells()
+    digits = len(offsets)
+
+    for i in range(base ** digits):
+        values = [1 if (i & (base ** k)) > 0 else 0
+                for k in range(len(offsets))]
+        asdict = dict(zip(ordered_names, values))
+        asdict.update(result_value = rule_arr[i])
+        digits_and_values.append(asdict)
+    return digits_and_values
+
 class ElementaryCellularAutomatonBase(Computation):
     """Infer a 'Gödel numbering' from the used :class:`Neighbourhood` and
     create a computation that corresponds to the rule'th possible combination
@@ -1085,7 +1103,6 @@ class ElementaryCellularAutomatonBase(Computation):
         bbox = self.code.neigh.bounding_box()
         offsets = self.code.neigh.get_offsets()
         offset_to_name = dict(self.neigh)
-        ordered_names = [a[1] for a in self.neigh]
 
         if len(bbox) == 1:
             h = 3
@@ -1116,14 +1133,8 @@ class ElementaryCellularAutomatonBase(Computation):
 
         template = [line[:] for line in lines]
 
-        digits_and_values = []
-        for i in range(self.base ** self.digits):
-            values = [1 if (i & (self.base ** k)) > 0 else 0
-                    for k in range(len(offsets))]
-            asdict = dict(zip(ordered_names, values))
-            asdict.update(result_value = self.target.rule[i])
-            digits_and_values.append(asdict)
-        self.digits_and_values = digits_and_values
+        self.digits_and_values = \
+                elementary_digits_and_values(self.neighbourhood, self.base, self.rule)
 
         def pretty_printer(self):
             lines = [line[:] for line in protolines]
