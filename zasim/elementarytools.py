@@ -13,7 +13,7 @@ from itertools import product
 import numpy as np
 from .cagen import elementary_digits_and_values
 
-gap = object()
+GAP = object()
 """The value passed to create_subwidget when a position is not held by a
 field."""
 
@@ -27,7 +27,7 @@ class CellDisplayWidget(QLabel):
         pixmap = QPixmap(QSize(self.width(), self.height()))
         color = {1: "white",
                  0: "black",
-                 gap: "gray"}
+                 GAP: "gray"}
         pixmap.fill(QColor(color[value]))
         return pixmap
 
@@ -36,7 +36,7 @@ class BaseNeighbourhoodDisplay(QWidget):
     displaying neighbourhoods.
 
     Subclass this and implement create_subwidget, which will be fed an offset
-    and the corresponding entry from the values dictionary, or :attr:`gap` if
+    and the corresponding entry from the values dictionary, or :data:`GAP` if
     there is no spot in the neighbourhood at that position, and will then be
     put into a QGridLayout.
 
@@ -80,7 +80,7 @@ class BaseNeighbourhoodDisplay(QWidget):
                             range(grid_h))
         for (row, col) in positions:
             offset = (row + offs_x, col + offs_y)
-            subwidget = self.create_subwidget(offset, self.values.get(offset, gap))
+            subwidget = self.create_subwidget(offset, self.values.get(offset, GAP))
             self.subwidgets[offset] = subwidget
             if subwidget is not None:
                 self.layout.addWidget(subwidget, row, col)
@@ -109,7 +109,7 @@ class BaseNeighbourhoodDisplay(QWidget):
         :param offset: A tuple of (x, y) for the position of the cell
         :param value: The value of the cell, as per the values dictionary, or
                       if the widget is to be created for an empty space,
-                      :data:`gap`.
+                      :data:`GAP`.
         :returns: a QWidget initialised for the cell. Alternatively, None."""
         return CellDisplayWidget(value)
 
