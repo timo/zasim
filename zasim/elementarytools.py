@@ -17,6 +17,10 @@ GAP = object()
 """The value passed to create_subwidget when a position is not held by a
 field."""
 
+CELL_COL = {1: "white",
+            0: "black",
+            GAP: "gray"}
+
 class CellDisplayWidget(QLabel):
     def __init__(self, value, size=16, **kwargs):
         super(CellDisplayWidget, self).__init__(**kwargs)
@@ -25,11 +29,40 @@ class CellDisplayWidget(QLabel):
 
     def __pixmap_for_value(self, value):
         pixmap = QPixmap(QSize(self.width(), self.height()))
-        color = {1: "white",
-                 0: "black",
-                 GAP: "gray"}
-        pixmap.fill(QColor(color[value]))
+        pixmap.fill(QColor(CELL_COL[value]))
         return pixmap
+
+class EditableCellDisplayWidget(QPushButton):
+    value_changed = Signal([int])
+
+    def __init__(self, value, base=2, size=16, **kwargs):
+        super(EditableCellDisplayWidget, self).__init__(**kwargs)
+        self.value = value
+        self.base = base
+        self.setFixedSize(size, size)
+        self.setFlat(True)
+        self.setAutoFillBackground(True)
+        self.bg_color = QColor(CELL_COL[self.value])
+
+        self.clicked.connect(self.change_value)
+
+        self.selection_rubber = QRubberBand(QRubberBand.Rectangle, self)
+        self.selection_rubber.resize(self.sizeHint() - QSize(2, 2))
+        self.selection_rubber.move(1, 1)
+        self.selection_rubber.hide()
+
+    def change_value(self):
+        self.value = (self.value + 1) % self.base
+        self.bg_color = QColor(CELL_COL[self.value])
+        self.update()
+        self.value_changed.emit(self.value)
+
+    def focusInEvent(self, event): self.selection_rubber.show()
+    def focusOutEvent(self, event): self.selection_rubber.hide()
+
+    def paintEvent(self, event):
+        paint = QPainter(self)
+        paint.fillRect(event.rect(), self.bg_color)
 
 class BaseNeighbourhoodDisplay(QWidget):
     """The BaseNeighbourhoodDisplay offers a skeleton for different ways of
@@ -174,7 +207,7 @@ class ElementaryRuleWindow(QWidget):
             result = data["result_value"]
             del data["result_value"]
             n_w = BaseNeighbourhoodDisplay(neighbourhood, data, parent=self)
-            r_w = CellDisplayWidget(result, parent=self)
+            r_w = EditableCellDisplayWidget(result, base=base, parent=self)
             n_r_w = NextToResult(n_w, r_w, parent=self, direction="r")
             self.n_r_widgets.append(n_r_w)
 
@@ -215,7 +248,6 @@ class ElementaryRuleWindow(QWidget):
             col = num / items_per_column
             row = num % items_per_column
             self.display_layout.addWidget(widget, row, col)
-            print row, items_per_column, col, columns
 
         height_per_bit = self.n_r_widgets[0].sizeHint().height()
         v_spacing = self.display_layout.verticalSpacing()
