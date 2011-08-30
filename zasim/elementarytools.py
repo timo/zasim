@@ -163,7 +163,7 @@ class ElementaryRuleWindow(QWidget):
 
         self.n_r_widgets = []
         self.display_widget = QWidget(self)
-        layout = QVBoxLayout()
+        self.display_layout = QGridLayout(self.display_widget)
 
         digits_and_values = elementary_digits_and_values(self.neighbourhood,
                 self.base, self.rule)
@@ -176,9 +176,9 @@ class ElementaryRuleWindow(QWidget):
             r_w = CellDisplayWidget(result, parent=self)
             n_r_w = NextToResult(n_w, r_w, parent=self, direction="r")
             self.n_r_widgets.append(n_r_w)
-            layout.addWidget(n_r_w)
 
-        self.display_widget.setLayout(layout)
+        self._rewrap_grid()
+        self.display_widget.setLayout(self.display_layout)
 
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidget(self.display_widget)
@@ -187,6 +187,41 @@ class ElementaryRuleWindow(QWidget):
         layout.addWidget(self.scroll_area)
         self.setLayout(layout)
 
+    def _rewrap_grid(self, old_width=None):
+        count = len(self.n_r_widgets)
+        # all items should have the same size actually
+        width_per_bit = self.n_r_widgets[0].sizeHint().width()
+        spacing = self.display_layout.horizontalSpacing()
+        if spacing == -1:
+            spacing = 0
+
+        available_width = self.width()
+        columns = available_width / (width_per_bit + spacing + 11)
+
+        if old_width is not None:
+            old_columns = old_width / (width_per_bit + spacing)
+            if old_columns == columns:
+                return
+
+        items_per_column = count / columns
+        for widget in self.n_r_widgets:
+            self.display_layout.removeWidget(widget)
+
+        for num, widget in enumerate(self.n_r_widgets):
+            col = num / items_per_column
+            row = num % items_per_column
+            print "put %s into %d, %d" % (widget, row, col)
+            self.display_layout.addWidget(widget, row, col)
+
+        height_per_bit = self.n_r_widgets[0].sizeHint().height()
+        v_spacing = self.display_layout.verticalSpacing()
+        if v_spacing == -1:
+            v_spacing = 0
+        height = (height_per_bit + v_spacing) * items_per_column
+        self.display_widget.resize(available_width, height)
+
+    def resizeEvent(self, event):
+        self._rewrap_grid(old_width = event.oldSize().width())
 
 def main():
     from .cagen import VonNeumannNeighbourhood, MooreNeighbourhood
