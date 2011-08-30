@@ -457,7 +457,7 @@ class Neighbourhood(WeaveStepFuncVisitor):
         pairs = zip(self.offsets, self.names)
         pairs.sort(key=lambda (o, n): o)
         # this essentially unzips the pairs again.
-        offsets, names = zip(*pairs)
+        self.offsets, self.names = zip(*pairs)
 
 class BorderHandler(WeaveStepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
