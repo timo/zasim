@@ -452,6 +452,13 @@ class Neighbourhood(WeaveStepFuncVisitor):
         else:
             return tuple((low * steps, high * steps) for (low, high) in self.bb)
 
+    def _sort_names_offsets(self):
+        """Brings the offsets into the right order."""
+        pairs = zip(self.offsets, self.names)
+        pairs.sort(lambda (o, n): o)
+        # this essentially unzips the pairs again.
+        offsets, names = zip(*pairs)
+
 class BorderHandler(WeaveStepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
     configuration. One example is copying the leftmost border to the rightmost
@@ -750,6 +757,7 @@ class SimpleNeighbourhood(Neighbourhood):
         self.names = tuple(names)
         self.offsets = tuple([tuple(offset) for offset in offsets])
         assert len(self.names) == len(self.offsets)
+        self._sort_names_offsets()
         self.recalc_bounding_box()
 
     def visit(self):
@@ -1005,16 +1013,14 @@ def elementary_digits_and_values(neighbourhood, base, rule_arr):
     list of dictionaries with the neighbourhood values paired with their
     result_value ordered by the position ordered like the rule array."""
     digits_and_values = []
-    neigh = zip(neighbourhood.offsets, neighbourhood.names)
-    neigh.sort(key=lambda (offs, name): offs)
-    offsets = [n[0] for n in neigh]
-    ordered_names = [n[1] for n in neigh]
+    offsets = neighbourhood.offsets
+    names = neighbourhood.names
     digits = len(offsets)
 
     for i in range(base ** digits):
         values = [1 if (i & (base ** k)) > 0 else 0
                 for k in range(len(offsets))]
-        asdict = dict(zip(ordered_names, values))
+        asdict = dict(zip(names, values))
         asdict.update(result_value = rule_arr[i])
         digits_and_values.append(asdict)
     return digits_and_values
@@ -1060,7 +1066,6 @@ class ElementaryCellularAutomatonBase(Computation):
         super(ElementaryCellularAutomatonBase, self).visit()
 
         self.neigh = zip(self.code.neigh.offsets, self.code.neigh.names)
-        self.neigh.sort(key=lambda (offset, name): offset)
         self.digits = len(self.neigh)
 
         if self.rule is None:
