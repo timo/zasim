@@ -28,6 +28,7 @@ Contents:
    ca
    cagen
    display
+   elementarytools
 
 Indices and tables
 ==================
