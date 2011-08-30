@@ -455,7 +455,7 @@ class Neighbourhood(WeaveStepFuncVisitor):
     def _sort_names_offsets(self):
         """Brings the offsets into the right order."""
         pairs = zip(self.offsets, self.names)
-        pairs.sort(lambda (o, n): o)
+        pairs.sort(key=lambda (o, n): o)
         # this essentially unzips the pairs again.
         offsets, names = zip(*pairs)
 
