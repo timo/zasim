@@ -46,23 +46,18 @@ class EditableCellDisplayWidget(QPushButton):
 
         self.clicked.connect(self.change_value)
 
-        self.selection_rubber = QRubberBand(QRubberBand.Rectangle, self)
-        self.selection_rubber.resize(self.sizeHint() - QSize(2, 2))
-        self.selection_rubber.move(1, 1)
-        self.selection_rubber.hide()
-
     def change_value(self):
         self.value = (self.value + 1) % self.base
         self.bg_color = QColor(CELL_COL[self.value])
         self.update()
         self.value_changed.emit(self.value)
 
-    def focusInEvent(self, event): self.selection_rubber.show()
-    def focusOutEvent(self, event): self.selection_rubber.hide()
-
     def paintEvent(self, event):
         paint = QPainter(self)
         paint.fillRect(event.rect(), self.bg_color)
+        if self.hasFocus():
+            paint.setPen(QColor("red"))
+            paint.drawRect(QRect(1, 1, self.width() - 3, self.height() - 3))
 
 class BaseNeighbourhoodDisplay(QWidget):
     """The BaseNeighbourhoodDisplay offers a skeleton for different ways of
