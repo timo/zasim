@@ -58,7 +58,7 @@ class EditableCellDisplayWidget(QPushButton):
         :attr value: The start value.
         :attr position: The position in the result list, used in the
                         :attr:`value_changed` signal.
-        :attr base: The maximum value of the cell.
+        :attr base: The numerical base for values.
         :attr size: The size for the display, used for both width and height."""
         super(EditableCellDisplayWidget, self).__init__(**kwargs)
         self.value = value
