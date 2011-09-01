@@ -40,6 +40,8 @@ which can then target a configuration object with the method
     from zasim.cagen import *
 """
 
+# TODO make it extra hard to change the loop variables using a neighbourhood.
+
 # TODO separate the functions to make C code from the ones that do pure python
 #      computation
 
