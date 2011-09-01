@@ -373,15 +373,24 @@ class TestCAGen:
         t1 = cagen.TestTarget(config=conf)
         t2 = cagen.TestTarget(config=conf)
 
+        names = list("abcde" + "fg" + "hci" + "jk" + "lmnop")
+        positions = ((-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
+                    (-2, -1),                             (2, -1),
+                    (-2,  0),           (0,  0),          (2,  0),
+                    (-2, -1),                             (2, -1),
+                    (-2, -2), (-1, -2), (0, -2), (1, -2), (2,  2))
+        n1 = cagen.SimpleNeighbourhood(names, positions)
+        n2 = cagen.SimpleNeighbourhood(names, positions)
+
         sf1 = cagen.WeaveStepFunc(
                 loop=cagen.TwoDimCellLoop(),
                 accessor=cagen.TwoDimStateAccessor(),
-                neighbourhood=cagen.MooreNeighbourhood(),
+                neighbourhood=n1,
                 extra_code=[cagen.TwoDimSlicingBorderCopier()], target=t1)
         sf2 = cagen.WeaveStepFunc(
                 loop=cagen.TwoDimCellLoop(),
                 accessor=cagen.TwoDimStateAccessor(),
-                neighbourhood=cagen.MooreNeighbourhood(),
+                neighbourhood=n2,
                 extra_code=[cagen.SimpleBorderCopier()], target=t2)
 
         sf1.gen_code()
