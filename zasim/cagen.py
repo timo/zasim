@@ -1066,6 +1066,37 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
     self.acc.write_to((sizeX + pos[0], sizeY - pos[1]), 
             self.acc.read_from_next((pos[0], sizeY - pos[1])))""")
 
+        copy_code = []
+        copy_code.append("int x, y;")
+        # upper part to lower border
+        copy_code.append("""for(x = 0; x < sizeX; x++) {
+    for(y = 0; y < LOWER_BORDER; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("x", "sizeY + y")),
+              self.code.acc.write_access(("x", "y")) ))
+
+        # lower part to upper border
+        copy_code.append("""for(x = 0; x < sizeX; x++) {
+    for(y = 0; y < UPPER_BORDER; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("x", "-y"))),
+              self.code.acc.write_access(("x", "sizeY - y")))
+
+
+        # left part to right border
+        copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
+    for(y = 0; y < sizeY; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("sizeX + x", "y")),
+              self.code.acc.write_access(("x", "y")) ))
+
+        # right part to left border
+        copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
+    for(y = 0; y < sizeY; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("-x", "y"))),
+              self.code.acc.write_access(("sizeX - x", "y")))
+
 class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
     peeking over the border."""
