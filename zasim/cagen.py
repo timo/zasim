@@ -506,6 +506,12 @@ class SimpleStateAccessor(StateAccessor):
     The first tuple contains the borders with lower coordinate values, the
     second one contains the borders with higher coordinate values."""
 
+    border_size = {}
+    """The sizes of the borders.
+
+    The key is the name of the border from border_names, the value is the size
+    of the border."""
+
     size = None
     """The size of the target configuration."""
 
@@ -544,6 +550,7 @@ class SimpleStateAccessor(StateAccessor):
         self.border = (tuple(mins), tuple(maxs))
         for name, value in zip(sum(self.border_names, ()), sum(self.border, ())):
             self.code.consts[name] = value
+            self.border_size[name] = value
 
     def visit(self):
         """Take care for result and sizeX to exist in python and C code,
@@ -880,11 +887,8 @@ class BaseBorderCopier(BorderSizeEnsurer):
         for dim, size_name in enumerate(self.code.acc.size_names):
             size = self.code.acc.get_size_of(dim)
             retargetted = retargetted.replace(size_name, str(size))
-        bbox = self.code.neigh.bounding_box()
-        dims = len(bbox)
-        for idx, border_name in enumerate(sum(self.code.acc.border_names, ())):
-            size = abs(bbox[idx % dims][idx / dims])
-            retargetted = retargetted.replace(border_name, str(size))
+        for border_name, border_size in self.code.acc.border_size.iteritems():
+            retargetted = retargetted.replace(border_name, str(border_size))
         if not HAVE_TUPLE_ARRAY_INDEX:
             retargetted = tuple_array_index_fixup(retargetted)
 
