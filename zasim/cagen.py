@@ -1024,8 +1024,6 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         borders."""
         super(TwoDimSlicingBorderCopier, self).visit()
 
-        (b_l, b_r), (b_u, b_d) = self.code.neigh.bounding_box()
-
         # copy the upper portion below the lower border
         self.tee_copy_hook("""for pos in product(range(0, sizeX), range(0, LOWER_BORDER)):
     self.acc.write_to((pos[0], sizeY + pos[1]),
@@ -1046,6 +1044,7 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
     self.acc.write_to((-pos[0], pos[1]),
             self.acc.read_from_next((sizeX - pos[0], pos[1])))""")
 
+
         # copy the upper left part to the lower right corner
         self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, LOWER_BORDER)):
     self.acc.write_to((sizeX + pos[0], sizeY + pos[1]),
@@ -1054,17 +1053,19 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         # copy the upper right part to the lower left corner
         self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, LOWER_BORDER)):
     self.acc.write_to((sizeX - pos[0], sizeY + pos[1]),
-            self.acc.read_from_next((sizeX - pos[0], pos[1])))""")
+            self.acc.read_from_next((-pos[0], pos[1])))""")
 
         # copy the lower right part to the upper left corner
         self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, UPPER_BORDER)):
     self.acc.write_to((sizeX - pos[0], sizeY - pos[1]),
-            self.acc.read_from_next((sizeX - pos[0], sizeY - pos[1])))""")
+            self.acc.read_from_next((-pos[0], -pos[1])))""")
 
         # copy the upper left part to the lower right corner
         self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, UPPER_BORDER)):
-    self.acc.write_to((sizeX + pos[0], sizeY - pos[1]), 
-            self.acc.read_from_next((pos[0], sizeY - pos[1])))""")
+    self.acc.write_to((sizeX + pos[0], sizeY - pos[1]),
+            self.acc.read_from_next((pos[0], -pos[1])))""")
+
+        # and now for the fun part ...
 
         copy_code = []
         copy_code.append("int x, y;")
@@ -1096,6 +1097,38 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         %s = %s;
     } }""" % (self.code.acc.write_access(("-x", "y"))),
               self.code.acc.write_access(("sizeX - x", "y")))
+
+
+        # copy the upper left part to the lower right corner
+        copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
+    for(y = 0; y < LOWER_BORDER; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("sizeX + x", "sizeY + y"),
+              self.code.acc.write_access(("x", "y")))))
+
+        # copy the upper right part to the lower left corner
+        copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
+    for(y = 0; y < LOWER_BORDER; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("sizeX - x", "sizeY + y"),
+              self.code.acc.write_access(("-x", "sizeY + y")))))
+
+        # copy the lower right part to the upper left corner
+        copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
+    for(y = 0; y < UPPER_BORDER; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("sizeX - x", "sizeY - y"),
+              self.code.acc.write_access(("-x", "-y")))))
+
+        # copy the upper left part to the lower right corner
+        copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
+    for(y = 0; y < UPPER_BORDER; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("sizeX + x", "sizeY - y"),
+              self.code.acc.write_access(("x", "-y")))))
+
+        self.code.add_code("after_step",
+                "\n".join(copy_code))
 
 class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
