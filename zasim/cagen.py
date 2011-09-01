@@ -1080,8 +1080,8 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         copy_code.append("""for(x = 0; x < sizeX; x++) {
     for(y = 0; y < UPPER_BORDER; y++) {
         %s = %s;
-    } }""" % (self.code.acc.write_access(("x", "-y"))),
-              self.code.acc.write_access(("x", "sizeY - y")))
+    } }""" % (self.code.acc.write_access(("x", "-y")),
+              self.code.acc.write_access(("x", "sizeY - y"))))
 
 
         # left part to right border
@@ -1095,37 +1095,37 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
     for(y = 0; y < sizeY; y++) {
         %s = %s;
-    } }""" % (self.code.acc.write_access(("-x", "y"))),
-              self.code.acc.write_access(("sizeX - x", "y")))
+    } }""" % (self.code.acc.write_access(("-x", "y")),
+              self.code.acc.write_access(("sizeX - x", "y"))))
 
 
         # copy the upper left part to the lower right corner
         copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
     for(y = 0; y < LOWER_BORDER; y++) {
         %s = %s;
-    } }""" % (self.code.acc.write_access(("sizeX + x", "sizeY + y"),
-              self.code.acc.write_access(("x", "y")))))
+    } }""" % (self.code.acc.write_access(("sizeX + x", "sizeY + y")),
+              self.code.acc.write_access(("x", "y"))))
 
         # copy the upper right part to the lower left corner
         copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
     for(y = 0; y < LOWER_BORDER; y++) {
         %s = %s;
-    } }""" % (self.code.acc.write_access(("sizeX - x", "sizeY + y"),
-              self.code.acc.write_access(("-x", "sizeY + y")))))
+    } }""" % (self.code.acc.write_access(("sizeX - x", "sizeY + y")),
+              self.code.acc.write_access(("-x", "sizeY + y"))))
 
         # copy the lower right part to the upper left corner
         copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
     for(y = 0; y < UPPER_BORDER; y++) {
         %s = %s;
-    } }""" % (self.code.acc.write_access(("sizeX - x", "sizeY - y"),
-              self.code.acc.write_access(("-x", "-y")))))
+    } }""" % (self.code.acc.write_access(("sizeX - x", "sizeY - y")),
+              self.code.acc.write_access(("-x", "-y"))))
 
         # copy the upper left part to the lower right corner
         copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
     for(y = 0; y < UPPER_BORDER; y++) {
         %s = %s;
-    } }""" % (self.code.acc.write_access(("sizeX + x", "sizeY - y"),
-              self.code.acc.write_access(("x", "-y")))))
+    } }""" % (self.code.acc.write_access(("sizeX + x", "sizeY - y")),
+              self.code.acc.write_access(("x", "-y"))))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
