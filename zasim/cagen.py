@@ -1030,6 +1030,22 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, sizeY)):
     self.acc.write_to((-pos[0], pos[1]), self.acc.read_from_next((sizeX - pos[0], pos[1]))""")
 
+        # copy the upper left part to the lower right corner
+        self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, LOWER_BORDER)):
+    self.acc.write_to((sizeX + pos[0], sizeY + pos[1]), self.acc.read_from_next((pos[0], pos[1])))""")
+
+        # copy the upper right part to the lower left corner
+        self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, LOWER_BORDER)):
+    self.acc.write_to((sizeX - pos[0], sizeY + pos[1]), self.acc.read_from_next((sizeX - pos[0], pos[1])))""")
+
+        # copy the lower right part to the upper left corner
+        self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, UPPER_BORDER)):
+    self.acc.write_to((sizeX - pos[0], sizeY - pos[1]), self.acc.read_from_next((sizeX - pos[0], sizeY - pos[1])))""")
+
+        # copy the upper left part to the lower right corner
+        self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, UPPER_BORDER)):
+    self.acc.write_to((sizeX + pos[0], sizeY - pos[1]), self.acc.read_from_next((pos[0], sizeY - pos[1])))""")
+
 class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
     peeking over the border."""
