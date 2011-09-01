@@ -373,7 +373,7 @@ class TestCAGen:
         t1 = cagen.TestTarget(config=conf)
         t2 = cagen.TestTarget(config=conf)
 
-        names = list("abcde" + "fg" + "hci" + "jk" + "lmnop")
+        names = list("abXde" + "fg" + "hcI" + "Jk" + "lmnop")
         positions = ((-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
                      (-2, -1),                             (2, -1),
                      (-2,  0),           (0,  0),          (2,  0),
@@ -382,19 +382,36 @@ class TestCAGen:
         n1 = cagen.SimpleNeighbourhood(names, positions)
         n2 = cagen.SimpleNeighbourhood(names, positions)
 
+        class MyComputation(cagen.Computation):
+            def visit(self):
+                super(MyComputation, self).visit()
+                self.code.add_code("compute",
+                        "result = c * 10;")
+                self.code.add_py_hook("compute",
+                        "result = c * 10")
+
         sf1 = cagen.WeaveStepFunc(
                 loop=cagen.TwoDimCellLoop(),
                 accessor=cagen.TwoDimStateAccessor(),
                 neighbourhood=n1,
-                extra_code=[cagen.TwoDimSlicingBorderCopier()], target=t1)
+                target=t1,
+                extra_code=[cagen.TwoDimSlicingBorderCopier(), MyComputation()])
         sf2 = cagen.WeaveStepFunc(
                 loop=cagen.TwoDimCellLoop(),
                 accessor=cagen.TwoDimStateAccessor(),
                 neighbourhood=n2,
-                extra_code=[cagen.SimpleBorderCopier()], target=t2)
+                target=t2,
+                extra_code=[cagen.SimpleBorderCopier(), MyComputation()])
 
         sf1.gen_code()
         sf2.gen_code()
+
+        print t1.cconf.transpose()
+        print t2.cconf.transpose()
+        assert_arrays_equal(t1.cconf, t2.cconf)
+
+        sf1.step_inline()
+        sf2.step_inline()
 
         print t1.cconf.transpose()
         print t2.cconf.transpose()
