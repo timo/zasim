@@ -944,6 +944,8 @@ class SimpleBorderCopier(BaseBorderCopier):
         # then go through all dimensions. (subdim)
         # if subdim == dim, only put in the values at the borders
         # else, put in all values
+
+        # TODO change this, so that it uses the accessors border_size property.
         for dim in range(dims):
             slices.append(product(*[range(0, self.dimension_sizes[sd]) if sd != dim else
                                 chain(range(0, abs(bbox[dim][1])),
