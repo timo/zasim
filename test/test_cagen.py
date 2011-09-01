@@ -2,7 +2,7 @@ from __future__ import absolute_import
 from zasim import ca, cagen
 from random import randrange
 from .testutil import *
-from itertools import repeat, chain
+from itertools import repeat, chain, product
 
 import pytest
 
@@ -364,6 +364,32 @@ class TestCAGen:
         stepfunc.step_pure_py()
         assert not stepfunc.getConf().any(), "there should be no ones in the"\
                                             " config at all."
+
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_compare_twodim_slicing_border_copier_simple_border_copier(self):
+        conf = np.zeros((5, 5), int)
+        for num, pos in enumerate(product(range(0, 5), range(0, 5))):
+            conf[pos] = 10 + num
+        t1 = cagen.TestTarget(config=conf)
+        t2 = cagen.TestTarget(config=conf)
+
+        sf1 = cagen.WeaveStepFunc(
+                loop=cagen.TwoDimCellLoop(),
+                accessor=cagen.TwoDimStateAccessor(),
+                neighbourhood=cagen.MooreNeighbourhood(),
+                extra_code=[cagen.TwoDimSlicingBorderCopier()], target=t1)
+        sf2 = cagen.WeaveStepFunc(
+                loop=cagen.TwoDimCellLoop(),
+                accessor=cagen.TwoDimStateAccessor(),
+                neighbourhood=cagen.MooreNeighbourhood(),
+                extra_code=[cagen.SimpleBorderCopier()], target=t2)
+
+        sf1.gen_code()
+        sf2.gen_code()
+
+        print t1.cconf
+        print t2.cconf
+        assert_arrays_equal(t1.cconf, t2.cconf)
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
