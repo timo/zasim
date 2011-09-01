@@ -712,7 +712,6 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
 
     def visit(self):
         """Adds C code for handling the randseed and skipping."""
-        print "visited"
         super(NondeterministicCellLoopMixin, self).visit()
         self.code.add_code("loop_begin",
                 """if(rand() >= RAND_MAX * %(probab)s) {
