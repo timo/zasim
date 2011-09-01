@@ -367,9 +367,9 @@ class TestCAGen:
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
     def test_compare_twodim_slicing_border_copier_simple_border_copier(self):
-        conf = np.zeros((5, 5), int)
-        for num, pos in enumerate(product(range(0, 5), range(0, 5))):
-            conf[pos] = 10 + num
+        conf = np.zeros((4, 4), int)
+        for num, pos in enumerate(product(range(0, 4), range(0, 4))):
+            conf[pos] = int(str(pos[0] + 1) + str(pos[1] + 1))
         t1 = cagen.TestTarget(config=conf)
         t2 = cagen.TestTarget(config=conf)
 
