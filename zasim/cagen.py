@@ -880,6 +880,11 @@ class BaseBorderCopier(BorderSizeEnsurer):
         for dim, size_name in enumerate(self.code.acc.size_names):
             size = self.code.acc.get_size_of(dim)
             retargetted = retargetted.replace(size_name, str(size))
+        bbox = self.code.neigh.bounding_box()
+        dims = len(bbox)
+        for idx, border_name in enumerate(sum(self.code.acc.border_names, ())):
+            size = abs(bbox[idx % dims][idx / dims])
+            retargetted = retargetted.replace(border_name, str(size))
         if not HAVE_TUPLE_ARRAY_INDEX:
             retargetted = tuple_array_index_fixup(retargetted)
 
@@ -1012,39 +1017,47 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         borders."""
         super(TwoDimSlicingBorderCopier, self).visit()
 
-        (b_l, b_r), (b_u, b_d) = self.neigh.bounding_box()
+        (b_l, b_r), (b_u, b_d) = self.code.neigh.bounding_box()
 
         # copy the upper portion below the lower border
         self.tee_copy_hook("""for pos in product(range(0, sizeX), range(0, LOWER_BORDER)):
-    self.acc.write_to((pos[0], sizeY + pos[1]), self.acc.read_from_next(pos))""")
+    self.acc.write_to((pos[0], sizeY + pos[1]),
+            self.acc.read_from_next(pos))""")
 
         # copy the lower portion above the upper border
         self.tee_copy_hook("""for pos in product(range(0, sizeX), range(0, UPPER_BORDER)):
-    self.acc.write_to((pos[0], -pos[1]), self.acc.read_from_next((pos[0], sizeY - pos[1]))""")
+    self.acc.write_to((pos[0], -pos[1]),
+            self.acc.read_from_next((pos[0], sizeY - pos[1])))""")
 
         # copy the left portion right of the right border
         self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, sizeY)):
-    self.acc.write_to((sizeX + pos[0], pos[1]), self.acc.read_from_next(pos))""")
+    self.acc.write_to((sizeX + pos[0], pos[1]),
+            self.acc.read_from_next(pos))""")
 
         # copy the right portion left of the left border
         self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, sizeY)):
-    self.acc.write_to((-pos[0], pos[1]), self.acc.read_from_next((sizeX - pos[0], pos[1]))""")
+    self.acc.write_to((-pos[0], pos[1]),
+            self.acc.read_from_next((sizeX - pos[0], pos[1])))""")
 
         # copy the upper left part to the lower right corner
         self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, LOWER_BORDER)):
-    self.acc.write_to((sizeX + pos[0], sizeY + pos[1]), self.acc.read_from_next((pos[0], pos[1])))""")
+    self.acc.write_to((sizeX + pos[0], sizeY + pos[1]),
+            self.acc.read_from_next((pos[0], pos[1])))""")
 
         # copy the upper right part to the lower left corner
         self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, LOWER_BORDER)):
-    self.acc.write_to((sizeX - pos[0], sizeY + pos[1]), self.acc.read_from_next((sizeX - pos[0], pos[1])))""")
+    self.acc.write_to((sizeX - pos[0], sizeY + pos[1]),
+            self.acc.read_from_next((sizeX - pos[0], pos[1])))""")
 
         # copy the lower right part to the upper left corner
         self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, UPPER_BORDER)):
-    self.acc.write_to((sizeX - pos[0], sizeY - pos[1]), self.acc.read_from_next((sizeX - pos[0], sizeY - pos[1])))""")
+    self.acc.write_to((sizeX - pos[0], sizeY - pos[1]),
+            self.acc.read_from_next((sizeX - pos[0], sizeY - pos[1])))""")
 
         # copy the upper left part to the lower right corner
         self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, UPPER_BORDER)):
-    self.acc.write_to((sizeX + pos[0], sizeY - pos[1]), self.acc.read_from_next((pos[0], sizeY - pos[1])))""")
+    self.acc.write_to((sizeX + pos[0], sizeY - pos[1]), 
+            self.acc.read_from_next((pos[0], sizeY - pos[1])))""")
 
 class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
