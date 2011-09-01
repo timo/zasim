@@ -500,8 +500,11 @@ class SimpleStateAccessor(StateAccessor):
     size_names = ()
     """The names to use in the C code"""
 
-    border_names = ()
-    """The names of border offsets"""
+    border_names = ((),)
+    """The names of border offsets.
+
+    The first tuple contains the borders with lower coordinate values, the
+    second one contains the borders with higher coordinate values."""
 
     size = None
     """The size of the target configuration."""
@@ -516,12 +519,12 @@ class SimpleStateAccessor(StateAccessor):
     def read_access(self, pos, skip_border=False):
         if skip_border:
             return "cconf(%s)" % (pos,)
-        return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names)),)
+        return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names[0])),)
 
     def write_access(self, pos, skip_border=False):
         if skip_border:
             return "nconf(%s)" % (pos)
-        return "nconf(%s)" % (",".join(gen_offset_pos(pos, self.border_names)),)
+        return "nconf(%s)" % (",".join(gen_offset_pos(pos, self.border_names[0])),)
 
     def init_once(self):
         """Set the sizeX const and register nconf and cconf for extraction
@@ -537,8 +540,9 @@ class SimpleStateAccessor(StateAccessor):
         super(SimpleStateAccessor, self).bind(target)
         bb = self.code.neigh.bounding_box()
         mins = [abs(a[0]) for a in bb]
-        self.border = tuple(mins)
-        for name, value in zip(self.border_names, self.border):
+        maxs = [abs(a[1]) for a in bb]
+        self.border = (tuple(mins), tuple(maxs))
+        for name, value in zip(sum(self.border_names, ()), sum(self.border, ())):
             self.code.consts[name] = value
 
     def visit(self):
@@ -570,24 +574,24 @@ class SimpleStateAccessor(StateAccessor):
     def read_from(self, pos, skip_border=False):
         if skip_border:
             return self.target.cconf[pos]
-        return self.target.cconf[offset_pos(pos, self.border)]
+        return self.target.cconf[offset_pos(pos, self.border[0])]
 
     def read_from_next(self, pos, skip_border=False):
         if skip_border:
             return self.target.nconf[pos]
-        return self.target.nconf[offset_pos(pos, self.border)]
+        return self.target.nconf[offset_pos(pos, self.border[0])]
 
     def write_to(self, pos, value, skip_border=False):
         if skip_border:
             self.target.nconf[pos] = value
         else:
-            self.target.nconf[offset_pos(pos, self.border)] = value
+            self.target.nconf[offset_pos(pos, self.border[0])] = value
 
     def write_to_current(self, pos, value, skip_border=False):
         if skip_border:
             self.target.cconf[pos] = value
         else:
-            self.target.cconf[offset_pos(pos, self.border)] = value
+            self.target.cconf[offset_pos(pos, self.border[0])] = value
 
     def get_size_of(self, dimension=0):
         return self.size[dimension]
@@ -617,13 +621,13 @@ class LinearStateAccessor(SimpleStateAccessor):
     """The LinearStateAccessor offers access to a one-dimensional configuration
     space."""
     size_names = ("sizeX",)
-    border_names = ("BORDER_OFFSET",)
+    border_names = (("LEFT_BORDER",), ("RIGHT_BORDER",))
 
 class TwoDimStateAccessor(SimpleStateAccessor):
     """The TwoDimStateAccessor offers access to a two-dimensional configuration
     space."""
     size_names = ("sizeX", "sizeY")
-    border_names = ("LEFT_BORDER", "UPPER_BORDER")
+    border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
 
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
