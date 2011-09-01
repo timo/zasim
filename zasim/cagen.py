@@ -478,19 +478,20 @@ class BorderSizeEnsurer(BorderHandler):
         """Resizes the configuration array."""
         super(BorderSizeEnsurer, self).new_config()
         bbox = self.code.neigh.bounding_box()
-        # FIXME if the bbox goes into the positive values, abs is wrong. use the
-        # FIXME correct amount of minus signs instead?
+        borders = self.code.acc.border_size
         dims = len(bbox)
         shape = self.target.cconf.shape
         if dims == 1:
-            new_conf = np.zeros(shape[0] + abs(bbox[0][0]) + abs(bbox[0][1]))
-            new_conf[abs(bbox[0][0]):-abs(bbox[0][1])] = self.target.cconf
+            (left,), (right,) = self.code.acc.border_names
+            new_conf = np.zeros(shape[0] + borders[left] + borders[right])
+            new_conf[borders[left]:-borders[right]] = self.target.cconf
         elif dims == 2:
             # TODO figure out how to create slice objects in a general way.
-            new_conf = np.zeros((shape[0] + abs(bbox[0][0]) + abs(bbox[0][1]),
-                                 shape[1] + abs(bbox[1][0]) + abs(bbox[1][1])))
-            new_conf[abs(bbox[0][0]):-abs(bbox[0][1]),
-                     abs(bbox[1][0]):-abs(bbox[1][1])] = self.target.cconf
+            (left,up), (right,down) = self.code.acc.border_names
+            new_conf = np.zeros((shape[0] + borders[left] + borders[right],
+                                 shape[1] + borders[up] + borders[down]))
+            new_conf[borders[left]:-borders[right],
+                     borders[up]:-borders[down]] = self.target.cconf
         self.target.cconf = new_conf
 
 class SimpleStateAccessor(StateAccessor):
