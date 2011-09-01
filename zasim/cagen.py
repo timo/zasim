@@ -1004,6 +1004,32 @@ class SimpleBorderCopier(BaseBorderCopier):
                 newpos.append("%s" % (val,))
         return tuple(newpos)
 
+class TwoDimSlicingBorderCopier(BaseBorderCopier):
+    """This class copies, with only little code, each side to the opposite
+    side. It only works on two-dimensional configurations."""
+    def visit(self):
+        """Generate code for copying over or otherwise handling data from the
+        borders."""
+        super(TwoDimSlicingBorderCopier, self).visit()
+
+        (b_l, b_r), (b_u, b_d) = self.neigh.bounding_box()
+
+        # copy the upper portion below the lower border
+        self.tee_copy_hook("""for pos in product(range(0, sizeX), range(0, LOWER_BORDER)):
+    self.acc.write_to((pos[0], sizeY + pos[1]), self.acc.read_from_next(pos))""")
+
+        # copy the lower portion above the upper border
+        self.tee_copy_hook("""for pos in product(range(0, sizeX), range(0, UPPER_BORDER)):
+    self.acc.write_to((pos[0], -pos[1]), self.acc.read_from_next((pos[0], sizeY - pos[1]))""")
+
+        # copy the left portion right of the right border
+        self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, sizeY)):
+    self.acc.write_to((sizeX + pos[0], pos[1]), self.acc.read_from_next(pos))""")
+
+        # copy the right portion left of the left border
+        self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, sizeY)):
+    self.acc.write_to((-pos[0], pos[1]), self.acc.read_from_next((sizeX - pos[0], pos[1]))""")
+
 class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
     peeking over the border."""
