@@ -532,20 +532,20 @@ class SimpleStateAccessor(StateAccessor):
         self.code.attrs.extend(["nconf", "cconf"])
 
     def bind(self, target):
-        """Get the bounding box from the neighbourhood object."""
+        """Get the bounding box from the neighbourhood object,
+        set consts for borders."""
         super(SimpleStateAccessor, self).bind(target)
         bb = self.code.neigh.bounding_box()
         mins = [abs(a[0]) for a in bb]
         self.border = tuple(mins)
+        for name, value in zip(self.border_names, self.border):
+            self.code.consts[name] = value
 
     def visit(self):
         """Take care for result and sizeX to exist in python and C code,
         for the result to be written to the config space and for the configs
         to be swapped by the python code."""
         super(SimpleStateAccessor, self).visit()
-        for name, value in zip(self.border_names, self.border):
-            self.code.add_code("headers",
-                    "#define %s %d" % (name, value))
         self.code.add_code("localvars",
                 """int result;""")
         self.code.add_code("post_compute",
