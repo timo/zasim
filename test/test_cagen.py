@@ -375,10 +375,10 @@ class TestCAGen:
 
         names = list("abcde" + "fg" + "hci" + "jk" + "lmnop")
         positions = ((-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
-                    (-2, -1),                             (2, -1),
-                    (-2,  0),           (0,  0),          (2,  0),
-                    (-2,  1),                             (2,  1),
-                    (-2,  2), (-1,  2), (0,  2), (1,  2), (2,  2))
+                     (-2, -1),                             (2, -1),
+                     (-2,  0),           (0,  0),          (2,  0),
+                     (-2,  1),                             (2,  1),
+                     (-2,  2), (-1,  2), (0,  2), (1,  2), (2,  2))
         n1 = cagen.SimpleNeighbourhood(names, positions)
         n2 = cagen.SimpleNeighbourhood(names, positions)
 
@@ -396,8 +396,8 @@ class TestCAGen:
         sf1.gen_code()
         sf2.gen_code()
 
-        print t1.cconf
-        print t2.cconf
+        print t1.cconf.transpose()
+        print t2.cconf.transpose()
         assert_arrays_equal(t1.cconf, t2.cconf)
 
 def pytest_generate_tests(metafunc):

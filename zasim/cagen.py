@@ -1023,46 +1023,46 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         borders."""
         super(TwoDimSlicingBorderCopier, self).visit()
 
-        # copy the upper portion below the lower border
-        self.tee_copy_hook("""for pos in product(range(0, sizeX), range(0, LOWER_BORDER)):
+        self.tee_copy_hook("""# copy the upper portion below the lower border
+for pos in product(range(0, sizeX), range(0, LOWER_BORDER)):
     self.acc.write_to((pos[0], sizeY + pos[1]),
             self.acc.read_from_next(pos))""")
 
-        # copy the lower portion above the upper border
-        self.tee_copy_hook("""for pos in product(range(0, sizeX), range(0, UPPER_BORDER)):
+        self.tee_copy_hook("""# copy the lower portion above the upper border
+for pos in product(range(0, sizeX), range(0, UPPER_BORDER)):
     self.acc.write_to((pos[0], -pos[1] - 1),
             self.acc.read_from_next((pos[0], sizeY - pos[1] - 1)))""")
 
-        # copy the left portion right of the right border
-        self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, sizeY)):
+        self.tee_copy_hook("""# copy the left portion right of the right border
+for pos in product(range(0, RIGHT_BORDER), range(0, sizeY)):
     self.acc.write_to((sizeX + pos[0], pos[1]),
             self.acc.read_from_next(pos))""")
 
-        # copy the right portion left of the left border
-        self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, sizeY)):
+        self.tee_copy_hook("""# copy the right portion left of the left border
+for pos in product(range(0, LEFT_BORDER), range(0, sizeY)):
     self.acc.write_to((-pos[0] - 1, pos[1]),
             self.acc.read_from_next((sizeX - pos[0] - 1, pos[1])))""")
 
 
-        # copy the upper left part to the lower right corner
-        self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, LOWER_BORDER)):
-    self.acc.write_to((sizeX + pos[0], sizeY + pos[1]),
-            self.acc.read_from_next((pos[0], pos[1])))""")
+        self.tee_copy_hook("""# copy the lower left part to the upper right corner
+for pos in product(range(0, RIGHT_BORDER), range(0, UPPER_BORDER)):
+    self.acc.write_to((sizeX + pos[0], -UPPER_BORDER + pos[1]),
+            self.acc.read_from_next((pos[0], sizeY - UPPER_BORDER + pos[1])))""")
 
-        self.tee_copy_hook("""# copy the upper right part to the lower left corner
+        self.tee_copy_hook("""# copy the upper right corner to the lower left corner
 for pos in product(range(0, LEFT_BORDER), range(0, LOWER_BORDER)):
-    self.acc.write_to((-LEFT_BORDER + pos[0], sizeY + pos[1]),
-            self.acc.read_from_next((sizeX - LEFT_BORDER + pos[0], -LOWER_BORDER + pos[1])))""")
+    self.acc.write_to((-RIGHT_BORDER + pos[0], sizeY + pos[1]),
+            self.acc.read_from_next((sizeX - RIGHT_BORDER + pos[0], pos[1])))""")
 
-        # copy the lower right part to the upper left corner
-        self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, UPPER_BORDER)):
+        self.tee_copy_hook("""# copy the lower right part to the upper left corner
+for pos in product(range(0, LEFT_BORDER), range(0, UPPER_BORDER)):
     self.acc.write_to((-LEFT_BORDER + pos[0], -UPPER_BORDER + pos[1]),
             self.acc.read_from_next((-LEFT_BORDER + sizeX + pos[0], -UPPER_BORDER + sizeX + pos[1])))""")
 
-        # copy the upper left part to the lower right corner
-        self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, UPPER_BORDER)):
-    self.acc.write_to((sizeX + pos[0], sizeY - pos[1] - 1),
-            self.acc.read_from_next((pos[0], -pos[1] - 1)))""")
+        self.tee_copy_hook("""# copy the upper left part to the lower right corner
+for pos in product(range(0, RIGHT_BORDER), range(0, LOWER_BORDER)):
+    self.acc.write_to((sizeX + pos[0], sizeY + pos[1]),
+            self.acc.read_from_next((pos[0], pos[1])))""")
 
         # and now for the fun part ...
 
