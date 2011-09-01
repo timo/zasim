@@ -1030,8 +1030,8 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
 
         # copy the lower portion above the upper border
         self.tee_copy_hook("""for pos in product(range(0, sizeX), range(0, UPPER_BORDER)):
-    self.acc.write_to((pos[0], -pos[1]),
-            self.acc.read_from_next((pos[0], sizeY - pos[1])))""")
+    self.acc.write_to((pos[0], -pos[1] - 1),
+            self.acc.read_from_next((pos[0], sizeY - pos[1] - 1)))""")
 
         # copy the left portion right of the right border
         self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, sizeY)):
@@ -1040,8 +1040,8 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
 
         # copy the right portion left of the left border
         self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, sizeY)):
-    self.acc.write_to((-pos[0], pos[1]),
-            self.acc.read_from_next((sizeX - pos[0], pos[1])))""")
+    self.acc.write_to((-pos[0] - 1, pos[1]),
+            self.acc.read_from_next((sizeX - pos[0] - 1, pos[1])))""")
 
 
         # copy the upper left part to the lower right corner
@@ -1051,18 +1051,18 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
 
         # copy the upper right part to the lower left corner
         self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, LOWER_BORDER)):
-    self.acc.write_to((sizeX - pos[0], sizeY + pos[1]),
-            self.acc.read_from_next((-pos[0], pos[1])))""")
+    self.acc.write_to((sizeX - pos[0] - 1, sizeY + pos[1]),
+            self.acc.read_from_next((-pos[0] - 1, pos[1])))""")
 
         # copy the lower right part to the upper left corner
         self.tee_copy_hook("""for pos in product(range(0, LEFT_BORDER), range(0, UPPER_BORDER)):
-    self.acc.write_to((sizeX - pos[0], sizeY - pos[1]),
-            self.acc.read_from_next((-pos[0], -pos[1])))""")
+    self.acc.write_to((-pos[0] - 1, -pos[1] - 1),
+            self.acc.read_from_next((sizeX + pos[0], sizeX + pos[1])))""")
 
         # copy the upper left part to the lower right corner
         self.tee_copy_hook("""for pos in product(range(0, RIGHT_BORDER), range(0, UPPER_BORDER)):
-    self.acc.write_to((sizeX + pos[0], sizeY - pos[1]),
-            self.acc.read_from_next((pos[0], -pos[1])))""")
+    self.acc.write_to((sizeX + pos[0], sizeY - pos[1] - 1),
+            self.acc.read_from_next((pos[0], -pos[1] - 1)))""")
 
         # and now for the fun part ...
 
