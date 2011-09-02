@@ -365,8 +365,7 @@ class TestCAGen:
         assert not stepfunc.getConf().any(), "there should be no ones in the"\
                                             " config at all."
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
-    def test_compare_twodim_slicing_border_copier_simple_border_copier(self):
+    def body_compare_twodim_slicing_border_copier_simple_border_copier(self, names, positions):
         conf = np.zeros((4, 4), int)
         for num, pos in enumerate(product(range(0, 4), range(0, 4))):
             conf[pos] = int(str(pos[0] + 1) + str(pos[1] + 1))
@@ -416,6 +415,16 @@ class TestCAGen:
         print t1.cconf.transpose()
         print t2.cconf.transpose()
         assert_arrays_equal(t1.cconf, t2.cconf)
+
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_compare_twodim_slicing_border_copier_simple_border_copier(self):
+        names = list("abXde" + "fg" + "hcI" + "Jk" + "lmnop")
+        positions = ((-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
+                     (-2, -1),                             (2, -1),
+                     (-2,  0),           (0,  0),          (2,  0),
+                     (-2,  1),                             (2,  1),
+                     (-2,  2), (-1,  2), (0,  2), (1,  2), (2,  2))
+        self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
