@@ -1503,11 +1503,12 @@ class BinRule(TestTarget):
     rule = None
     """The number of the elementary cellular automaton to simulate."""
 
-    def __init__(self, size=None, deterministic=True, rule=126, config=None, **kwargs):
+    def __init__(self, size=None, deterministic=True, histogram=False, rule=126, config=None, **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
            :param deterministic: Go over every cell every time or skip cells
                                  randomly?
+           :param histogram: Generate and update a histogram as well?
            :param rule: The rule number for the elementary cellular automaton.
            :param config: Optionally the configuration to use."""
         if size is None:
@@ -1520,7 +1521,8 @@ class BinRule(TestTarget):
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
-                accessor=LinearHistogramStateAccessor(),
+                accessor=LinearHistogramStateAccessor() if histogram
+                     else LinearStateAccessor(),
                 neighbourhood=ElementaryFlatNeighbourhood(),
                 extra_code=[SimpleBorderCopier(),
                     self.computer], target=self)
@@ -1541,7 +1543,7 @@ class BinRule(TestTarget):
 def test():
     size = 75
 
-    bin_rule = BinRule((size,), rule=105)
+    bin_rule = BinRule((size,), rule=105, histogram=True)
 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
     pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((0, 0),))
