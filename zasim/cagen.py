@@ -48,6 +48,8 @@ which can then target a configuration object with the method
 # TODO figure out how the code should handle resizing of configurations and
 #      other such things.
 
+# TODO figure out if scipy.weave.accelerate_tools is any good.
+
 import numpy as np
 try:
     from scipy import weave
@@ -227,8 +229,10 @@ class WeaveStepFunc(object):
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
 
-        # TODO figure out if the code for weave can be compiled without
-        #      having to run it.
+        # TODO run the code once with dummy data, that will still cause the
+        #      types to match - the only way to compile a function with weave
+        #      without running it, too, would be to copy most of the code from
+        #      weave.inline_tools.attempt_function_call.
 
         # freeze python code bits
         for hook in self.pycode.keys():
