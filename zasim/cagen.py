@@ -1053,7 +1053,7 @@ for pos in product(range(0, RIGHT_BORDER), range(0, UPPER_BORDER)):
 
         self.tee_copy_hook("""# copy the upper right corner to the lower left corner
 for pos in product(range(0, LEFT_BORDER), range(0, LOWER_BORDER)):
-    self.acc.write_to((-RIGHT_BORDER + pos[0], sizeY + pos[1]),
+    self.acc.write_to((-LEFT_BORDER + pos[0], sizeY + pos[1]),
             self.acc.read_from_next((sizeX - RIGHT_BORDER + pos[0], pos[1])))""")
 
         self.tee_copy_hook("""# copy the lower right part to the upper left corner
@@ -1101,33 +1101,33 @@ for pos in product(range(0, RIGHT_BORDER), range(0, LOWER_BORDER)):
               self.code.acc.write_access(("sizeX - x - 1", "y"))))
 
 
-        ## copy the upper left part to the lower right corner
-        #copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
-    #for(y = 0; y < LOWER_BORDER; y++) {
-        #%s = %s;
-    #} }""" % (self.code.acc.write_access(("sizeX + x", "sizeY + y")),
-              #self.code.acc.write_access(("x", "y"))))
+        # copy the upper left part to the lower right corner
+        copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
+    for(y = 0; y < LOWER_BORDER; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("sizeX + x", "sizeY + y")),
+              self.code.acc.write_access(("x", "y"))))
 
-        ## copy the upper right part to the lower left corner
-        #copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
-    #for(y = 0; y < LOWER_BORDER; y++) {
-        #%s = %s;
-    #} }""" % (self.code.acc.write_access(("sizeX - x", "sizeY + y")),
-              #self.code.acc.write_access(("-x", "sizeY + y"))))
+        # copy the upper right part to the lower left corner
+        copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
+    for(y = 0; y < LOWER_BORDER; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("-LEFT_BORDER + x", "sizeY + y")),
+              self.code.acc.write_access(("sizeX - RIGHT_BORDER + x", "y"))))
 
-        ## copy the lower right part to the upper left corner
-        #copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
-    #for(y = 0; y < UPPER_BORDER; y++) {
-        #%s = %s;
-    #} }""" % (self.code.acc.write_access(("sizeX - x", "sizeY - y")),
-              #self.code.acc.write_access(("-x", "-y"))))
+        # copy the lower right part to the upper left corner
+        copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
+    for(y = 0; y < UPPER_BORDER; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("-LEFT_BORDER + x", "-UPPER_BORDER + y")),
+              self.code.acc.write_access(("-LEFT_BORDER + sizeX + x", "-UPPER_BORDER + sizeY + y"))))
 
-        ## copy the upper left part to the lower right corner
-        #copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
-    #for(y = 0; y < UPPER_BORDER; y++) {
-        #%s = %s;
-    #} }""" % (self.code.acc.write_access(("sizeX + x", "sizeY - y")),
-              #self.code.acc.write_access(("x", "-y"))))
+        # copy the lower left part to the upper right corner
+        copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
+    for(y = 0; y < UPPER_BORDER; y++) {
+        %s = %s;
+    } }""" % (self.code.acc.write_access(("sizeX + x", "-UPPER_BORDER + y")),
+              self.code.acc.write_access(("x", "sizeY - UPPER_BORDER + y"))))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
