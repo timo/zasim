@@ -419,6 +419,9 @@ class StateAccessor(WeaveStepFuncVisitor):
         """Generate a bit of py code to copy the current field over from the
         old config."""
 
+    # TODO this class needs to get a method for generating a view onto the part
+    #      of the array inside the borders.
+
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
@@ -642,6 +645,39 @@ class TwoDimStateAccessor(SimpleStateAccessor):
     space."""
     size_names = ("sizeX", "sizeY")
     border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
+
+class SimpleHistogramStateAccessor(SimpleStateAccessor):
+    def visit(self):
+        super(SimpleHistogramStateAccessor, self).visit()
+
+    def regenerate_histogram(self):
+        conf = self.target.cconf
+        if len(self.size_names) == 1:
+            conf = conf[self.border_size[self.border_names[0][0]]:
+                       -self.border_size[self.border_names[1][0]]]
+        elif len(self.size_names) == 2:
+            conf = conf[self.border_size[self.border_names[0][0]]:
+                       -self.border_size[self.border_names[1][0]],
+                       self.border_size[self.border_names[0][1]]:
+                       -self.border_size[self.border_names[1][1]]]
+        else:
+            raise NotImplementedError("Can only handle 1d or 2d arrays")
+        try:
+            self.target.histogram = np.bincount(conf)
+        except:
+            self.target.histogram = np.zeros(len(self.target.possible_states))
+            for cell in conf:
+                self.target.histogram[cell] += 1
+
+    def new_config(self):
+        """Create a starting histogram."""
+        super(SimpleHistogramStateAccessor, self).new_config()
+        self.regenerate_histogram()
+
+    def init_once(self):
+        """Set up the histogram attributes."""
+        super(SimpleHistogramStateAccessor, self).init_once()
+        self.code.attrs.extend(["histogram"])
 
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
@@ -1150,6 +1186,7 @@ class ElementaryCellularAutomatonBase(Computation):
 
     This works with any number of dimensions."""
 
+    # TODO get this from target.possible_values instead?
     base = 2
     """The number of different values each cell can have."""
 
@@ -1411,6 +1448,9 @@ class TestTarget(object):
     nconf = None
     """During the step, this is the 'next configuration', otherwise it's the
     previous configuration, because nconf and cconf are swapped after steps."""
+
+    possible_states = [0, 1]
+    """What values the cells can have."""
 
     def __init__(self, size=None, config=None, **kwargs):
         """:param size: The size of the config to generate. Alternatively the
