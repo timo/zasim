@@ -649,6 +649,15 @@ class TwoDimStateAccessor(SimpleStateAccessor):
 class SimpleHistogramStateAccessor(SimpleStateAccessor):
     def visit(self):
         super(SimpleHistogramStateAccessor, self).visit()
+        center_name = self.code.neigh.names[self.code.neigh.offsets.find((0, 0))]
+        self.code.add_code("post_compute",
+                """if (result != %(center)s) { histogram[result] += 1; histogram[%(center)s] -= 1; }""" % dict(center=center_name))
+
+        self.code.add_py_hook("post_compute",
+                """# update the histogram
+if result != %(center)s:
+    histogram[result] += 1
+    histogram[%(center)s] -= 1""" % dict(center=center_name))
 
     def regenerate_histogram(self):
         conf = self.target.cconf
