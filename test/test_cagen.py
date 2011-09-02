@@ -426,6 +426,33 @@ class TestCAGen:
                      (-2,  2), (-1,  2), (0,  2), (1,  2), (2,  2))
         self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
 
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_compare_slicing_simple_border_copier_asymmetric_neighbourhood(self):
+        names = list("abXd" + "ef" + "gcI" + "Jklm")
+        positions = ((-2, -2), (-1, -2), (0, -2), (1, -2),
+                     (-2, -1),                    (1, -1),
+                     (-2,  0),           (0,  0), (1,  0),
+                     (-2,  1), (-1,  1), (0,  1), (1,  1))
+        self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
+        names = list("abXd" + "ef" + "gcI" + "Jklm")
+        positions = ((-1, -2), (0, -2), (1, -2), (2, -2),
+                     (-1, -1),                   (2, -1),
+                     (-1,  0), (0,  0),          (2,  0),
+                     (-1,  1), (0,  1), (1,  1), (2,  1))
+        self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
+        names = list("abXd" + "ecf" + "gI" + "Jklm")
+        positions = ((-1, -1), (0, -1), (1, -1), (2, -1),
+                     (-1,  0), (0,  0),          (2,  0),
+                     (-1,  1),                   (2,  1),
+                     (-1,  2), (0,  2), (1,  2), (2,  2))
+        self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
+        names = list("abXd" + "ecf" + "gI" + "Jklm")
+        positions = ((-2, -1), (-1, -1), (0, -1), (1, -1),
+                     (-2,  0),           (0,  0), (1,  0),
+                     (-2,  1),                    (1,  1),
+                     (-2,  2), (-1,  2), (0,  2), (1,  2))
+        self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
+
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
         for i in INTERESTING_BINRULES:
