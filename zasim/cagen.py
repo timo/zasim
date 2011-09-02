@@ -492,13 +492,13 @@ class BorderSizeEnsurer(BorderHandler):
         shape = self.target.cconf.shape
         if dims == 1:
             (left,), (right,) = self.code.acc.border_names
-            new_conf = np.zeros(shape[0] + borders[left] + borders[right])
+            new_conf = np.zeros(shape[0] + borders[left] + borders[right], int)
             new_conf[borders[left]:-borders[right]] = self.target.cconf
         elif dims == 2:
             # TODO figure out how to create slice objects in a general way.
             (left,up), (right,down) = self.code.acc.border_names
             new_conf = np.zeros((shape[0] + borders[left] + borders[right],
-                                 shape[1] + borders[up] + borders[down]))
+                                 shape[1] + borders[up] + borders[down]), int)
             new_conf[borders[left]:-borders[right],
                      borders[up]:-borders[down]] = self.target.cconf
         self.target.cconf = new_conf
@@ -649,15 +649,18 @@ class TwoDimStateAccessor(SimpleStateAccessor):
 class SimpleHistogramStateAccessor(SimpleStateAccessor):
     def visit(self):
         super(SimpleHistogramStateAccessor, self).visit()
-        center_name = self.code.neigh.names[self.code.neigh.offsets.find((0, 0))]
+        if len(self.size_names) == 1:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0,))]
+        else:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
         self.code.add_code("post_compute",
-                """if (result != %(center)s) { histogram[result] += 1; histogram[%(center)s] -= 1; }""" % dict(center=center_name))
+                """if (result != %(center)s) { histogram(result) += 1; histogram(%(center)s) -= 1; }""" % dict(center=center_name))
 
         self.code.add_py_hook("post_compute",
                 """# update the histogram
 if result != %(center)s:
-    histogram[result] += 1
-    histogram[%(center)s] -= 1""" % dict(center=center_name))
+    self.target.histogram[result] += 1
+    self.target.histogram[int(%(center)s)] -= 1""" % dict(center=center_name))
 
     def regenerate_histogram(self):
         conf = self.target.cconf
@@ -671,12 +674,7 @@ if result != %(center)s:
                        -self.border_size[self.border_names[1][1]]]
         else:
             raise NotImplementedError("Can only handle 1d or 2d arrays")
-        try:
-            self.target.histogram = np.bincount(conf)
-        except:
-            self.target.histogram = np.zeros(len(self.target.possible_states))
-            for cell in conf:
-                self.target.histogram[cell] += 1
+        self.target.histogram = np.bincount(conf)
 
     def new_config(self):
         """Create a starting histogram."""
@@ -687,6 +685,18 @@ if result != %(center)s:
         """Set up the histogram attributes."""
         super(SimpleHistogramStateAccessor, self).init_once()
         self.code.attrs.extend(["histogram"])
+
+class LinearHistogramStateAccessor(SimpleHistogramStateAccessor):
+    """The LinearStateAccessor offers access to a one-dimensional configuration
+    space."""
+    size_names = ("sizeX",)
+    border_names = (("LEFT_BORDER",), ("RIGHT_BORDER",))
+
+class TwoDimHistogramStateAccessor(SimpleHistogramStateAccessor):
+    """The TwoDimStateAccessor offers access to a two-dimensional configuration
+    space."""
+    size_names = ("sizeX", "sizeY")
+    border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
 
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
@@ -1468,7 +1478,7 @@ class TestTarget(object):
         super(TestTarget, self).__init__(**kwargs)
         if config is None:
             assert size is not None
-            self.cconf = np.zeros(size)
+            self.cconf = np.zeros(size, int)
             rand = Random()
             if HAVE_TUPLE_ARRAY_INDEX:
                 for pos in product(*[range(siz) for siz in size]):
@@ -1510,7 +1520,7 @@ class BinRule(TestTarget):
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
-                accessor=LinearStateAccessor(),
+                accessor=LinearHistogramStateAccessor(),
                 neighbourhood=ElementaryFlatNeighbourhood(),
                 extra_code=[SimpleBorderCopier(),
                     self.computer], target=self)
@@ -1531,21 +1541,24 @@ class BinRule(TestTarget):
 def test():
     size = 75
 
-    bin_rule = BinRule((size,), rule=110)
+    bin_rule = BinRule((size,), rule=105)
 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
-    pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((20, 20),))
+    pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((0, 0),))
+
 
     if USE_WEAVE:
         print "weave"
-        for i in range(10000):
+        for i in range(100):
             bin_rule.step_inline()
             pretty_print_array(bin_rule.cconf)
+            print bin_rule.histogram
     else:
         print "pure"
-        for i in range(10000):
+        for i in range(100):
             bin_rule.step_pure_py()
             pretty_print_array(bin_rule.cconf)
+            print bin_rule.histogram
 
 if __name__ == "__main__":
     if "pure" in sys.argv:
