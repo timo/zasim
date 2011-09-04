@@ -122,13 +122,15 @@ class ZasimMainWindow(QMainWindow):
         """Attach an extra display to the control.
 
         Those displays are updated whenever a step occurs."""
-        self.attached_displays.append(display)
-        self.display_attached.emit(display)
+        self.extra_displays.append(display)
+        self.simulator.updated.connect(display.after_step)
+        #self.display_attached.emit(display)
 
     def detach_display(self, display):
         """Detach an extra attached display from the control."""
-        self.attached_displays.remove(display)
-        self.display_detached.emit(display)
+        self.extra_displays.remove(display)
+        self.simulator.updated.disconnect(display.after_step)
+        #self.display_detached.emit(display)
 
 class ControlWidget(QWidget):
     """Control a simulator with buttons or from the interactive console."""
@@ -362,6 +364,91 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
 
         self.update()
 
+class BaseExtraDisplay(QDockWidget):
+    def __init__(self, title, sim, width, height, parent=None, **kwargs):
+        super(BaseExtraDisplay, self).__init__(unicode(title))
+        self.display_widget = QWidget(self)
+        self.scroller = QScrollArea(self)
+        self.scroller.setWidget(self.display_widget)
+        self.display_widget.setFixedSize(QSize(width, height))
+        self.scroller.setMinimumWidth(width + 5)
+        self.scroller.setMinimumHeight(height + 5)
+        self.setWidget(self.scroller)
+        self.setFloating(False)
+
+        self.setAllowedAreas(Qt.RightDockWidgetArea)
+
+        self.display_widget.installEventFilter(self)
+
+        self.sim = sim
+        self.img_width, self.img_height = width, height
+
+        self.create_image_surf()
+
+    def eventFilter(self, widget, event):
+        if widget == self.display_widget:
+            if event.type() == QEvent.Type.Paint:
+                self.paint_display_widget(event)
+                return True
+        return False
+
+    def create_image_surf(self):
+        """Create the image surface to use."""
+        self.image = QImage(self.img_width, self.img_height,
+                            QImage.Format_RGB444)
+        self.image.fill(0)
+
+    def paint_display_widget(self, event):
+        raise NotImplementedError("painting %s not implemented" % self)
+
+    def after_step(self):
+        pass
+
+class HistogramExtraDisplay(BaseExtraDisplay):
+    colors = [QColor("black"), QColor("white"), QColor("red"), QColor("blue"),
+              QColor("green"), QColor("yellow")]
+    def __init__(self, sim, attribute="histogram", width=300, maximum=1.0, **kwargs):
+        super(HistogramExtraDisplay, self).__init__(title=attribute, sim=sim, width=width, **kwargs)
+        self.linepos = 0
+        self.queue = Queue.Queue(width)
+        self.attribute = attribute
+
+    def paint_display_widget(self, event):
+        painter = QPainter(self.image)
+        linepos = self.linepos
+        try:
+            while True:
+                values = self.queue.get_nowait()
+                maximum = sum(values)
+                scale = self.img_height * 1.0 / maximum
+                absolute = 0.0
+                for value, color in zip(values, self.colors):
+                    value = value * scale
+                    painter.setPen(color)
+                    painter.drawLine(QLine(linepos, absolute,
+                                     linepos, absolute + value))
+                    absolute += value
+                linepos += 1
+                if linepos >= self.width():
+                    linepos = 0
+        except Queue.Empty:
+            pass
+
+        copier = QPainter(self.display_widget)
+        copier.drawImage(QPoint(0, 0), self.image)
+        del copier
+        self.linepos = linepos
+
+    def after_step(self):
+        value = getattr(self.sim._target, self.attribute)
+        try:
+            self.queue.put_nowait(value)
+        except Queue.Full:
+            self.queue.get()
+            self.queue.put(value)
+
+        self.display_widget.update()
+
 class WaitAnimationWindow(object):
     """Display a cute animation, so that the user isn't annoyed by those long,
     long compile times of weave.inline."""
@@ -434,7 +521,6 @@ class WaitAnimationWindow(object):
         ct.translate(-ct.boundingRect().width()/2., 75 - ct.boundingRect().height())
 
         self.gv.centerOn(0, 0)
-        print self.gv.sceneRect()
 
         self.scene = scene
         self.gv.show()
@@ -445,10 +531,10 @@ class WaitAnimationWindow(object):
 def main():
     app = QApplication(sys.argv)
 
-    scale = 2
-    w, h = 300, 300
+    scale = 3
+    w, h = 200, 200
 
-    onedim, twodim = True, True
+    onedim, twodim = False, True
 
     if onedim:
         # get a random beautiful CA
@@ -469,12 +555,15 @@ def main():
 
         compute = cagen.LifeCellularAutomatonBase()
         l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
+        #l = cagen.TwoDimCellLoop()
         acc = cagen.TwoDimStateAccessor()
         neigh = cagen.MooreNeighbourhood()
-        copier = cagen.SimpleBorderCopier()
+        copier = cagen.TwoDimSlicingBorderCopier()
         #copier = cagen.TwoDimZeroReader()
+        hist = cagen.SimpleHistogram()
+        activity = cagen.ActivityRecord()
         sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                        extra_code=[copier, compute], target=t)
+                        extra_code=[copier, compute, hist, activity], target=t)
 
         sim.gen_code()
 
@@ -483,9 +572,17 @@ def main():
         display_b = ZasimDisplay(sim_obj)
         display_b.set_scale(scale)
 
-    anim = WaitAnimationWindow()
+        extra_hist = HistogramExtraDisplay(sim_obj, parent=display_b, height=100, maximum= w * h)
+        extra_activity = HistogramExtraDisplay(sim_obj, attribute="activity", parent=display_b, height=100, maximum=w*h)
 
-    QTimer.singleShot(50000, anim.destroy)
+        extra_hist.show()
+        extra_activity.show()
+
+        display_b.window.attach_display(extra_hist)
+        display_b.window.attach_display(extra_activity)
+
+        display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
+        display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_activity)
 
     sys.exit(app.exec_())
 
