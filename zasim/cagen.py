@@ -646,10 +646,10 @@ class TwoDimStateAccessor(SimpleStateAccessor):
     size_names = ("sizeX", "sizeY")
     border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
 
-class SimpleHistogramStateAccessor(SimpleStateAccessor):
+class SimpleHistogram(WeaveStepFuncVisitor):
     def visit(self):
-        super(SimpleHistogramStateAccessor, self).visit()
-        if len(self.size_names) == 1:
+        super(SimpleHistogram, self).visit()
+        if len(self.code.acc.size_names) == 1:
             center_name = self.code.neigh.names[self.code.neigh.offsets.index((0,))]
         else:
             center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
@@ -664,39 +664,28 @@ if result != %(center)s:
 
     def regenerate_histogram(self):
         conf = self.target.cconf
-        if len(self.size_names) == 1:
-            conf = conf[self.border_size[self.border_names[0][0]]:
-                       -self.border_size[self.border_names[1][0]]]
-        elif len(self.size_names) == 2:
-            conf = conf[self.border_size[self.border_names[0][0]]:
-                       -self.border_size[self.border_names[1][0]],
-                       self.border_size[self.border_names[0][1]]:
-                       -self.border_size[self.border_names[1][1]]]
+        acc = self.code.acc
+        if len(acc.size_names) == 1:
+            conf = conf[acc.border_size[acc.border_names[0][0]]:
+                       -acc.border_size[acc.border_names[1][0]]]
+        elif len(self.code.acc.size_names) == 2:
+            conf = conf[acc.border_size[acc.border_names[0][0]]:
+                       -acc.border_size[acc.border_names[1][0]],
+                       acc.border_size[acc.border_names[0][1]]:
+                       -acc.border_size[acc.border_names[1][1]]]
         else:
             raise NotImplementedError("Can only handle 1d or 2d arrays")
         self.target.histogram = np.bincount(conf)
 
     def new_config(self):
         """Create a starting histogram."""
-        super(SimpleHistogramStateAccessor, self).new_config()
+        super(SimpleHistogram, self).new_config()
         self.regenerate_histogram()
 
     def init_once(self):
         """Set up the histogram attributes."""
-        super(SimpleHistogramStateAccessor, self).init_once()
+        super(SimpleHistogram, self).init_once()
         self.code.attrs.extend(["histogram"])
-
-class LinearHistogramStateAccessor(SimpleHistogramStateAccessor):
-    """The LinearStateAccessor offers access to a one-dimensional configuration
-    space."""
-    size_names = ("sizeX",)
-    border_names = (("LEFT_BORDER",), ("RIGHT_BORDER",))
-
-class TwoDimHistogramStateAccessor(SimpleHistogramStateAccessor):
-    """The TwoDimStateAccessor offers access to a two-dimensional configuration
-    space."""
-    size_names = ("sizeX", "sizeY")
-    border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
 
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
@@ -1521,11 +1510,11 @@ class BinRule(TestTarget):
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
-                accessor=LinearHistogramStateAccessor() if histogram
-                     else LinearStateAccessor(),
+                accessor=LinearStateAccessor(),
                 neighbourhood=ElementaryFlatNeighbourhood(),
                 extra_code=[SimpleBorderCopier(),
-                    self.computer], target=self)
+                    self.computer] +
+                [SimpleHistogram()] if histogram else [], target=self)
 
         self.stepfunc.gen_code()
 
