@@ -910,25 +910,37 @@ class SimpleNeighbourhood(Neighbourhood):
         return super(SimpleNeighbourhood, self).bounding_box(steps)
 
 class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
-    def __init__(self, names, offsets, probab=0.5, **kwargs):
-        super(BetaAsynchronousNeighbourhood, self).__init__(names=names, offsets=offsets, **kwargs)
-        self.probab = probab
-
     def visit(self):
         """Adds C and python code to get the neighbouring values and stores
         them in local variables. The neighbouring values will be taken from the
         outer array, the own value will be taken from the inner array."""
         for name, offset in zip(self.names, self.offsets):
-            self.code.add_code("pre_compute", "%s = %s;" % (name,
-                     self.code.acc.read_access(
-                         gen_offset_pos(self.code.loop.get_pos(), offset))))
+            if offset != (0,) and offset != (0, 0):
+                self.code.add_code("pre_compute", "%s = %s;" % (name,
+                         self.code.acc.read_access(
+                             gen_offset_pos(self.code.loop.get_pos(), offset))))
+            else:
+                self.code.add_code("pre_compute", "%s = %s;" % (name,
+                         self.code.acc.inner_read_access(
+                             self.code.loop.get_pos())))
+
 
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
         assignments = ["%s = self.acc.read_from(%s)" % (
                 name, "offset_pos(pos, %s)" % (offset,))
-                for name, offset in zip(self.names, self.offsets)]
+                for name, offset in zip(self.names, self.offsets)
+                if offset != (0,) and offset != (0, 0)]
+        if (0,) in self.offsets:
+            c_name = self.names[self.offsets.index((0,))]
+        elif (0, 0) in self.offsets:
+            c_name = self.names[self.offsets.index((0,0))]
+        else:
+            raise NotImplementedError("BetaAsynchronousNeighbourhood can only"
+                    " work with 1d or 2d neighbourhoods with a center.")
+
+        assignments.append("%s = self.acc.read_from_inner((0, 0))" % c_name)
         self.code.add_py_hook("pre_compute",
                 "\n".join(assignments))
 
@@ -936,14 +948,15 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
     def __init__(self, probab=0.5, **kwargs):
         super(BetaAsynchronousAccessor, self).__init__(**kwargs)
         self.probab = probab
+        self.random = Random()
 
     def init_once(self):
         super(BetaAsynchronousAccessor, self).init_once()
         self.code.attrs.extend(["inner", "beta_randseed"])
         self.code.consts["beta_probab"] = self.probab
 
-    def new_config(self, target):
-        super(BetaAsynchronousAccessor, self).bind(target)
+    def new_config(self):
+        super(BetaAsynchronousAccessor, self).new_config()
         # XXX this function assumes, that it will be called before the
         #     border ensurer runs, so that the config is "small".
         self.target.inner = self.target.cconf.copy()
@@ -964,7 +977,6 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
         """Take care for result and sizeX to exist in python and C code,
         for the result to be written to the config space and for the configs
         to be swapped by the python code."""
-        super(SimpleStateAccessor, self).visit()
         self.code.add_code("localvars",
                 """int result;
 srand(beta_randseed(0));""")
@@ -973,7 +985,7 @@ srand(beta_randseed(0));""")
         self.code.add_code("post_compute",
                 """if(rand() < RAND_MAX * beta_probab) {
     %(write)s = result;
-}""")
+}""" % dict(write=self.code.acc.write_access(self.code.loop.get_pos())))
 
         self.code.add_code("after_step",
                 """beta_randseed(0) = rand();""")
@@ -985,9 +997,14 @@ srand(beta_randseed(0));""")
                     """%s = %d""" % (sizename, value))
         self.code.add_py_hook("post_compute",
                 """self.acc.write_to_inner(pos, result)
-if self.beta_random.random() < """)
+if self.beta_random.random() < beta_probab:
+    self.acc.write_to(pos, result)""")
         self.code.add_py_hook("finalize",
                 """self.acc.swap_configs()""")
+
+    def set_target(self, target):
+        super(BetaAsynchronousAccessor, self).set_target(target)
+        target.beta_randseed = np.array([self.random.random()])
 
 def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the neighbourhood used by the elementary cellular automatons.
@@ -1614,10 +1631,9 @@ class BinRule(TestTarget):
         self.computer = ElementaryCellularAutomatonBase(rule)
 
         self.stepfunc = WeaveStepFunc(
-                loop=LinearCellLoop() if deterministic
-                     else LinearNondeterministicCellLoop(),
-                accessor=SimpleStateAccessor(),
-                neighbourhood=ElementaryFlatNeighbourhood(),
+                loop=LinearCellLoop(),
+                accessor=BetaAsynchronousAccessor(),
+                neighbourhood=ElementaryFlatNeighbourhood(Base=BetaAsynchronousNeighbourhood),
                 extra_code=[SimpleBorderCopier(),
                     self.computer] +
                 ([SimpleHistogram()] if histogram else []) +
