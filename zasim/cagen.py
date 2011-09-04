@@ -647,6 +647,9 @@ class TwoDimStateAccessor(SimpleStateAccessor):
     border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
 
 class SimpleHistogram(WeaveStepFuncVisitor):
+    """Adding this class to the extra code list of a WeaveStepFunc will give
+    access to a new array in the target called "histogram". This value will
+    count the amount of cells with the value used as its index."""
     def visit(self):
         super(SimpleHistogram, self).visit()
         if len(self.code.acc.size_names) == 1:
