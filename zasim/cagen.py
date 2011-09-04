@@ -256,6 +256,7 @@ class WeaveStepFunc(object):
 
         myglob = globals()
         myloc = locals()
+        myglob.update(self.consts)
         exec code_object in myglob, myloc
         self.pure_py_code_text = code_text
         self.step_pure_py = new.instancemethod(myloc["step_pure_py"], self, self.__class__)
