@@ -1641,7 +1641,8 @@ class BinRule(TestTarget):
             raise ValueError("Cannot have beta asynchronism and deterministic=False.")
 
         self.stepfunc = WeaveStepFunc(
-                loop=LinearCellLoop(),
+                loop=LinearCellLoop() if deterministic else
+                     LinearNondeterministicCellLoop(),
                 accessor=acc,
                 neighbourhood=neighbourhood,
                 extra_code=[SimpleBorderCopier(),
