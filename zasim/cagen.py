@@ -690,6 +690,35 @@ if result != %(center)s:
         super(SimpleHistogram, self).init_once()
         self.code.attrs.extend(["histogram"])
 
+class ActivityRecord(WeaveStepFuncVisitor):
+    def visit(self):
+        super(ActivityRecord, self).visit()
+        if len(self.code.acc.size_names) == 1:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0,))]
+        else:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
+        self.code.add_code("localvars",
+                """activity(0) = 0;""")
+        self.code.add_code("post_compute",
+                """if (result != %(center)s) { activity(0) += 1; }""" % dict(center=center_name))
+
+        self.code.add_py_hook("init",
+                """self.target.activity[0] = 0""")
+        self.code.add_py_hook("post_compute",
+                """# count up the activity
+if result != %(center)s:
+    self.target.activity[0] += 1""" % dict(center=center_name))
+
+    def new_config(self):
+        """Reset the activity counter to -1, which stands for "no data"."""
+        super(ActivityRecord, self).new_config()
+        self.target.activity = np.array([-1])
+
+    def init_once(self):
+        """Set up the activity attributes."""
+        super(ActivityRecord, self).init_once()
+        self.code.attrs.extend(["activity"])
+
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
     def get_pos(self):
@@ -1495,7 +1524,7 @@ class BinRule(TestTarget):
     rule = None
     """The number of the elementary cellular automaton to simulate."""
 
-    def __init__(self, size=None, deterministic=True, histogram=False, rule=126, config=None, **kwargs):
+    def __init__(self, size=None, deterministic=True, histogram=False, activity=False, rule=126, config=None, **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
            :param deterministic: Go over every cell every time or skip cells
@@ -1517,7 +1546,8 @@ class BinRule(TestTarget):
                 neighbourhood=ElementaryFlatNeighbourhood(),
                 extra_code=[SimpleBorderCopier(),
                     self.computer] +
-                [SimpleHistogram()] if histogram else [], target=self)
+                ([SimpleHistogram()] if histogram else []) +
+                ([ActivityRecord()] if activity else []), target=self)
 
         self.stepfunc.gen_code()
 
@@ -1535,7 +1565,7 @@ class BinRule(TestTarget):
 def test():
     size = 75
 
-    bin_rule = BinRule((size,), rule=105, histogram=True)
+    bin_rule = BinRule((size,), rule=105, histogram=True, activity=True)
 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
     pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((0, 0),))
@@ -1546,13 +1576,13 @@ def test():
         for i in range(100):
             bin_rule.step_inline()
             pretty_print_array(bin_rule.cconf)
-            print bin_rule.histogram
+            print bin_rule.histogram, bin_rule.activity
     else:
         print "pure"
         for i in range(100):
             bin_rule.step_pure_py()
             pretty_print_array(bin_rule.cconf)
-            print bin_rule.histogram
+            print bin_rule.histogram, bin_rule.activity
 
 if __name__ == "__main__":
     if "pure" in sys.argv:
