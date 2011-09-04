@@ -647,8 +647,8 @@ class TwoDimStateAccessor(SimpleStateAccessor):
     border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
 
 class SimpleHistogram(WeaveStepFuncVisitor):
-    """Adding this class to the extra code list of a WeaveStepFunc will give
-    access to a new array in the target called "histogram". This value will
+    """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
+    give access to a new array in the target called "histogram". This value will
     count the amount of cells with the value used as its index."""
     def visit(self):
         super(SimpleHistogram, self).visit()
@@ -691,6 +691,12 @@ if result != %(center)s:
         self.code.attrs.extend(["histogram"])
 
 class ActivityRecord(WeaveStepFuncVisitor):
+    """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
+    create a property called "activity" on the target. It is a single-cell
+    array with the value of how many fields have changed their state in the last
+    step.
+
+    A value of -1 stands for "no data"."""
     def visit(self):
         super(ActivityRecord, self).visit()
         if len(self.code.acc.size_names) == 1:
