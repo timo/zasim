@@ -676,6 +676,8 @@ if result != %(center)s:
                        -acc.border_size[acc.border_names[1][0]],
                        acc.border_size[acc.border_names[0][1]]:
                        -acc.border_size[acc.border_names[1][1]]]
+            # make the configuration 1d for bincount.
+            conf = np.ravel(conf)
         else:
             raise NotImplementedError("Can only handle 1d or 2d arrays")
         self.target.histogram = np.bincount(conf)
