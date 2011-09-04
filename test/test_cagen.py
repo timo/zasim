@@ -460,8 +460,8 @@ class TestCAGen:
                      (-2,  2), (-1,  2), (0,  2), (1,  2))
         self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
 
-    def body_histogram_1d(self, inline=False):
-        br = cagen.BinRule((100,), rule=105, histogram=True)
+    def body_histogram_1d(self, inline=False, deterministic=True):
+        br = cagen.BinRule((100,), rule=105, histogram=True, deterministic=deterministic)
         assert_arrays_equal(br.histogram, np.bincount(br.cconf[1:-1]))
         for i in range(10):
             if inline:
@@ -477,6 +477,14 @@ class TestCAGen:
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_histogram_1d_weave(self):
         self.body_histogram_1d(inline=True)
+
+    @pytest.mark.skipif("not HAVE_BINCOUNT")
+    def test_histogram_1d_nondet_pure(self):
+        self.body_histogram_1d(deterministic=False)
+
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    def test_histogram_1d_nondet_weave(self):
+        self.body_histogram_1d(inline=True, deterministic=False)
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
