@@ -695,9 +695,9 @@ if result != %(center)s:
 
 class ActivityRecord(WeaveStepFuncVisitor):
     """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
-    create a property called "activity" on the target. It is a single-cell
+    create a property called "activity" on the target. It is a two-cell
     array with the value of how many fields have changed their state in the last
-    step.
+    step and how many did not.
 
     A value of -1 stands for "no data"."""
     def visit(self):
@@ -707,21 +707,19 @@ class ActivityRecord(WeaveStepFuncVisitor):
         else:
             center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
         self.code.add_code("localvars",
-                """activity(0) = 0;""")
+                """activity(0) = 0; activity(1) = 0;""")
         self.code.add_code("post_compute",
-                """if (result != %(center)s) { activity(0) += 1; }""" % dict(center=center_name))
-
+                """activity(result != %(center)s) += 1;""" % dict(center=center_name))
         self.code.add_py_hook("init",
-                """self.target.activity[0] = 0""")
+                """self.target.activity[0] = 0; self.target.activity[1] = 0""")
         self.code.add_py_hook("post_compute",
                 """# count up the activity
-if result != %(center)s:
-    self.target.activity[0] += 1""" % dict(center=center_name))
+self.target.activity[int(result != %(center)s)] += 1""" % dict(center=center_name))
 
     def new_config(self):
         """Reset the activity counter to -1, which stands for "no data"."""
         super(ActivityRecord, self).new_config()
-        self.target.activity = np.array([-1])
+        self.target.activity = np.array([-1, -1])
 
     def init_once(self):
         """Set up the activity attributes."""
