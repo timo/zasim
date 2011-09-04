@@ -11,10 +11,12 @@ from .simulator import CagenSimulator
 try:
     from PySide.QtCore import *
     from PySide.QtGui import *
+    from PySide.QtOpenGL import *
     print "using pyside"
 except ImportError:
     from PyQt4.QtCore import *
     from PyQt4.QtGui import *
+    from PyQt4.QtOpenGL import *
     print "using pyqt4"
 import Queue
 import sys
@@ -206,7 +208,7 @@ class ControlWidget(QWidget):
                 diff, last_time = time.time() - last_time, time.time()
                 print last_step, diff
 
-class BaseDisplayWidget(QWidget):
+class BaseDisplayWidget(QGLWidget):
     """A base class for different types of displays.
 
     Manages the config display queue, scrolling, ..."""
