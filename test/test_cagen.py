@@ -416,12 +416,24 @@ class TestCAGen:
         print t2.cconf.transpose()
         assert_arrays_equal(t1.cconf, t2.cconf)
 
-        sf1.step_inline()
-        sf2.step_inline()
+        if ca.HAVE_WEAVE:
+            sf1.step_inline()
+            sf2.step_inline()
+        else:
+            sf1.step_pure_py()
+            sf2.step_pure_py()
 
         print t1.cconf.transpose()
         print t2.cconf.transpose()
         assert_arrays_equal(t1.cconf, t2.cconf)
+
+        if ca.HAVE_WEAVE:
+            sf1.step_pure_py()
+            sf2.step_pure_py()
+
+            print t1.cconf.transpose()
+            print t2.cconf.transpose()
+            assert_arrays_equal(t1.cconf, t2.cconf)
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
     def test_compare_twodim_slicing_border_copier_simple_border_copier(self):
