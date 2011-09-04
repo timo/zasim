@@ -1615,14 +1615,15 @@ class BinRule(TestTarget):
     rule = None
     """The number of the elementary cellular automaton to simulate."""
 
-    def __init__(self, size=None, deterministic=True, histogram=False, activity=False, rule=126, config=None, **kwargs):
+    def __init__(self, size=None, deterministic=True, histogram=False, activity=False, rule=126, config=None, beta=False, **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
            :param deterministic: Go over every cell every time or skip cells
                                  randomly?
            :param histogram: Generate and update a histogram as well?
            :param rule: The rule number for the elementary cellular automaton.
-           :param config: Optionally the configuration to use."""
+           :param config: Optionally the configuration to use.
+           :param beta: Use beta-asynchronism. Not compatible with deterministic=False."""
         if size is None:
             size = config.shape
         super(BinRule, self).__init__(size, config, **kwargs)
@@ -1630,10 +1631,19 @@ class BinRule(TestTarget):
         self.rule = None
         self.computer = ElementaryCellularAutomatonBase(rule)
 
+        if beta and deterministic:
+            acc = BetaAsynchronousAccessor()
+            neighbourhood = ElementaryFlatNeighbourhood(Base=BetaAsynchronousNeighbourhood)
+        elif not beta:
+            acc = SimpleStateAccessor()
+            neighbourhood = ElementaryFlatNeighbourhood()
+        elif beta and not deterministic:
+            raise ValueError("Cannot have beta asynchronism and deterministic=False.")
+
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop(),
-                accessor=BetaAsynchronousAccessor(),
-                neighbourhood=ElementaryFlatNeighbourhood(Base=BetaAsynchronousNeighbourhood),
+                accessor=acc,
+                neighbourhood=neighbourhood,
                 extra_code=[SimpleBorderCopier(),
                     self.computer] +
                 ([SimpleHistogram()] if histogram else []) +
@@ -1655,7 +1665,7 @@ class BinRule(TestTarget):
 def test():
     size = 75
 
-    bin_rule = BinRule((size,), rule=105, histogram=True, activity=True)
+    bin_rule = BinRule((size,), rule=105, histogram=True, activity=True, beta=True)
 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
     pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((0, 0),))
