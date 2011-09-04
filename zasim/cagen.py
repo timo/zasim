@@ -488,15 +488,16 @@ class BorderSizeEnsurer(BorderHandler):
         borders = self.code.acc.border_size
         dims = len(bbox)
         shape = self.target.cconf.shape
+        dtype = self.target.cconf.dtype
         if dims == 1:
             (left,), (right,) = self.code.acc.border_names
-            new_conf = np.zeros(shape[0] + borders[left] + borders[right])
+            new_conf = np.zeros(shape[0] + borders[left] + borders[right], dtype)
             new_conf[borders[left]:-borders[right]] = self.target.cconf
         elif dims == 2:
             # TODO figure out how to create slice objects in a general way.
             (left,up), (right,down) = self.code.acc.border_names
             new_conf = np.zeros((shape[0] + borders[left] + borders[right],
-                                 shape[1] + borders[up] + borders[down]))
+                                 shape[1] + borders[up] + borders[down]), dtype)
             new_conf[borders[left]:-borders[right],
                      borders[up]:-borders[down]] = self.target.cconf
         self.target.cconf = new_conf
@@ -1199,7 +1200,7 @@ class ElementaryCellularAutomatonBase(Computation):
         """Generate the rule lookup array and a pretty printer."""
         super(ElementaryCellularAutomatonBase, self).init_once()
         entries = self.base ** self.digits
-        self.target.rule = np.zeros(entries, int)
+        self.target.rule = np.zeros(entries, np.dtype("i"))
         for digit in range(entries):
             if self.rule & (self.base** digit) > 0:
                 self.target.rule[digit] = 1
@@ -1420,7 +1421,7 @@ class TestTarget(object):
         super(TestTarget, self).__init__(**kwargs)
         if config is None:
             assert size is not None
-            self.cconf = np.zeros(size)
+            self.cconf = np.zeros(size, np.dtype("i"))
             rand = Random()
             if HAVE_TUPLE_ARRAY_INDEX:
                 for pos in product(*[range(siz) for siz in size]):
