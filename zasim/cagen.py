@@ -912,28 +912,23 @@ class SimpleNeighbourhood(Neighbourhood):
         """
         return super(SimpleNeighbourhood, self).bounding_box(steps)
 
-class ElementaryFlatNeighbourhood(SimpleNeighbourhood):
+def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the neighbourhood used by the elementary cellular automatons.
 
     The neighbours are called l, m and r for left, middle and right."""
-    def __init__(self, **kwargs):
-        super(ElementaryFlatNeighbourhood, self).__init__(
-                list("lmr"),
-                [[-1], [0], [1]], **kwargs)
+    return Base(list("lmr"), [[-1], [0], [1]], **kwargs)
 
-class VonNeumannNeighbourhood(SimpleNeighbourhood):
+def VonNeumannNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the Von Neumann Neighbourhood, in which the cell itself and the
     left, upper, lower and right neighbours are considered.
 
     The neighbours are called l, u, m, d and r for left, up, middle, down and
     right respectively."""
-    def __init__(self, **kwargs):
-        super(VonNeumannNeighbourhood, self).__init__(
-                list("lumdr"),
+    return Base(list("lumdr"),
                 [(0,-1), (0,1), (-1,0), (1,0), (0,0)],
                 **kwargs)
 
-class MooreNeighbourhood(SimpleNeighbourhood):
+def MooreNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the Moore Neighbourhood. The cell and all of its 8 neighbours
     are considered for computation.
 
@@ -941,9 +936,7 @@ class MooreNeighbourhood(SimpleNeighbourhood):
     right-up, left, middle, right, left-down, down and right-down
     respectively."""
 
-    def __init__(self, **kwargs):
-        super(MooreNeighbourhood, self).__init__(
-                "lu u ru l m r ld d rd".split(" "),
+    return Base("lu u ru l m r ld d rd".split(" "),
                 list(product([-1, 0, 1], [-1, 0, 1])),
                 **kwargs)
 
