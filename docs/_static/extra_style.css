@@ -1,0 +1,5 @@
+@import url(default.css);
+
+div.document {
+    background-image: url(sidebar_bg.png)
+}
