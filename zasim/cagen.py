@@ -420,6 +420,9 @@ class StateAccessor(WeaveStepFuncVisitor):
         """Generate a bit of py code to copy the current field over from the
         old config."""
 
+    # TODO this class needs to get a method for generating a view onto the part
+    #      of the array inside the borders.
+
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
@@ -644,6 +647,85 @@ class TwoDimStateAccessor(SimpleStateAccessor):
     space."""
     size_names = ("sizeX", "sizeY")
     border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
+
+class SimpleHistogram(WeaveStepFuncVisitor):
+    """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
+    give access to a new array in the target called "histogram". This value will
+    count the amount of cells with the value used as its index."""
+    def visit(self):
+        super(SimpleHistogram, self).visit()
+        if len(self.code.acc.size_names) == 1:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0,))]
+        else:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
+        self.code.add_code("post_compute",
+                """if (result != %(center)s) { histogram(result) += 1; histogram(%(center)s) -= 1; }""" % dict(center=center_name))
+
+        self.code.add_py_hook("post_compute",
+                """# update the histogram
+if result != %(center)s:
+    self.target.histogram[result] += 1
+    self.target.histogram[int(%(center)s)] -= 1""" % dict(center=center_name))
+
+    def regenerate_histogram(self):
+        conf = self.target.cconf
+        acc = self.code.acc
+        if len(acc.size_names) == 1:
+            conf = conf[acc.border_size[acc.border_names[0][0]]:
+                       -acc.border_size[acc.border_names[1][0]]]
+        elif len(self.code.acc.size_names) == 2:
+            conf = conf[acc.border_size[acc.border_names[0][0]]:
+                       -acc.border_size[acc.border_names[1][0]],
+                       acc.border_size[acc.border_names[0][1]]:
+                       -acc.border_size[acc.border_names[1][1]]]
+            # make the configuration 1d for bincount.
+            conf = np.ravel(conf)
+        else:
+            raise NotImplementedError("Can only handle 1d or 2d arrays")
+        self.target.histogram = np.bincount(conf)
+
+    def new_config(self):
+        """Create a starting histogram."""
+        super(SimpleHistogram, self).new_config()
+        self.regenerate_histogram()
+
+    def init_once(self):
+        """Set up the histogram attributes."""
+        super(SimpleHistogram, self).init_once()
+        self.code.attrs.extend(["histogram"])
+
+class ActivityRecord(WeaveStepFuncVisitor):
+    """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
+    create a property called "activity" on the target. It is a two-cell
+    array with the value of how many fields have changed their state in the last
+    step and how many did not.
+
+    A value of -1 stands for "no data"."""
+    def visit(self):
+        super(ActivityRecord, self).visit()
+        if len(self.code.acc.size_names) == 1:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0,))]
+        else:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
+        self.code.add_code("localvars",
+                """activity(0) = 0; activity(1) = 0;""")
+        self.code.add_code("post_compute",
+                """activity(result != %(center)s) += 1;""" % dict(center=center_name))
+        self.code.add_py_hook("init",
+                """self.target.activity[0] = 0; self.target.activity[1] = 0""")
+        self.code.add_py_hook("post_compute",
+                """# count up the activity
+self.target.activity[int(result != %(center)s)] += 1""" % dict(center=center_name))
+
+    def new_config(self):
+        """Reset the activity counter to -1, which stands for "no data"."""
+        super(ActivityRecord, self).new_config()
+        self.target.activity = np.array([-1, -1])
+
+    def init_once(self):
+        """Set up the activity attributes."""
+        super(ActivityRecord, self).init_once()
+        self.code.attrs.extend(["activity"])
 
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
@@ -1152,6 +1234,7 @@ class ElementaryCellularAutomatonBase(Computation):
 
     This works with any number of dimensions."""
 
+    # TODO get this from target.possible_values instead?
     base = 2
     """The number of different values each cell can have."""
 
@@ -1414,6 +1497,9 @@ class TestTarget(object):
     """During the step, this is the 'next configuration', otherwise it's the
     previous configuration, because nconf and cconf are swapped after steps."""
 
+    possible_states = [0, 1]
+    """What values the cells can have."""
+
     def __init__(self, size=None, config=None, **kwargs):
         """:param size: The size of the config to generate. Alternatively the
                         size of the supplied config.
@@ -1446,11 +1532,12 @@ class BinRule(TestTarget):
     rule = None
     """The number of the elementary cellular automaton to simulate."""
 
-    def __init__(self, size=None, deterministic=True, rule=126, config=None, **kwargs):
+    def __init__(self, size=None, deterministic=True, histogram=False, activity=False, rule=126, config=None, **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
            :param deterministic: Go over every cell every time or skip cells
                                  randomly?
+           :param histogram: Generate and update a histogram as well?
            :param rule: The rule number for the elementary cellular automaton.
            :param config: Optionally the configuration to use."""
         if size is None:
@@ -1466,7 +1553,9 @@ class BinRule(TestTarget):
                 accessor=LinearStateAccessor(),
                 neighbourhood=ElementaryFlatNeighbourhood(),
                 extra_code=[SimpleBorderCopier(),
-                    self.computer], target=self)
+                    self.computer] +
+                ([SimpleHistogram()] if histogram else []) +
+                ([ActivityRecord()] if activity else []), target=self)
 
         self.stepfunc.gen_code()
 
@@ -1484,21 +1573,24 @@ class BinRule(TestTarget):
 def test():
     size = 75
 
-    bin_rule = BinRule((size,), rule=110)
+    bin_rule = BinRule((size,), rule=105, histogram=True, activity=True)
 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
-    pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((20, 20),))
+    pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((0, 0),))
+
 
     if USE_WEAVE:
         print "weave"
-        for i in range(10000):
+        for i in range(100):
             bin_rule.step_inline()
             pretty_print_array(bin_rule.cconf)
+            print bin_rule.histogram, bin_rule.activity
     else:
         print "pure"
-        for i in range(10000):
+        for i in range(100):
             bin_rule.step_pure_py()
             pretty_print_array(bin_rule.cconf)
+            print bin_rule.histogram, bin_rule.activity
 
 if __name__ == "__main__":
     if "pure" in sys.argv:

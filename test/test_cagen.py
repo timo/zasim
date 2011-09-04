@@ -3,6 +3,13 @@ from zasim import ca, cagen
 from random import randrange
 from .testutil import *
 from itertools import repeat, chain, product
+import numpy as np
+
+try:
+    np.bincount(np.array([1, 2, 3]))
+    HAVE_BINCOUNT = True
+except AttributeError:
+    HAVE_BINCOUNT = False
 
 import pytest
 
@@ -464,6 +471,80 @@ class TestCAGen:
                      (-2,  1),                    (1,  1),
                      (-2,  2), (-1,  2), (0,  2), (1,  2))
         self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
+
+    def body_histogram_1d(self, inline=False, deterministic=True):
+        br = cagen.BinRule((100,), rule=105, histogram=True, deterministic=deterministic)
+        assert_arrays_equal(br.histogram, np.bincount(br.cconf[1:-1]))
+        for i in range(10):
+            if inline:
+                br.step_inline()
+            else:
+                br.step_pure_py()
+            assert_arrays_equal(br.histogram, np.bincount(br.cconf[1:-1]))
+
+    @pytest.mark.skipif("not HAVE_BINCOUNT")
+    def test_histogram_1d_pure(self):
+        self.body_histogram_1d()
+
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    def test_histogram_1d_weave(self):
+        self.body_histogram_1d(inline=True)
+
+    @pytest.mark.skipif("not HAVE_BINCOUNT")
+    def test_histogram_1d_nondet_pure(self):
+        self.body_histogram_1d(deterministic=False)
+
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    def test_histogram_1d_nondet_weave(self):
+        self.body_histogram_1d(inline=True, deterministic=False)
+
+
+    def body_histogram_2d(self, inline=False, deterministic=True):
+        t = cagen.TestTarget((20, 20))
+
+        compute = cagen.LifeCellularAutomatonBase()
+        if deterministic:
+            l = cagen.TwoDimCellLoop()
+        else:
+            l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
+
+        acc = cagen.TwoDimStateAccessor()
+        neigh = cagen.MooreNeighbourhood()
+        copier = cagen.SimpleBorderCopier()
+        histogram = cagen.SimpleHistogram()
+        sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                        extra_code=[copier, compute, histogram], target=t)
+
+        sim.gen_code()
+        assert_arrays_equal(sim.target.histogram,
+                            np.bincount(np.ravel(sim.target.cconf[1:-1,1:-1])))
+        for i in range(10):
+            if inline:
+                sim.step_inline()
+            else:
+                sim.step_pure_py()
+            assert_arrays_equal(sim.target.histogram,
+                                np.bincount(np.ravel(sim.target.cconf[1:-1,1:-1])))
+
+    @pytest.mark.skipif("not HAVE_BINCOUNT")
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_histogram_2d_pure(self):
+        self.body_histogram_2d()
+
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_histogram_2d_weave(self):
+        self.body_histogram_2d(inline=True)
+
+    @pytest.mark.skipif("not HAVE_BINCOUNT")
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_histogram_2d_nondet_pure(self):
+        self.body_histogram_2d(deterministic=False)
+
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    def test_histogram_2d_nondet_weave(self):
+        self.body_histogram_2d(inline=True, deterministic=False)
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
