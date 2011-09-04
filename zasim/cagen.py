@@ -533,6 +533,14 @@ class SimpleStateAccessor(StateAccessor):
     def set_size(self, size):
         super(SimpleStateAccessor, self).set_size(size)
         self.size = size
+        if len(self.size) == 1:
+            self.size_names = ("sizeX",)
+            self.border_names = (("LEFT_BORDER",), ("RIGHT_BORDER",))
+        elif len(self.size) == 2:
+            self.size_names = ("sizeX", "sizeY")
+            self.border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
+        else:
+            raise NotImplementedError("SimpleStateAccessor only supports up to 2 dimensions.")
 
     def read_access(self, pos, skip_border=False):
         if skip_border:
@@ -635,18 +643,6 @@ class SimpleStateAccessor(StateAccessor):
         """Generate a bit of py code to copy the current field over from the
         old config."""
         return "self.acc.write_to(pos, self.acc.read_from(pos))"
-
-class LinearStateAccessor(SimpleStateAccessor):
-    """The LinearStateAccessor offers access to a one-dimensional configuration
-    space."""
-    size_names = ("sizeX",)
-    border_names = (("LEFT_BORDER",), ("RIGHT_BORDER",))
-
-class TwoDimStateAccessor(SimpleStateAccessor):
-    """The TwoDimStateAccessor offers access to a two-dimensional configuration
-    space."""
-    size_names = ("sizeX", "sizeY")
-    border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
 
 class SimpleHistogram(WeaveStepFuncVisitor):
     """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
@@ -1550,7 +1546,7 @@ class BinRule(TestTarget):
         self.stepfunc = WeaveStepFunc(
                 loop=LinearCellLoop() if deterministic
                      else LinearNondeterministicCellLoop(),
-                accessor=LinearStateAccessor(),
+                accessor=SimpleStateAccessor(),
                 neighbourhood=ElementaryFlatNeighbourhood(),
                 extra_code=[SimpleBorderCopier(),
                     self.computer] +
