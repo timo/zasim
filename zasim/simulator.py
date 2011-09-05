@@ -57,7 +57,7 @@ class BaseSimulator(QObject):
     snapshot_restored = Signal()
     """Is emitted when a snapshot is restored."""
 
-    def getConf(self):
+    def get_config(self):
         """Returns a copy of the configuration space as a numpy array.
         Its shape matches up with :attr:`shape`, so it also does not
         include any borders."""
@@ -117,7 +117,7 @@ class CagenSimulator(BaseSimulator):
 
         self.prepared = self._step_func.prepared
 
-    def getConf(self):
+    def get_config(self):
         """Return the config, sans borders."""
         if len(self.shape) == 1:
             ((l, r),) = self._bbox

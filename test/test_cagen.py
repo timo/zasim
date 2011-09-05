@@ -287,8 +287,8 @@ class TestCAGen:
             uno.step_inline()
         else:
             uno.step_pure_py()
-        assert not uno.getConf().all(), "oops, no cells have been executed :("
-        assert uno.getConf().any(), "oops, all cells have been executed :("
+        assert not uno.get_config().all(), "oops, no cells have been executed :("
+        assert uno.get_config().any(), "oops, all cells have been executed :("
 
         # this is just a sanity check to see if the stepfunc does what we think
         t = cagen.TestTarget(config=conf.copy())
@@ -297,7 +297,7 @@ class TestCAGen:
             dos.step_inline()
         else:
             dos.step_pure_py()
-        assert not dos.getConf().any(), "rule 0 was supposed to turn all"\
+        assert not dos.get_config().any(), "rule 0 was supposed to turn all"\
                                     "fields into 0. huh?"
 
 
@@ -337,13 +337,13 @@ class TestCAGen:
 
         stepfunc.gen_code()
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "the step func should have"\
+        assert not stepfunc.get_config().any(), "the step func should have"\
                                             " turned all fields into zeros"
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+        assert not stepfunc.get_config().any(), "there should be no ones in the"\
                                             " config at all."
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+        assert not stepfunc.get_config().any(), "there should be no ones in the"\
                                             " config at all."
 
     @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
@@ -363,13 +363,13 @@ class TestCAGen:
 
         stepfunc.gen_code()
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "the step func should have"\
+        assert not stepfunc.get_config().any(), "the step func should have"\
                                             " turned all fields into zeros"
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+        assert not stepfunc.get_config().any(), "there should be no ones in the"\
                                             " config at all."
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+        assert not stepfunc.get_config().any(), "there should be no ones in the"\
                                             " config at all."
 
     def body_compare_twodim_slicing_border_copier_simple_border_copier(self, names, positions):

@@ -290,7 +290,7 @@ class WeaveStepFunc(object):
             self.step_pure_py()
             self.step = self.step_pure_py
 
-    def getConf(self):
+    def get_config(self):
         return self.target.cconf.copy()
 
     def set_config(self, config):
