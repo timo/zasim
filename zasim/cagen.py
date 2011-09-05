@@ -1009,7 +1009,8 @@ srand(beta_randseed(0));""")
                 """if(rand() < RAND_MAX * beta_probab) {
     %(write)s = result;
 } else {
-    %(write)s = %(read)s;
+    result = %(read)s;
+    %(write)s = result;
 }""" % dict(write=self.code.acc.write_access(self.code.loop.get_pos()), read=self.code.acc.read_access(self.code.loop.get_pos())))
 
         self.code.add_code("after_step",
@@ -1025,7 +1026,9 @@ srand(beta_randseed(0));""")
 if self.target.beta_random.random() < beta_probab:
     self.acc.write_to(pos, result)
 else:
-    self.acc.write_to(pos, self.acc.read_from(pos))""")
+    result = self.acc.read_from(pos)
+    self.acc.write_to(pos, result)
+    """)
         self.code.add_py_hook("finalize",
                 """self.acc.swap_configs()""")
 
