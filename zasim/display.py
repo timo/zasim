@@ -149,17 +149,31 @@ class ControlWidget(QWidget):
     def _setup_ui(self):
         """Setup the widgets, connect the signals&slots."""
         l = QHBoxLayout(self)
-        self.start_button = QPushButton("Start")
-        self.stop_button = QPushButton("Stop")
+        self.start_button = QPushButton("Start", self)
+        self.stop_button = QPushButton("Stop", self)
         self.stop_button.setDisabled(True)
         delay = QSpinBox()
         delay.setMinimum(0)
         delay.setMaximum(10000)
+        delay.setSuffix("ms")
         delay.setValue(self.timer_delay)
 
         l.addWidget(self.start_button)
         l.addWidget(self.stop_button)
         l.addWidget(delay)
+
+        l.addSpacing(11)
+        reset_button = QPushButton("reset", self)
+        reset_button.clicked.connect(self.set_config)
+        l.addWidget(reset_button)
+
+        self.zero_percentage = QSpinBox(self)
+        self.zero_percentage.setMaximum(99)
+        self.zero_percentage.setMinimum(1)
+        self.zero_percentage.setValue(50)
+        self.zero_percentage.setSuffix("% black")
+        l.addWidget(self.zero_percentage)
+
         self.setLayout(l)
 
         self.start_button.clicked.connect(self.start)
@@ -207,6 +221,17 @@ class ControlWidget(QWidget):
             if last_step % 1000 == 1:
                 diff, last_time = time.time() - last_time, time.time()
                 print last_step, diff
+
+    def set_config(self, conf=None):
+        if conf is None:
+            conf = np.zeros(self.sim.getConf().shape, self.sim.getConf().dtype)
+            positions = product(*[range(size) for size in conf.shape])
+            zero_perc = self.zero_percentage.value() / 100.
+            for pos in positions:
+                if random.random() > zero_perc:
+                    conf[pos] = 1
+
+        self.sim.set_config(conf)
 
 class BaseDisplayWidget(QGLWidget):
     """A base class for different types of displays.
