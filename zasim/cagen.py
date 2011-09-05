@@ -940,7 +940,10 @@ class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
             raise NotImplementedError("BetaAsynchronousNeighbourhood can only"
                     " work with 1d or 2d neighbourhoods with a center.")
 
-        assignments.append("%s = self.acc.read_from_inner((0, 0))" % c_name)
+        if len(self.offsets[0]) == 1:
+            assignments.append("%s = self.acc.read_from_inner((0,))" % c_name)
+        else:
+            assignments.append("%s = self.acc.read_from_inner((0, 0))" % c_name)
         self.code.add_py_hook("pre_compute",
                 "\n".join(assignments))
 
@@ -999,16 +1002,17 @@ srand(beta_randseed(0));""")
                     """%s = %d""" % (sizename, value))
         self.code.add_py_hook("post_compute",
                 """self.acc.write_to_inner(pos, result)
-if self.beta_random.random() < beta_probab:
+if self.target.beta_random.random() < beta_probab:
     self.acc.write_to(pos, result)
 else:
-    self.acc.write_to(pos, self.read_from(pos))""")
+    self.acc.write_to(pos, self.acc.read_from(pos))""")
         self.code.add_py_hook("finalize",
                 """self.acc.swap_configs()""")
 
     def set_target(self, target):
         super(BetaAsynchronousAccessor, self).set_target(target)
         target.beta_randseed = np.array([self.random.random()])
+        target.beta_random = self.random
 
 def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the neighbourhood used by the elementary cellular automatons.
