@@ -583,7 +583,7 @@ def main():
         compute = cagen.LifeCellularAutomatonBase()
         l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
         #l = cagen.TwoDimCellLoop()
-        acc = cagen.TwoDimStateAccessor()
+        acc = cagen.SimpleStateAccessor()
         neigh = cagen.MooreNeighbourhood()
         copier = cagen.TwoDimSlicingBorderCopier()
         #copier = cagen.TwoDimZeroReader()
