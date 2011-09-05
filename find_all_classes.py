@@ -98,8 +98,12 @@ def master():
     chunksize = 1000
     num_done = 0
     last_done_time = time()
+    try:
+        process_limit = multiprocessing.cpu_count()
+    except NotImplementedError:
+        process_limit = 2
     for bunch in range(start_num / chunksize):
-        while len(processes) >= 3:
+        while len(processes) >= process_limit:
             for proc in processes:
                 if not proc.is_alive():
                     processes.remove(proc)
@@ -108,6 +112,7 @@ def master():
                     if num_done % (chunksize * 10) == 0:
                         print "%d nums took %s time" % (chunksize * 10, time() - last_done_time)
                         last_done_time = time()
+
             sleep(0.1)
         proc = multiprocessing.Process(target=deal_with_range,
             args = (start_num - bunch * chunksize,
