@@ -31,6 +31,14 @@ import time
 from itertools import product
 import numpy as np
 
+import inspect
+
+def get_class_for_implementation(meth):
+    """Taken from stackoverflow user Alex Martelli."""
+    for cls in inspect.getmro(meth.im_class):
+        if meth.__name__ in cls.__dict__: return cls
+    return None
+
 CLASS_OBJECT_ROLE = Qt.UserRole + 1
 
 class ZasimDisplay(object):
@@ -634,6 +642,12 @@ This pane at the bottom will display documentation."""
         else:
             data = """<h2>%s</h2>
 %s""" % (obj.__name__, obj.__doc__)
+            try:
+                if get_class_for_implementation(obj.__init__) == obj:
+                    data += """<h2>Constructor</h2>
+    %s""" % (obj.__init__.__doc__)
+            except AttributeError:
+                pass
         self.doc_display.setText(data)
 
     def setup_ui(self):
