@@ -140,3 +140,6 @@ class CagenSimulator(BaseSimulator):
         self._step_func.step()
         self.prepared = True
         self.updated.emit()
+
+    def __str__(self):
+        return str(self._step_func)
