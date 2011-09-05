@@ -149,17 +149,31 @@ class ControlWidget(QWidget):
     def _setup_ui(self):
         """Setup the widgets, connect the signals&slots."""
         l = QHBoxLayout(self)
-        self.start_button = QPushButton("Start")
-        self.stop_button = QPushButton("Stop")
+        self.start_button = QPushButton("Start", self)
+        self.stop_button = QPushButton("Stop", self)
         self.stop_button.setDisabled(True)
         delay = QSpinBox()
         delay.setMinimum(0)
         delay.setMaximum(10000)
+        delay.setSuffix("ms")
         delay.setValue(self.timer_delay)
 
         l.addWidget(self.start_button)
         l.addWidget(self.stop_button)
         l.addWidget(delay)
+
+        l.addSpacing(11)
+        reset_button = QPushButton("reset", self)
+        reset_button.clicked.connect(self.set_config)
+        l.addWidget(reset_button)
+
+        self.zero_percentage = QSpinBox(self)
+        self.zero_percentage.setMaximum(99)
+        self.zero_percentage.setMinimum(1)
+        self.zero_percentage.setValue(50)
+        self.zero_percentage.setSuffix("% black")
+        l.addWidget(self.zero_percentage)
+
         self.setLayout(l)
 
         self.start_button.clicked.connect(self.start)
@@ -180,6 +194,8 @@ class ControlWidget(QWidget):
 
     def change_delay(self, delay):
         """Change the timer delay of the simulator steps."""
+        if delay.endswith("ms"):
+            delay = delay[:-2]
         self.timer_delay = int(delay)
 
     def timerEvent(self, event):
@@ -207,6 +223,17 @@ class ControlWidget(QWidget):
             if last_step % 1000 == 1:
                 diff, last_time = time.time() - last_time, time.time()
                 print last_step, diff
+
+    def set_config(self, conf=None):
+        if conf is None:
+            conf = np.zeros(self.sim.getConf().shape, self.sim.getConf().dtype)
+            positions = product(*[range(size) for size in conf.shape])
+            zero_perc = self.zero_percentage.value() / 100.
+            for pos in positions:
+                if random.random() > zero_perc:
+                    conf[pos] = 1
+
+        self.sim.set_config(conf)
 
 class BaseDisplayWidget(QGLWidget):
     """A base class for different types of displays.
@@ -321,6 +348,7 @@ class HistoryDisplayWidget(BaseDisplayWidget):
             QSize(self.img_width * self.img_scale, self.img_scale)))
 
 class TwoDimDisplayWidget(BaseDisplayWidget):
+    """A display widget for two-dimensional configurations."""
     def __init__(self, simulator, scale=1, **kwargs):
         super(TwoDimDisplayWidget, self).__init__(width=simulator.shape[0],
                     height=simulator.shape[1],
@@ -331,6 +359,9 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         self.sim = simulator
         self.conf_new = True
         self.queued_conf = simulator.getConf()
+
+        self.drawing = False
+        self.last_draw_pos = QPoint(0,0)
 
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
@@ -366,7 +397,24 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
 
         self.update()
 
+    def mousePressEvent(self, event):
+        self.drawing = True
+        self.last_draw_pos = (event.x() / self.img_scale, event.y() / self.img_scale)
+
+    def mouseReleaseEvent(self, event):
+        self.drawing = False
+
+    def leaveEvent(self, event):
+        self.drawing = False
+
+    def mouseMoveEvent(self, event):
+        new_draw_pos = (event.x() / self.img_scale, event.y() / self.img_scale)
+        if self.last_draw_pos != new_draw_pos:
+            self.sim.set_config_value(new_draw_pos)
+
 class BaseExtraDisplay(QDockWidget):
+    """The base class for a dockable/undockable/tabbable extra display widget
+    for things such as histograms."""
     def __init__(self, title, sim, width, height, parent=None, **kwargs):
         super(BaseExtraDisplay, self).__init__(unicode(title))
         self.display_widget = QWidget(self)
@@ -407,6 +455,9 @@ class BaseExtraDisplay(QDockWidget):
         pass
 
 class HistogramExtraDisplay(BaseExtraDisplay):
+    """This extra display can take any attribute from the simulation target
+    that is an one-dimensional array and display its values over time as
+    colored vertical lines."""
     colors = [QColor("black"), QColor("white"), QColor("red"), QColor("blue"),
               QColor("green"), QColor("yellow")]
     def __init__(self, sim, attribute="histogram", width=300, maximum=1.0, **kwargs):
@@ -558,7 +609,7 @@ def main():
         compute = cagen.LifeCellularAutomatonBase()
         l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
         #l = cagen.TwoDimCellLoop()
-        acc = cagen.TwoDimStateAccessor()
+        acc = cagen.SimpleStateAccessor()
         neigh = cagen.MooreNeighbourhood()
         copier = cagen.TwoDimSlicingBorderCopier()
         #copier = cagen.TwoDimZeroReader()

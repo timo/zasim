@@ -546,6 +546,42 @@ class TestCAGen:
     def test_histogram_2d_nondet_weave(self):
         self.body_histogram_2d(inline=True, deterministic=False)
 
+    def body_beta_asynchronism(self, inline=False):
+        fail = True
+        for i in range(50):
+            conf = np.zeros((100,), np.dtype("i"))
+            br = cagen.BinRule(config=conf, rule=255, beta=True)
+
+            if inline:
+                br.step_inline()
+            else:
+                br.step_pure_py()
+
+            assert_arrays_equal(br.inner, np.ones(100))
+            if abs(sum(br.cconf[1:-1]) - 50) < 10:
+                fail = False
+                break
+        assert not fail, "testing 50 times, never gotten close to half of "\
+                   " the fields updating their outer state."
+
+        conf = np.zeros((100,), np.dtype("i"))
+        br = cagen.BinRule(config=conf, rule=255, beta=True)
+
+        for i in range(15):
+            if inline:
+                br.step_inline()
+            else:
+                br.step_pure_py()
+
+        assert_arrays_equal(br.inner, br.cconf[1:-1])
+
+    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    def test_beta_asynchronism_inline(self):
+        self.body_beta_asynchronism(True)
+
+    def test_beta_asynchronism_pure(self):
+        self.body_beta_asynchronism(False)
+
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
         for i in INTERESTING_BINRULES:

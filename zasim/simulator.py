@@ -62,6 +62,14 @@ class BaseSimulator(QObject):
         Its shape matches up with :attr:`shape`, so it also does not
         include any borders."""
 
+    def set_config(self, config):
+        """Sets a new config for the simulator."""
+
+    def set_config_value(self, pos, value=None):
+        """Set the config value at pos to value.
+
+        If value is None, flip the value instead."""
+
     def step(self):
         """Step the simulator once."""
         self.updated.emit()
@@ -117,6 +125,14 @@ class CagenSimulator(BaseSimulator):
         elif len(self.shape) == 2:
             (l, r), (u, d) = self._bbox
             return self._target.cconf[abs(u):-abs(d),abs(l):-abs(r)].copy()
+
+    def set_config(self, config):
+        self._step_func.set_config(config)
+        self.updated.emit()
+
+    def set_config_value(self, pos, value=None):
+        self._step_func.set_config_value(pos, value)
+        self.updated.emit()
 
     def step(self):
         """Delegate the stepping to the :meth:`WeaveStepFunc.step` method, then

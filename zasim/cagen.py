@@ -293,6 +293,18 @@ class WeaveStepFunc(object):
     def getConf(self):
         return self.target.cconf.copy()
 
+    def set_config(self, config):
+        self.target.cconf = config.copy()
+        self.new_config()
+
+    def set_config_value(self, pos, value=None):
+        """Set the value of the configuration at pos to value.
+        If value is None, flip the value that's already there."""
+        if value is None:
+            value = 1 - self.acc.read_from(pos)
+        print "setting value at %s to %s" % (pos, value)
+        self.acc.write_to_current(pos, value)
+
     def set_target(self, target):
         """Set the target of the step function. The target contains,
         among other things, the configurations."""
@@ -527,9 +539,6 @@ class SimpleStateAccessor(StateAccessor):
     size = None
     """The size of the target configuration."""
 
-    def __init__(self, **kwargs):
-        super(SimpleStateAccessor, self).__init__(**kwargs)
-
     def set_size(self, size):
         super(SimpleStateAccessor, self).set_size(size)
         self.size = size
@@ -549,7 +558,7 @@ class SimpleStateAccessor(StateAccessor):
 
     def write_access(self, pos, skip_border=False):
         if skip_border:
-            return "nconf(%s)" % (pos)
+            return "nconf(%s)" % (pos,)
         return "nconf(%s)" % (",".join(gen_offset_pos(pos, self.border_names[0])),)
 
     def init_once(self):
@@ -912,28 +921,128 @@ class SimpleNeighbourhood(Neighbourhood):
         """
         return super(SimpleNeighbourhood, self).bounding_box(steps)
 
-class ElementaryFlatNeighbourhood(SimpleNeighbourhood):
+class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
+    def visit(self):
+        """Adds C and python code to get the neighbouring values and stores
+        them in local variables. The neighbouring values will be taken from the
+        outer array, the own value will be taken from the inner array."""
+        for name, offset in zip(self.names, self.offsets):
+            if offset != (0,) and offset != (0, 0):
+                self.code.add_code("pre_compute", "%s = %s;" % (name,
+                         self.code.acc.read_access(
+                             gen_offset_pos(self.code.loop.get_pos(), offset))))
+            else:
+                self.code.add_code("pre_compute", "%s = %s;" % (name,
+                         self.code.acc.inner_read_access(
+                             self.code.loop.get_pos())))
+
+
+        self.code.add_code("localvars",
+                "int " + ", ".join(self.names) + ";")
+
+        assignments = ["%s = self.acc.read_from(%s)" % (
+                name, "offset_pos(pos, %s)" % (offset,))
+                for name, offset in zip(self.names, self.offsets)
+                if offset != (0,) and offset != (0, 0)]
+        if (0,) in self.offsets:
+            c_name = self.names[self.offsets.index((0,))]
+        elif (0, 0) in self.offsets:
+            c_name = self.names[self.offsets.index((0,0))]
+        else:
+            raise NotImplementedError("BetaAsynchronousNeighbourhood can only"
+                    " work with 1d or 2d neighbourhoods with a center.")
+
+        if len(self.offsets[0]) == 1:
+            assignments.append("%s = self.acc.read_from_inner((0,))" % c_name)
+        else:
+            assignments.append("%s = self.acc.read_from_inner((0, 0))" % c_name)
+        self.code.add_py_hook("pre_compute",
+                "\n".join(assignments))
+
+class BetaAsynchronousAccessor(SimpleStateAccessor):
+    def __init__(self, probab=0.5, **kwargs):
+        super(BetaAsynchronousAccessor, self).__init__(**kwargs)
+        self.probab = probab
+        self.random = Random()
+
+    def init_once(self):
+        super(BetaAsynchronousAccessor, self).init_once()
+        self.code.attrs.extend(["inner", "beta_randseed"])
+        self.code.consts["beta_probab"] = self.probab
+
+    def new_config(self):
+        super(BetaAsynchronousAccessor, self).new_config()
+        # XXX this function assumes, that it will be called before the
+        #     border ensurer runs, so that the config is "small".
+        self.target.inner = self.target.cconf.copy()
+
+    def write_to_inner(self, pos, value):
+        self.target.inner[pos] = value
+
+    def inner_write_access(self, pos):
+        return "inner(%s)" % (pos,)
+
+    def read_from_inner(self, pos):
+        return self.target.inner[pos]
+
+    def inner_read_access(self, pos):
+        return self.inner_write_access(pos)
+
+    def visit(self):
+        """Take care for result and sizeX to exist in python and C code,
+        for the result to be written to the config space and for the configs
+        to be swapped by the python code."""
+        self.code.add_code("localvars",
+                """int result;
+srand(beta_randseed(0));""")
+        self.code.add_code("post_compute",
+                self.inner_write_access(self.code.loop.get_pos()) + " = result;")
+        self.code.add_code("post_compute",
+                """if(rand() < RAND_MAX * beta_probab) {
+    %(write)s = result;
+} else {
+    %(write)s = %(read)s;
+}""" % dict(write=self.code.acc.write_access(self.code.loop.get_pos()), read=self.code.acc.read_access(self.code.loop.get_pos())))
+
+        self.code.add_code("after_step",
+                """beta_randseed(0) = rand();""")
+
+        self.code.add_py_hook("init",
+                """result = None""")
+        for sizename, value in zip(self.size_names, self.size):
+            self.code.add_py_hook("init",
+                    """%s = %d""" % (sizename, value))
+        self.code.add_py_hook("post_compute",
+                """self.acc.write_to_inner(pos, result)
+if self.target.beta_random.random() < beta_probab:
+    self.acc.write_to(pos, result)
+else:
+    self.acc.write_to(pos, self.acc.read_from(pos))""")
+        self.code.add_py_hook("finalize",
+                """self.acc.swap_configs()""")
+
+    def set_target(self, target):
+        super(BetaAsynchronousAccessor, self).set_target(target)
+        target.beta_randseed = np.array([self.random.random()])
+        target.beta_random = self.random
+
+def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the neighbourhood used by the elementary cellular automatons.
 
     The neighbours are called l, m and r for left, middle and right."""
-    def __init__(self, **kwargs):
-        super(ElementaryFlatNeighbourhood, self).__init__(
-                list("lmr"),
-                [[-1], [0], [1]], **kwargs)
+    return Base(list("lmr"), [[-1], [0], [1]], **kwargs)
 
-class VonNeumannNeighbourhood(SimpleNeighbourhood):
+def VonNeumannNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the Von Neumann Neighbourhood, in which the cell itself and the
     left, upper, lower and right neighbours are considered.
 
     The neighbours are called l, u, m, d and r for left, up, middle, down and
     right respectively."""
-    def __init__(self, **kwargs):
-        super(VonNeumannNeighbourhood, self).__init__(
-                list("udlrm"),
+    return Base(list("lumdr"),
                 [(0,-1), (0,1), (-1,0), (1,0), (0,0)],
                 **kwargs)
 
-class MooreNeighbourhood(SimpleNeighbourhood):
+def MooreNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the Moore Neighbourhood. The cell and all of its 8 neighbours
     are considered for computation.
 
@@ -941,9 +1050,7 @@ class MooreNeighbourhood(SimpleNeighbourhood):
     right-up, left, middle, right, left-down, down and right-down
     respectively."""
 
-    def __init__(self, **kwargs):
-        super(MooreNeighbourhood, self).__init__(
-                "lu u ru l m r ld d rd".split(" "),
+    return Base("lu u ru l m r ld d rd".split(" "),
                 list(product([-1, 0, 1], [-1, 0, 1])),
                 **kwargs)
 
@@ -1528,14 +1635,15 @@ class BinRule(TestTarget):
     rule = None
     """The number of the elementary cellular automaton to simulate."""
 
-    def __init__(self, size=None, deterministic=True, histogram=False, activity=False, rule=126, config=None, **kwargs):
+    def __init__(self, size=None, deterministic=True, histogram=False, activity=False, rule=126, config=None, beta=False, **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
            :param deterministic: Go over every cell every time or skip cells
                                  randomly?
            :param histogram: Generate and update a histogram as well?
            :param rule: The rule number for the elementary cellular automaton.
-           :param config: Optionally the configuration to use."""
+           :param config: Optionally the configuration to use.
+           :param beta: Use beta-asynchronism. Not compatible with deterministic=False."""
         if size is None:
             size = config.shape
         super(BinRule, self).__init__(size, config, **kwargs)
@@ -1543,11 +1651,20 @@ class BinRule(TestTarget):
         self.rule = None
         self.computer = ElementaryCellularAutomatonBase(rule)
 
+        if beta and deterministic:
+            acc = BetaAsynchronousAccessor()
+            neighbourhood = ElementaryFlatNeighbourhood(Base=BetaAsynchronousNeighbourhood)
+        elif not beta:
+            acc = SimpleStateAccessor()
+            neighbourhood = ElementaryFlatNeighbourhood()
+        elif beta and not deterministic:
+            raise ValueError("Cannot have beta asynchronism and deterministic=False.")
+
         self.stepfunc = WeaveStepFunc(
-                loop=LinearCellLoop() if deterministic
-                     else LinearNondeterministicCellLoop(),
-                accessor=SimpleStateAccessor(),
-                neighbourhood=ElementaryFlatNeighbourhood(),
+                loop=LinearCellLoop() if deterministic else
+                     LinearNondeterministicCellLoop(),
+                accessor=acc,
+                neighbourhood=neighbourhood,
                 extra_code=[SimpleBorderCopier(),
                     self.computer] +
                 ([SimpleHistogram()] if histogram else []) +
@@ -1569,7 +1686,7 @@ class BinRule(TestTarget):
 def test():
     size = 75
 
-    bin_rule = BinRule((size,), rule=105, histogram=True, activity=True)
+    bin_rule = BinRule((size,), rule=105, histogram=True, activity=True, beta=True)
 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
     pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((0, 0),))
