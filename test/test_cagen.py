@@ -567,7 +567,7 @@ class TestCAGen:
         conf = np.zeros((100,), np.dtype("i"))
         br = cagen.BinRule(config=conf, rule=255, beta=True)
 
-        for i in range(15):
+        for i in range(20):
             if inline:
                 br.step_inline()
             else:

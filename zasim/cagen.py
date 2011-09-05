@@ -930,6 +930,16 @@ class SimpleNeighbourhood(Neighbourhood):
         return super(SimpleNeighbourhood, self).bounding_box(steps)
 
 class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
+    def __init__(self, *args, **kwargs):
+        super(BetaAsynchronousNeighbourhood, self).__init__(*args, **kwargs)
+        self.center_name = [name for name, offset in zip(self.names, self.offsets)
+                  if offset == (0,) or offset == (0, 0)]
+        if len(self.center_name) != 1:
+            raise NotImplementedError("BetaAsynchronousNeighbourhood can only"
+                    " work with 1d or 2d neighbourhoods with a center.")
+        else:
+            self.center_name = self.center_name[0]
+
     def visit(self):
         """Adds C and python code to get the neighbouring values and stores
         them in local variables. The neighbouring values will be taken from the
@@ -940,30 +950,26 @@ class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
                          self.code.acc.read_access(
                              gen_offset_pos(self.code.loop.get_pos(), offset))))
             else:
+                self.code.add_code("pre_compute", "orig_%s = %s;" % (name,
+                         self.code.acc.read_access(
+                             gen_offset_pos(self.code.loop.get_pos(), offset))))
                 self.code.add_code("pre_compute", "%s = %s;" % (name,
                          self.code.acc.inner_read_access(
                              self.code.loop.get_pos())))
-
 
         self.code.add_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
         assignments = ["%s = self.acc.read_from(%s)" % (
-                name, "offset_pos(pos, %s)" % (offset,))
-                for name, offset in zip(self.names, self.offsets)
-                if offset != (0,) and offset != (0, 0)]
-        if (0,) in self.offsets:
-            c_name = self.names[self.offsets.index((0,))]
-        elif (0, 0) in self.offsets:
-            c_name = self.names[self.offsets.index((0,0))]
-        else:
-            raise NotImplementedError("BetaAsynchronousNeighbourhood can only"
-                    " work with 1d or 2d neighbourhoods with a center.")
+                name if offset != (0,) and offset != (0, 0) else "orig_" + name,
+                "offset_pos(pos, %s)" % (offset,))
+                for name, offset in zip(self.names, self.offsets)]
 
         if len(self.offsets[0]) == 1:
-            assignments.append("%s = self.acc.read_from_inner((0,))" % c_name)
+            assignments.append("%s = self.acc.read_from_inner((0,))" % self.center_name)
         else:
-            assignments.append("%s = self.acc.read_from_inner((0, 0))" % c_name)
+            assignments.append("%s = self.acc.read_from_inner((0, 0))" % self.center_name)
+        self.code.add_code("localvars", "int orig_" + self.center_name + ";")
         self.code.add_py_hook("pre_compute",
                 "\n".join(assignments))
 
@@ -1011,7 +1017,11 @@ srand(beta_randseed(0));""")
 } else {
     result = %(read)s;
     %(write)s = result;
-}""" % dict(write=self.code.acc.write_access(self.code.loop.get_pos()), read=self.code.acc.read_access(self.code.loop.get_pos())))
+}
+%(center)s = orig_%(center)s;""" % \
+        dict(write=self.code.acc.write_access(self.code.loop.get_pos()),
+             read=self.code.acc.read_access(self.code.loop.get_pos()),
+             center=self.code.neigh.center_name))
 
         self.code.add_code("after_step",
                 """beta_randseed(0) = rand();""")
@@ -1028,7 +1038,7 @@ if self.target.beta_random.random() < beta_probab:
 else:
     result = self.acc.read_from(pos)
     self.acc.write_to(pos, result)
-    """)
+%(center)s = orig_%(center)s""" % dict(center=self.code.neigh.center_name))
         self.code.add_py_hook("finalize",
                 """self.acc.swap_configs()""")
 
