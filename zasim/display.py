@@ -11,12 +11,18 @@ from .simulator import CagenSimulator
 try:
     from PySide.QtCore import *
     from PySide.QtGui import *
-    from PySide.QtOpenGL import *
+    try:
+        from PySide.QtOpenGL import *
+    except ImportError:
+        QGLWidget = QWidget
     print "using pyside"
 except ImportError:
     from PyQt4.QtCore import *
     from PyQt4.QtGui import *
-    from PyQt4.QtOpenGL import *
+    try:
+        from PyQt4.QtOpenGL import *
+    except ImportError:
+        QGLWidget = QWidget
     print "using pyqt4"
 import Queue
 import sys
