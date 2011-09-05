@@ -489,7 +489,8 @@ def mirror_by_axis(neighbourhood, digits_and_values, axis=[0]):
     for offset, name in offs_to_name.iteritems():
         mirrored = tuple(-a if num in axis else a for num, a in enumerate(offset))
         if mirrored != offset and mirrored in offs_to_name:
-            pairs.append((name, offs_to_name[mirrored]))
+            if (offs_to_name[mirrored], name) not in pairs:
+                pairs.append((name, offs_to_name[mirrored]))
         elif mirrored not in offs_to_name:
             raise ValueError("Mirrored %s to %s, but could not find it in offsets!" % \
                     (offset, mirrored))
