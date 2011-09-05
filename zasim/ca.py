@@ -122,33 +122,35 @@ class CA(object):
             f.write( self.getType() + "\n" )
             f.close()
 
-    ## Returns the type of the cellular automaton.
-    # It's a upper-cased version of CA::title, used to identify it internally as one or
-    # another cellular automaton.
     def getType( self ):
+        """Returns the type of the cellular automaton.
+
+        It's a upper-cased version of CA::title, used to identify it internally as one or
+        another cellular automaton."""
         return self.title.upper()
 
-    ## Returns the current configuration
     def get_config( self ):
+        """Returns the current configuration"""
         return self.currConf.copy()
 
-    ## Returns the cellular automaton's dimension
     def getDim( self ):
+        """Returns the cellular automaton's dimension"""
         return self.dim
 
-    ## Returns the cellular automaton's size as (height,width)
     def getSize( self ):
+        """Returns the cellular automaton's size as (height,width)"""
         return self.size
 
-    ## Returns the cellular automaton's title.
-    # It's a non-upper-cased version of CA::title, used to display it in the titlebar
     def getTitle( self ):
+        """Returns the cellular automaton's title.
+        It's a non-upper-cased version of CA::title, used to display it in the titlebar"""
         return self.title
 
-    ## Imports a configuration from a file in XASIM-Format.
-    # For XASIM-Format, see CA::exportConf.
-    # For vonNeumann cellular automaton, RLE-files are supported as well (see vonNeumann::importConf).
     def importConf( self, filename ):
+        """Imports a configuration from a file in XASIM-Format.
+
+        For XASIM-Format, see CA::exportConf.
+        For vonNeumann cellular automaton, RLE-files are supported as well (see vonNeumann::importConf)."""
         retVal = self.IMPORTOK
         with open( filename, 'r' ) as f:
             lines = f.readlines()
@@ -196,12 +198,12 @@ class CA(object):
         self.nextConf = self.currConf.copy()
         return retVal
 
-    ## Is called in every step of the simulation.
     def loopFunc( self ):
+        """Is called in every step of the simulation."""
         print "function loopFunc() not implemented yet"
 
-    ## Prototype... Not really implemented yet
     def quit( self ):
+        """Prototype... Not really implemented yet"""
         print "function quit() not implemented yet"
 
     ## Resizing the cellular automaton.

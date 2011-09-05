@@ -1,50 +1,48 @@
 #!/usr/bin/python
 from __future__ import absolute_import
 
-## @package sim.py
-#
-# sim.py is the central simulating unit so READ THIS!
-# It handles displaying the simulated CA as well as userinput.
-#
-# The simulator is constructed in a model-view-controller fashion.
-# The singleton Simulator manages multiple instances of class Display
-# and of class CA. To reduce those numbers, for each used combination of
-# CA-type and size (as in (sizeX,sizeY) ), instances are kept in Simulator::CADict.
-# When importing a CA, who's size and type were already in use, only the configuration
-# is kept additionally. In other cases, a new CA and a new Display are created in
-# Simulator::getNewCA().
-#
-# There is a TODO-List:
-# - implement an event-check for console input events in the main execution loop by checking
-#   globalEventQueue. You can start the simulator with a python console by typing:
-#   $> python -i sim.py
-#
-# - Histograms could be used, after all, they are written already, but no structure to switch
-#   them on and off is implemented; maybe their use should be memorized in Simulator::CADict
-#   as well?
-#
-# - This is a development version of the whole project with nearly no faulttolerance and
-#   stuff implemented.
-#
-# - I wasn't able to track the reason, why Sandpile-CAs aren't displayed in the defined colorset.
-#   This being colors from black, different shades of gray and white. Instead it's displayed in
-#   ugly green-ish colors. Other colors work and the principal procedure with overblitting and
-#   all that worked when i tested it in a minimal testcase. Somehow something in pygame stinks...
-#
-# - The vonNeumann-CA is implemented using the original vonNeumann-transition-ruleset. There are
-#   other such as JvN-32, which unfortunately is used in the only provided configuration of the
-#   Pesavento-replicator. Hint: The difference is in the use of the C-states. More on this matter
-#   can be found here: http://www.pd.infn.it/~rnobili/au_cell/
-#
-# - To improve performance, try not to blit the whole configuration that is showing on the screen
-#   but only those cells, that changed in the recent step. Of course when zooming in, only a section
-#   of the configuration is displayed already.
-#
-# - Maybe don't use the usual array to hold the configuration but a more flexible one to hold
-#   configurations that contain a big amount of "dead cells" or "unused cells" like state U in
-#   vonNeumann.
-#
+"""
+ sim.py is the central simulating unit so READ THIS!
+ It handles displaying the simulated CA as well as userinput.
 
+ The simulator is constructed in a model-view-controller fashion.
+ The singleton Simulator manages multiple instances of class Display
+ and of class CA. To reduce those numbers, for each used combination of
+ CA-type and size (as in (sizeX,sizeY) ), instances are kept in Simulator::CADict.
+ When importing a CA, who's size and type were already in use, only the configuration
+ is kept additionally. In other cases, a new CA and a new Display are created in
+ Simulator::getNewCA().
+
+ There is a TODO-List:
+ - implement an event-check for console input events in the main execution loop by checking
+   globalEventQueue. You can start the simulator with a python console by typing:
+   $> python -i sim.py
+
+ - Histograms could be used, after all, they are written already, but no structure to switch
+   them on and off is implemented; maybe their use should be memorized in Simulator::CADict
+   as well?
+
+ - This is a development version of the whole project with nearly no faulttolerance and
+   stuff implemented.
+
+ - I wasn't able to track the reason, why Sandpile-CAs aren't displayed in the defined colorset.
+   This being colors from black, different shades of gray and white. Instead it's displayed in
+   ugly green-ish colors. Other colors work and the principal procedure with overblitting and
+   all that worked when i tested it in a minimal testcase. Somehow something in pygame stinks...
+
+ - The vonNeumann-CA is implemented using the original vonNeumann-transition-ruleset. There are
+   other such as JvN-32, which unfortunately is used in the only provided configuration of the
+   Pesavento-replicator. Hint: The difference is in the use of the C-states. More on this matter
+   can be found here: http://www.pd.infn.it/~rnobili/au_cell/
+
+ - To improve performance, try not to blit the whole configuration that is showing on the screen
+   but only those cells, that changed in the recent step. Of course when zooming in, only a section
+   of the configuration is displayed already.
+
+ - Maybe don't use the usual array to hold the configuration but a more flexible one to hold
+   configurations that contain a big amount of "dead cells" or "unused cells" like state U in
+   vonNeumann.
+"""
 
 
 CASimulatorHelp = """
@@ -104,9 +102,9 @@ from . import display as Display
 from .ca import sandPile, binRule, vonNeumann
 
 
-## Central simulation unit.
-# Handles user I/O, importing and exporting, marking, and everything else
 class Simulator(object):
+    """Central simulation unit.
+    Handles user I/O, importing and exporting, marking, and everything else"""
     ## The constructor
     def __init__( self, CAType, confFile, random, sizeX, sizeY, scale, oneLiner ):
         ## a flag if the first CA is a 2 oder 3 dimensional CA
@@ -140,10 +138,12 @@ class Simulator(object):
         ## the current level of delay
         self.currDelay = 0
 
-    ## get new instance of a given CA
-    # since more than one CA-object is used to display different kinds and sizes of CA,
-    # more than one object is easier to handle than a single one
     def getNewCA( self, CAType, confFile, random, sizeX, sizeY, scale, oneLiner ):
+        """get new instance of a given CA
+
+        since more than one CA-object is used to display different kinds and sizes of CA,
+        more than one object is easier to handle than a single one"""
+
         if CAType.upper() == "SANDPILE":
             if random:
                 ca = sandPile( sizeX, sizeY, sandPile.INIT_RAND, confFile )
@@ -183,11 +183,13 @@ class Simulator(object):
                                                ca.palette, ca.getDim() )
         return (ca, display)
 
-    ## The main function
-    # This function runs until the simulator ends. The main while(1)-loop is a pygameism,
-    # all keyboard- and mouse-events are cought here and relayed to Display- and CA-objects,
-    # respectively
     def start( self ):
+        """The main function
+
+        This function runs until the simulator ends. The main while(1)-loop is a pygameism,
+        all keyboard- and mouse-events are cought here and relayed to Display- and CA-objects,
+        respectively"""
+
         loop = False
         delay = 0
         steps = 1
@@ -530,16 +532,17 @@ class Simulator(object):
                 self.display.showCounter( stepCounter )
             self.display.update()
 
-    ## Wrapper
-    # a thin layer between caller and callee of the mighty step() functions of every CA
     def step( self, n ):
+        """Wrapper
+
+        a thin layer between caller and callee of the mighty step() functions of every CA"""
         for i in range(n):
             self.ca.loopFunc()
         self.display.update()
-
-    ## Wrapper
-    # to stop simulation. Not in use right now (Jan 17th 2011)
     def stop( self ):
+        """Wrapper
+
+        to stop simulation. Not in use right now (Jan 17th 2011)"""
         pass
 
 def sim( CAType, confFile, random, sizeX, sizeY, scale, oneLiner ):
