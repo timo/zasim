@@ -1,23 +1,6 @@
 """This module offers methods and user interaction widgets/windows for handling
 the table-like step functions of elementary cellular automatons.
 
-Ideas for further utilities:
-
- * Display conflicting rules for horizontal or vertical symmetry, rotational
-   symmetry, ...
- * Make up some rules to find a "canonical" rule number for all those that just
-   differ by horizontal/vertical mirroring, rotation, flipping all results, ...
- * Likewise, buttons for mirroring, rotating and flipping and otherwise
-   manipulating the whole table at once.
- * An editing mode, that handles simple binary logic, like::
-
-     c == 1 then result = 1
-     c == 0 then result = 0
-     l == 0 and r == 1 then result = 0
-
- * A graphical editing mode that allows adding "pattern matching" for rules with
-   "dontcare fields" or something of that sort.
- * A graphical editing mode with zooming UI.
  * A bit of functionality to generate a rule number from arbitrary step
    functions by running them on a pre-generated target and finding out how it
    behaved.
