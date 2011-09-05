@@ -72,7 +72,10 @@ def minimize_rule_number(neighbourhood, digits_and_values):
     tries = [([name], digits_and_values) for name in _neighbourhood_actions]
 
     for route, data in tries:
-        new = _neighbourhood_actions[route[-1]](neighbourhood, data)
+        try:
+            new = _neighbourhood_actions[route[-1]](neighbourhood, data)
+        except ValueError:
+            continue
         rule_nr = digits_and_values_to_rule_nr(new)
         if rule_nr in cache:
             oldroute, olddata = cache[rule_nr]
@@ -534,21 +537,24 @@ def rotate_clockwise(neighbourhood, digits_and_values, cache={}):
         perms = []
         taken = []
         for offset, name in offs_to_name.iteritems():
-            if offset in taken:
-                continue
-            new_offs = rotate(offset)
-            perm = [offs_to_name[new_offs]]
-            while new_offs != offset:
-                after_rotate = rotate(new_offs)
-                if after_rotate in taken:
-                    perm = []
-                    break
-                taken.append(after_rotate)
-                perm.append(offs_to_name[after_rotate])
-                new_offs = after_rotate
+            try:
+                if offset in taken:
+                    continue
+                new_offs = rotate(offset)
+                perm = [offs_to_name[new_offs]]
+                while new_offs != offset:
+                    after_rotate = rotate(new_offs)
+                    if after_rotate in taken:
+                        perm = []
+                        break
+                    taken.append(after_rotate)
+                    perm.append(offs_to_name[after_rotate])
+                    new_offs = after_rotate
 
-            if len(perm) >= 2:
-                perms.append(perm)
+                if len(perm) >= 2:
+                    perms.append(perm)
+            except:
+                raise ValueError("Could not successfully rotate this conf.")
 
         cache[neighbourhood] = perms
 
