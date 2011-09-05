@@ -440,7 +440,7 @@ def flip_all(neighbourhood, digits_and_values, base=2):
         ndav.append(ndata)
     return ndav
 
-def flip_values(digits_and_values, pairs=[]):
+def flip_values(digits_and_values, permutations=[]):
     """flip around the results, so that for each pair (a, b) the results for
     neighbourhood configurations a=a', b=b', c=c' have the values of a=b',
     b=a', c=c', for instance.
@@ -469,8 +469,14 @@ def flip_values(digits_and_values, pairs=[]):
                 return (num, val)
     for num, data in enumerate(digits_and_values):
         ndata = data.copy()
-        for a, b in pairs:
-            ndata[a], ndata[b] = ndata[b], ndata[a]
+        for perm in permutations:
+            if len(perm) == 2:
+                a, b = perm
+                ndata[a], ndata[b] = ndata[b], ndata[a]
+            else:
+                old = ndata.copy()
+                for pos, npos in zip(perm, perm[1:] + [perm[0]]):
+                    ndata[npos] = old[pos]
             if ndata == data:
                 continue
             _, val = find_by_neighbours(ndata)
@@ -503,6 +509,36 @@ def flip_h(neighbourhood, digits_and_values):
 @neighbourhood_action("flip both")
 def flip_both(neighbourhood, digits_and_values):
     return mirror_by_axis(neighbourhood, digits_and_values, [0, 1])
+
+@neighbourhood_action("rotate clockwise")
+def rotate_clockwise(neighbourhood, digits_and_values):
+    def rotate(pos):
+        a, b = pos
+        return -b, a
+    offs_to_name = dict(zip(neighbourhood.offsets, neighbourhood.names))
+    print offs_to_name
+    perms = []
+    taken = []
+    for offset, name in offs_to_name.iteritems():
+        if offset in taken:
+            continue
+        new_offs = rotate(offset)
+        perm = [offs_to_name[new_offs]]
+        while new_offs != offset:
+            after_rotate = rotate(new_offs)
+            if after_rotate in taken:
+                perm = []
+                break
+            taken.append(after_rotate)
+            perm.append(offs_to_name[after_rotate])
+            new_offs = after_rotate
+
+        if len(perm) >= 2:
+            perms.append(perm)
+
+    print perms
+    return flip_values(digits_and_values, perms)
+
 
 def main():
     from .cagen import VonNeumannNeighbourhood, MooreNeighbourhood
