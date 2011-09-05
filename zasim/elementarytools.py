@@ -448,18 +448,7 @@ def flip_all(neighbourhood, digits_and_values, base=2):
 def flip_values(digits_and_values, pairs=[]):
     """flip around the results, so that for each pair (a, b) the results for
     neighbourhood configurations a=a', b=b', c=c' have the values of a=b',
-    b=a', c=c', for instance.
-
-    >>> dav = [dict(l=0, r=0, result_value=1),
-    ...        dict(l=0, r=1, result_value=2),
-    ...        dict(l=1, r=0, result_value=3),
-    ...        dict(l=1, r=1, result_value=4)]
-    >>> flip_values(dav, [("l", "r")])
-    [dict(l=0, r=0, result_value=1),
-     dict(l=0, r=1, result_value=3),
-     dict(l=1, r=0, result_value=2),
-     dict(l=1, r=1, result_value=4)]
-    """
+    b=a', c=c', for instance."""
     ndav = []
     def find_by_neighbours(similar):
         for num, val in enumerate(digits_and_values):
