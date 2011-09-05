@@ -1561,7 +1561,7 @@ class ElementaryCellularAutomatonBase(Computation):
                 "two dimensions"]
 
     def build_name(self, parts):
-        parts.append("calculating rule %d" % (self.rule_nr))
+        parts.append("calculating rule %d" % (self.rule))
 
 class CountBasedComputationBase(Computation):
     """This base class counts the amount of nonzero neighbours excluding the
