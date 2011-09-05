@@ -109,8 +109,9 @@ def master():
                     processes.remove(proc)
                     proc.join()
                     num_done += chunksize
-                    if num_done % (chunksize * 10) == 0:
-                        print "%d nums took %s time" % (chunksize * 10, time() - last_done_time)
+                    if num_done % (chunksize * (process_limit + 3)) == 0:
+                        time_taken = time() - last_done_time
+                        print "%d nums took %s time" % (chunksize, time_taken / (process_limit + 3))
                         last_done_time = time()
 
             sleep(0.1)
