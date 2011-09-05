@@ -614,7 +614,18 @@ class WaitAnimationWindow(object):
         self.gv.deleteLater()
 
 class StepFuncCompositionDialog(QWidget):
+    """With this dialog, the user can, by selecting classes from a categorized
+    tree of classes derived from WeaveStepFuncVisitor, assemble a step
+    function.
+
+    In a later version, the user will also be able to set arguments, such as
+    the probability for nondeterministic visitors."""
+
     single_categories = ["loop", "accessor", "neighbourhood"]
+    """The categories that can hold only a single class.
+
+    These correspond closely to the keyword arguments of
+    :meth:`WeaveStepFunc.__init__` with the same name."""
 
     def __init__(self, **kwargs):
         super(StepFuncCompositionDialog, self).__init__(**kwargs)
@@ -628,6 +639,10 @@ class StepFuncCompositionDialog(QWidget):
         self.cancel_button.clicked.connect(self.close)
 
     def update_docs(self, new, old):
+        """Display the docstring of the class and its __init__ at the bottom of
+        the window when a new class has been selected, or display a general
+        help text when the user clicks on something else."""
+
         obj = new.data(0, CLASS_OBJECT_ROLE)
         if obj is None:
             data = """<h2>Create a stepfunction from parts</h2>
@@ -717,6 +732,9 @@ This pane at the bottom will display documentation."""
         self.setLayout(outermost_layout)
 
     def dbl_click_item(self, item, column):
+        """When the user activates a class in the list, insert it into the
+        correct slot at the right."""
+
         cls = item.data(0, CLASS_OBJECT_ROLE)
         if cls.category in self.single_categories:
             button = self.category_buttons[cls.category]
