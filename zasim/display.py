@@ -470,7 +470,7 @@ class HistogramExtraDisplay(BaseExtraDisplay):
     colored vertical lines."""
     colors = [QColor("black"), QColor("white"), QColor("red"), QColor("blue"),
               QColor("green"), QColor("yellow")]
-    def __init__(self, sim, attribute="histogram", width=300, maximum=1.0, **kwargs):
+    def __init__(self, sim, attribute="histogram", width=400, maximum=1.0, **kwargs):
         super(HistogramExtraDisplay, self).__init__(title=attribute, sim=sim, width=width, **kwargs)
         self.linepos = 0
         self.queue = Queue.Queue(width)
@@ -652,8 +652,8 @@ def main():
         display_b = ZasimDisplay(sim_obj)
         display_b.set_scale(scale)
 
-        extra_hist = HistogramExtraDisplay(sim_obj, parent=display_b, height=100, maximum= w * h)
-        extra_activity = HistogramExtraDisplay(sim_obj, attribute="activity", parent=display_b, height=100, maximum=w*h)
+        extra_hist = HistogramExtraDisplay(sim_obj, parent=display_b, height=200, maximum= w * h)
+        extra_activity = HistogramExtraDisplay(sim_obj, attribute="activity", parent=display_b, height=200, maximum=w*h)
 
         extra_hist.show()
         extra_activity.show()
