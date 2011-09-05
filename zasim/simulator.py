@@ -45,6 +45,9 @@ class BaseSimulator(QObject):
     """Is emitted when the shape of changed cells is unknown or not
     interesting."""
 
+    changed = Signal()
+    """Is emitted when the configuration has changed, but there was no step."""
+
     started = Signal()
     """Is emitted when continuous updating has been started."""
 
@@ -132,7 +135,7 @@ class CagenSimulator(BaseSimulator):
 
     def set_config_value(self, pos, value=None):
         self._step_func.set_config_value(pos[::-1], value)
-        self.updated.emit()
+        self.changed.emit()
 
     def step(self):
         """Delegate the stepping to the :meth:`WeaveStepFunc.step` method, then

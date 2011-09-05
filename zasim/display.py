@@ -134,12 +134,14 @@ class ZasimMainWindow(QMainWindow):
         Those displays are updated whenever a step occurs."""
         self.extra_displays.append(display)
         self.simulator.updated.connect(display.after_step)
+        self.simulator.changed.connect(display.conf_changed)
         #self.display_attached.emit(display)
 
     def detach_display(self, display):
         """Detach an extra attached display from the control."""
         self.extra_displays.remove(display)
         self.simulator.updated.disconnect(display.after_step)
+        self.simulator.changed.disconnect(display.conf_changed)
         #self.display_detached.emit(display)
 
 class ControlWidget(QWidget):
@@ -473,6 +475,7 @@ class HistogramExtraDisplay(BaseExtraDisplay):
         self.linepos = 0
         self.queue = Queue.Queue(width)
         self.attribute = attribute
+        self.update_no_step = False
 
     def paint_display_widget(self, event):
         painter = QPainter(self.image)
@@ -489,9 +492,12 @@ class HistogramExtraDisplay(BaseExtraDisplay):
                     painter.drawLine(QLine(linepos, absolute,
                                      linepos, absolute + value))
                     absolute += value
-                linepos += 1
-                if linepos >= self.width():
-                    linepos = 0
+
+                if not self.update_no_step:
+                    linepos += 1
+                    if linepos >= self.width():
+                        linepos = 0
+
         except Queue.Empty:
             pass
 
@@ -508,7 +514,12 @@ class HistogramExtraDisplay(BaseExtraDisplay):
             self.queue.get()
             self.queue.put(value)
 
+        self.update_no_step = False
         self.display_widget.update()
+
+    def conf_changed(self):
+        self.after_step()
+        self.update_no_step = True
 
 class WaitAnimationWindow(object):
     """Display a cute animation, so that the user isn't annoyed by those long,
