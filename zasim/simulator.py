@@ -65,6 +65,11 @@ class BaseSimulator(QObject):
     def set_config(self, config):
         """Sets a new config for the simulator."""
 
+    def set_config_value(self, pos, value=None):
+        """Set the config value at pos to value.
+
+        If value is None, flip the value instead."""
+
     def step(self):
         """Step the simulator once."""
         self.updated.emit()
@@ -123,6 +128,10 @@ class CagenSimulator(BaseSimulator):
 
     def set_config(self, config):
         self._step_func.set_config(config)
+        self.updated.emit()
+
+    def set_config_value(self, pos, value=None):
+        self._step_func.set_config_value(pos, value)
         self.updated.emit()
 
     def step(self):

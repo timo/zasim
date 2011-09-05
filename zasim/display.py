@@ -358,6 +358,9 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         self.conf_new = True
         self.queued_conf = simulator.getConf()
 
+        self.drawing = False
+        self.last_draw_pos = QPoint(0,0)
+
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
         display.
@@ -391,6 +394,21 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         self.conf_new = True
 
         self.update()
+
+    def mousePressEvent(self, event):
+        self.drawing = True
+        self.last_draw_pos = (event.x() / self.img_scale, event.y() / self.img_scale)
+
+    def mouseReleaseEvent(self, event):
+        self.drawing = False
+
+    def leaveEvent(self, event):
+        self.drawing = False
+
+    def mouseMoveEvent(self, event):
+        new_draw_pos = (event.x() / self.img_scale, event.y() / self.img_scale)
+        if self.last_draw_pos != new_draw_pos:
+            self.sim.set_config_value(new_draw_pos)
 
 class BaseExtraDisplay(QDockWidget):
     """The base class for a dockable/undockable/tabbable extra display widget

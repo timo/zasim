@@ -297,6 +297,14 @@ class WeaveStepFunc(object):
         self.target.cconf = config.copy()
         self.new_config()
 
+    def set_config_value(self, pos, value=None):
+        """Set the value of the configuration at pos to value.
+        If value is None, flip the value that's already there."""
+        if value is None:
+            value = 1 - self.acc.read_from(pos)
+        print "setting value at %s to %s" % (pos, value)
+        self.acc.write_to_current(pos, value)
+
     def set_target(self, target):
         """Set the target of the step function. The target contains,
         among other things, the configurations."""
