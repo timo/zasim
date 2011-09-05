@@ -29,7 +29,7 @@ Contents:
 Getting the code
 ================
 
-The code is not yet available on the 'net, but it be published soon.
+The code is not yet available on the 'net, but it will probably be published soon.
 
 Running zasim
 =============
