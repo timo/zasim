@@ -31,6 +31,8 @@ import time
 from itertools import product
 import numpy as np
 
+CLASS_OBJECT_ROLE = Qt.UserRole + 1
+
 class ZasimDisplay(object):
 
     simulator = None
@@ -601,22 +603,47 @@ class WaitAnimationWindow(object):
         self.gv.deleteLater()
 
 class StepFuncCompositionDialog(QWidget):
+    single_categories = ["loop", "accessor", "neighbourhood"]
+
     def __init__(self, **kwargs):
         super(StepFuncCompositionDialog, self).__init__(**kwargs)
 
         self.setup_ui()
+        self.part_tree.currentItemChanged.connect(self.update_docs)
+        self.part_tree.itemDoubleClicked.connect(self.dbl_click_item)
+
+    def update_docs(self, new, old):
+        obj = new.data(0, CLASS_OBJECT_ROLE)
+        if obj is None:
+            data = """<h2>Create a stepfunction from parts</h2>
+
+Doubleclick on classes from the list on the left to set them at the right, or
+click on the buttons on the right to remove classes again.
+
+Doubleclick on items in the right list of extra classes to remove them.
+
+This pane at the bottom will display documentation."""
+
+        else:
+            data = """<h2>%s</h2>
+%s""" % (obj.__name__, obj.__doc__)
+        self.doc_display.setText(data)
 
     def setup_ui(self):
         categories = cagen.categories()
 
-        outer_layout = QVBoxLayout(self)
+        outer_layout = QSplitter(Qt.Vertical, self)
 
         # upper part: list and slots
-        upper_pane = QHBoxLayout()
+        upper_widget = QWidget(self)
+        upper_pane = QHBoxLayout(upper_widget)
+        upper_widget.setLayout(upper_pane)
+        outer_layout.addWidget(upper_widget)
 
         # left pane: list of all available parts
         left_pane = QVBoxLayout()
-        self.part_tree = QTreeWidget(self)
+        self.part_tree = QTreeWidget(upper_widget)
+        self.part_tree.setHeaderHidden(True)
         left_pane.addWidget(self.part_tree)
 
         for (category, classes) in categories.iteritems():
@@ -624,31 +651,45 @@ class StepFuncCompositionDialog(QWidget):
 
             for cls in classes:
                 cls_item = QTreeWidgetItem([cls.__name__])
+                cls_item.setData(0, CLASS_OBJECT_ROLE, cls)
                 cat_item.addChild(cls_item)
 
             self.part_tree.addTopLevelItem(cat_item)
 
         # right pane: selected parts
         right_pane = QGridLayout()
-        single_categories = ["loop", "accessor", "neighbourhood"]
-        for num, (category, classes) in enumerate(categories.iteritems()):
+        self.category_buttons = {}
+        for num, category in enumerate(self.single_categories):
             label = QLabel(category, self)
-            if category in single_categories:
-                slot = QPushButton(self)
-            else:
-                slot = QListWidget(self)
+            slot = QPushButton(self)
             right_pane.addWidget(label, num, 0)
             right_pane.addWidget(slot, num, 1)
+            self.category_buttons[category] = slot
+        num += 1
+        label = QLabel("additionals", self)
+        self.additional_list = QListWidget(self)
+        right_pane.addWidget(label, num, 0, 1, 2)
+        right_pane.addWidget(self.additional_list, num + 1, 0, 1, 2)
 
         # lower part: documentation
         self.doc_display = QTextEdit(self)
         self.doc_display.setReadOnly(True)
 
-        outer_layout.addLayout(upper_pane)
         outer_layout.addWidget(self.doc_display)
 
         upper_pane.addLayout(left_pane)
         upper_pane.addLayout(right_pane)
+
+        wrapper_layout = QHBoxLayout(self)
+        wrapper_layout.addWidget(outer_layout)
+        self.setLayout(wrapper_layout)
+
+    def dbl_click_item(self, item, column):
+        cls = item.data(0, CLASS_OBJECT_ROLE)
+        if cls.category in self.single_categories:
+            self.category_buttons[cls.category].setText(cls.__name__)
+        else:
+            self.additional_list.addItem(cls.__name__)
 
 def main():
     app = QApplication(sys.argv)
