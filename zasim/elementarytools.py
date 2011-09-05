@@ -47,6 +47,44 @@ CELL_COL = {1: "white",
             GAP: "gray"}
 """What colors to use for what field values."""
 
+_neighbourhood_actions = {}
+def neighbourhood_action(name):
+    def appender(fun):
+        _neighbourhood_actions[name] = fun
+        return fun
+    return appender
+
+def digits_and_values_to_rule_nr(digits_and_values, base=2):
+    num = 0
+    for digit, values in enumerate(digits_and_values):
+        num += values["result_value"] * (base ** digit)
+    return num
+
+_minimize_cache = {}
+def minimize_rule_number(neighbourhood, digits_and_values):
+    original = digits_and_values_to_rule_nr(digits_and_values)
+    cache = {original: ([], digits_and_values)}
+    tries = [([name], digits_and_values) for name in _neighbourhood_actions]
+
+    for route, data in tries:
+        new = _neighbourhood_actions[route[-1]](neighbourhood, data)
+        rule_nr = digits_and_values_to_rule_nr(new)
+        print "trying", ", ".join(route), "gives us", rule_nr
+        if rule_nr in cache:
+            oldroute, olddata = cache[rule_nr]
+            if len(oldroute) > len(route):
+                cache[rule_nr] = (route, new)
+                tries.extend([(route + [name], new) for name in _neighbourhood_actions])
+        else:
+            cache[rule_nr] = (route, new)
+            tries.extend([(route + [name], new) for name in _neighbourhood_actions])
+    print "original number was %d" % original
+    for number, (route, _) in cache.iteritems():
+        print "%s leads to %d" % (", ".join(route), number)
+    lowest_number = min(cache.keys())
+    print "the lowest we could do was %d: %s" % (lowest_number, ", ".join(cache[lowest_number][0]))
+    return cache[lowest_number], cache
+
 class CellDisplayWidget(QLabel):
     """A little Widget that displays a cell in a neighbourhood."""
 
@@ -249,7 +287,7 @@ class ElementaryRuleWindow(QWidget):
         self.base = base
         self.entries = len(self.neighbourhood.offsets)
 
-        self.rule = np.zeros(self.base ** self.entries)
+        self.rule = np.zeros(self.base ** self.entries, dtype=np.dtype("i"))
         for digit in range(len(self.rule)):
             if self.rule_nr & (self.base** digit) > 0:
                 self.rule[digit] = 1
@@ -346,6 +384,74 @@ class ElementaryRuleWindow(QWidget):
     def resizeEvent(self, event):
         """React to a size change of the widget."""
         self._rewrap_grid(old_width = event.oldSize().width())
+
+@neighbourhood_action("flip all bits")
+def flip_all(neighbourhood, digits_and_values, base=2):
+    ndav = []
+    for data in digits_and_values:
+        ndata = data.copy()
+        ndata["result_value"] = base - 1 - data["result_value"]
+        ndav.append(ndata)
+    return ndav
+
+def flip_values(digits_and_values, pairs=[]):
+    """flip around the results, so that for each pair (a, b) the results for
+    neighbourhood configurations a=a', b=b', c=c' have the values of a=b',
+    b=a', c=c', for instance.
+
+    >>> dav = [dict(l=0, r=0, result_value=1),
+               dict(l=0, r=1, result_value=2),
+               dict(l=1, r=0, result_value=3),
+               dict(l=1, r=1, result_value=4)]
+    >>> flip_values(dav, [("l", "r")])
+    [dict(l=0, r=0, result_value=1),
+     dict(l=0, r=1, result_value=3),
+     dict(l=1, r=0, result_value=2),
+     dict(l=1, r=1, result_value=4)]
+    """
+    ndav = []
+    def find_by_neighbours(similar):
+        for num, val in enumerate(digits_and_values):
+            same = True
+            for k, v in similar.iteritems():
+                if k == "result_value":
+                    continue
+                if val[k] != v:
+                    same = False
+                    break
+            if same:
+                return (num, val)
+    for num, data in enumerate(digits_and_values):
+        ndata = data.copy()
+        for a, b in pairs:
+            ndata[a], ndata[b] = ndata[b], ndata[a]
+            if ndata == data:
+                continue
+            _, val = find_by_neighbours(ndata)
+            ndata["result_value"] = val["result_value"]
+        ndav.append(ndata)
+    return ndav
+
+def mirror_by_axis(neighbourhood, digits_and_values, axis=[0]):
+    offs_to_name = dict(zip(neighbourhood.offsets, neighbourhood.names))
+    pairs = []
+    for offset, name in offs_to_name.iteritems():
+        mirrored = tuple(-a if num in axis else a for num, a in enumerate(offset))
+        if mirrored != offset and mirrored in offs_to_name:
+            pairs.append((name, offs_to_name[mirrored]))
+        elif mirrored not in offs_to_name:
+            raise ValueError("Mirrored %s to %s, but could not find it in offsets!" % \
+                    (offset, mirrored))
+
+    return flip_values(digits_and_values, pairs)
+
+@neighbourhood_action("flip vertically")
+def flip_v(neighbourhood, digits_and_values):
+    return mirror_by_axis(neighbourhood, digits_and_values, [1])
+
+@neighbourhood_action("flip horizontally")
+def flip_h(neighbourhood, digits_and_values):
+    return mirror_by_axis(neighbourhood, digits_and_values, [0])
 
 def main():
     from .cagen import VonNeumannNeighbourhood, MooreNeighbourhood
