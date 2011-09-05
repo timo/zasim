@@ -141,6 +141,9 @@ class ZasimMainWindow(QMainWindow):
 
         self.simulator.updated.connect(self.display.after_step)
 
+        self.control.start_inverting_frames.connect(self.display.start_inverting_frames)
+        self.control.stop_inverting_frames.connect(self.display.stop_inverting_frames)
+
     def attach_display(self, display):
         """Attach an extra display to the control.
 
@@ -159,6 +162,9 @@ class ZasimMainWindow(QMainWindow):
 
 class ControlWidget(QWidget):
     """Control a simulator with buttons or from the interactive console."""
+
+    start_inverting_frames = Signal()
+    stop_inverting_frames = Signal()
 
     def __init__(self, simulator, **kwargs):
         """:param simulator: The simulator object to control."""
@@ -197,11 +203,23 @@ class ControlWidget(QWidget):
         self.zero_percentage.setSuffix("% black")
         l.addWidget(self.zero_percentage)
 
+        self.invert_frames = QCheckBox(self)
+        self.invert_frames.setChecked(False)
+        self.invert_frames.setText("invert odd frames")
+        self.invert_frames.stateChanged.connect(self.invert_odd)
+        l.addWidget(self.invert_frames)
+
         self.setLayout(l)
 
         self.start_button.clicked.connect(self.start)
         self.stop_button.clicked.connect(self.stop)
         delay.valueChanged.connect(self.change_delay)
+
+    def invert_odd(self, value):
+        if value == Qt.Checked:
+            self.start_inverting_frames.emit()
+        else:
+            self.stop_inverting_frames.emit()
 
     def start(self):
         """Start running the simulator."""
@@ -294,7 +312,6 @@ class BaseDisplayWidget(QGLWidget):
                     self.img_height * self.img_scale)
         self.create_image_surf()
 
-
 class HistoryDisplayWidget(BaseDisplayWidget):
     """A Display that displays one-dimensional cellular automatons by drawing
     consecutive configurations below each other, wrapping around to the top."""
@@ -386,6 +403,12 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         self.drawing = False
         self.last_draw_pos = QPoint(0,0)
 
+        self.invert_odd = False
+        self.odd = False
+
+    def start_inverting_frames(self): self.invert_odd = True
+    def stop_inverting_frames(self): self.invert_odd = False
+
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
         display.
@@ -402,10 +425,14 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
             self.conf_new = False
             w, h = conf.shape
             nconf = np.empty((w, h, 2), np.uint8, "C")
-            nconf[...,0] = conf * 255
+            if not self.invert_odd or self.odd:
+                nconf[...,0] = conf * 255
+            else:
+                nconf[...,0] = 255 - conf * 255
             nconf[...,1] = nconf[...,0]
             self.image = QImage(nconf.data, w, h, QImage.Format_RGB444).scaled(
                     w * self.img_scale, h * self.img_scale)
+            self.odd = not self.odd
 
         copier = QPainter(self)
         copier.drawImage(QPoint(0, 0), self.image)
