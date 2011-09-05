@@ -161,7 +161,7 @@ class ControlWidget(QWidget):
         l = QHBoxLayout(self)
         self.start_button = QPushButton("Start", self)
         self.stop_button = QPushButton("Stop", self)
-        self.stop_button.setDisabled(True)
+        self.stop_button.hide()
         delay = QSpinBox()
         delay.setMinimum(0)
         delay.setMaximum(10000)
@@ -193,14 +193,14 @@ class ControlWidget(QWidget):
     def start(self):
         """Start running the simulator."""
         self.timer_id = self.startTimer(self.timer_delay)
-        self.start_button.setDisabled(True)
-        self.stop_button.setEnabled(True)
+        self.start_button.hide()
+        self.stop_button.show()
 
     def stop(self):
         """Stop the simulator."""
         self.killTimer(self.timer_id)
-        self.stop_button.setDisabled(True)
-        self.start_button.setEnabled(True)
+        self.stop_button.hide()
+        self.start_button.show()
 
     def change_delay(self, delay):
         """Change the timer delay of the simulator steps."""
