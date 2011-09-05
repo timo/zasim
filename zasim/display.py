@@ -704,7 +704,7 @@ This pane at the bottom will display documentation."""
         upper_pane.addLayout(left_pane)
         upper_pane.addLayout(right_pane)
 
-        button_layout = QHBoxLayout(self)
+        button_layout = QHBoxLayout()
         button_layout.addStretch()
 
         self.cancel_button = QPushButton("Cancel", self)
