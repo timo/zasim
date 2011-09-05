@@ -77,7 +77,7 @@ except TypeError:
     def tuple_array_index_fixup(line):
         return TUPLE_ACCESS_FIX.sub(r"\1", line)
 
-from random import Random
+from random import Random, randrange
 from itertools import product, chain
 import sys
 import new
@@ -445,21 +445,21 @@ class CellLoop(WeaveStepFuncVisitor):
         """Returns an iterator for iterating over the config space in python."""
 
 class Neighbourhood(WeaveStepFuncVisitor):
-    """A Neighbourhood is responsible for getting states from neighbouring cells."""
+    """A Neighbourhood is responsible for getting states from neighbouring cells.
+
+    :attr:`names` and :attr:`offsets` are sorted by the position of the offset,
+    starting at the top-left (negative X, negative Y), going down through
+    ascending Y values, then to the next X value.
+
+    .. note ::
+        If you subclass from Neighbourhood, all you have to do to get the
+        sorting right is to call :meth:`_sort_names_offsets`."""
 
     names = ()
     """The names of neighbourhood fields."""
 
     offsets = ()
     """The offsets of neighbourhood fields."""
-
-    def neighbourhood_cells(self):
-        """Get the names of the neighbouring cells."""
-        return self.names
-
-    def get_offsets(self):
-        """Get the offsets of the neighbourhood cells."""
-        return self.offsets
 
     def recalc_bounding_box(self):
         """Recalculate the bounding box."""
@@ -481,6 +481,13 @@ class Neighbourhood(WeaveStepFuncVisitor):
             return self.bb
         else:
             return tuple((low * steps, high * steps) for (low, high) in self.bb)
+
+    def _sort_names_offsets(self):
+        """Brings the offsets into the right order."""
+        pairs = zip(self.offsets, self.names)
+        pairs.sort(key=lambda (o, n): o)
+        # this essentially unzips the pairs again.
+        self.offsets, self.names = zip(*pairs)
 
 class BorderHandler(WeaveStepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
@@ -864,6 +871,7 @@ class SimpleNeighbourhood(Neighbourhood):
         self.names = tuple(names)
         self.offsets = tuple([tuple(offset) for offset in offsets])
         assert len(self.names) == len(self.offsets)
+        self._sort_names_offsets()
         self.recalc_bounding_box()
 
     def visit(self):
@@ -1124,7 +1132,7 @@ class SimpleBorderCopier(BaseBorderCopier):
 
         bbox = self.code.neigh.bounding_box()
         dims = len(bbox)
-        neighbours = self.code.neigh.get_offsets()
+        neighbours = self.code.neigh.offsets
         self.dimension_sizes = [self.code.acc.get_size_of(dim) for dim in range(dims)]
 
         slices = []
@@ -1330,6 +1338,24 @@ class TwoDimZeroReader(BorderSizeEnsurer):
     # BorderSizeEnsurer, because it already just embeds the confs into
     # np.zero and does that for one or two dimensions.
 
+def elementary_digits_and_values(neighbourhood, base, rule_arr):
+    """From a neighbourhood, the base of the values used and the array that
+    holds the results for each combination of neighbourhood values, create a
+    list of dictionaries with the neighbourhood values paired with their
+    result_value ordered by the position ordered like the rule array."""
+    digits_and_values = []
+    offsets = neighbourhood.offsets
+    names = neighbourhood.names
+    digits = len(offsets)
+
+    for i in range(base ** digits):
+        values = [1 if (i & (base ** k)) > 0 else 0
+                for k in range(len(offsets))]
+        asdict = dict(zip(names, values))
+        asdict.update(result_value = rule_arr[i])
+        digits_and_values.append(asdict)
+    return digits_and_values
+
 class ElementaryCellularAutomatonBase(Computation):
     """Infer a 'Gödel numbering' from the used :class:`Neighbourhood` and
     create a computation that corresponds to the rule'th possible combination
@@ -1346,7 +1372,15 @@ class ElementaryCellularAutomatonBase(Computation):
 
     See :meth:`visit` for details on how it's used."""
 
-    def __init__(self, rule, **kwargs):
+    digits_and_values = []
+    """This list stores a list of dictionaries that for each combination of
+    values for the neighbourhood cells stores the 'result', too."""
+
+
+    def __init__(self, rule=None, **kwargs):
+        """Create the computation.
+
+        Supply None as the rule to get a random one."""
         super(ElementaryCellularAutomatonBase, self).__init__(**kwargs)
         self.rule = rule
 
@@ -1363,9 +1397,14 @@ class ElementaryCellularAutomatonBase(Computation):
         """
         super(ElementaryCellularAutomatonBase, self).visit()
 
-        self.neigh = zip(self.code.neigh.get_offsets(), self.code.neigh.neighbourhood_cells())
-        self.neigh.sort(key=lambda (offset, name): offset)
+        self.neigh = zip(self.code.neigh.offsets, self.code.neigh.names)
         self.digits = len(self.neigh)
+
+        if self.rule is None:
+            self.rule = randrange(0, self.base ** self.base ** self.digits)
+
+        if self.rule >= self.base ** self.base ** self.digits:
+            self.rule = self.rule % (self.base ** self.base ** self.digits)
 
         compute_code = ["result = 0;"]
         compute_py = ["result = 0"]
@@ -1393,9 +1432,8 @@ class ElementaryCellularAutomatonBase(Computation):
 
         # and now do some heavy work to generate a pretty-printer!
         bbox = self.code.neigh.bounding_box()
-        offsets = self.code.neigh.get_offsets()
+        offsets = self.code.neigh.offsets
         offset_to_name = dict(self.neigh)
-        ordered_names = [a[1] for a in self.neigh]
 
         if len(bbox) == 1:
             h = 3
@@ -1426,16 +1464,14 @@ class ElementaryCellularAutomatonBase(Computation):
 
         template = [line[:] for line in lines]
 
+        self.digits_and_values = \
+                elementary_digits_and_values(self.code.neigh, self.base, self.target.rule)
+
         def pretty_printer(self):
             lines = [line[:] for line in protolines]
-            for i in range(self.base ** self.digits):
-                values = [1 if (i & (self.base ** k)) > 0 else 0
-                        for k in range(len(offsets))]
-                asdict = dict(zip(ordered_names, values))
-                asdict.update(result_value = self.target.rule[i])
-
+            for thedict in self.digits_and_values:
                 for line, tmpl_line in zip(lines, template):
-                    line.append(tmpl_line % asdict)
+                    line.append(tmpl_line % thedict)
 
             return "\n".join(["".join(line) for line in lines])
 
@@ -1463,8 +1499,8 @@ class CountBasedComputationBase(Computation):
         """Generate code that calculates nonzerocount from all neighbourhood
         values."""
         super(CountBasedComputationBase, self).visit()
-        names = list(self.code.neigh.neighbourhood_cells())
-        offsets = self.code.neigh.get_offsets()
+        names = list(self.code.neigh.names)
+        offsets = self.code.neigh.offsets
 
         # kick out the center cell, if any.
         zero_offset = tuple([0] * len(offsets[0]))
@@ -1635,7 +1671,7 @@ class BinRule(TestTarget):
     rule = None
     """The number of the elementary cellular automaton to simulate."""
 
-    def __init__(self, size=None, deterministic=True, histogram=False, activity=False, rule=126, config=None, beta=False, **kwargs):
+    def __init__(self, size=None, deterministic=True, histogram=False, activity=False, rule=None, config=None, beta=False, **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
            :param deterministic: Go over every cell every time or skip cells
@@ -1669,6 +1705,8 @@ class BinRule(TestTarget):
                     self.computer] +
                 ([SimpleHistogram()] if histogram else []) +
                 ([ActivityRecord()] if activity else []), target=self)
+
+        self.rule_number = self.computer.rule
 
         self.stepfunc.gen_code()
 
