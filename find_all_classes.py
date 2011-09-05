@@ -7,12 +7,13 @@ import multiprocessing
 import math
 import Queue
 
+filepath = "find_results.txt"
 
 neigh = VonNeumannNeighbourhood()
 rule = np.zeros(2 ** 5, dtype=np.dtype("i"))
 start_num = 2 ** 32
 try:
-    with open("smaller_results.txt", "r") as old_results:
+    with open(filepath, "r") as old_results:
         old_results.seek(-1000, os.SEEK_END)
         lastdata = old_results.read().replace("\n", "<")
         numbers = lastdata.split("<")
@@ -24,7 +25,7 @@ except IOError:
 
 print "resuming from %d" % (start_num)
 
-known_bits = multiprocessing.Array("B", int(math.ceil(start_num / 8.0) + 10), lock=False)
+known_bits = multiprocessing.Array("B", int((2 ** 32) / 8 + 10), lock=False)
 print "array len is", len(known_bits)
 program_running = multiprocessing.Value('f', 1)
 array_lock = multiprocessing.RLock()
@@ -37,6 +38,22 @@ def set_bits(bits):
 def ask_bit(bit):
     with array_lock:
         return (known_bits[bit / 8] & (1 >> (bit % 8))) > 0
+
+def find_old_bits():
+    try:
+        print "going to fill up the known_bits array from old data."
+        starttime = time()
+        with open(filepath, "r") as old_results:
+            count = 0
+            for line in old_results:
+                numbers = line.strip().split("<")
+                numbers = map(int, numbers)
+                numbers = [num for num in numbers if num < start_num]
+                set_bits(numbers)
+                count += 1
+        print "done! yay. took me %s seconds for %d lines" % (time() - starttime, count)
+    except IOError:
+        print "could not fill up the known_bits array."
 
 def deal_with_range(start, stop, skip, data_queue):
     cache_hits = 0
@@ -61,8 +78,9 @@ def deal_with_range(start, stop, skip, data_queue):
     print "range(%d, %d, %d) took %s - %d cache hits" % (start, stop, skip, time() - starttime, cache_hits)
 
 def master():
+    find_old_bits()
     def write_out_results(queue):
-        with open("find_results.txt", "a") as results:
+        with open(filepath, "a") as results:
             while program_running.value > 0:
                 try:
                     data = queue.get(timeout=1)
@@ -79,7 +97,7 @@ def master():
     processes = []
     chunksize = 1000
     for bunch in range(start_num / chunksize):
-        while len(processes) >= 3:
+        while len(processes) >= 4:
             for proc in processes:
                 if not proc.is_alive():
                     processes.remove(proc)
