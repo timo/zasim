@@ -83,7 +83,7 @@ def minimize_rule_number(neighbourhood, digits_and_values):
         print "%s leads to %d" % (", ".join(route), number)
     lowest_number = min(cache.keys())
     print "the lowest we could do was %d: %s" % (lowest_number, ", ".join(cache[lowest_number][0]))
-    return cache[lowest_number], cache
+    return lowest_number, cache[lowest_number], cache
 
 class CellDisplayWidget(QLabel):
     """A little Widget that displays a cell in a neighbourhood."""
@@ -138,6 +138,13 @@ class EditableCellDisplayWidget(QPushButton):
         self.bg_color = QColor(CELL_COL[self.value])
         self.update()
         self.value_changed.emit(self.position, self.value)
+
+    def set_value(self, value, emit=False):
+        self.value = value
+        self.bg_color = QColor(CELL_COL[self.value])
+        self.update()
+        if emit:
+            self.value_changed.emit(self.position, self.value)
 
     def paintEvent(self, event):
         """Redraw the button, add a rectangle inside the button if it has the
@@ -326,6 +333,22 @@ class ElementaryRuleWindow(QWidget):
         layout.addWidget(self.rule_nr_display)
         layout.addWidget(self.scroll_area)
 
+        action_buttons = QHBoxLayout(self)
+        minimize_button = QPushButton("Minimize rule number", self)
+        minimize_button.clicked.connect(self.minimize_rule_number)
+        action_buttons.addWidget(minimize_button)
+
+        action_buttons.addSpacing(11)
+
+        for name, action in _neighbourhood_actions.iteritems():
+            act_btn = QPushButton(name, self)
+            def do_action(act=action):
+                self.do_neighbourhood_action(act)
+            act_btn.clicked.connect(do_action)
+            action_buttons.addWidget(act_btn)
+
+        layout.addLayout(action_buttons)
+
         self.setLayout(layout)
 
     def _result_changed(self, position, value):
@@ -343,6 +366,34 @@ class ElementaryRuleWindow(QWidget):
         self.rule_nr = num
         self.rule_nr_display.setText("Editing rule %d" % (self.rule_nr))
         return self.rule_nr
+
+    def minimize_rule_number(self):
+        best_num, (best_route, result), _ = minimize_rule_number(self.neighbourhood, self.digits_and_values)
+        if best_num == self.rule_nr:
+            QMessageBox.information(self, "No optimization found",
+                    """This rule set is already the lowest I can make out of it.""")
+        else:
+            okay = QMessageBox.question(self, "Apply optimization?",
+                    """With these actions, the rule number %d can be reached:
+                    %s""" % (best_num, ", ".join(best_route)),
+                    buttons=QMessageBox.Ok | QMessageBox.Cancel,
+                    defaultButton=QMessageBox.Ok)
+            if okay == QMessageBox.Ok:
+                for num, data in enumerate(result):
+                    val = data["result_value"]
+                    self.n_r_widgets[num].result_widget.set_value(val)
+                self.digits_and_values = result
+                self.recalculate_rule_number()
+
+    def do_neighbourhood_action(self, action):
+        print "doing", action
+        result = action(self.neighbourhood, self.digits_and_values)
+        print digits_and_values_to_rule_nr(result)
+        for num, data in enumerate(result):
+            val = data["result_value"]
+            self.n_r_widgets[num].result_widget.set_value(val)
+        self.digits_and_values = result
+        self.recalculate_rule_number()
 
     def _rewrap_grid(self, old_width=None):
         """Put all the widgets into a grid, so that they fill just enough of
@@ -452,6 +503,10 @@ def flip_v(neighbourhood, digits_and_values):
 @neighbourhood_action("flip horizontally")
 def flip_h(neighbourhood, digits_and_values):
     return mirror_by_axis(neighbourhood, digits_and_values, [0])
+
+@neighbourhood_action("flip both")
+def flip_both(neighbourhood, digits_and_values):
+    return mirror_by_axis(neighbourhood, digits_and_values, [0, 1])
 
 def main():
     from .cagen import VonNeumannNeighbourhood, MooreNeighbourhood
