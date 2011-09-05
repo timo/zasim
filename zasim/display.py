@@ -116,6 +116,8 @@ class ZasimMainWindow(QMainWindow):
 
         layout = QVBoxLayout(central_widget)
 
+        layout.addWidget(QLabel(str(self.simulator), self))
+
         scroller = QScrollArea()
         scroller.setWidget(self.display)
 
@@ -595,6 +597,7 @@ def main():
 
     onedim, twodim = False, True
     beta = True
+    nondet = False
 
     if onedim:
         # get a random beautiful CA
@@ -614,8 +617,10 @@ def main():
         t = cagen.TestTarget(config=twodim_rand)
 
         compute = cagen.LifeCellularAutomatonBase()
-        l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
-        #l = cagen.TwoDimCellLoop()
+        if beta or not nondet:
+            l = cagen.TwoDimCellLoop()
+        elif nondet:
+            l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
         if beta:
             acc = cagen.BetaAsynchronousAccessor()
             neigh = cagen.MooreNeighbourhood(Base=cagen.BetaAsynchronousNeighbourhood)

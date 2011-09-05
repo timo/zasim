@@ -329,6 +329,12 @@ class WeaveStepFunc(object):
             code.new_config()
         self.acc.multiplicate_config()
 
+    def __str__(self):
+        name_parts = []
+        for code in self.visitors:
+            code.build_name(name_parts)
+        return " ".join(name_parts)
+
 class WeaveStepFuncVisitor(object):
     """Base class for step function visitor objects."""
 
@@ -374,6 +380,10 @@ class WeaveStepFuncVisitor(object):
         This is pure python code that runs when a new config is loaded.
         it only changes the current configuration "cconf" of the automaton.
         after all new_config hooks have been run, they are multiplied."""
+
+    def build_name(self, parts):
+        """Add text to the name of the WeaveStepFunc for easy identification of
+        what's going on."""
 
 class StateAccessor(WeaveStepFuncVisitor):
     """A StateAccessor will supply read and write access to the state array.
@@ -706,6 +716,9 @@ if result != %(center)s:
         super(SimpleHistogram, self).init_once()
         self.code.attrs.extend(["histogram"])
 
+    def build_name(self, parts):
+        parts.append("(histogram)")
+
 class ActivityRecord(WeaveStepFuncVisitor):
     """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
     create a property called "activity" on the target. It is a two-cell
@@ -739,6 +752,9 @@ self.target.activity[int(result != %(center)s)] += 1""" % dict(center=center_nam
         super(ActivityRecord, self).init_once()
         self.code.attrs.extend(["activity"])
 
+    def build_name(self, parts):
+        parts.append("(activity)")
+
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
     def get_pos(self):
@@ -756,6 +772,9 @@ class LinearCellLoop(CellLoop):
             for i in range(0, self.code.acc.get_size_of()):
                 yield (i,)
         return iter(generator())
+
+    def build_name(self, parts):
+        parts.insert(0, "1d")
 
 class TwoDimCellLoop(CellLoop):
     """The TwoDimCellLoop iterates over all cells from left to right, then from
@@ -779,6 +798,9 @@ for(int j=0; j < %s; j++) {""" % (size_names))
                 for j in range(0, self.code.acc.get_size_of(1)):
                     yield (i, j)
         return iter(iterator())
+
+    def build_name(self, parts):
+        parts.insert(0, "2d")
 
 class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
     """Deriving from a CellLoop and this Mixin will cause every cell to be
@@ -844,6 +866,10 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
         super(NondeterministicCellLoopMixin, self).bind(stepfunc)
         stepfunc.random = self.random
 
+    def build_name(self, parts):
+        super(NondeterministicCellLoopMixin, self).build_name(parts)
+        parts.insert(0, "nondeterministic (%s)" % (self.probab))
+
 class LinearNondeterministicCellLoop(NondeterministicCellLoopMixin,LinearCellLoop):
     """This Nondeterministic Cell Loop loops over one dimension, skipping cells
     with a probability of probab."""
@@ -864,7 +890,7 @@ class SimpleNeighbourhood(Neighbourhood):
     offsets = ()
     """The offsets of neighbourhood fields."""
 
-    def __init__(self, names, offsets):
+    def __init__(self, names, offsets, name=""):
         """:param names: A list of names for the neighbouring cells.
         :param offsets: A list of offsets for each of the neighbouring cells."""
         super(Neighbourhood, self).__init__()
@@ -873,6 +899,13 @@ class SimpleNeighbourhood(Neighbourhood):
         assert len(self.names) == len(self.offsets)
         self._sort_names_offsets()
         self.recalc_bounding_box()
+        if name:
+            self.neighbourhood_name = name
+        else:
+            try:
+                self.neighbourhood_name = self.__class__.__name__
+            except AttributeError:
+                self.neighbourhood_name = str(self.__class__)
 
     def visit(self):
         """Adds C and python code to get the neighbouring values and stores
@@ -928,6 +961,10 @@ class SimpleNeighbourhood(Neighbourhood):
         ((-50, 990), (100, 200))
         """
         return super(SimpleNeighbourhood, self).bounding_box(steps)
+
+    def build_name(self, parts):
+        if self.neighbourhood_name:
+            parts.append("with %s" % (self.neighbourhood_name))
 
 class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
     def __init__(self, *args, **kwargs):
@@ -1046,6 +1083,9 @@ else:
         super(BetaAsynchronousAccessor, self).set_target(target)
         target.beta_randseed = np.array([self.random.random()])
         target.beta_random = self.random
+
+    def build_name(self, parts):
+        parts.insert(0, "Beta-Asynchronous (%s)" % (self.probab))
 
 def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the neighbourhood used by the elementary cellular automatons.
@@ -1344,6 +1384,9 @@ for pos in product(range(0, RIGHT_BORDER), range(0, LOWER_BORDER)):
         self.code.add_code("after_step",
                 "\n".join(copy_code))
 
+    def build_name(self, parts):
+        parts.append("(copy borders)")
+
 class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
     peeking over the border."""
@@ -1496,6 +1539,9 @@ class ElementaryCellularAutomatonBase(Computation):
         return ["cannot pretty-print with neighbourhoods of more than",
                 "two dimensions"]
 
+    def build_name(self, parts):
+        parts.append("calculating rule %d" % (self.rule_nr))
+
 class CountBasedComputationBase(Computation):
     """This base class counts the amount of nonzero neighbours excluding the
     center cell and offers the result as a local variable called
@@ -1576,6 +1622,15 @@ if %(central_name)s == 0:
 else:
     if not (%(stay_alive_min)d <= nonzerocount <= %(stay_alive_max)d):
       result = 0""" % self.params)
+
+    def build_name(self, parts):
+        if self.params != dict(reproduce_min=3, reproduce_max=3,
+                stay_alive_min=2, stay_alive_max=3, central_name=self.params["central_name"]):
+            parts.append("calculating life - reproduce "\
+                    "[%(reproduce_min)s:%(reproduce_max)s], "\
+                    "stay alive [%(stay_alive_min)s: %(stay_alive_max)s]" % self.params)
+        else:
+            parts.append("calculating game of life")
 
 CELL_SHADOW, CELL_FULL = "%#"
 BACK_SHADOW, BACK_FULL = ", "
@@ -1733,6 +1788,9 @@ class BinRule(TestTarget):
 
     def pretty_print(self):
         return self.computer.pretty_print()
+
+    def __str__(self):
+        return str(self.stepfunc)
 
 def test():
     size = 75
