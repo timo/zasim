@@ -600,6 +600,56 @@ class WaitAnimationWindow(object):
     def destroy(self):
         self.gv.deleteLater()
 
+class StepFuncCompositionDialog(QWidget):
+    def __init__(self, **kwargs):
+        super(StepFuncCompositionDialog, self).__init__(**kwargs)
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        categories = cagen.categories()
+
+        outer_layout = QVBoxLayout(self)
+
+        # upper part: list and slots
+        upper_pane = QHBoxLayout()
+
+        # left pane: list of all available parts
+        left_pane = QVBoxLayout()
+        self.part_tree = QTreeWidget(self)
+        left_pane.addWidget(self.part_tree)
+
+        for (category, classes) in categories.iteritems():
+            cat_item = QTreeWidgetItem([category])
+
+            for cls in classes:
+                cls_item = QTreeWidgetItem([cls.__name__])
+                cat_item.addChild(cls_item)
+
+            self.part_tree.addTopLevelItem(cat_item)
+
+        # right pane: selected parts
+        right_pane = QGridLayout()
+        single_categories = ["loop", "accessor", "neighbourhood"]
+        for num, (category, classes) in enumerate(categories.iteritems()):
+            label = QLabel(category, self)
+            if category in single_categories:
+                slot = QPushButton(self)
+            else:
+                slot = QListWidget(self)
+            right_pane.addWidget(label, num, 0)
+            right_pane.addWidget(slot, num, 1)
+
+        # lower part: documentation
+        self.doc_display = QTextEdit(self)
+        self.doc_display.setReadOnly(True)
+
+        outer_layout.addLayout(upper_pane)
+        outer_layout.addWidget(self.doc_display)
+
+        upper_pane.addLayout(left_pane)
+        upper_pane.addLayout(right_pane)
+
 def main():
     app = QApplication(sys.argv)
 
@@ -607,7 +657,7 @@ def main():
     w, h = 200, 200
 
     onedim, twodim = False, True
-    beta = True
+    beta = False
     nondet = False
 
     if onedim:
@@ -663,6 +713,9 @@ def main():
 
         display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
         display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_activity)
+
+    comp_dlg = StepFuncCompositionDialog()
+    comp_dlg.show()
 
     sys.exit(app.exec_())
 
