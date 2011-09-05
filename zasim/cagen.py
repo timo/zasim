@@ -338,6 +338,9 @@ class WeaveStepFunc(object):
 class WeaveStepFuncVisitor(object):
     """Base class for step function visitor objects."""
 
+    category = "base"
+    """The category this object and its subclasses belong to."""
+
     code = None
     """The :class:`WeaveStepFunc` instance this visitor is bound to."""
 
@@ -398,6 +401,9 @@ class StateAccessor(WeaveStepFuncVisitor):
     border from the calculation. This is mainly useful for
     :class:`BorderHandler` subclasses."""
 
+    category = "accessor"
+    """The category this object and its subclasses belong to."""
+
     def read_access(self, pos, skip_border=False):
         """Generate a bit of C code for reading from the old config at pos."""
 
@@ -448,6 +454,9 @@ class StateAccessor(WeaveStepFuncVisitor):
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
+
+    category = "Loop"
+
     def get_pos(self):
         """Returns a code bit to get the current position in config space."""
 
@@ -464,6 +473,8 @@ class Neighbourhood(WeaveStepFuncVisitor):
     .. note ::
         If you subclass from Neighbourhood, all you have to do to get the
         sorting right is to call :meth:`_sort_names_offsets`."""
+
+    category = "neighbourhood"
 
     names = ()
     """The names of neighbourhood fields."""
@@ -504,9 +515,13 @@ class BorderHandler(WeaveStepFuncVisitor):
     configuration. One example is copying the leftmost border to the rightmost
     border and vice versa or ensuring the border cells are always 0."""
 
+    category = "borderhandler"
+
 class Computation(WeaveStepFuncVisitor):
     """The Computation is responsible for calculating the result from the data
     gathered from the neighbourhood."""
+
+    category = "computation"
 
 class BorderSizeEnsurer(BorderHandler):
     """The BorderSizeEnsurer ensures, that - depending on the bounding box
@@ -670,10 +685,16 @@ class SimpleStateAccessor(StateAccessor):
         old config."""
         return "self.acc.write_to(pos, self.acc.read_from(pos))"
 
-class SimpleHistogram(WeaveStepFuncVisitor):
+class ExtraStats(WeaveStepFuncVisitor):
+    """Empty base class for histograms, activity counters, ..."""
+
+    category = "extrastats"
+
+class SimpleHistogram(ExtraStats):
     """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
     give access to a new array in the target called "histogram". This value will
     count the amount of cells with the value used as its index."""
+
     def visit(self):
         super(SimpleHistogram, self).visit()
         if len(self.code.acc.size_names) == 1:
@@ -719,7 +740,7 @@ if result != %(center)s:
     def build_name(self, parts):
         parts.append("(histogram)")
 
-class ActivityRecord(WeaveStepFuncVisitor):
+class ActivityRecord(ExtraStats):
     """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
     create a property called "activity" on the target. It is a two-cell
     array with the value of how many fields have changed their state in the last
@@ -1791,6 +1812,21 @@ class BinRule(TestTarget):
 
     def __str__(self):
         return str(self.stepfunc)
+
+def categories():
+    all_classes = []
+    categories = {}
+    look_at = WeaveStepFuncVisitor.__subclasses__()
+
+    while len(look_at) > 0:
+        item = look_at.pop()
+        if item.category not in categories:
+            categories[item.category] = []
+        categories[item.category].append(item)
+        all_classes.append(item)
+        look_at.extend([cls for cls in item.__subclasses__() if cls not in all_classes])
+
+    return categories
 
 def test():
     size = 75
