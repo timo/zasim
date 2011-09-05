@@ -293,6 +293,10 @@ class WeaveStepFunc(object):
     def getConf(self):
         return self.target.cconf.copy()
 
+    def set_config(self, config):
+        self.target.cconf = config.copy()
+        self.new_config()
+
     def set_target(self, target):
         """Set the target of the step function. The target contains,
         among other things, the configurations."""
