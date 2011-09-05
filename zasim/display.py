@@ -107,6 +107,9 @@ class ZasimMainWindow(QMainWindow):
         :param display: A :class:`BaseDisplayWidget` instance.
         :param control: Optionally, a :class:`ControlWidget` instance."""
         super(ZasimMainWindow, self).__init__(**kwargs)
+
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
         self.simulator = simulator
         self.display = display
         self.control = control
@@ -608,9 +611,13 @@ class StepFuncCompositionDialog(QWidget):
     def __init__(self, **kwargs):
         super(StepFuncCompositionDialog, self).__init__(**kwargs)
 
+        self.setAttribute(Qt.WA_DeleteOnClose)
+
         self.setup_ui()
         self.part_tree.currentItemChanged.connect(self.update_docs)
         self.part_tree.itemDoubleClicked.connect(self.dbl_click_item)
+
+        self.cancel_button.clicked.connect(self.close)
 
     def update_docs(self, new, old):
         obj = new.data(0, CLASS_OBJECT_ROLE)
@@ -632,7 +639,10 @@ This pane at the bottom will display documentation."""
     def setup_ui(self):
         categories = cagen.categories()
 
+        outermost_layout = QVBoxLayout(self)
+
         outer_layout = QSplitter(Qt.Vertical, self)
+        outermost_layout.addWidget(outer_layout)
 
         # upper part: list and slots
         upper_widget = QWidget(self)
@@ -680,14 +690,23 @@ This pane at the bottom will display documentation."""
         upper_pane.addLayout(left_pane)
         upper_pane.addLayout(right_pane)
 
-        wrapper_layout = QHBoxLayout(self)
-        wrapper_layout.addWidget(outer_layout)
-        self.setLayout(wrapper_layout)
+        button_layout = QHBoxLayout(self)
+        button_layout.addStretch()
+
+        self.cancel_button = QPushButton("Cancel", self)
+        self.create_button = QPushButton("Create", self)
+
+        button_layout.addWidget(self.cancel_button)
+        button_layout.addWidget(self.create_button)
+
+        outermost_layout.addLayout(button_layout)
+        self.setLayout(outermost_layout)
 
     def dbl_click_item(self, item, column):
         cls = item.data(0, CLASS_OBJECT_ROLE)
         if cls.category in self.single_categories:
-            self.category_buttons[cls.category].setText(cls.__name__)
+            button = self.category_buttons[cls.category]
+            button.setText(cls.__name__)
         else:
             self.additional_list.addItem(cls.__name__)
 
