@@ -840,7 +840,7 @@ class VonNeumannNeighbourhood(SimpleNeighbourhood):
     right respectively."""
     def __init__(self, **kwargs):
         super(VonNeumannNeighbourhood, self).__init__(
-                list("lumdr"),
+                list("udlrm"),
                 [(0,-1), (0,1), (-1,0), (1,0), (0,0)],
                 **kwargs)
 
