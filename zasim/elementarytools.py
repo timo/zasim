@@ -489,7 +489,7 @@ def flip_values(digits_and_values, permutations=[]):
         ndav.append(ndata)
     return ndav
 
-def mirror_by_axis(neighbourhood, digits_and_values, axis=[0]):
+def mirror_by_axis(neighbourhood, axis=[0]):
     offs_to_name = dict(zip(neighbourhood.offsets, neighbourhood.names))
     pairs = []
     for offset, name in offs_to_name.iteritems():
@@ -501,49 +501,55 @@ def mirror_by_axis(neighbourhood, digits_and_values, axis=[0]):
             raise ValueError("Mirrored %s to %s, but could not find it in offsets!" % \
                     (offset, mirrored))
 
-    return flip_values(digits_and_values, pairs)
+    return pairs
 
 @neighbourhood_action("flip vertically")
-def flip_v(neighbourhood, digits_and_values):
-    return mirror_by_axis(neighbourhood, digits_and_values, [1])
+def flip_v(neighbourhood, digits_and_values, cache={}):
+    if neighbourhood not in cache:
+        cache[neighbourhood] = mirror_by_axis(neighbourhood, [1])
+    return flip_values(digits_and_values, cache[neighbourhood])
 
 @neighbourhood_action("flip horizontally")
-def flip_h(neighbourhood, digits_and_values):
-    return mirror_by_axis(neighbourhood, digits_and_values, [0])
+def flip_h(neighbourhood, digits_and_values, cache={}):
+    if neighbourhood not in cache:
+        cache[neighbourhood] = mirror_by_axis(neighbourhood, [0])
+    return flip_values(digits_and_values, cache[neighbourhood])
 
-@neighbourhood_action("flip both")
-def flip_both(neighbourhood, digits_and_values):
-    return mirror_by_axis(neighbourhood, digits_and_values, [0, 1])
+#@neighbourhood_action("flip both")
+#def flip_both(neighbourhood, digits_and_values, cache={}):
+    #if neighbourhood not in cache:
+        #cache[neighbourhood] = mirror_by_axis(neighbourhood, [0, 1])
+    #return flip_values(digits_and_values, cache[neighbourhood])
 
 @neighbourhood_action("rotate clockwise")
-def rotate_clockwise(neighbourhood, digits_and_values):
-    def rotate(pos):
-        a, b = pos
-        return -b, a
-    offs_to_name = dict(zip(neighbourhood.offsets, neighbourhood.names))
-    print offs_to_name
-    perms = []
-    taken = []
-    for offset, name in offs_to_name.iteritems():
-        if offset in taken:
-            continue
-        new_offs = rotate(offset)
-        perm = [offs_to_name[new_offs]]
-        while new_offs != offset:
-            after_rotate = rotate(new_offs)
-            if after_rotate in taken:
-                perm = []
-                break
-            taken.append(after_rotate)
-            perm.append(offs_to_name[after_rotate])
-            new_offs = after_rotate
+def rotate_clockwise(neighbourhood, digits_and_values, cache={}):
+    if neighbourhood not in cache:
+        def rotate(pos):
+            a, b = pos
+            return -b, a
+        offs_to_name = dict(zip(neighbourhood.offsets, neighbourhood.names))
+        perms = []
+        taken = []
+        for offset, name in offs_to_name.iteritems():
+            if offset in taken:
+                continue
+            new_offs = rotate(offset)
+            perm = [offs_to_name[new_offs]]
+            while new_offs != offset:
+                after_rotate = rotate(new_offs)
+                if after_rotate in taken:
+                    perm = []
+                    break
+                taken.append(after_rotate)
+                perm.append(offs_to_name[after_rotate])
+                new_offs = after_rotate
 
-        if len(perm) >= 2:
-            perms.append(perm)
+            if len(perm) >= 2:
+                perms.append(perm)
 
-    print perms
-    return flip_values(digits_and_values, perms)
+        cache[neighbourhood] = perms
 
+    return flip_values(digits_and_values, cache[neighbourhood])
 
 def main():
     from .cagen import VonNeumannNeighbourhood, MooreNeighbourhood
