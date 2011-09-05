@@ -346,6 +346,7 @@ class HistoryDisplayWidget(BaseDisplayWidget):
             QSize(self.img_width * self.img_scale, self.img_scale)))
 
 class TwoDimDisplayWidget(BaseDisplayWidget):
+    """A display widget for two-dimensional configurations."""
     def __init__(self, simulator, scale=1, **kwargs):
         super(TwoDimDisplayWidget, self).__init__(width=simulator.shape[0],
                     height=simulator.shape[1],
@@ -392,6 +393,8 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         self.update()
 
 class BaseExtraDisplay(QDockWidget):
+    """The base class for a dockable/undockable/tabbable extra display widget
+    for things such as histograms."""
     def __init__(self, title, sim, width, height, parent=None, **kwargs):
         super(BaseExtraDisplay, self).__init__(unicode(title))
         self.display_widget = QWidget(self)
@@ -432,6 +435,9 @@ class BaseExtraDisplay(QDockWidget):
         pass
 
 class HistogramExtraDisplay(BaseExtraDisplay):
+    """This extra display can take any attribute from the simulation target
+    that is an one-dimensional array and display its values over time as
+    colored vertical lines."""
     colors = [QColor("black"), QColor("white"), QColor("red"), QColor("blue"),
               QColor("green"), QColor("yellow")]
     def __init__(self, sim, attribute="histogram", width=300, maximum=1.0, **kwargs):
