@@ -96,12 +96,18 @@ def master():
     write_proc.start()
     processes = []
     chunksize = 1000
+    num_done = 0
+    last_done_time = time()
     for bunch in range(start_num / chunksize):
-        while len(processes) >= 4:
+        while len(processes) >= 3:
             for proc in processes:
                 if not proc.is_alive():
                     processes.remove(proc)
                     proc.join()
+                    num_done += chunksize
+                    if num_done % (chunksize * 10) == 0:
+                        print "%d nums took %s time" % (chunksize * 10, time() - last_done_time)
+                        last_done_time = time()
             sleep(0.1)
         proc = multiprocessing.Process(target=deal_with_range,
             args = (start_num - bunch * chunksize,
