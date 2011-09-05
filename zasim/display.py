@@ -588,6 +588,7 @@ def main():
     w, h = 200, 200
 
     onedim, twodim = False, True
+    beta = True
 
     if onedim:
         # get a random beautiful CA
@@ -609,8 +610,12 @@ def main():
         compute = cagen.LifeCellularAutomatonBase()
         l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
         #l = cagen.TwoDimCellLoop()
-        acc = cagen.SimpleStateAccessor()
-        neigh = cagen.MooreNeighbourhood()
+        if beta:
+            acc = cagen.BetaAsynchronousAccessor()
+            neigh = cagen.MooreNeighbourhood(Base=cagen.BetaAsynchronousNeighbourhood)
+        else:
+            acc = cagen.SimpleStateAccessor()
+            neigh = cagen.MooreNeighbourhood()
         copier = cagen.TwoDimSlicingBorderCopier()
         #copier = cagen.TwoDimZeroReader()
         hist = cagen.SimpleHistogram()
