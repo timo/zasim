@@ -455,7 +455,7 @@ class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
 
-    category = "Loop"
+    category = "loop"
 
     def get_pos(self):
         """Returns a code bit to get the current position in config space."""
