@@ -29,6 +29,7 @@ Contents:
    cagen
    display
    elementarytools
+   elementarygui
 
 Indices and tables
 ==================
