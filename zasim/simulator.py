@@ -131,7 +131,7 @@ class CagenSimulator(BaseSimulator):
         self.updated.emit()
 
     def set_config_value(self, pos, value=None):
-        self._step_func.set_config_value(pos, value)
+        self._step_func.set_config_value(pos[::-1], value)
         self.updated.emit()
 
     def step(self):
