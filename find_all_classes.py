@@ -1,17 +1,17 @@
 from zasim.elementarytools import minimize_rule_number
-from zasim.cagen import VonNeumannNeighbourhood, elementary_digits_and_values
+from zasim.cagen import elementary_digits_and_values
+from zasim import cagen
 import numpy as np
 from time import time, sleep
 import os
 import multiprocessing
-import math
 import Queue
 
 filepath = "find_results.txt"
 
-neigh = VonNeumannNeighbourhood()
-rule = np.zeros(2 ** 5, dtype=np.dtype("i"))
-start_num = 2 ** 32
+neigh = cagen.VonNeumannNeighbourhood()
+rule = np.zeros(2 ** len(neigh.offsets), dtype=np.dtype("i"))
+maximum_number = 2 ** (2 ** len(neigh.offsets))
 try:
     with open(filepath, "r") as old_results:
         old_results.seek(-1000, os.SEEK_END)
@@ -20,12 +20,12 @@ try:
         numbers = map(int, numbers)
         start_num = max(numbers)
 except IOError:
-    pass
+    start_num = maximum_number
 
 
 print "resuming from %d" % (start_num)
 
-known_bits = multiprocessing.Array("B", int((2 ** 32) / 8 + 10), lock=False)
+known_bits = multiprocessing.Array("B", int(maximum_number / 8 + 10), lock=False)
 print "array len is", len(known_bits)
 program_running = multiprocessing.Value('f', 1)
 array_lock = multiprocessing.RLock()
@@ -71,7 +71,7 @@ def deal_with_range(start, stop, skip, data_queue):
         dav = elementary_digits_and_values(neigh, 2, rule)
         lower, (route, _), cache = minimize_rule_number(neigh, dav)
         if lower < rule_nr:
-            nom = [lower] + cache.keys()
+            nom = cache.keys()
             set_bits(nom)
             data_queue.put(nom)
 
@@ -84,6 +84,7 @@ def master():
             while program_running.value > 0:
                 try:
                     data = queue.get(timeout=1)
+                    data.sort()
                     results.write("<".join(map(str,data)))
                     results.write("\n")
                 except Queue.Empty:
@@ -95,13 +96,16 @@ def master():
     write_proc = multiprocessing.Process(target=write_out_results, args=(queue,))
     write_proc.start()
     processes = []
-    chunksize = 1000
     num_done = 0
     last_done_time = time()
     try:
         process_limit = multiprocessing.cpu_count()
     except NotImplementedError:
         process_limit = 2
+    process_limit += 1
+
+    chunksize = min(1000, start_num / (process_limit * 2))
+
     for bunch in range(start_num / chunksize):
         while len(processes) >= process_limit:
             for proc in processes:
@@ -116,8 +120,8 @@ def master():
 
             sleep(0.1)
         proc = multiprocessing.Process(target=deal_with_range,
-            args = (start_num - bunch * chunksize,
-                    start_num - bunch * chunksize - chunksize,
+            args = (max(1, start_num - bunch * chunksize),
+                    max(0, start_num - bunch * chunksize - chunksize),
                     -1, queue))
         proc.start()
         processes.append(proc)
