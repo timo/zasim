@@ -232,7 +232,7 @@ class ControlWidget(QWidget):
 
     def set_config(self, conf=None):
         if conf is None:
-            conf = np.zeros(self.sim.getConf().shape, self.sim.getConf().dtype)
+            conf = np.zeros(self.sim.get_config().shape, self.sim.get_config().dtype)
             positions = product(*[range(size) for size in conf.shape])
             zero_perc = self.zero_percentage.value() / 100.
             for pos in positions:
@@ -333,7 +333,7 @@ class HistoryDisplayWidget(BaseDisplayWidget):
     def after_step(self):
         """React to a single step. Copy the current configuration into the
         :attr:`display_queue` and schedule a call to :meth:`paintEvent`."""
-        conf = self.sim.getConf().copy()
+        conf = self.sim.get_config().copy()
         try:
             self.display_queue.put_nowait(conf)
         except Queue.Full:
@@ -364,7 +364,7 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
 
         self.sim = simulator
         self.conf_new = True
-        self.queued_conf = simulator.getConf()
+        self.queued_conf = simulator.get_config()
 
         self.drawing = False
         self.last_draw_pos = QPoint(0,0)
@@ -397,7 +397,7 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
     def after_step(self):
         """React to a single step. Set the :attr:`queued_conf` to a copy of the
         current config and trigger a :meth:`paintEvent`."""
-        conf = self.sim.getConf().copy()
+        conf = self.sim.get_config().copy()
         self.queued_conf = conf
         self.conf_new = True
 
