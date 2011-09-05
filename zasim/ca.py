@@ -129,7 +129,7 @@ class CA(object):
         return self.title.upper()
 
     ## Returns the current configuration
-    def getConf( self ):
+    def get_config( self ):
         return self.currConf.copy()
 
     ## Returns the cellular automaton's dimension
@@ -741,7 +741,7 @@ class vonNeumann ( CA ):
             self.nextConf[x][y] = s
             self.enlist(x,y)
 
-    def getConf( self ):
+    def get_config( self ):
         for i in range( 1, self.sizeX-1 ):
             for j in range( 1, self.sizeY-1 ):
                 if self.displayableStateDict.has_key( self.currConf[i][j] ):

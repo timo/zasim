@@ -32,14 +32,14 @@ class TestCAGen:
     def test_compare_weaves(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
         br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
-        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.getConf().copy()[1:-1])
+        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.get_config().copy()[1:-1])
 
         for i in range(10):
             br.updateAllCellsWeaveInline()
             br2.step_inline()
-            compare_arrays(br.getConf(), br2.cconf)
+            compare_arrays(br.get_config(), br2.cconf)
 
-        assert_arrays_equal(br.getConf(), br2.cconf)
+        assert_arrays_equal(br.get_config(), br2.cconf)
 
     @pytest.mark.skipif("not ca.HAVE_WEAVE")
     def test_gen_weave_only(self, tested_rule_num):
@@ -63,19 +63,19 @@ class TestCAGen:
     def test_compare_pures(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
         br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
-        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.getConf().copy()[1:-1])
+        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.get_config().copy()[1:-1])
 
         # are the rules the same?
         assert_arrays_equal(br.ruleIdx, br2.rule)
 
-        assert_arrays_equal(br.getConf(), br2.cconf)
+        assert_arrays_equal(br.get_config(), br2.cconf)
 
         for i in range(10):
             br.updateAllCellsPy()
             br2.step_pure_py()
-            compare_arrays(br.getConf(), br2.cconf)
+            compare_arrays(br.get_config(), br2.cconf)
 
-        assert_arrays_equal(br.getConf(), br2.cconf)
+        assert_arrays_equal(br.get_config(), br2.cconf)
 
     def test_run_nondeterministic_pure(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)

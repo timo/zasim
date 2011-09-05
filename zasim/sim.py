@@ -194,7 +194,7 @@ class Simulator(object):
         showStepCount = True
         stepCounter = 0
         markedConfIdxDict = { (self.ca.getType(), self.ca.getSize()): 0 }
-        self.caConfDict[(self.ca.getType(), self.ca.getSize())] = [(self.ca.getConf().copy(),self.ca.getType() + ": init")]
+        self.caConfDict[(self.ca.getType(), self.ca.getSize())] = [(self.ca.get_config().copy(),self.ca.getType() + ": init")]
         ## a list of all the different sizes and kinds of CA the simulator has handled yet
         self.caKeys = [(self.ca.getType(), self.ca.getSize())]
         keyIdx = 0
@@ -281,9 +281,9 @@ class Simulator(object):
                                               str(len(self.caConfDict[key])) )
                         confName = self.display.getUserInputKey(
                             msg="Set name for marked conf", default="" )
-                        self.caConfDict[key].append((self.ca.getConf().copy(),confName))
+                        self.caConfDict[key].append((self.ca.get_config().copy(),confName))
                         markedConfIdxDict[key] = len( self.caConfDict[key] ) - 1
-                        self.display.drawConf( self.ca.getConf(), True )
+                        self.display.drawConf( self.ca.get_config(), True )
                         loop = False
 
                     elif e.key == pygame.K_o:
@@ -343,13 +343,13 @@ class Simulator(object):
                                                                           False, sizeX, sizeY,
                                                                           self.scale, oneLiner )
                                         self.ca, self.display = self.caDict[key]
-                                        self.caConfDict[key] = [(self.ca.getConf().copy(),
+                                        self.caConfDict[key] = [(self.ca.get_config().copy(),
                                                                  CAType + ": " + filename )]
                                         markedConfIdxDict[(self.ca.getType(), self.ca.getSize())] = 0
                                         self.caKeys.append( key )
                                     else:
                                         self.ca, self.display = self.caDict[key]
-                                        self.caConfDict[key].append( (self.ca.getConf().copy,
+                                        self.caConfDict[key].append( (self.ca.get_config().copy,
                                                                       CAType + ": " + filename ) )
                                         markedConfIdxDict[key] = len( self.caConfDict[key] ) - 1
 
@@ -358,7 +358,7 @@ class Simulator(object):
                             else:
                                 self.display.setText( "Cancelled" )
 
-                            self.display.drawConf( self.ca.getConf(), True )
+                            self.display.drawConf( self.ca.get_config(), True )
 
 
                     elif e.unicode == "q" or e.key == pygame.K_ESCAPE:
@@ -410,17 +410,17 @@ class Simulator(object):
                                             flag &= path.exists( filename )
 
                             if filename == "":
-                                self.display.drawConf( self.ca.getConf(), True )
+                                self.display.drawConf( self.ca.get_config(), True )
                                 self.display.setText( "Cancelled" )
                             else:
                                 self.ca.exportConf( filename )
-                                self.display.drawConf( self.ca.getConf(), True )
+                                self.display.drawConf( self.ca.get_config(), True )
                                 self.display.setText( "Saved to " + filename )
 
                         else:
                             self.ca.step()
                             stepCounter += 1
-                            self.display.drawConf( self.ca.getConf(), not self.oneLiner )
+                            self.display.drawConf( self.ca.get_config(), not self.oneLiner )
                             self.display.setText( "Step" )
 
                     elif e.key == pygame.K_RIGHT or e.key == pygame.K_LEFT \
@@ -455,7 +455,7 @@ class Simulator(object):
                         if loop:
                             msg = "Start"
                         if self.display.textAlive:
-                            self.display.drawConf( self.ca.getConf(), self.oneLiner )
+                            self.display.drawConf( self.ca.get_config(), self.oneLiner )
                         self.display.setText( msg )
 
                     elif e.key == pygame.K_TAB:
@@ -469,7 +469,7 @@ class Simulator(object):
 #                                self.markedConfNames[markedConfIdx] = confName
 
 
-#                            self.caConfDict[(CAType.upper(), (sizeX, sizeY) )] = [([self.ca.getConf().copy()],[CAType + ": init"])]
+#                            self.caConfDict[(CAType.upper(), (sizeX, sizeY) )] = [([self.ca.get_config().copy()],[CAType + ": init"])]
 #                            markedConfIdxDict[(self.ca.getType(), self.ca.getSize())] = 0
                             confName = self.display.getUserInputKey(
                                 msg = "Name this conf:", default=self.caConfDict[key][markedConfIdxDict[key]][1] )
@@ -524,7 +524,7 @@ class Simulator(object):
                     stepCounter += steps
             delay += 1
 
-            self.display.drawConf( self.ca.getConf(), not self.oneLiner and loop )
+            self.display.drawConf( self.ca.get_config(), not self.oneLiner and loop )
             self.display.showText()
             if showStepCount:
                 self.display.showCounter( stepCounter )
