@@ -1,7 +1,7 @@
 from zasim.elementarytools import minimize_rule_number
 from zasim.cagen import VonNeumannNeighbourhood, elementary_digits_and_values
 import numpy as np
-from time import time
+from time import time, sleep
 import os
 import multiprocessing
 import math
@@ -23,9 +23,11 @@ except IOError:
 
 
 print "resuming from %d" % (start_num)
+start_num = 2 ** 32
 
-known_bits = multiprocessing.Array("c", math.ceil(start_num / 8.0))
-program_running = multiprocessing.Value('d', 1)
+known_bits = multiprocessing.Array("B", int(math.ceil(start_num / 8.0) + 10))
+print "array len is", len(known_bits)
+program_running = multiprocessing.Value('f', 1)
 
 def set_bit(bit):
     known_bits[bit / 8] |= 1 >> (bit % 8)
@@ -65,7 +67,7 @@ def master():
                 try:
                     data = queue.get_nowait()
                     data.sort()
-                    results.write("<".join(data))
+                    results.write("<".join(map(str,data)))
                     results.write("\n")
                 except Queue.Empty:
                     pass
@@ -75,12 +77,21 @@ def master():
     write_proc.start()
     processes = []
     start_num = 2 ** 32
-    for bunch in range(50):
-        while len(processes) > 10:
+    chunksize = 1000
+    for bunch in range(200):
+        while len(processes) >= 3:
             for proc in processes:
                 if not proc.is_alive():
                     processes.remove(proc)
+            sleep(0.5)
         proc = multiprocessing.Process(target=deal_with_range,
-            args = (start_num - bunch * 100, start_num - bunch * 100 - 100, -1, queue))
+            args = (start_num - bunch * chunksize,
+                    start_num - bunch * chunksize - chunksize,
+                    -1, queue))
         proc.start()
         processes.append(proc)
+        assert write_proc.is_alive()
+    program_running.value = 0
+
+if __name__ == "__main__":
+    master()
