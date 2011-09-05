@@ -1387,7 +1387,7 @@ class ElementaryCellularAutomatonBase(Computation):
 
     digits_and_values = []
     """This list stores a list of dictionaries that for each combination of
-    values for the neighbourhood cells stores the 'result', too."""
+    values for the neighbourhood cells stores the 'result_value', too."""
 
 
     def __init__(self, rule=None, **kwargs):
