@@ -1132,8 +1132,8 @@ def VonNeumannNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
 
     The neighbours are called l, u, m, d and r for left, up, middle, down and
     right respectively."""
-    return Base(list("lumdr"),
-                [(0,-1), (0,1), (-1,0), (1,0), (0,0)],
+    return Base(list("uldrm"),
+                [(0,-1), (-1,0), (0,1), (1,0), (0,0)],
                 **kwargs)
 
 def MooreNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
