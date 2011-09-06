@@ -179,13 +179,13 @@ class ControlWidget(QWidget):
     def _setup_ui(self):
         """Setup the widgets, connect the signals&slots."""
         l = QHBoxLayout(self)
-        self.start_button = QPushButton("Start", self)
-        self.stop_button = QPushButton("Stop", self)
+        self.start_button = QPushButton("&Start", self)
+        self.stop_button = QPushButton("&Stop", self)
         self.stop_button.hide()
         delay = QSpinBox()
         delay.setMinimum(0)
         delay.setMaximum(10000)
-        delay.setSuffix("ms")
+        delay.setSuffix(" ms")
         delay.setValue(self.timer_delay)
 
         l.addWidget(self.start_button)
@@ -193,7 +193,7 @@ class ControlWidget(QWidget):
         l.addWidget(delay)
 
         l.addSpacing(11)
-        reset_button = QPushButton("reset", self)
+        reset_button = QPushButton("&reset", self)
         reset_button.clicked.connect(self.set_config)
         l.addWidget(reset_button)
 
@@ -206,7 +206,7 @@ class ControlWidget(QWidget):
 
         self.invert_frames = QCheckBox(self)
         self.invert_frames.setChecked(False)
-        self.invert_frames.setText("invert odd frames")
+        self.invert_frames.setText("&invert odd frames")
         self.invert_frames.stateChanged.connect(self.invert_odd)
         l.addWidget(self.invert_frames)
 
