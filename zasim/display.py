@@ -167,7 +167,10 @@ class ZasimMainWindow(QMainWindow):
             self.elementary_tool.show()
 
     def show_new_sim_dlg(self):
-        if self.comp_dlg and not self.comp_dlg.isVisible():
+        try:
+            if self.comp_dlg and not self.comp_dlg.isVisible():
+                self.comp_dlg = None
+        except RuntimeError: # the object on the C++ side had already been deleted
             self.comp_dlg = None
         if self.comp_dlg is None:
             self.comp_dlg = StepFuncCompositionDialog()
@@ -767,6 +770,7 @@ This pane at the bottom will display documentation."""
                 cat_item.addChild(cls_item)
 
             self.part_tree.addTopLevelItem(cat_item)
+            self.part_tree.expandItem(cat_item)
 
         # right pane: selected parts
         right_pane = QGridLayout()
@@ -818,28 +822,66 @@ This pane at the bottom will display documentation."""
             self.extraparts.append(cls)
 
     def create(self):
-        w, h = 200, 200
-        scale = 3
+        extra_code = "[%s]" % (", ".join(
+            ["%s()" % (cls.__name__) for cls in self.extraparts]))
+        generated_code = """
+w, h = 200, 200
+scale = 3
 
-        t = cagen.TestTarget(size=(w, h))
-        l = self.parts["loop"]()
-        acc = self.parts["accessor"]()
-        neigh = self.parts["neighbourhood"]()
-        extra_code = [a() for a in self.extraparts]
-        sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                        extra_code=[extra_code], target=t)
+t = cagen.TestTarget(size=(w, h))
+l = %(loop)s()
+acc = %(acc)s()
+neigh = %(neigh)s()
+extra_code = %(extra)s
+sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                extra_code=[extra_code], target=t)
 
-        sim.gen_code()
-        print compute.pretty_print()
-        print compute.rule, hex(compute.rule)
+sim.gen_code()
 
-        sim_obj = ElementaryCagenSimulator(sim, t)
+sim_obj = ElementaryCagenSimulator(sim, t)
 
-        display_obj = ZasimDisplay(sim_obj)
-        display_obj.set_scale(scale)
-        display_objects.append(display_obj)
+display_obj = ZasimDisplay(sim_obj)
+display_obj.set_scale(scale)
+display_objects.append(display_obj)
 
-        display_obj.control.start()
+display_obj.control.start()""" % dict(
+            loop=self.parts["loop"].__name__, acc=self.parts["accessor"].__name__,
+            neigh=self.parts["neighbourhood"].__name__, extra=extra_code)
+
+        EditWindow(generated_code).exec_()
+
+class EditWindow(QDialog):
+    def __init__(self, code, title="Editing code"):
+        super(EditWindow, self).__init__()
+        self.setWindowTitle(title)
+        self.setup_ui()
+        self.edit_widget.setText(code)
+
+        self.run_button.clicked.connect(self.run_code)
+        self.cancel_button.clicked.connect(self.rejected)
+
+    def setup_ui(self):
+        l = QVBoxLayout(self)
+        self.edit_widget = QTextEdit(self)
+
+        button_layout = QHBoxLayout()
+        button_layout.addStretch()
+
+        self.run_button = QPushButton("Execute")
+        self.cancel_button = QPushButton("Cancel")
+
+        button_layout.addWidget(self.cancel_button)
+        button_layout.addWidget(self.run_button)
+
+        l.addWidget(self.edit_widget)
+        l.addLayout(button_layout)
+
+        self.setLayout(l)
+
+    def run_code(self):
+        exec self.edit_widget.toPlainText() in globals(), locals()
+        self.accepted.emit()
+        self.close()
 
 def main(rule=None):
     app = QApplication(sys.argv)
