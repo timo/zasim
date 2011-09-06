@@ -864,6 +864,10 @@ def main(rule=None):
 if __name__ == "__main__":
     import sys
     if len(sys.argv) > 1:
-        main(int(sys.argv[1]))
+        if sys.argv[1].startswith("0x"):
+            rule_nr = int(sys.argv[1], 16)
+        else:
+            rule_nr = int(sys.argv[1])
+        main(rule_nr)
     else:
         main()
