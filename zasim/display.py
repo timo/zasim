@@ -561,7 +561,7 @@ class HistogramExtraDisplay(BaseExtraDisplay):
         self.linepos = linepos
 
     def after_step(self):
-        value = getattr(self.sim._target, self.attribute)
+        value = getattr(self.sim._target, self.attribute).copy()
         try:
             self.queue.put_nowait(value)
         except Queue.Full:
