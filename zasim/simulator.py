@@ -146,3 +146,14 @@ class CagenSimulator(BaseSimulator):
 
     def __str__(self):
         return str(self._step_func)
+
+class ElementaryCagenSimulator(CagenSimulator):
+    """This Simulator has a few special options available only if you have an
+    elementary step func with a rule number."""
+
+    rule_number = 0
+    """The rule number of the target."""
+
+    def __init__(self, step_func, target):
+        super(ElementaryCagenSimulator, self).__init__(step_func=step_func, target=target)
+        self.rule_number = target.rule_number

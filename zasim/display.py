@@ -6,7 +6,8 @@ It will try importing PySide first, and if that fails PyQt. The code will
 constantly be tested with both bindings."""
 
 from . import cagen
-from .simulator import CagenSimulator
+from .simulator import ElementaryCagenSimulator
+from .elementarygui import ElementaryRuleWindow
 
 try:
     from PySide.QtCore import *
@@ -144,6 +145,9 @@ class ZasimMainWindow(QMainWindow):
 
         self.control.start_inverting_frames.connect(self.display.start_inverting_frames)
         self.control.stop_inverting_frames.connect(self.display.stop_inverting_frames)
+
+
+        self.actions_pane = ActionsDockWidget(self.simulator, parent=self)
 
     def attach_display(self, display):
         """Attach an extra display to the control.
@@ -475,6 +479,36 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         new_draw_pos = (event.x() / self.img_scale, event.y() / self.img_scale)
         if self.last_draw_pos != new_draw_pos:
             self.sim.set_config_value(new_draw_pos)
+
+class ActionsDockWidget(QDockWidget):
+    """A dock widget for actions and settings for the simulator."""
+    def __init__(self, sim, parent=None, **kwargs):
+        super(ActionsDockWidget, self).__init__(parent=parent, **kwargs)
+        self.setup_ui()
+        self.sim = sim
+
+        self.elementary_tool_button.clicked.connect(self.open_elementary_tool)
+        self.elementary_tool = None
+
+        self.setAllowedAreas(Qt.RightDockWidgetArea)
+        self.setFloating(False)
+
+    def setup_ui(self):
+        self.container_widget = QWidget(self)
+        buttons_box = QVBoxLayout(self.container_widget)
+
+        self.elementary_tool_button = QPushButton("elementary tool", self.container_widget)
+        buttons_box.addWidget(self.elementary_tool_button)
+
+        self.container_widget.setLayout(buttons_box)
+        self.setWidget(self.container_widget)
+
+    def open_elementary_tool(self):
+        if self.elementary_tool and not self.elementary_tool.isVisible():
+            self.elementary_tool = None
+        if self.elementary_tool is None:
+            self.elementary_tool = ElementaryRuleWindow(self.sim._step_func.neigh, self.sim.rule_number)
+            self.elementary_tool.show()
 
 class BaseExtraDisplay(QDockWidget):
     """The base class for a dockable/undockable/tabbable extra display widget
@@ -816,6 +850,8 @@ def main(rule=None):
             rule_number = random.randint(0, 2 ** 32)
 
         compute = cagen.ElementaryCellularAutomatonBase(rule=rule_number)
+        t.rule_number = rule_number # XXX this must be better.
+
 
         if beta or not nondet:
             l = cagen.TwoDimCellLoop()
@@ -837,7 +873,7 @@ def main(rule=None):
         print compute.pretty_print()
         print compute.rule, hex(compute.rule)
 
-        sim_obj = CagenSimulator(sim, t)
+        sim_obj = ElementaryCagenSimulator(sim, t)
 
         display_b = ZasimDisplay(sim_obj)
         display_b.set_scale(scale)

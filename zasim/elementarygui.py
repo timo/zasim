@@ -284,7 +284,7 @@ class ElementaryRuleWindow(QWidget):
 
         layout = QVBoxLayout(self)
 
-        self.rule_nr_display = QLabel("Editing rule %d" % (self.rule_nr), self)
+        self.rule_nr_display = QLabel("Editing rule %s" % hex(self.rule_nr), self)
         layout.addWidget(self.rule_nr_display)
         layout.addWidget(self.scroll_area)
 
