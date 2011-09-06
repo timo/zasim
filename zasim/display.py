@@ -6,7 +6,7 @@ It will try importing PySide first, and if that fails PyQt. The code will
 constantly be tested with both bindings."""
 
 from . import cagen
-from .simulator import ElementaryCagenSimulator
+from .simulator import ElementaryCagenSimulator, CagenSimulator
 from .elementarygui import ElementaryRuleWindow
 
 try:
@@ -894,8 +894,9 @@ def main(rule=None):
     w, h = 200, 200
 
     onedim, twodim = False, True
-    beta = False
-    nondet = True
+    beta = True
+    nondet = False
+    life = True
 
     if onedim:
         # get a random beautiful CA
@@ -903,7 +904,7 @@ def main(rule=None):
              [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
              size=(w,))
 
-        sim_obj = CagenSimulator(sim.stepfunc, sim)
+        sim_obj = ElementaryCagenSimulator(sim.stepfunc, sim)
         display_a = ZasimDisplay(sim_obj)
         display_a.set_scale(scale)
 
@@ -914,25 +915,33 @@ def main(rule=None):
 
         t = cagen.TestTarget(config=twodim_rand)
 
-        if rule is not None:
-            rule_number = rule
+        if life:
+            compute = cagen.LifeCellularAutomatonBase()
         else:
-            rule_number = random.randint(0, 2 ** 32)
+            if rule is not None:
+                rule_number = rule
+            else:
+                rule_number = random.randint(0, 2 ** 32)
 
-        compute = cagen.ElementaryCellularAutomatonBase(rule=rule_number)
-        t.rule_number = rule_number # XXX this must be better.
+            compute = cagen.ElementaryCellularAutomatonBase(rule=rule_number)
+            t.rule_number = rule_number # XXX this must be better.
 
 
         if beta or not nondet:
             l = cagen.TwoDimCellLoop()
         elif nondet:
-            l = cagen.TwoDimNondeterministicCellLoop(probab=0.7)
+            l = cagen.TwoDimNondeterministicCellLoop(probab=0.5)
+        if life:
+            NeighClass = cagen.MooreNeighbourhood
+        else:
+            NeighClass = cagen.VonNeumannNeighbourhood
+
         if beta:
-            acc = cagen.BetaAsynchronousAccessor()
-            neigh = cagen.VonNeumannNeighbourhood(Base=cagen.BetaAsynchronousNeighbourhood)
+            acc = cagen.BetaAsynchronousAccessor(probab=0.1)
+            neigh = NeighClass(Base=cagen.BetaAsynchronousNeighbourhood)
         else:
             acc = cagen.SimpleStateAccessor()
-            neigh = cagen.VonNeumannNeighbourhood()
+            neigh = NeighClass()
         copier = cagen.TwoDimSlicingBorderCopier()
         hist = cagen.SimpleHistogram()
         activity = cagen.ActivityRecord()
@@ -940,10 +949,14 @@ def main(rule=None):
                         extra_code=[copier, compute, hist, activity], target=t)
 
         sim.gen_code()
-        print compute.pretty_print()
-        print compute.rule, hex(compute.rule)
 
-        sim_obj = ElementaryCagenSimulator(sim, t)
+        if not life:
+            print compute.pretty_print()
+            print compute.rule, hex(compute.rule)
+
+            sim_obj = ElementaryCagenSimulator(sim, t)
+        else:
+            sim_obj = CagenSimulator(sim, t)
 
         display_b = ZasimDisplay(sim_obj)
         display_b.set_scale(scale)
