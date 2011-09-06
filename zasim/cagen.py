@@ -609,13 +609,9 @@ class SimpleStateAccessor(StateAccessor):
             raise NotImplementedError("SimpleStateAccessor only supports up to 2 dimensions.")
 
     def read_access(self, pos, skip_border=False):
-        if skip_border:
-            return "cconf(%s)" % (pos,)
         return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names[0])),)
 
     def write_access(self, pos, skip_border=False):
-        if skip_border:
-            return "nconf(%s)" % (pos,)
         return "nconf(%s)" % (",".join(gen_offset_pos(pos, self.border_names[0])),)
 
     def init_once(self):
