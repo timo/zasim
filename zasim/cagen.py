@@ -1556,8 +1556,9 @@ class ElementaryCellularAutomatonBase(Computation):
     def pretty_print(self):
         """This method is generated upon init_once and pretty-prints the rules
         that this elementary cellular automaton uses for local steps."""
-        return ["cannot pretty-print with neighbourhoods of more than",
-                "two dimensions"]
+        return ["pretty printer is available only after the WeaveStepFunc "
+                "object has been put together. also: cannot pretty-print "
+                "with neighbourhoods of more than two dimensions"]
 
     def build_name(self, parts):
         parts.append("calculating rule %s" % (hex(self.rule)))
