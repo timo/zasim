@@ -146,9 +146,30 @@ class ZasimMainWindow(QMainWindow):
         self.control.start_inverting_frames.connect(self.display.start_inverting_frames)
         self.control.stop_inverting_frames.connect(self.display.stop_inverting_frames)
 
-        options_pane = ActionsDockWidget(self.simulator, parent=self)
-        options_pane.show()
-        self.addDockWidget(Qt.RightDockWidgetArea, options_pane)
+        self.setup_menu()
+
+        self.elementary_tool = None
+        self.comp_dlg = None
+
+    def setup_menu(self):
+        simulator_menu = self.menuBar().addMenu("Simulator")
+        simulator_menu.addAction("&New...").activated.connect(self.show_new_sim_dlg)
+        simulator_menu.addAction("Open &Stepfunc Table").activated.connect(self.open_elementary_tool)
+        simulator_menu.addAction("&Quit").activated.connect(self.close)
+
+    def open_elementary_tool(self):
+        if self.elementary_tool and not self.elementary_tool.isVisible():
+            self.elementary_tool = None
+        if self.elementary_tool is None:
+            self.elementary_tool = ElementaryRuleWindow(self.sim._step_func.neigh, self.sim.rule_number, parent=self)
+            self.elementary_tool.show()
+
+    def show_new_sim_dlg(self):
+        if self.comp_dlg and not self.comp_dlg.isVisible():
+            self.comp_dlg = None
+        if self.comp_dlg is None:
+            self.comp_dlg = StepFuncCompositionDialog()
+            self.comp_dlg.show()
 
     def attach_display(self, display):
         """Attach an extra display to the control.
@@ -480,36 +501,6 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         new_draw_pos = (event.x() / self.img_scale, event.y() / self.img_scale)
         if self.last_draw_pos != new_draw_pos:
             self.sim.set_config_value(new_draw_pos)
-
-class ActionsDockWidget(QDockWidget):
-    """A dock widget for actions and settings for the simulator."""
-    def __init__(self, sim, parent=None, **kwargs):
-        super(ActionsDockWidget, self).__init__(u"Actions && Settings", **kwargs)
-        self.setup_ui()
-        self.sim = sim
-
-        self.elementary_tool_button.clicked.connect(self.open_elementary_tool)
-        self.elementary_tool = None
-
-        self.setFloating(False)
-        self.setAllowedAreas(Qt.RightDockWidgetArea)
-
-    def setup_ui(self):
-        self.container_widget = QWidget(self)
-        buttons_box = QVBoxLayout(self.container_widget)
-
-        self.elementary_tool_button = QPushButton("elementary tool", self.container_widget)
-        buttons_box.addWidget(self.elementary_tool_button)
-
-        self.container_widget.setLayout(buttons_box)
-        self.setWidget(self.container_widget)
-
-    def open_elementary_tool(self):
-        if self.elementary_tool and not self.elementary_tool.isVisible():
-            self.elementary_tool = None
-        if self.elementary_tool is None:
-            self.elementary_tool = ElementaryRuleWindow(self.sim._step_func.neigh, self.sim.rule_number)
-            self.elementary_tool.show()
 
 class BaseExtraDisplay(QDockWidget):
     """The base class for a dockable/undockable/tabbable extra display widget
