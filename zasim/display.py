@@ -146,8 +146,9 @@ class ZasimMainWindow(QMainWindow):
         self.control.start_inverting_frames.connect(self.display.start_inverting_frames)
         self.control.stop_inverting_frames.connect(self.display.stop_inverting_frames)
 
-
-        self.actions_pane = ActionsDockWidget(self.simulator, parent=self)
+        options_pane = ActionsDockWidget(self.simulator, parent=self)
+        options_pane.show()
+        self.addDockWidget(Qt.RightDockWidgetArea, options_pane)
 
     def attach_display(self, display):
         """Attach an extra display to the control.
@@ -483,15 +484,15 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
 class ActionsDockWidget(QDockWidget):
     """A dock widget for actions and settings for the simulator."""
     def __init__(self, sim, parent=None, **kwargs):
-        super(ActionsDockWidget, self).__init__(parent=parent, **kwargs)
+        super(ActionsDockWidget, self).__init__(u"Actions && Settings", **kwargs)
         self.setup_ui()
         self.sim = sim
 
         self.elementary_tool_button.clicked.connect(self.open_elementary_tool)
         self.elementary_tool = None
 
-        self.setAllowedAreas(Qt.RightDockWidgetArea)
         self.setFloating(False)
+        self.setAllowedAreas(Qt.RightDockWidgetArea)
 
     def setup_ui(self):
         self.container_widget = QWidget(self)
@@ -522,9 +523,9 @@ class BaseExtraDisplay(QDockWidget):
         self.scroller.setMinimumWidth(width + 5)
         self.scroller.setMinimumHeight(height + 5)
         self.setWidget(self.scroller)
-        self.setFloating(False)
 
         self.setAllowedAreas(Qt.RightDockWidgetArea)
+        self.setFloating(False)
 
         self.display_widget.installEventFilter(self)
 
