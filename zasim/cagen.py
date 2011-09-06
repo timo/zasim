@@ -128,7 +128,7 @@ def dedent_python_code(code):
         if common_whitespace > 0:
             for line in lines[1:]:
                 white, text = line[:common_whitespace], line[common_whitespace:]
-                assert white.isspace()
+                assert line == "" or white.isspace()
                 resultlines.append(text)
         else:
             resultlines.extend(lines[1:])
@@ -1202,7 +1202,7 @@ class BaseBorderCopier(BorderSizeEnsurer):
         """Append a piece of code to the "after_step" hook as well as the local
         code piece that gets retargetted and run in :meth:`new_config`."""
         self.code.add_py_hook("after_step", code)
-        self.copy_py_code.append(code)
+        self.copy_py_code.append(dedent_python_code(code))
 
 class SimpleBorderCopier(BaseBorderCopier):
     """Copy over cell values, so that reading from a cell at the border over
