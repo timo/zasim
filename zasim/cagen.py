@@ -1297,6 +1297,8 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         borders."""
         super(TwoDimSlicingBorderCopier, self).visit()
 
+        # TODO simplify this by copying the edges implicitly.
+
         self.tee_copy_hook("""# copy the upper portion below the lower border
 for pos in product(range(0, sizeX), range(0, LOWER_BORDER)):
     self.acc.write_to((pos[0], sizeY + pos[1]),
