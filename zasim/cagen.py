@@ -109,6 +109,31 @@ def gen_offset_pos(pos, offset):
     ['i + foo', 'j + bar']"""
     return ["%s + %s" % (a, b) for a, b in zip(pos, offset)]
 
+def dedent_python_code(code):
+    '''
+    Dedent a bit of python code, like this:
+
+    >>> print dedent_python_code("""# update the histogram
+    ...     if result != center:
+    ...         self.target.histogram[result] += 1""")
+    # update the histogram
+    if result != center:
+        self.target.histogram[result] += 1
+    '''
+
+    lines = code.split("\n")
+    resultlines = [lines[0]] # the first line shall never have any whitespace.
+    if len(lines) > 1:
+        common_whitespace = len(lines[1]) - len(lines[1].lstrip())
+        if common_whitespace > 0:
+            for line in lines[1:]:
+                white, text = line[:common_whitespace], line[common_whitespace:]
+                assert white.isspace()
+                resultlines.append(text)
+        else:
+            resultlines.extend(lines[1:])
+    return "\n".join(resultlines)
+
 class WeaveStepFunc(object):
     """The WeaveStepFunc composes different parts into a functioning
     step function."""
@@ -199,6 +224,7 @@ class WeaveStepFunc(object):
         :param hook: the section to append the code to.
         :param function: the python code to add (as a string)."""
         assert isinstance(function, basestring), "py hooks must be strings now."
+        function = dedent_python_code(function)
         function = function.split("\n")
         newfunc = []
 
@@ -703,11 +729,11 @@ class SimpleHistogram(ExtraStats):
         self.code.add_code("post_compute",
                 """if (result != %(center)s) { histogram(result) += 1; histogram(%(center)s) -= 1; }""" % dict(center=center_name))
 
-        self.code.add_py_hook("post_compute",
-                """# update the histogram
-if result != %(center)s:
-    self.target.histogram[result] += 1
-    self.target.histogram[int(%(center)s)] -= 1""" % dict(center=center_name))
+        self.code.add_py_hook("post_compute", """
+            # update the histogram
+            if result != %(center)s:
+                self.target.histogram[result] += 1
+                self.target.histogram[int(%(center)s)] -= 1""" % dict(center=center_name))
 
     def regenerate_histogram(self):
         conf = self.target.cconf
@@ -758,9 +784,10 @@ class ActivityRecord(ExtraStats):
                 """activity(result != %(center)s) += 1;""" % dict(center=center_name))
         self.code.add_py_hook("init",
                 """self.target.activity[0] = 0; self.target.activity[1] = 0""")
-        self.code.add_py_hook("post_compute",
-                """# count up the activity
-self.target.activity[int(result != %(center)s)] += 1""" % dict(center=center_name))
+        self.code.add_py_hook("post_compute", """
+            # count up the activity
+            self.target.activity[int(result != %(center)s)] += 1"""
+                % dict(center=center_name))
 
     def new_config(self):
         """Reset the activity counter to -1, which stands for "no data"."""
@@ -806,11 +833,11 @@ class TwoDimCellLoop(CellLoop):
         super(TwoDimCellLoop, self).visit()
         size_names = self.code.acc.size_names
         self.code.add_code("loop_begin",
-                """for(int i=0; i < %s; i++) {
-for(int j=0; j < %s; j++) {""" % (size_names))
+            """for(int i=0; i < %s; i++) {
+                for(int j=0; j < %s; j++) {""" % (size_names))
         self.code.add_code("loop_end",
                 """}
-}""")
+                }""")
 
     def get_iter(self):
         def iterator():
@@ -870,11 +897,12 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
                 """randseed(0) = rand();""")
         self.code.attrs.append("randseed")
 
-        self.code.add_py_hook("pre_compute",
-                """if self.random.random() >= %(probab)f:
-    %(copy_code)s
-    continue""" % dict(probab=self.probab,
-                       copy_code=self.code.acc.gen_copy_py_code()))
+        self.code.add_py_hook("pre_compute", """
+            # if the cell isn't executed, just copy instead.
+            if self.random.random() >= %(probab)f:
+                %(copy_code)s
+                continue""" % dict(probab=self.probab,
+                                   copy_code=self.code.acc.gen_copy_py_code()))
 
     def set_target(self, target):
         """Adds the randseed attribute to the target."""
@@ -1064,18 +1092,18 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
         for the result to be written to the config space and for the configs
         to be swapped by the python code."""
         self.code.add_code("localvars",
-                """int result;
-srand(beta_randseed(0));""")
+         """int result;
+            srand(beta_randseed(0));""")
         self.code.add_code("post_compute",
                 self.inner_write_access(self.code.loop.get_pos()) + " = result;")
         self.code.add_code("post_compute",
                 """if(rand() < RAND_MAX * beta_probab) {
-    %(write)s = result;
-} else {
-    result = %(read)s;
-    %(write)s = result;
-}
-%(center)s = orig_%(center)s;""" % \
+                    %(write)s = result;
+                } else {
+                    result = %(read)s;
+                    %(write)s = result;
+                }
+                %(center)s = orig_%(center)s;""" % \
         dict(write=self.code.acc.write_access(self.code.loop.get_pos()),
              read=self.code.acc.read_access(self.code.loop.get_pos()),
              center=self.code.neigh.center_name))
@@ -1088,14 +1116,16 @@ srand(beta_randseed(0));""")
         for sizename, value in zip(self.size_names, self.size):
             self.code.add_py_hook("init",
                     """%s = %d""" % (sizename, value))
-        self.code.add_py_hook("post_compute",
-                """self.acc.write_to_inner(pos, result)
-if self.target.beta_random.random() < beta_probab:
-    self.acc.write_to(pos, result)
-else:
-    result = self.acc.read_from(pos)
-    self.acc.write_to(pos, result)
-%(center)s = orig_%(center)s""" % dict(center=self.code.neigh.center_name))
+
+        self.code.add_py_hook("post_compute", """
+            self.acc.write_to_inner(pos, result)
+            if self.target.beta_random.random() < beta_probab:
+                self.acc.write_to(pos, result)
+            else:
+                result = self.acc.read_from(pos)
+                self.acc.write_to(pos, result)
+            %(center)s = orig_%(center)s""" % dict(center=self.code.neigh.center_name))
+
         self.code.add_py_hook("finalize",
                 """self.acc.swap_configs()""")
 
@@ -1268,8 +1298,9 @@ class SimpleBorderCopier(BaseBorderCopier):
                 self.code.acc.write_access(write),
                 self.code.acc.write_access(read)))
 
-            self.tee_copy_hook("""self.acc.write_to(%s,
-    value=self.acc.read_from_next((%s,)))""" % (write, ", ".join(read)))
+            self.tee_copy_hook("""
+                self.acc.write_to(%s,
+                    value=self.acc.read_from_next((%s,)))""" % (write, ", ".join(read)))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
@@ -1297,48 +1328,29 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         borders."""
         super(TwoDimSlicingBorderCopier, self).visit()
 
-        # TODO simplify this by copying the edges implicitly.
-
         self.tee_copy_hook("""# copy the upper portion below the lower border
-for pos in product(range(0, sizeX), range(0, LOWER_BORDER)):
-    self.acc.write_to((pos[0], sizeY + pos[1]),
-            self.acc.read_from_next(pos))""")
+            for pos in product(range(0, sizeX), range(0, LOWER_BORDER)):
+                self.acc.write_to((pos[0], sizeY + pos[1]),
+                        self.acc.read_from_next(pos))""")
 
         self.tee_copy_hook("""# copy the lower portion above the upper border
-for pos in product(range(0, sizeX), range(0, UPPER_BORDER)):
-    self.acc.write_to((pos[0], -pos[1] - 1),
-            self.acc.read_from_next((pos[0], sizeY - pos[1] - 1)))""")
+            for pos in product(range(0, sizeX), range(0, UPPER_BORDER)):
+                self.acc.write_to((pos[0], -pos[1] - 1),
+                        self.acc.read_from_next((pos[0], sizeY - pos[1] - 1)))""")
 
-        self.tee_copy_hook("""# copy the left portion right of the right border
-for pos in product(range(0, RIGHT_BORDER), range(0, sizeY)):
-    self.acc.write_to((sizeX + pos[0], pos[1]),
-            self.acc.read_from_next(pos))""")
+        self.tee_copy_hook("""# copy the left portion
+            # plus the upper and lower edges right of the right border
+            for pos in product(range(0, RIGHT_BORDER),
+                               range(-UPPER_BORDER, sizeY + LOWER_BORDER)):
+                self.acc.write_to((sizeX + pos[0], pos[1]),
+                        self.acc.read_from_next(pos))""")
 
-        self.tee_copy_hook("""# copy the right portion left of the left border
-for pos in product(range(0, LEFT_BORDER), range(0, sizeY)):
-    self.acc.write_to((-pos[0] - 1, pos[1]),
-            self.acc.read_from_next((sizeX - pos[0] - 1, pos[1])))""")
-
-
-        self.tee_copy_hook("""# copy the lower left part to the upper right corner
-for pos in product(range(0, RIGHT_BORDER), range(0, UPPER_BORDER)):
-    self.acc.write_to((sizeX + pos[0], -UPPER_BORDER + pos[1]),
-            self.acc.read_from_next((pos[0], sizeY - UPPER_BORDER + pos[1])))""")
-
-        self.tee_copy_hook("""# copy the upper right corner to the lower left corner
-for pos in product(range(0, LEFT_BORDER), range(0, LOWER_BORDER)):
-    self.acc.write_to((-LEFT_BORDER + pos[0], sizeY + pos[1]),
-            self.acc.read_from_next((sizeX - RIGHT_BORDER + pos[0], pos[1])))""")
-
-        self.tee_copy_hook("""# copy the lower right part to the upper left corner
-for pos in product(range(0, LEFT_BORDER), range(0, UPPER_BORDER)):
-    self.acc.write_to((-LEFT_BORDER + pos[0], -UPPER_BORDER + pos[1]),
-            self.acc.read_from_next((-LEFT_BORDER + sizeX + pos[0], -UPPER_BORDER + sizeX + pos[1])))""")
-
-        self.tee_copy_hook("""# copy the upper left part to the lower right corner
-for pos in product(range(0, RIGHT_BORDER), range(0, LOWER_BORDER)):
-    self.acc.write_to((sizeX + pos[0], sizeY + pos[1]),
-            self.acc.read_from_next((pos[0], pos[1])))""")
+        self.tee_copy_hook("""# copy the right portion
+            # plus the upper and lower edges left of the left border
+            for pos in product(range(0, LEFT_BORDER),
+                               range(-UPPER_BORDER, sizeY + LOWER_BORDER)):
+                self.acc.write_to((-pos[0] - 1, pos[1]),
+                        self.acc.read_from_next((sizeX - pos[0] - 1, pos[1])))""")
 
         # and now for the fun part ...
 
@@ -1347,61 +1359,32 @@ for pos in product(range(0, RIGHT_BORDER), range(0, LOWER_BORDER)):
 
         # upper part to lower border
         copy_code.append("""for(x = 0; x < sizeX; x++) {
-    for(y = 0; y < LOWER_BORDER; y++) {
-        %s = %s;
-    } }""" % (self.code.acc.write_access(("x", "sizeY + y")),
-              self.code.acc.write_access(("x", "y")) ))
+            for(y = 0; y < LOWER_BORDER; y++) {
+                %s = %s;
+            } }""" % (self.code.acc.write_access(("x", "sizeY + y")),
+                      self.code.acc.write_access(("x", "y")) ))
 
         # lower part to upper border
         copy_code.append("""for(x = 0; x < sizeX; x++) {
-    for(y = 0; y < UPPER_BORDER; y++) {
-        %s = %s;
-    } }""" % (self.code.acc.write_access(("x", "-y - 1")),
-              self.code.acc.write_access(("x", "sizeY - y - 1"))))
+            for(y = 0; y < UPPER_BORDER; y++) {
+                %s = %s;
+            } }""" % (self.code.acc.write_access(("x", "-y - 1")),
+                      self.code.acc.write_access(("x", "sizeY - y - 1"))))
 
 
-        # left part to right border
+        # left part to right border including upper and lower edges
         copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
-    for(y = 0; y < sizeY; y++) {
-        %s = %s;
-    } }""" % (self.code.acc.write_access(("sizeX + x", "y")),
-              self.code.acc.write_access(("x", "y")) ))
+            for(y = -UPPER_BORDER; y < sizeY + LOWER_BORDER; y++) {
+                %s = %s;
+            } }""" % (self.code.acc.write_access(("sizeX + x", "y")),
+                      self.code.acc.write_access(("x", "y")) ))
 
-        # right part to left border
+        # right part to left border including upper and lower edges
         copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
-    for(y = 0; y < sizeY; y++) {
-        %s = %s;
-    } }""" % (self.code.acc.write_access(("-x - 1", "y")),
-              self.code.acc.write_access(("sizeX - x - 1", "y"))))
-
-
-        # copy the upper left part to the lower right corner
-        copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
-    for(y = 0; y < LOWER_BORDER; y++) {
-        %s = %s;
-    } }""" % (self.code.acc.write_access(("sizeX + x", "sizeY + y")),
-              self.code.acc.write_access(("x", "y"))))
-
-        # copy the upper right part to the lower left corner
-        copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
-    for(y = 0; y < LOWER_BORDER; y++) {
-        %s = %s;
-    } }""" % (self.code.acc.write_access(("-LEFT_BORDER + x", "sizeY + y")),
-              self.code.acc.write_access(("sizeX - RIGHT_BORDER + x", "y"))))
-
-        # copy the lower right part to the upper left corner
-        copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
-    for(y = 0; y < UPPER_BORDER; y++) {
-        %s = %s;
-    } }""" % (self.code.acc.write_access(("-LEFT_BORDER + x", "-UPPER_BORDER + y")),
-              self.code.acc.write_access(("-LEFT_BORDER + sizeX + x", "-UPPER_BORDER + sizeY + y"))))
-
-        # copy the lower left part to the upper right corner
-        copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
-    for(y = 0; y < UPPER_BORDER; y++) {
-        %s = %s;
-    } }""" % (self.code.acc.write_access(("sizeX + x", "-UPPER_BORDER + y")),
-              self.code.acc.write_access(("x", "sizeY - UPPER_BORDER + y"))))
+            for(y = -UPPER_BORDER; y < sizeY + LOWER_BORDER; y++) {
+                %s = %s;
+            } }""" % (self.code.acc.write_access(("-x - 1", "y")),
+                  self.code.acc.write_access(("sizeX - x - 1", "y"))))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
@@ -1638,13 +1621,13 @@ class LifeCellularAutomatonBase(CountBasedComputationBase):
         result = 0;
       }}""" % self.params)
         self.code.add_py_hook("compute","""
-result = %(central_name)s
-if %(central_name)s == 0:
-    if %(reproduce_min)d <= nonzerocount <= %(reproduce_max)d:
-      result = 1
-else:
-    if not (%(stay_alive_min)d <= nonzerocount <= %(stay_alive_max)d):
-      result = 0""" % self.params)
+            result = %(central_name)s
+            if %(central_name)s == 0:
+                if %(reproduce_min)d <= nonzerocount <= %(reproduce_max)d:
+                  result = 1
+            else:
+                if not (%(stay_alive_min)d <= nonzerocount <= %(stay_alive_max)d):
+                  result = 0""" % self.params)
 
     def build_name(self, parts):
         if self.params != dict(reproduce_min=3, reproduce_max=3,
