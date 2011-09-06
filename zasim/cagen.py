@@ -302,7 +302,6 @@ class WeaveStepFunc(object):
         If value is None, flip the value that's already there."""
         if value is None:
             value = 1 - self.acc.read_from(pos)
-        print "setting value at %s to %s" % (pos, value)
         self.acc.write_to_current(pos, value)
 
     def set_target(self, target):
