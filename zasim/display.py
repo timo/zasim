@@ -163,7 +163,7 @@ class ZasimMainWindow(QMainWindow):
         if self.elementary_tool and not self.elementary_tool.isVisible():
             self.elementary_tool = None
         if self.elementary_tool is None:
-            self.elementary_tool = ElementaryRuleWindow(self.sim._step_func.neigh, self.sim.rule_number, parent=self)
+            self.elementary_tool = ElementaryRuleWindow(self.simulator._step_func.neigh, self.simulator.rule_number)
             self.elementary_tool.show()
 
     def show_new_sim_dlg(self):
