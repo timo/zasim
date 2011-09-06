@@ -783,7 +783,7 @@ This pane at the bottom will display documentation."""
         else:
             self.additional_list.addItem(cls.__name__)
 
-def main():
+def main(rule=None):
     app = QApplication(sys.argv)
 
     scale = 3
@@ -791,7 +791,7 @@ def main():
 
     onedim, twodim = False, True
     beta = False
-    nondet = False
+    nondet = True
 
     if onedim:
         # get a random beautiful CA
@@ -810,30 +810,39 @@ def main():
 
         t = cagen.TestTarget(config=twodim_rand)
 
-        compute = cagen.LifeCellularAutomatonBase()
+        if rule is not None:
+            rule_number = rule
+        else:
+            rule_number = random.randint(0, 2 ** 32)
+
+        compute = cagen.ElementaryCellularAutomatonBase(rule=rule_number)
+
         if beta or not nondet:
             l = cagen.TwoDimCellLoop()
         elif nondet:
-            l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
+            l = cagen.TwoDimNondeterministicCellLoop(probab=0.7)
         if beta:
             acc = cagen.BetaAsynchronousAccessor()
-            neigh = cagen.MooreNeighbourhood(Base=cagen.BetaAsynchronousNeighbourhood)
+            neigh = cagen.VonNeumannNeighbourhood(Base=cagen.BetaAsynchronousNeighbourhood)
         else:
             acc = cagen.SimpleStateAccessor()
-            neigh = cagen.MooreNeighbourhood()
+            neigh = cagen.VonNeumannNeighbourhood()
         copier = cagen.TwoDimSlicingBorderCopier()
-        #copier = cagen.TwoDimZeroReader()
         hist = cagen.SimpleHistogram()
         activity = cagen.ActivityRecord()
         sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
                         extra_code=[copier, compute, hist, activity], target=t)
 
         sim.gen_code()
+        print compute.pretty_print()
+        print compute.rule
 
         sim_obj = CagenSimulator(sim, t)
 
         display_b = ZasimDisplay(sim_obj)
         display_b.set_scale(scale)
+
+        display_b.control.start()
 
         extra_hist = HistogramExtraDisplay(sim_obj, parent=display_b, height=200, maximum= w * h)
         extra_activity = HistogramExtraDisplay(sim_obj, attribute="activity", parent=display_b, height=200, maximum=w*h)
@@ -847,10 +856,14 @@ def main():
         display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
         display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_activity)
 
-    comp_dlg = StepFuncCompositionDialog()
-    comp_dlg.show()
+    #comp_dlg = StepFuncCompositionDialog()
+    #comp_dlg.show()
 
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
-    main()
+    import sys
+    if len(sys.argv) > 1:
+        main(int(sys.argv[1]))
+    else:
+        main()
