@@ -835,7 +835,7 @@ def main(rule=None):
 
         sim.gen_code()
         print compute.pretty_print()
-        print compute.rule
+        print compute.rule, hex(compute.rule)
 
         sim_obj = CagenSimulator(sim, t)
 
