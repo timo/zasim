@@ -140,6 +140,7 @@ class ZasimMainWindow(QMainWindow):
         self.setCentralWidget(central_widget)
 
         self.simulator.updated.connect(self.display.after_step)
+        self.simulator.changed.connect(self.display.conf_changed)
 
         self.control.start_inverting_frames.connect(self.display.start_inverting_frames)
         self.control.stop_inverting_frames.connect(self.display.stop_inverting_frames)
@@ -326,6 +327,7 @@ class HistoryDisplayWidget(BaseDisplayWidget):
                       scale=scale,
                       **kwargs)
         self.sim = simulator
+        self.update_no_step = False
 
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
@@ -355,8 +357,11 @@ class HistoryDisplayWidget(BaseDisplayWidget):
 
                 self.queued_steps -= 1
                 rendered += 1
-                self.last_step += 1
-                y = self.last_step % self.img_height
+                if not self.update_no_step:
+                    self.last_step += 1
+                    y = self.last_step % self.img_height
+                else:
+                    self.update_no_step = False
         except Queue.Empty:
             pass
 
@@ -386,6 +391,12 @@ class HistoryDisplayWidget(BaseDisplayWidget):
         self.update(QRect(
             QPoint(0, ((self.last_step + self.queued_steps - 1) % self.img_height) * self.img_scale),
             QSize(self.img_width * self.img_scale, self.img_scale)))
+
+    def conf_changed(self):
+        """React to a change in the configuration that was not caused by a step
+        of the cellular automaton - by a user interaction for instance."""
+        self.after_step()
+        self.update_no_step = True
 
 class TwoDimDisplayWidget(BaseDisplayWidget):
     """A display widget for two-dimensional configurations."""
@@ -446,6 +457,9 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         self.conf_new = True
 
         self.update()
+
+    def conf_changed(self):
+        self.after_step()
 
     def mousePressEvent(self, event):
         self.drawing = True
