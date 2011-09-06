@@ -330,6 +330,12 @@ class BaseDisplayWidget(QGLWidget):
         self.last_step = 0
         self.queued_steps = 0
 
+        self.invert_odd = False
+        self.odd = False
+
+    def start_inverting_frames(self): self.invert_odd = True
+    def stop_inverting_frames(self): self.invert_odd = False
+
     def create_image_surf(self):
         """Create the image surface when the display is created."""
         self.image = QImage(self.img_width * self.img_scale,
@@ -380,7 +386,10 @@ class HistoryDisplayWidget(BaseDisplayWidget):
             while rendered < min(100, self.img_height):
                 conf = self.display_queue.get_nowait()
                 nconf = np.empty((w, 1, 2), np.uint8, "C")
-                nconf[...,0,0] = conf * 255
+                if not self.invert_odd or self.odd:
+                    nconf[...,0,0] = conf * 255
+                else:
+                    nconf[...,0,0] = (1 - conf) * 255
                 nconf[...,1] = nconf[...,0]
 
                 image = QImage(nconf.data, w, 1, QImage.Format_RGB444).scaled(w * scale, scale)
@@ -391,6 +400,7 @@ class HistoryDisplayWidget(BaseDisplayWidget):
                 if not self.update_no_step:
                     self.last_step += 1
                     y = self.last_step % self.img_height
+                    self.odd = not self.odd
                 else:
                     self.update_no_step = False
         except Queue.Empty:
@@ -398,7 +408,6 @@ class HistoryDisplayWidget(BaseDisplayWidget):
 
         copier = QPainter(self)
         copier.drawImage(QPoint(0, 0), self.image)
-
 
     def after_step(self):
         """React to a single step. Copy the current configuration into the
@@ -445,11 +454,6 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         self.drawing = False
         self.last_draw_pos = QPoint(0,0)
 
-        self.invert_odd = False
-        self.odd = False
-
-    def start_inverting_frames(self): self.invert_odd = True
-    def stop_inverting_frames(self): self.invert_odd = False
 
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
