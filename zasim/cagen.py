@@ -885,7 +885,7 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
         """Adds C code for handling the randseed and skipping."""
         super(NondeterministicCellLoopMixin, self).visit()
         self.code.add_code("loop_begin",
-                """if(rand() >= RAND_MAX * %(probab)s) {
+                """if(rand() >= RAND_MAX * NONDET_PROBAB) {
                     %(copy_code)s
                     continue;
                 };""" % dict(probab=self.probab,
@@ -899,7 +899,7 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
 
         self.code.add_py_hook("pre_compute", """
             # if the cell isn't executed, just copy instead.
-            if self.random.random() >= %(probab)f:
+            if self.random.random() >= NONDET_PROBAB:
                 %(copy_code)s
                 continue""" % dict(probab=self.probab,
                                    copy_code=self.code.acc.gen_copy_py_code()))
@@ -913,6 +913,7 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
     def bind(self, stepfunc):
         super(NondeterministicCellLoopMixin, self).bind(stepfunc)
         stepfunc.random = self.random
+        stepfunc.consts["NONDET_PROBAB"] = self.probab
 
     def build_name(self, parts):
         super(NondeterministicCellLoopMixin, self).build_name(parts)
