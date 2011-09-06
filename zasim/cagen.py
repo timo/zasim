@@ -420,31 +420,27 @@ class StateAccessor(WeaveStepFuncVisitor):
     how to handle swapping or history of configs.
 
     Additionally, it knows how far to offset reads and writes, so that cells at
-    the lowest coordinates will have a border of data around them.
-
-    Supplying skip_border=True to any read or write function will remove the
-    border from the calculation. This is mainly useful for
-    :class:`BorderHandler` subclasses."""
+    the lowest coordinates will have a border of data around them."""
 
     category = "accessor"
     """The category this object and its subclasses belong to."""
 
-    def read_access(self, pos, skip_border=False):
+    def read_access(self, pos):
         """Generate a bit of C code for reading from the old config at pos."""
 
-    def write_access(self, pos, skip_border=False):
+    def write_access(self, pos):
         """Generate a code bit to write to the new config at pos."""
 
-    def write_to(self, pos, value, skip_border=False):
+    def write_to(self, pos, value):
         """Directly write to the next config at pos."""
 
-    def write_to_current(self, pos, value, skip_border=False):
+    def write_to_current(self, pos, value):
         """Directly write a value to the current config at pos."""
 
-    def read_from(self, pos, skip_border=False):
+    def read_from(self, pos):
         """Directly read from the current config at pos."""
 
-    def read_from_next(self, pos, skip_border=False):
+    def read_from_next(self, pos):
         """Directly read from the next config at pos."""
 
     def get_size(self, dimension=0):
@@ -608,10 +604,10 @@ class SimpleStateAccessor(StateAccessor):
         else:
             raise NotImplementedError("SimpleStateAccessor only supports up to 2 dimensions.")
 
-    def read_access(self, pos, skip_border=False):
+    def read_access(self, pos):
         return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names[0])),)
 
-    def write_access(self, pos, skip_border=False):
+    def write_access(self, pos):
         return "nconf(%s)" % (",".join(gen_offset_pos(pos, self.border_names[0])),)
 
     def init_once(self):
@@ -660,27 +656,17 @@ class SimpleStateAccessor(StateAccessor):
         if self.size is None:
             self.size = self.target.cconf.shape
 
-    def read_from(self, pos, skip_border=False):
-        if skip_border:
-            return self.target.cconf[pos]
+    def read_from(self, pos):
         return self.target.cconf[offset_pos(pos, self.border[0])]
 
-    def read_from_next(self, pos, skip_border=False):
-        if skip_border:
-            return self.target.nconf[pos]
+    def read_from_next(self, pos):
         return self.target.nconf[offset_pos(pos, self.border[0])]
 
-    def write_to(self, pos, value, skip_border=False):
-        if skip_border:
-            self.target.nconf[pos] = value
-        else:
-            self.target.nconf[offset_pos(pos, self.border[0])] = value
+    def write_to(self, pos, value):
+        self.target.nconf[offset_pos(pos, self.border[0])] = value
 
-    def write_to_current(self, pos, value, skip_border=False):
-        if skip_border:
-            self.target.cconf[pos] = value
-        else:
-            self.target.cconf[offset_pos(pos, self.border[0])] = value
+    def write_to_current(self, pos, value):
+        self.target.cconf[offset_pos(pos, self.border[0])] = value
 
     def get_size_of(self, dimension=0):
         return self.size[dimension]
