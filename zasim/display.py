@@ -42,6 +42,8 @@ def get_class_for_implementation(meth):
 
 CLASS_OBJECT_ROLE = Qt.UserRole + 1
 
+display_objects = []
+
 class ZasimDisplay(object):
 
     simulator = None
@@ -699,11 +701,15 @@ class StepFuncCompositionDialog(QWidget):
 
         self.setAttribute(Qt.WA_DeleteOnClose)
 
+        self.parts = {}
+        self.extraparts = []
+
         self.setup_ui()
         self.part_tree.currentItemChanged.connect(self.update_docs)
         self.part_tree.itemDoubleClicked.connect(self.dbl_click_item)
 
         self.cancel_button.clicked.connect(self.close)
+        self.create_button.clicked.connect(self.create)
 
     def update_docs(self, new, old):
         """Display the docstring of the class and its __init__ at the bottom of
@@ -806,8 +812,34 @@ This pane at the bottom will display documentation."""
         if cls.category in self.single_categories:
             button = self.category_buttons[cls.category]
             button.setText(cls.__name__)
+            self.parts[cls.category] = cls
         else:
             self.additional_list.addItem(cls.__name__)
+            self.extraparts.append(cls)
+
+    def create(self):
+        w, h = 200, 200
+        scale = 3
+
+        t = cagen.TestTarget(size=(w, h))
+        l = self.parts["loop"]()
+        acc = self.parts["accessor"]()
+        neigh = self.parts["neighbourhood"]()
+        extra_code = [a() for a in self.extraparts]
+        sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                        extra_code=[extra_code], target=t)
+
+        sim.gen_code()
+        print compute.pretty_print()
+        print compute.rule, hex(compute.rule)
+
+        sim_obj = ElementaryCagenSimulator(sim, t)
+
+        display_obj = ZasimDisplay(sim_obj)
+        display_obj.set_scale(scale)
+        display_objects.append(display_obj)
+
+        display_obj.control.start()
 
 def main(rule=None):
     app = QApplication(sys.argv)
@@ -869,6 +901,7 @@ def main(rule=None):
 
         display_b = ZasimDisplay(sim_obj)
         display_b.set_scale(scale)
+        display_objects.append(display_b)
 
         display_b.control.start()
 
@@ -877,6 +910,7 @@ def main(rule=None):
 
         extra_hist.show()
         extra_activity.show()
+
 
         display_b.window.attach_display(extra_hist)
         display_b.window.attach_display(extra_activity)
