@@ -1062,7 +1062,7 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
         self.target.inner[pos] = value
 
     def inner_write_access(self, pos):
-        return "inner(%s)" % (pos,)
+        return "inner(%s)" % (",".join(pos))
 
     def read_from_inner(self, pos):
         return self.target.inner[pos]
