@@ -567,7 +567,11 @@ class TestCAGen:
         assert not fail, "testing 50 times, never gotten close to half of "\
                    " the fields updating their outer state."
 
-        conf = np.zeros((100,), np.dtype("i"))
+        try:
+            conf = np.zeros((100,), np.dtype("i"))
+        except TypeError:
+            # pypy compat
+            conf = np.zeros(100, np.dtype("i"))
         br = cagen.BinRule(config=conf, rule=255, beta=0.5)
 
         for i in range(20):
