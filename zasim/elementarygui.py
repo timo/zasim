@@ -341,9 +341,7 @@ class ElementaryRuleWindow(QWidget):
                 self.recalculate_rule_number()
 
     def do_neighbourhood_action(self, action):
-        print "doing", action
         result = action(self.neighbourhood, self.digits_and_values)
-        print digits_and_values_to_rule_nr(result)
         for num, data in enumerate(result):
             val = data["result_value"]
             self.n_r_widgets[num].result_widget.set_value(val)
