@@ -1,15 +1,13 @@
 from __future__ import absolute_import
-from zasim import ca, cagen
+from zasim import ca
+from zasim import cagen
+from zasim.features import *
 from random import randrange
-from .testutil import *
+from .testutil import (assert_arrays_equal, pretty_print_binrule,
+                       compare_arrays,
+                       INTERESTING_BINRULES, TESTED_BINRULE, GLIDER)
 from itertools import repeat, chain, product
 import numpy as np
-
-try:
-    np.bincount(np.array([1, 2, 3]))
-    HAVE_BINCOUNT = True
-except AttributeError:
-    HAVE_BINCOUNT = False
 
 import pytest
 
@@ -28,7 +26,7 @@ class ZerosThenOnesRandom(EvilRandom):
             chain(repeat(0.0, zeros), repeat(1.0)))
 
 class TestCAGen:
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_compare_weaves(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
         br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
@@ -41,7 +39,7 @@ class TestCAGen:
 
         assert_arrays_equal(br.get_config(), br2.cconf)
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_gen_weave_only(self, tested_rule_num):
         confs = TESTED_BINRULE[tested_rule_num]
         br = cagen.BinRule(rule=tested_rule_num, config=confs[0][1:-1])
@@ -84,7 +82,7 @@ class TestCAGen:
         for i in range(10):
             br.step_pure_py()
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_run_nondeterministic_weave(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
         br = cagen.BinRule((size-2,), deterministic=False, rule=rule_num)
@@ -111,7 +109,7 @@ class TestCAGen:
 
 0    1    1    1    0    1    1    0"""
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pretty_print_rules_2d(self):
         conf = np.zeros((10, 10), int)
         t = cagen.TestTarget(config=conf)
@@ -133,8 +131,8 @@ class TestCAGen:
 
 1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    1    0    1    0"""
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_weave_game_of_life(self):
         t = cagen.TestTarget(config=GLIDER[0])
 
@@ -152,7 +150,7 @@ class TestCAGen:
             sf.step_inline()
             assert_arrays_equal(glider_conf, t.cconf[1:-1, 1:-1])
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pure_game_of_life(self):
         t = cagen.TestTarget(config=GLIDER[0])
 
@@ -170,7 +168,7 @@ class TestCAGen:
             sf.step_pure_py()
             assert_arrays_equal(glider_conf, t.cconf[1:-1,1:-1])
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pretty_print_config_2d(self, capsys):
         gconf = GLIDER[0]
         conf = np.zeros((gconf.shape[0] + 2, gconf.shape[1] + 2))
@@ -259,7 +257,7 @@ class TestCAGen:
         assert not br2.cconf.any(), "huh, rule0 was supposed to set all"\
                              " fields to zero!"
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_weave_nondeterministic_stepfunc_id(self):
         self.body_weave_nondeterministic_stepfunc_1d()
 
@@ -301,12 +299,12 @@ class TestCAGen:
                                     "fields into 0. huh?"
 
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_weave_nondeterministic_stepfunc_2d(self):
         self.body_nondeterministic_stepfunc_2d()
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pure_nondeterministic_stepfunc_2d(self):
         self.body_nondeterministic_stepfunc_2d(False)
 
@@ -346,7 +344,7 @@ class TestCAGen:
         assert not stepfunc.get_config().any(), "there should be no ones in the"\
                                             " config at all."
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_nondeterministic_leak_data_2d(self):
         rand = ZerosThenOnesRandom(101)
         conf = np.ones((10,10))
@@ -416,7 +414,7 @@ class TestCAGen:
         print t2.cconf.transpose()
         assert_arrays_equal(t1.cconf, t2.cconf)
 
-        if ca.HAVE_WEAVE:
+        if HAVE_WEAVE:
             sf1.step_inline()
             sf2.step_inline()
         else:
@@ -427,7 +425,7 @@ class TestCAGen:
         print t2.cconf.transpose()
         assert_arrays_equal(t1.cconf, t2.cconf)
 
-        if ca.HAVE_WEAVE:
+        if HAVE_WEAVE:
             sf1.step_pure_py()
             sf2.step_pure_py()
 
@@ -435,7 +433,7 @@ class TestCAGen:
             print t2.cconf.transpose()
             assert_arrays_equal(t1.cconf, t2.cconf)
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_compare_twodim_slicing_border_copier_simple_border_copier(self):
         names = list("abXde" + "fg" + "hcI" + "Jk" + "lmnop")
         positions = ((-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
@@ -445,7 +443,7 @@ class TestCAGen:
                      (-2,  2), (-1,  2), (0,  2), (1,  2), (2,  2))
         self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_compare_slicing_simple_border_copier_asymmetric_neighbourhood(self):
         names = list("abXd" + "ef" + "gcI" + "Jklm")
         positions = ((-2, -2), (-1, -2), (0, -2), (1, -2),
@@ -486,7 +484,7 @@ class TestCAGen:
     def test_histogram_1d_pure(self):
         self.body_histogram_1d()
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_histogram_1d_weave(self):
         self.body_histogram_1d(inline=True)
 
@@ -494,7 +492,7 @@ class TestCAGen:
     def test_histogram_1d_nondet_pure(self):
         self.body_histogram_1d(deterministic=False)
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_histogram_1d_nondet_weave(self):
         self.body_histogram_1d(inline=True, deterministic=False)
 
@@ -527,22 +525,22 @@ class TestCAGen:
                                 np.bincount(np.ravel(sim.target.cconf[1:-1,1:-1])))
 
     @pytest.mark.skipif("not HAVE_BINCOUNT")
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_histogram_2d_pure(self):
         self.body_histogram_2d()
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_histogram_2d_weave(self):
         self.body_histogram_2d(inline=True)
 
     @pytest.mark.skipif("not HAVE_BINCOUNT")
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_histogram_2d_nondet_pure(self):
         self.body_histogram_2d(deterministic=False)
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_histogram_2d_nondet_weave(self):
         self.body_histogram_2d(inline=True, deterministic=False)
 
@@ -575,7 +573,7 @@ class TestCAGen:
 
         assert_arrays_equal(br.inner, br.cconf[1:-1])
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_beta_asynchronism_inline(self):
         self.body_beta_asynchronism(True)
 

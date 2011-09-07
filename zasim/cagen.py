@@ -50,32 +50,12 @@ which can then target a configuration object with the method
 
 # TODO figure out if scipy.weave.accelerate_tools is any good.
 
+from .features import *
 import numpy as np
-try:
+
+if HAVE_WEAVE:
     from scipy import weave
     from scipy.weave import converters
-    USE_WEAVE=True
-except ImportError:
-    USE_WEAVE=False
-    print "not using weave"
-
-try:
-    from numpy import ndarray
-    HAVE_MULTIDIM = True
-except:
-    print "multi-dimensional arrays are not available"
-    HAVE_MULTIDIM = False
-
-try:
-    arr = np.array(range(10))
-    foo = arr[(1,)]
-    HAVE_TUPLE_ARRAY_INDEX = True
-except TypeError:
-    HAVE_TUPLE_ARRAY_INDEX = False
-    import re
-    TUPLE_ACCESS_FIX = re.compile(r"\((\d+),\)")
-    def tuple_array_index_fixup(line):
-        return TUPLE_ACCESS_FIX.sub(r"\1", line)
 
 from random import Random, randrange
 from itertools import product, chain
@@ -1805,7 +1785,7 @@ def test():
     pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((0, 0),))
 
 
-    if USE_WEAVE:
+    if HAVE_WEAVE:
         print "weave"
         for i in range(100):
             bin_rule.step_inline()
@@ -1820,5 +1800,5 @@ def test():
 
 if __name__ == "__main__":
     if "pure" in sys.argv:
-        USE_WEAVE = False
+        HAVE_WEAVE = False
     test()

@@ -1,12 +1,14 @@
 from __future__ import absolute_import
 from zasim import ca
+from zasim.features import *
+from .testutil import (assert_arrays_equal, pretty_print_binrule,
+                       INTERESTING_BINRULES, TESTED_BINRULE)
 import numpy as np
-from .testutil import *
 
 import pytest
 
 class TestBinRule:
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_compare_weave_pure(self, ruleNum):
         """compare the weave version of binRule with the pure python one"""
         content = np.array([1,1,1,1,1,0,1,0,1,1,0,0,0,1,1,0,1,0,0,0,1,0,0,0])
@@ -31,7 +33,7 @@ class TestBinRule:
             br.updateAllCellsPy()
             assert_arrays_equal(br.get_config(), conf)
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_weave_only(self, tested_rule_num):
         confs = TESTED_BINRULE[tested_rule_num]
         br = ca.binRule(tested_rule_num, 10, 1, ca.binRule.INIT_ZERO)

@@ -5,25 +5,11 @@ import numpy as np
 import random
 import re
 
-try:
+from .features import HAVE_WEAVE
+
+if HAVE_WEAVE:
     from scipy import weave
     from scipy.weave import converters
-    HAVE_WEAVE = True
-except:
-    print "weave is not available."
-    HAVE_WEAVE = False
-
-try:
-    a = np.zeros((100,), int)
-except TypeError:
-    print "using integer array compatibility with float arrays"
-    old_zeros = np.zeros
-    def compatibility_zeros(*args):
-        try:
-            return old_zeros(args[0])
-        except TypeError:
-            return old_zeros(args[0][0])
-    np.zeros = compatibility_zeros
 
 try:
     import pygame
