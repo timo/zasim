@@ -1719,15 +1719,19 @@ class BinRule(TestTarget):
     rule = None
     """The number of the elementary cellular automaton to simulate."""
 
-    def __init__(self, size=None, deterministic=True, histogram=False, activity=False, rule=None, config=None, beta=False, **kwargs):
+    def __init__(self, size=None, nondet=1, histogram=False, activity=False, rule=None, config=None, beta=1, copy_borders=True, **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
-           :param deterministic: Go over every cell every time or skip cells
-                                 randomly?
+           :param nondet: If this is not 1, use this value as the probability
+                          for each cell to get executed.
            :param histogram: Generate and update a histogram as well?
            :param rule: The rule number for the elementary cellular automaton.
            :param config: Optionally the configuration to use.
-           :param beta: Use beta-asynchronism. Not compatible with deterministic=False."""
+           :param beta: If the probability is not 1, use this as the
+                        probability for each cell to succeed in exposing its
+                        result to the neighbouring cells.
+                        This is incompatible with the nondet parameter.
+           :param copy_borders: Copy over data from the other side?"""
         if size is None:
             size = config.shape
         super(BinRule, self).__init__(size, config, **kwargs)
@@ -1735,21 +1739,22 @@ class BinRule(TestTarget):
         self.rule = None
         self.computer = ElementaryCellularAutomatonBase(rule)
 
-        if beta and deterministic:
-            acc = BetaAsynchronousAccessor()
+        if beta != 1 and nondet == 1:
+            acc = BetaAsynchronousAccessor(beta)
             neighbourhood = ElementaryFlatNeighbourhood(Base=BetaAsynchronousNeighbourhood)
-        elif not beta:
+        elif beta == 1:
             acc = SimpleStateAccessor()
             neighbourhood = ElementaryFlatNeighbourhood()
-        elif beta and not deterministic:
+        elif beta != 1 and nondet != 1:
             raise ValueError("Cannot have beta asynchronism and deterministic=False.")
 
         self.stepfunc = WeaveStepFunc(
-                loop=LinearCellLoop() if deterministic else
-                     LinearNondeterministicCellLoop(),
+                loop=LinearCellLoop() if nondet == 1.0 else
+                     LinearNondeterministicCellLoop(probab=nondet),
                 accessor=acc,
                 neighbourhood=neighbourhood,
-                extra_code=[SimpleBorderCopier(),
+                extra_code=[SimpleBorderCopier() if copy_borders else
+                            BorderSizeEnsurer(),
                     self.computer] +
                 ([SimpleHistogram()] if histogram else []) +
                 ([ActivityRecord()] if activity else []), target=self)
@@ -1787,10 +1792,11 @@ def categories():
 
     return categories
 
-def test():
-    size = 75
+def test(width, bordercopy, rule, histogram, activity, pure, print_rule, nondet, beta):
 
-    bin_rule = BinRule((size,), rule=105, histogram=True, activity=True, beta=True)
+    bin_rule = BinRule((width,), rule=rule,
+            histogram=histogram, activity=activity,
+            deterministic=not nondet, beta=beta)
 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
     pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((0, 0),))

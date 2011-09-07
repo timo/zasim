@@ -78,7 +78,7 @@ class TestCAGen:
 
     def test_run_nondeterministic_pure(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
-        br = cagen.BinRule((size-2,), deterministic=False, rule=rule_num)
+        br = cagen.BinRule((size-2,), nondet=0.5, rule=rule_num)
 
         for i in range(10):
             br.step_pure_py()
@@ -86,7 +86,7 @@ class TestCAGen:
     @pytest.mark.skipif("not HAVE_WEAVE")
     def test_run_nondeterministic_weave(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
-        br = cagen.BinRule((size-2,), deterministic=False, rule=rule_num)
+        br = cagen.BinRule((size-2,), nondet=0.5, rule=rule_num)
 
         for i in range(10):
             br.step_inline()
@@ -237,7 +237,7 @@ class TestCAGen:
         # this rule would set all fields to 1 at every step.
         # since we use a nondeterministic step func, this will amount to about
         # half ones, half zeros
-        br = cagen.BinRule(deterministic=False, config=conf, rule=0)
+        br = cagen.BinRule(nondet=0.5, config=conf, rule=0)
         if inline:
             br.step_inline()
         else:
@@ -472,7 +472,7 @@ class TestCAGen:
         self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
 
     def body_histogram_1d(self, inline=False, deterministic=True):
-        br = cagen.BinRule((100,), rule=105, histogram=True, deterministic=deterministic)
+        br = cagen.BinRule((100,), rule=105, histogram=True, nondet=1.0 if deterministic else 0.5)
         assert_arrays_equal(br.histogram, np.bincount(br.cconf[1:-1]))
         for i in range(10):
             if inline:
@@ -553,7 +553,7 @@ class TestCAGen:
             except TypeError:
                 # pypy compat
                 conf = np.zeros(100, np.dtype("i"))
-            br = cagen.BinRule(config=conf, rule=255, beta=True)
+            br = cagen.BinRule(config=conf, rule=255, beta=0.5)
 
             if inline:
                 br.step_inline()
@@ -568,7 +568,7 @@ class TestCAGen:
                    " the fields updating their outer state."
 
         conf = np.zeros((100,), np.dtype("i"))
-        br = cagen.BinRule(config=conf, rule=255, beta=True)
+        br = cagen.BinRule(config=conf, rule=255, beta=0.5)
 
         for i in range(20):
             if inline:
