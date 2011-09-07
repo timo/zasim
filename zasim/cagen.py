@@ -1385,6 +1385,9 @@ def elementary_digits_and_values(neighbourhood, base, rule_arr=None):
             digits_and_values[index].update(result_value = rule_arr[index])
     return digits_and_values
 
+def rule_nr_to_rule_arr(number, digits, base=2):
+    return [int(number & (base ** index) > 0) for index in range(digits)]
+
 class ElementaryCellularAutomatonBase(Computation):
     """Infer a 'Gödel numbering' from the used :class:`Neighbourhood` and
     create a computation that corresponds to the rule'th possible combination

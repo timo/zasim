@@ -1,137 +1,174 @@
-from zasim.elementarytools import minimize_rule_number
-from zasim.cagen import elementary_digits_and_values
+"""
+Find all Classes
+================
+
+Given a neighbourhood and a set of "equivalency operations", this script finds
+out, how many classes of really different rules there are.
+
+Chunking up the work
+====================
+
+Since the only operation that changes the amount of bits set in the
+config is the bit flip, we remove that one from the "interesting" operations.
+Then, we chunk up the complete work into big chunks:
+
+ - all 32 bit integers with 1 bit set
+ - all 32 bit integers with 2 bits set
+ - ...
+ - all 32 bit integers with 16 bits set
+
+:meth:`iterate_fixed_bitnum` offers an iterator over all numbers with M bits,
+of which m bits are set. The function :meth:`nth_fixed_bitnum` offers random
+access from index in the iterator to the number generated.
+"""
+from zasim.elementarytools import minimize_rule_number, neighbourhood_actions
 from zasim import cagen
-import numpy as np
-from time import time, sleep
-import os
-import multiprocessing
-import Queue
 
-filepath = "find_results.txt"
+import array
+from struct import Struct
+from time import time
 
-neigh = cagen.VonNeumannNeighbourhood()
-rule = np.zeros(2 ** len(neigh.offsets), dtype=np.dtype("i"))
-maximum_number = 2 ** (2 ** len(neigh.offsets))
-try:
-    with open(filepath, "r") as old_results:
-        old_results.seek(-1000, os.SEEK_END)
-        lastdata = old_results.read().replace("\n", "<")
-        numbers = lastdata.split("<")
-        numbers = map(int, numbers)
-        start_num = max(numbers)
-except IOError:
-    start_num = maximum_number
+from collections import defaultdict
 
+# we don't want bits to be flipped when searching for equivalent CAs.
+del neighbourhood_actions["flip all bits"]
 
-print "resuming from %d" % (start_num)
+def fixed_bits(M, m):
+    """Iterate over all numbers with M bits, of which m are set to 1.
+    This iterates in order from smallest to biggest."""
+    bit_position = list(range(m))
+    while bit_position[-1] != M:
+        # find the lowest bit that can move up one
+        for pos in range(m):
+            if pos == m - 1 or bit_position[pos + 1] != bit_position[pos] + 1:
+                # found a bit to move, move it.
+                bit_position[pos] += 1
 
-known_bits = multiprocessing.Array("B", int(maximum_number / 8 + 10), lock=False)
-print "array len is", len(known_bits)
-program_running = multiprocessing.Value('f', 1)
-array_lock = multiprocessing.RLock()
+                # rewind all the lower bits
+                bit_position[:pos] = range(pos)
+                break
 
-def set_bits(bits):
-    with array_lock:
-        for bit in bits:
-            known_bits[bit / 8] |= 1 >> (bit % 8)
+        if bit_position[-1] == M:
+            return
 
-def ask_bit(bit):
-    with array_lock:
-        return (known_bits[bit / 8] & (1 >> (bit % 8))) > 0
+        # generate the number from the bits
+        num = 0
+        for pos in range(m):
+            num += 2 ** bit_position[pos]
 
-def find_old_bits():
-    try:
-        print "going to fill up the known_bits array from old data."
-        starttime = time()
-        with open(filepath, "r") as old_results:
-            count = 0
-            for line in old_results:
-                numbers = line.strip().split("<")
-                numbers = map(int, numbers)
-                numbers = [num for num in numbers if num < start_num]
-                set_bits(numbers)
-                count += 1
-        print "done! yay. took me %s seconds for %d lines" % (time() - starttime, count)
-    except IOError:
-        print "could not fill up the known_bits array."
+        yield num
 
-def deal_with_range(start, stop, skip, data_queue):
-    cache_hits = 0
-    starttime = time()
+class Task(object):
+    def __init__(self, neighbourhood, bits_set, taskname=None, base=2):
+        """Create a task for finding all equivalency classes of the given
+        neighbourhood out of all those numbers that have `bits_set` bits set."""
 
-    for rule_nr in range(start, stop, skip):
-        if ask_bit(rule_nr):
-            cache_hits += 1
-            continue
-        for digit in range(len(rule)):
-            if rule_nr & (2 ** digit) > 0:
-                rule[digit] = 1
+        self.neigh = neighbourhood
+        self.base = base
+        self.digits = base ** len(self.neigh.offsets)
+        self.bits_set = bits_set
+
+        if taskname is None:
+            self.taskname = neighbourhood.__name__
+        else:
+            self.taskname = taskname
+
+        self.taskname += "_%d" % (self.bits_set)
+
+        self.trans_tbl = {}
+        self.r_trans_tbl = []
+        self._get_index_translation_table()
+
+        self.data = defaultdict(lambda: 0)
+
+        self.low_repr = 0
+        self.high_repr = 0
+        self.biggest_group = []
+
+    def res(self, name):
+        """generete a resource filename for the given name"""
+        return self.taskname + "_" + name
+
+    def _get_index_translation_table(self):
+        """load from disk or create a translation table for array compression."""
+        try:
+            with open(self.res("trans_table"), "r") as table:
+                ttable = array.array("L")
+                ttable.fromstring(table.read())
+            for index, number in enumerate(ttable):
+                self.trans_tbl[number] = index
+                self.r_trans_tbl.append(number)
+            del ttable
+            print "got index translation table from file"
+        except IOError:
+            struct = Struct("L")
+            with open(self.res("trans_table"), "w") as table:
+                for smallnum, num in enumerate(fixed_bits(self.digits, self.bits_set)):
+                    self.trans_tbl[num] = smallnum
+                    self.r_trans_tbl.append(num)
+                    table.write(struct.pack(num))
+            print "wrote index translation table to file"
+
+    def set_representant(self, numbers):
+        """set the representant of the given rule numbers and increment the
+        number of friends the representant has.
+
+        The representant is the lowest number of numbers."""
+        increment = 0
+        numbers.sort(reverse=True)
+        representant = numbers.pop()
+        if representant > self.high_repr:
+            self.high_repr = representant
+        if representant < self.low_repr:
+            self.low_repr = representant
+        for number in numbers:
+            if self.get_data(number) != representant:
+                increment += 1
+                self.set_data(number, representant)
             else:
-                rule[digit] = 0
-        dav = elementary_digits_and_values(neigh, 2, rule)
-        lower, (route, _), cache = minimize_rule_number(neigh, dav)
-        if lower < rule_nr:
-            nom = cache.keys()
-            set_bits(nom)
-            data_queue.put(nom)
+                print "tried to re-set representant of %d" % number
 
-    print "range(%d, %d, %d) took %s - %d cache hits" % (start, stop, skip, time() - starttime, cache_hits)
+        repr_score = self.get_data(representant) - increment
+        self.set_data(representant, repr_score)
+        if abs(repr_score) > len(self.biggest_group):
+            self.biggest_group = [representant] + numbers
 
-def master():
-    find_old_bits()
-    def write_out_results(queue):
-        with open(filepath, "a") as results:
-            while program_running.value > 0:
-                try:
-                    data = queue.get(timeout=1)
-                    data.sort()
-                    results.write("<".join(map(str,data)))
-                    results.write("\n")
-                except Queue.Empty:
-                    print "timed out. program_running.value = ", program_running.value
+    def get_data(self, number):
+        return self.data[number]
 
-        print "done writing out results"
+    def set_data(self, number, data):
+        self.data[number] = data
 
-    queue = multiprocessing.Queue(100)
-    write_proc = multiprocessing.Process(target=write_out_results, args=(queue,))
-    write_proc.start()
-    processes = []
-    num_done = 0
-    last_done_time = time()
-    try:
-        process_limit = multiprocessing.cpu_count()
-    except NotImplementedError:
-        process_limit = 2
-    process_limit += 1
+    def already_done(self, number):
+        """Has the number already been assigned a representant? Or is it one?"""
+        return self.get_data(number) != 0
 
-    chunksize = min(1000, start_num / (process_limit * 2))
+    def loop(self):
+        start = time()
+        neigh = self.neigh
+        for index, number in enumerate(self.r_trans_tbl[::-1]):
+            if not self.already_done(number):
+                representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
+                self.set_representant(everything.keys())
 
-    for bunch in range(start_num / chunksize):
-        while len(processes) >= process_limit:
-            for proc in processes:
-                if not proc.is_alive():
-                    processes.remove(proc)
-                    proc.join()
-                    num_done += chunksize
-                    if num_done % (chunksize * (process_limit + 3)) == 0:
-                        time_taken = time() - last_done_time
-                        print "%d nums took %s time" % (chunksize, time_taken / (process_limit + 3))
-                        last_done_time = time()
+        print "done %d steps in %s" % (len(self.r_trans_tbl), time() - start)
+        print "representants ranged from %d to %d" % (self.low_repr, self.high_repr)
+        print "biggest group: % 2d %s" % (len(self.biggest_group), self.biggest_group)
 
-            sleep(0.1)
-        proc = multiprocessing.Process(target=deal_with_range,
-            args = (max(1, start_num - bunch * chunksize),
-                    max(0, start_num - bunch * chunksize - chunksize),
-                    -1, queue))
-        proc.start()
-        processes.append(proc)
-        assert write_proc.is_alive()
-    for proc in processes:
-        print "joining a process"
-        proc.join()
-    program_running.value = 0
-    print "finished. setting program_running.value = ", program_running.value
-    write_proc.join()
+    def cleanup(self):
+        del self.data
+        del self.trans_tbl
+        del self.r_trans_tbl
+
+def new_main():
+    neigh = cagen.VonNeumannNeighbourhood()
+
+    for bits_set in range(1, 10):
+        print "starting task with %d bits set!" % (bits_set)
+        a = Task(neigh, bits_set, "von_neumann")
+        a.loop()
+        a.cleanup()
+        print
 
 if __name__ == "__main__":
-    master()
+    new_main()
