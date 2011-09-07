@@ -125,14 +125,14 @@ def mirror_by_axis(neighbourhood, axis=[0]):
 @neighbourhood_action("flip vertically")
 def flip_v(neighbourhood, digits_and_values, cache={}):
     if neighbourhood not in cache:
-        cache[neighbourhood] = mirror_by_axis(neighbourhood, [1])
+        cache[neighbourhood] = mirror_by_axis(neighbourhood, [0])
 
     return apply_index_map(digits_and_values, cache[neighbourhood])
 
 @neighbourhood_action("flip horizontally")
 def flip_h(neighbourhood, digits_and_values, cache={}):
     if neighbourhood not in cache:
-        cache[neighbourhood] = mirror_by_axis(neighbourhood, [0])
+        cache[neighbourhood] = mirror_by_axis(neighbourhood, [1])
     return apply_index_map(digits_and_values, cache[neighbourhood])
 
 #@neighbourhood_action("flip both")
