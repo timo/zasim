@@ -17,10 +17,13 @@ Then, we chunk up the complete work into big chunks:
  - ...
  - all 32 bit integers with 16 bits set
 
-:meth:`iterate_fixed_bitnum` offers an iterator over all numbers with M bits,
-of which m bits are set. The function :meth:`nth_fixed_bitnum` offers random
-access from index in the iterator to the number generated.
-"""
+:meth:`iterate_fixed_bitnum` offers an iterator over all numbers with
+M bits, of which m bits are set. In the first step, it will be used to
+generate a list of all numbers in the interesting chunk (or get it from
+disk), as well as a translation table for later aiding in reading out the
+results of the computation, that will be "compressed" into one file per
+chunk."""
+
 from zasim.elementarytools import minimize_rule_number, neighbourhood_actions
 from zasim import cagen
 
