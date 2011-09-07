@@ -12,6 +12,7 @@ the table-like step functions of elementary cellular automatons.
 
 """
 from __future__ import absolute_import
+from .cagen import elementary_digits_and_values
 
 neighbourhood_actions = {}
 def neighbourhood_action(name):
@@ -60,65 +61,78 @@ def flip_all(neighbourhood, digits_and_values, base=2):
         ndav.append(ndata)
     return ndav
 
-def flip_values(digits_and_values, permutations=[]):
-    """flip around the results, so that for each pair (a, b) the results for
-    neighbourhood configurations a=a', b=b', c=c' have the values of a=b',
-    b=a', c=c', for instance."""
-    ndav = [a.copy() for a in digits_and_values]
-    # FIXME this is utterly broken and needs a complete rewrite.
-    def find_by_neighbours(similar):
-        for num, val in enumerate(digits_and_values):
-            same = True
-            for k, v in similar.iteritems():
-                if k == "result_value":
-                    continue
-                if val[k] != v:
-                    same = False
-                    break
-            if same:
-                return (num, val)
-    for num, data in enumerate(digits_and_values):
-        ndata = data.copy()
-        for perm in permutations:
-            if len(perm) == 2:
-                a, b = perm
-                ndata[a], ndata[b] = ndata[b], ndata[a]
-            else:
-                old = ndata.copy()
-                for pos, npos in zip(perm, perm[1:] + [perm[0]]):
-                    ndata[npos] = old[pos]
-            if ndata == data:
-                ndav.append(data)
-                continue
-            othernum, val = find_by_neighbours(ndata)
-            ndav[othernum]["result_value"], ndav[num]["result_value"]
-    return ndav
+def permutations_to_index_map(neighbourhood, permutations, base=2):
+    """Figure out from the given neighbourhood and the permutations what
+    position in the old array each entry in the new array is supposed to
+    come from to realize the permutations.
 
-def mirror_by_axis(neighbourhood, axis=[0]):
+    :attr neighbourhood: The neighbourhood object to use.
+    :attr permutations: A list of permutations, each of which being a 2-tuple of
+                        names to exchange."""
+
+    resultless_dav = elementary_digits_and_values(neighbourhood, base)
+
+    index_map = range(len(resultless_dav))
+
+    for index, dav in enumerate(resultless_dav):
+        # use ndav to permutate the values freely, then figure out where
+        # it belongs in the digits_and_values list.
+        ndav = dav.copy()
+        for (a, b) in permutations:
+            ndav[a], ndav[b] = ndav[b], ndav[a]
+        if ndav != dav:
+            other_index = resultless_dav.find(ndav)
+            # since we will find the same combination of index/other_index
+            # twice, only take the one where other_index is the higher number
+            if other_index > index:
+                index_map[index], index_map[other_index] =\
+                        index_map[other_index], index
+
+    return index_map
+
+def apply_index_map(digits_and_values, index_map):
+    return [digits_and_values[index_map[i]] for i, _ in enumerate(digits_and_values)]
+
+def flip_offset_to_permutation(neighbourhood, permute_func):
+    """Apply the permute_func, which takes in the offset and returns a new
+    offset to the neighbourhood offsets and return pairs of (old_name,
+    new_name) for each permutation operatoin."""
+
     offs_to_name = dict(zip(neighbourhood.offsets, neighbourhood.names))
     pairs = []
-    for offset, name in offs_to_name.iteritems():
-        mirrored = tuple(-a if num in axis else a for num, a in enumerate(offset))
-        if mirrored != offset and mirrored in offs_to_name:
-            if (offs_to_name[mirrored], name) not in pairs:
-                pairs.append((name, offs_to_name[mirrored]))
-        elif mirrored not in offs_to_name:
-            raise ValueError("Mirrored %s to %s, but could not find it in offsets!" % \
-                    (offset, mirrored))
+    for offset, old_name in offs_to_name.iteritems():
+        new_offset = permute_func(offset)
+
+        if new_offset != offset:
+            pair = (old_name, offs_to_name[new_offset])
+
+            # only allow changing forwards
+            # this keeps us from generating duplicate pairs as well as makes
+            # permutation cycles lack the incorrect flip operation of the last
+            # element with the first.
+            if pair < pair[::-1]:
+                pairs.append(pair)
 
     return pairs
+
+def mirror_by_axis(neighbourhood, axis=[0], base=2):
+    def permute_func(position, axis=tuple(axis)):
+        return tuple(-a if num in axis else a for num, a in enumerate(position))
+
+    return flip_offset_to_permutation(neighbourhood, permute_func)
 
 @neighbourhood_action("flip vertically")
 def flip_v(neighbourhood, digits_and_values, cache={}):
     if neighbourhood not in cache:
         cache[neighbourhood] = mirror_by_axis(neighbourhood, [1])
-    return flip_values(digits_and_values, cache[neighbourhood])
+
+    return apply_index_map(digits_and_values, cache[neighbourhood])
 
 @neighbourhood_action("flip horizontally")
 def flip_h(neighbourhood, digits_and_values, cache={}):
     if neighbourhood not in cache:
         cache[neighbourhood] = mirror_by_axis(neighbourhood, [0])
-    return flip_values(digits_and_values, cache[neighbourhood])
+    return apply_index_map(digits_and_values, cache[neighbourhood])
 
 #@neighbourhood_action("flip both")
 #def flip_both(neighbourhood, digits_and_values, cache={}):
@@ -132,26 +146,6 @@ def rotate_clockwise(neighbourhood, digits_and_values, cache={}):
         def rotate(pos):
             a, b = pos
             return -b, a
-        offs_to_name = dict(zip(neighbourhood.offsets, neighbourhood.names))
-        perms = []
-        taken = []
-        for offset, name in offs_to_name.iteritems():
-            if offset in taken:
-                continue
-            new_offs = rotate(offset)
-            perm = [offs_to_name[new_offs]]
-            while new_offs != offset:
-                after_rotate = rotate(new_offs)
-                if after_rotate in taken:
-                    perm = []
-                    break
-                taken.append(after_rotate)
-                perm.append(offs_to_name[after_rotate])
-                new_offs = after_rotate
+        cache[neighbourhood] = flip_offset_to_permutation(neighbourhood, rotate)
 
-            if len(perm) >= 2:
-                perms.append(perm)
-
-        cache[neighbourhood] = perms
-
-    return flip_values(digits_and_values, cache[neighbourhood])
+    return apply_index_map(digits_and_values, cache[neighbourhood])

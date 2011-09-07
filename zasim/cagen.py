@@ -1362,11 +1362,13 @@ class TwoDimZeroReader(BorderSizeEnsurer):
     # BorderSizeEnsurer, because it already just embeds the confs into
     # np.zero and does that for one or two dimensions.
 
-def elementary_digits_and_values(neighbourhood, base, rule_arr):
+def elementary_digits_and_values(neighbourhood, base, rule_arr=None):
     """From a neighbourhood, the base of the values used and the array that
     holds the results for each combination of neighbourhood values, create a
     list of dictionaries with the neighbourhood values paired with their
-    result_value ordered by the position ordered like the rule array."""
+    result_value ordered by the position like in the rule array.
+
+    If the rule_arr is None, no result_value field will be generated."""
     digits_and_values = []
     offsets = neighbourhood.offsets
     names = neighbourhood.names
@@ -1376,8 +1378,11 @@ def elementary_digits_and_values(neighbourhood, base, rule_arr):
         values = [1 if (i & (base ** k)) > 0 else 0
                 for k in range(len(offsets))]
         asdict = dict(zip(names, values))
-        asdict.update(result_value = rule_arr[i])
         digits_and_values.append(asdict)
+
+    if rule_arr is not None:
+        for index in range(base ** digits):
+            digits_and_values[index].update(result_value = rule_arr[index])
     return digits_and_values
 
 class ElementaryCellularAutomatonBase(Computation):
