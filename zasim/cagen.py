@@ -1792,7 +1792,10 @@ def categories():
 
     return categories
 
-def test(width=75, copy_borders=True, rule=110, histogram=True, activity=False, pure=False, print_rule=True, nondet=1, beta=1, steps=100):
+def test(width=75, copy_borders=True, rule=110, histogram=True, activity=False, pure=False, print_rule=True, nondet=100, beta=100, steps=100):
+
+    beta = beta / 100.
+    nondet = nondet / 100.
 
     bin_rule = BinRule((width,), rule=rule,
             histogram=histogram, activity=activity,
@@ -1844,6 +1847,11 @@ if __name__ == "__main__":
             help="pretty-print the rule")
     argp.add_argument("-s", "--steps", metavar="STEPS", default=100, type=int,
             help="run the simulator for STEPS steps.")
+    argp.add_argument("--nondet", default=100, type=int,
+            help="with what percentage should cells be executed?")
+    argp.add_argument("--beta", default=100, type=int,
+            help="with what probability should a cell succeed in exposing its "\
+                 "state to its neighbours?")
 
     args = argp.parse_args()
 
