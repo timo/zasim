@@ -75,21 +75,13 @@ def permutations_to_index_map(neighbourhood, permutations, base=2):
     index_map = range(len(resultless_dav))
 
     for index, dav in enumerate(resultless_dav):
-        # use ndav to permutate the values freely, then figure out where
-        # it belongs in the digits_and_values list.
         ndav = dav.copy()
         for (a, b) in permutations:
             ndav[a], ndav[b] = ndav[b], ndav[a]
-        if ndav != dav:
-            other_index = resultless_dav.index(ndav)
-            # since we will find the same combination of index/other_index
-            # twice, only take the one where other_index is the higher number
-            #if other_index > index:
-            print "switching %d and %d" % (other_index, index)
-            index_map[index], index_map[other_index] =\
-                    index_map[other_index], index_map[index]
 
-    print permutations, index_map
+        other_index = resultless_dav.index(ndav)
+        index_map[index] = other_index
+
     return index_map
 
 def apply_index_map(digits_and_values, index_map):
