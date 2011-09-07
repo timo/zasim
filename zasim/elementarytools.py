@@ -56,23 +56,21 @@ def flip_all(neighbourhood, digits_and_values, base=2):
         ndav.append(ndata)
     return ndav
 
-def permutations_to_index_map(neighbourhood, permutations, base=2):
-    """Figure out from the given neighbourhood and the permutations what
+def permutation_to_index_map(neighbourhood, permutation, base=2):
+    """Figure out from the given neighbourhood and the permutation what
     position in the old array each entry in the new array is supposed to
     come from to realize the permutations.
 
     :attr neighbourhood: The neighbourhood object to use.
-    :attr permutations: A list of permutations, each of which being a 2-tuple of
-                        names to exchange."""
+    :attr permutations: A dictionary that says what cell to take the value from
+                        for any given cell."""
 
     resultless_dav = elementary_digits_and_values(neighbourhood, base)
 
     index_map = range(len(resultless_dav))
 
     for index, dav in enumerate(resultless_dav):
-        ndav = dav.copy()
-        for (a, b) in permutations:
-            ndav[a], ndav[b] = ndav[b], ndav[a]
+        ndav = dict((k, dav[permutation[k]]) for k in neighbourhood.names)
 
         other_index = resultless_dav.index(ndav)
         index_map[index] = other_index
@@ -84,57 +82,25 @@ def apply_index_map(digits_and_values, index_map):
 
 def flip_offset_to_permutation(neighbourhood, permute_func):
     """Apply the permute_func, which takes in the offset and returns a new
-    offset to the neighbourhood offsets and return pairs of (old_name,
-    new_name) for each permutation operatoin."""
+    offset to the neighbourhood offsets and return a permutation dictionary
+    that maps each name of a cell to the name of the cell its data is supposed
+    to come from."""
 
     offs_to_name = dict(zip(neighbourhood.offsets, neighbourhood.names))
-    pairs = []
+    permutation = dict(zip(neighbourhood.names, neighbourhood.names))
     for offset, old_name in offs_to_name.iteritems():
         new_offset = permute_func(offset)
+        new_name = offs_to_name[new_offset]
+        permutation[old_name] = new_name
 
-        if new_offset != offset:
-            pair = (old_name, offs_to_name[new_offset])
-            pairs.append(pair)
-
-    # it's necessary, to have no "closing pair" for each cycle, so we have to
-    # organize the groups by the cycles they belong to and remove any pair from
-    # every group, that joins a beginning and an end.
-    # it's also necessary to sort them, so that the permutations are processed
-    # in order. thus we clear the pairs array and add each link as we find it.
-    cycle_groups = []
-    pairs_to_consider, pairs = pairs, []
-    while len(pairs_to_consider) > 0:
-        changed_anything = False
-        for a, b in pairs_to_consider:
-            for group in cycle_groups:
-                if a in group or b in group:
-                    # only if this pair does not close a cycle, we add it back
-                    # to the pairs array.
-                    if a in group and not b in group:
-                        group.extend(b)
-                        pairs.append((a, b))
-                        print "added %s to the cycle of %s" % ((a, b), group)
-                    changed_anything = True
-                    pairs_to_consider.remove((a, b))
-                    break
-
-        # if there was no result whatsoever in this round, we have to start
-        # looking for a new cycle. take the first pair, which must belong to
-        # any non-discovered cycle.
-        if not changed_anything:
-            new_pair = pairs_to_consider.pop()
-            print "added %s, it starts a new cycle." % (new_pair,)
-            pairs.append(new_pair)
-            cycle_groups.append(list(new_pair))
-
-    return pairs
+    return permutation
 
 def mirror_by_axis(neighbourhood, axis=[0]):
     def mirror_axis_permutation(position, axis=tuple(axis)):
         return tuple(-a if num in axis else a for num, a in enumerate(position))
 
     permutation = flip_offset_to_permutation(neighbourhood, mirror_axis_permutation)
-    return permutations_to_index_map(neighbourhood, permutation)
+    return permutation_to_index_map(neighbourhood, permutation)
 
 @neighbourhood_action("flip vertically")
 def flip_v(neighbourhood, digits_and_values, cache={}):
@@ -162,6 +128,6 @@ def rotate_clockwise(neighbourhood, digits_and_values, cache={}):
             a, b = pos
             return b, -a
         permutation = flip_offset_to_permutation(neighbourhood, rotate)
-        cache[neighbourhood] = permutations_to_index_map(neighbourhood, permutation)
+        cache[neighbourhood] = permutation_to_index_map(neighbourhood, permutation)
 
     return apply_index_map(digits_and_values, cache[neighbourhood])
