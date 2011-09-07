@@ -165,7 +165,7 @@ def rotate_clockwise(neighbourhood, digits_and_values, cache={}):
     if neighbourhood not in cache:
         def rotate(pos):
             a, b = pos
-            return -b, a
+            return b, -a
         permutation = flip_offset_to_permutation(neighbourhood, rotate)
         cache[neighbourhood] = permutations_to_index_map(neighbourhood, permutation)
 
