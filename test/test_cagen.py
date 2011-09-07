@@ -1,14 +1,15 @@
 from __future__ import absolute_import
+
 from zasim import ca
 from zasim import cagen
 from zasim.features import *
-from random import randrange
-from .testutil import (assert_arrays_equal, pretty_print_binrule,
-                       compare_arrays,
-                       INTERESTING_BINRULES, TESTED_BINRULE, GLIDER)
-from itertools import repeat, chain, product
-import numpy as np
 
+from .testutil import *
+
+from random import randrange
+from itertools import repeat, chain, product
+
+import numpy as np
 import pytest
 
 MIN_SIZE, MAX_SIZE = 5, 25

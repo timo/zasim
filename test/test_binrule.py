@@ -1,10 +1,11 @@
 from __future__ import absolute_import
+
 from zasim import ca
 from zasim.features import *
-from .testutil import (assert_arrays_equal, pretty_print_binrule,
-                       INTERESTING_BINRULES, TESTED_BINRULE)
-import numpy as np
 
+from .testutil import *
+
+import numpy as np
 import pytest
 
 class TestBinRule:
