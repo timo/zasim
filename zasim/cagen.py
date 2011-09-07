@@ -1792,30 +1792,59 @@ def categories():
 
     return categories
 
-def test(width, bordercopy, rule, histogram, activity, pure, print_rule, nondet, beta):
+def test(width=75, bordercopy=True, rule=110, histogram=True, activity=False, pure=False, print_rule=True, nondet=1, beta=1, steps=100):
 
     bin_rule = BinRule((width,), rule=rule,
             histogram=histogram, activity=activity,
-            deterministic=not nondet, beta=beta)
+            nondet=nondet, beta=beta)
 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
-    pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((0, 0),))
+    pretty_print_array = build_array_pretty_printer((width,), ((abs(b_l), abs(b_r)),), ((0, 0),))
 
 
-    if HAVE_WEAVE:
+    if HAVE_WEAVE and not pure:
         print "weave"
-        for i in range(100):
+        for i in range(steps):
             bin_rule.step_inline()
             pretty_print_array(bin_rule.cconf)
-            print bin_rule.histogram, bin_rule.activity
+            if histogram:
+                print bin_rule.histogram
+            if activity:
+                print bin_rule.activity
     else:
         print "pure"
-        for i in range(100):
+        for i in range(steps):
             bin_rule.step_pure_py()
             pretty_print_array(bin_rule.cconf)
-            print bin_rule.histogram, bin_rule.activity
+            if histogram:
+                print bin_rule.histogram
+            if activity:
+                print bin_rule.activity
 
 if __name__ == "__main__":
-    if "pure" in sys.argv:
-        HAVE_WEAVE = False
-    test()
+    import argparse
+
+    argp = argparse.ArgumentParser(
+        description="Run a generated BinRule simulator and display its results "
+                    "on the console")
+    argp.add_argument("-w", "--width", default=70,
+            help="set the width of the configuration to calculate")
+    argp.add_argument("-b", "--bordercopy", default=True,
+            help="copy borders around. Otherwise, zeros will be read from "
+                    "the borders")
+    argp.add_argument("-r", "--rule", default=110,
+            help="select the rule number to calculate")
+    argp.add_argument("--histogram", default=False, action="store_true",
+            help="calculate a histogram")
+    argp.add_argument("--activity", default=False, action="store_true",
+            help="calculate the activity")
+    argp.add_argument("--pure", default=False, action="store_true",
+            help="use pure python stepfunc even if weave is available")
+    argp.add_argument("--print-rule", default=False, action="store_true",
+            help="pretty-print the rule")
+    argp.add_argument("-s", "--steps", metavar="STEPS", default=100,
+            help="run the simulator for STEPS steps.")
+
+    args = argp.parse_args()
+
+    test(**args.__dict__)
