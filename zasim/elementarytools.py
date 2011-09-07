@@ -36,7 +36,6 @@ def minimize_rule_number(neighbourhood, digits_and_values):
     for route, data in tries:
         new = neighbourhood_actions[route[-1]](neighbourhood, data)
         rule_nr = digits_and_values_to_rule_nr(new)
-        print "trying", ", ".join(route), "gives us", rule_nr
         if rule_nr in cache:
             oldroute, olddata = cache[rule_nr]
             if len(oldroute) > len(route):
@@ -45,11 +44,7 @@ def minimize_rule_number(neighbourhood, digits_and_values):
         else:
             cache[rule_nr] = (route, new)
             tries.extend([(route + [name], new) for name in neighbourhood_actions])
-    print "original number was %d" % original
-    for number, (route, _) in cache.iteritems():
-        print "%s leads to %d" % (", ".join(route), number)
     lowest_number = min(cache.keys())
-    print "the lowest we could do was %d: %s" % (lowest_number, ", ".join(cache[lowest_number][0]))
     return lowest_number, cache[lowest_number], cache
 
 @neighbourhood_action("flip all bits")
