@@ -1804,6 +1804,9 @@ def test(width=75, copy_borders=True, rule=110, histogram=True, activity=False, 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
     pretty_print_array = build_array_pretty_printer((width,), ((abs(b_l), abs(b_r)),), ((0, 0),))
 
+    if print_rule:
+        print bin_rule.pretty_print()
+
 
     if HAVE_WEAVE and not pure:
         print "weave"
