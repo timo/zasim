@@ -12,7 +12,7 @@ When in a more finished state, its main features will be:
   - Show different types of histograms.
   - Compare different runs of cellular automatons.
   - Manipulate cellular space through UI or code.
-  - It runs fast, but developing fast cellular automatons is simple.
+  - It runs fast, but developing new cellular automatons is simple.
 
 Contents:
 
@@ -29,7 +29,8 @@ Contents:
 Getting the code
 ================
 
-The code is not yet available on the 'net, but it will probably be published soon.
+The code is not yet available on the 'net, due to licensing questions that
+still require resolving.
 
 Running zasim
 =============
