@@ -548,7 +548,11 @@ class TestCAGen:
     def body_beta_asynchronism(self, inline=False):
         fail = True
         for i in range(50):
-            conf = np.zeros((100,), np.dtype("i"))
+            try:
+                conf = np.zeros((100,), np.dtype("i"))
+            except TypeError:
+                # pypy compat
+                conf = np.zeros(100, np.dtype("i"))
             br = cagen.BinRule(config=conf, rule=255, beta=True)
 
             if inline:
