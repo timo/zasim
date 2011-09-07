@@ -40,38 +40,22 @@ which can then target a configuration object with the method
     from zasim.cagen import *
 """
 
+# TODO make it extra hard to change the loop variables using a neighbourhood.
+
 # TODO separate the functions to make C code from the ones that do pure python
 #      computation
 
 # TODO figure out how the code should handle resizing of configurations and
 #      other such things.
 
+# TODO figure out if scipy.weave.accelerate_tools is any good.
+
+from .features import *
 import numpy as np
-try:
+
+if HAVE_WEAVE:
     from scipy import weave
     from scipy.weave import converters
-    USE_WEAVE=True
-except ImportError:
-    USE_WEAVE=False
-    print "not using weave"
-
-try:
-    from numpy import ndarray
-    HAVE_MULTIDIM = True
-except:
-    print "multi-dimensional arrays are not available"
-    HAVE_MULTIDIM = False
-
-try:
-    arr = np.array(range(10))
-    foo = arr[(1,)]
-    HAVE_TUPLE_ARRAY_INDEX = True
-except TypeError:
-    HAVE_TUPLE_ARRAY_INDEX = False
-    import re
-    TUPLE_ACCESS_FIX = re.compile(r"\((\d+),\)")
-    def tuple_array_index_fixup(line):
-        return TUPLE_ACCESS_FIX.sub(r"\1", line)
 
 from random import Random, randrange
 from itertools import product, chain
@@ -104,6 +88,31 @@ def gen_offset_pos(pos, offset):
     >>> gen_offset_pos(["i", "j"], ["foo", "bar"])
     ['i + foo', 'j + bar']"""
     return ["%s + %s" % (a, b) for a, b in zip(pos, offset)]
+
+def dedent_python_code(code):
+    '''
+    Dedent a bit of python code, like this:
+
+    >>> print dedent_python_code("""# update the histogram
+    ...     if result != center:
+    ...         self.target.histogram[result] += 1""")
+    # update the histogram
+    if result != center:
+        self.target.histogram[result] += 1
+    '''
+
+    lines = code.split("\n")
+    resultlines = [lines[0]] # the first line shall never have any whitespace.
+    if len(lines) > 1:
+        common_whitespace = len(lines[1]) - len(lines[1].lstrip())
+        if common_whitespace > 0:
+            for line in lines[1:]:
+                white, text = line[:common_whitespace], line[common_whitespace:]
+                assert line == "" or white.isspace()
+                resultlines.append(text)
+        else:
+            resultlines.extend(lines[1:])
+    return "\n".join(resultlines)
 
 class WeaveStepFunc(object):
     """The WeaveStepFunc composes different parts into a functioning
@@ -195,6 +204,7 @@ class WeaveStepFunc(object):
         :param hook: the section to append the code to.
         :param function: the python code to add (as a string)."""
         assert isinstance(function, basestring), "py hooks must be strings now."
+        function = dedent_python_code(function)
         function = function.split("\n")
         newfunc = []
 
@@ -225,8 +235,10 @@ class WeaveStepFunc(object):
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
 
-        # TODO figure out if the code for weave can be compiled without
-        #      having to run it.
+        # TODO run the code once with dummy data, that will still cause the
+        #      types to match - the only way to compile a function with weave
+        #      without running it, too, would be to copy most of the code from
+        #      weave.inline_tools.attempt_function_call.
 
         # freeze python code bits
         for hook in self.pycode.keys():
@@ -250,6 +262,7 @@ class WeaveStepFunc(object):
 
         myglob = globals()
         myloc = locals()
+        myglob.update(self.consts)
         exec code_object in myglob, myloc
         self.pure_py_code_text = code_text
         self.step_pure_py = new.instancemethod(myloc["step_pure_py"], self, self.__class__)
@@ -283,8 +296,19 @@ class WeaveStepFunc(object):
             self.step_pure_py()
             self.step = self.step_pure_py
 
-    def getConf(self):
+    def get_config(self):
         return self.target.cconf.copy()
+
+    def set_config(self, config):
+        self.target.cconf = config.copy()
+        self.new_config()
+
+    def set_config_value(self, pos, value=None):
+        """Set the value of the configuration at pos to value.
+        If value is None, flip the value that's already there."""
+        if value is None:
+            value = 1 - self.acc.read_from(pos)
+        self.acc.write_to_current(pos, value)
 
     def set_target(self, target):
         """Set the target of the step function. The target contains,
@@ -310,8 +334,17 @@ class WeaveStepFunc(object):
             code.new_config()
         self.acc.multiplicate_config()
 
+    def __str__(self):
+        name_parts = []
+        for code in self.visitors:
+            code.build_name(name_parts)
+        return " ".join(name_parts)
+
 class WeaveStepFuncVisitor(object):
     """Base class for step function visitor objects."""
+
+    category = "base"
+    """The category this object and its subclasses belong to."""
 
     code = None
     """The :class:`WeaveStepFunc` instance this visitor is bound to."""
@@ -356,6 +389,10 @@ class WeaveStepFuncVisitor(object):
         it only changes the current configuration "cconf" of the automaton.
         after all new_config hooks have been run, they are multiplied."""
 
+    def build_name(self, parts):
+        """Add text to the name of the WeaveStepFunc for easy identification of
+        what's going on."""
+
 class StateAccessor(WeaveStepFuncVisitor):
     """A StateAccessor will supply read and write access to the state array.
 
@@ -363,28 +400,27 @@ class StateAccessor(WeaveStepFuncVisitor):
     how to handle swapping or history of configs.
 
     Additionally, it knows how far to offset reads and writes, so that cells at
-    the lowest coordinates will have a border of data around them.
+    the lowest coordinates will have a border of data around them."""
 
-    Supplying skip_border=True to any read or write function will remove the
-    border from the calculation. This is mainly useful for
-    :class:`BorderHandler` subclasses."""
+    category = "accessor"
+    """The category this object and its subclasses belong to."""
 
-    def read_access(self, pos, skip_border=False):
+    def read_access(self, pos):
         """Generate a bit of C code for reading from the old config at pos."""
 
-    def write_access(self, pos, skip_border=False):
+    def write_access(self, pos):
         """Generate a code bit to write to the new config at pos."""
 
-    def write_to(self, pos, value, skip_border=False):
+    def write_to(self, pos, value):
         """Directly write to the next config at pos."""
 
-    def write_to_current(self, pos, value, skip_border=False):
+    def write_to_current(self, pos, value):
         """Directly write a value to the current config at pos."""
 
-    def read_from(self, pos, skip_border=False):
+    def read_from(self, pos):
         """Directly read from the current config at pos."""
 
-    def read_from_next(self, pos, skip_border=False):
+    def read_from_next(self, pos):
         """Directly read from the next config at pos."""
 
     def get_size(self, dimension=0):
@@ -413,9 +449,15 @@ class StateAccessor(WeaveStepFuncVisitor):
         """Generate a bit of py code to copy the current field over from the
         old config."""
 
+    # TODO this class needs to get a method for generating a view onto the part
+    #      of the array inside the borders.
+
 class CellLoop(WeaveStepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
+
+    category = "loop"
+
     def get_pos(self):
         """Returns a code bit to get the current position in config space."""
 
@@ -432,6 +474,8 @@ class Neighbourhood(WeaveStepFuncVisitor):
     .. note ::
         If you subclass from Neighbourhood, all you have to do to get the
         sorting right is to call :meth:`_sort_names_offsets`."""
+
+    category = "neighbourhood"
 
     names = ()
     """The names of neighbourhood fields."""
@@ -472,9 +516,13 @@ class BorderHandler(WeaveStepFuncVisitor):
     configuration. One example is copying the leftmost border to the rightmost
     border and vice versa or ensuring the border cells are always 0."""
 
+    category = "borderhandler"
+
 class Computation(WeaveStepFuncVisitor):
     """The Computation is responsible for calculating the result from the data
     gathered from the neighbourhood."""
+
+    category = "computation"
 
 class BorderSizeEnsurer(BorderHandler):
     """The BorderSizeEnsurer ensures, that - depending on the bounding box
@@ -485,19 +533,21 @@ class BorderSizeEnsurer(BorderHandler):
         """Resizes the configuration array."""
         super(BorderSizeEnsurer, self).new_config()
         bbox = self.code.neigh.bounding_box()
-        # FIXME if the bbox goes into the positive values, abs is wrong. use the
-        # FIXME correct amount of minus signs instead?
+        borders = self.code.acc.border_size
         dims = len(bbox)
         shape = self.target.cconf.shape
+        dtype = self.target.cconf.dtype
         if dims == 1:
-            new_conf = np.zeros(shape[0] + abs(bbox[0][0]) + abs(bbox[0][1]))
-            new_conf[abs(bbox[0][0]):-abs(bbox[0][1])] = self.target.cconf
+            (left,), (right,) = self.code.acc.border_names
+            new_conf = np.zeros(shape[0] + borders[left] + borders[right], dtype)
+            new_conf[borders[left]:-borders[right]] = self.target.cconf
         elif dims == 2:
             # TODO figure out how to create slice objects in a general way.
-            new_conf = np.zeros((shape[0] + abs(bbox[0][0]) + abs(bbox[0][1]),
-                                 shape[1] + abs(bbox[1][0]) + abs(bbox[1][1])))
-            new_conf[abs(bbox[0][0]):-abs(bbox[0][1]),
-                     abs(bbox[1][0]):-abs(bbox[1][1])] = self.target.cconf
+            (left,up), (right,down) = self.code.acc.border_names
+            new_conf = np.zeros((shape[0] + borders[left] + borders[right],
+                                 shape[1] + borders[up] + borders[down]), dtype)
+            new_conf[borders[left]:-borders[right],
+                     borders[up]:-borders[down]] = self.target.cconf
         self.target.cconf = new_conf
 
 class SimpleStateAccessor(StateAccessor):
@@ -507,28 +557,38 @@ class SimpleStateAccessor(StateAccessor):
     size_names = ()
     """The names to use in the C code"""
 
-    border_names = ()
-    """The names of border offsets"""
+    border_names = ((),)
+    """The names of border offsets.
+
+    The first tuple contains the borders with lower coordinate values, the
+    second one contains the borders with higher coordinate values."""
+
+    border_size = {}
+    """The sizes of the borders.
+
+    The key is the name of the border from border_names, the value is the size
+    of the border."""
 
     size = None
     """The size of the target configuration."""
 
-    def __init__(self, **kwargs):
-        super(SimpleStateAccessor, self).__init__(**kwargs)
-
     def set_size(self, size):
         super(SimpleStateAccessor, self).set_size(size)
         self.size = size
+        if len(self.size) == 1:
+            self.size_names = ("sizeX",)
+            self.border_names = (("LEFT_BORDER",), ("RIGHT_BORDER",))
+        elif len(self.size) == 2:
+            self.size_names = ("sizeX", "sizeY")
+            self.border_names = (("LEFT_BORDER", "UPPER_BORDER"), ("RIGHT_BORDER", "LOWER_BORDER"))
+        else:
+            raise NotImplementedError("SimpleStateAccessor only supports up to 2 dimensions.")
 
-    def read_access(self, pos, skip_border=False):
-        if skip_border:
-            return "cconf(%s)" % (pos,)
-        return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names)),)
+    def read_access(self, pos):
+        return "cconf(%s)" % (", ".join(gen_offset_pos(pos, self.border_names[0])),)
 
-    def write_access(self, pos, skip_border=False):
-        if skip_border:
-            return "nconf(%s)" % (pos)
-        return "nconf(%s)" % (",".join(gen_offset_pos(pos, self.border_names)),)
+    def write_access(self, pos):
+        return "nconf(%s)" % (",".join(gen_offset_pos(pos, self.border_names[0])),)
 
     def init_once(self):
         """Set the sizeX const and register nconf and cconf for extraction
@@ -539,20 +599,22 @@ class SimpleStateAccessor(StateAccessor):
         self.code.attrs.extend(["nconf", "cconf"])
 
     def bind(self, target):
-        """Get the bounding box from the neighbourhood object."""
+        """Get the bounding box from the neighbourhood object,
+        set consts for borders."""
         super(SimpleStateAccessor, self).bind(target)
         bb = self.code.neigh.bounding_box()
         mins = [abs(a[0]) for a in bb]
-        self.border = tuple(mins)
+        maxs = [abs(a[1]) for a in bb]
+        self.border = (tuple(mins), tuple(maxs))
+        for name, value in zip(sum(self.border_names, ()), sum(self.border, ())):
+            self.code.consts[name] = value
+            self.border_size[name] = value
 
     def visit(self):
         """Take care for result and sizeX to exist in python and C code,
         for the result to be written to the config space and for the configs
         to be swapped by the python code."""
         super(SimpleStateAccessor, self).visit()
-        for name, value in zip(self.border_names, self.border):
-            self.code.add_code("headers",
-                    "#define %s %d" % (name, value))
         self.code.add_code("localvars",
                 """int result;""")
         self.code.add_code("post_compute",
@@ -574,27 +636,17 @@ class SimpleStateAccessor(StateAccessor):
         if self.size is None:
             self.size = self.target.cconf.shape
 
-    def read_from(self, pos, skip_border=False):
-        if skip_border:
-            return self.target.cconf[pos]
-        return self.target.cconf[offset_pos(pos, self.border)]
+    def read_from(self, pos):
+        return self.target.cconf[offset_pos(pos, self.border[0])]
 
-    def read_from_next(self, pos, skip_border=False):
-        if skip_border:
-            return self.target.nconf[pos]
-        return self.target.nconf[offset_pos(pos, self.border)]
+    def read_from_next(self, pos):
+        return self.target.nconf[offset_pos(pos, self.border[0])]
 
-    def write_to(self, pos, value, skip_border=False):
-        if skip_border:
-            self.target.nconf[pos] = value
-        else:
-            self.target.nconf[offset_pos(pos, self.border)] = value
+    def write_to(self, pos, value):
+        self.target.nconf[offset_pos(pos, self.border[0])] = value
 
-    def write_to_current(self, pos, value, skip_border=False):
-        if skip_border:
-            self.target.cconf[pos] = value
-        else:
-            self.target.cconf[offset_pos(pos, self.border)] = value
+    def write_to_current(self, pos, value):
+        self.target.cconf[offset_pos(pos, self.border[0])] = value
 
     def get_size_of(self, dimension=0):
         return self.size[dimension]
@@ -620,17 +672,97 @@ class SimpleStateAccessor(StateAccessor):
         old config."""
         return "self.acc.write_to(pos, self.acc.read_from(pos))"
 
-class LinearStateAccessor(SimpleStateAccessor):
-    """The LinearStateAccessor offers access to a one-dimensional configuration
-    space."""
-    size_names = ("sizeX",)
-    border_names = ("BORDER_OFFSET",)
+class ExtraStats(WeaveStepFuncVisitor):
+    """Empty base class for histograms, activity counters, ..."""
 
-class TwoDimStateAccessor(SimpleStateAccessor):
-    """The TwoDimStateAccessor offers access to a two-dimensional configuration
-    space."""
-    size_names = ("sizeX", "sizeY")
-    border_names = ("LEFT_BORDER", "UPPER_BORDER")
+    category = "extrastats"
+
+class SimpleHistogram(ExtraStats):
+    """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
+    give access to a new array in the target called "histogram". This value will
+    count the amount of cells with the value used as its index."""
+
+    def visit(self):
+        super(SimpleHistogram, self).visit()
+        if len(self.code.acc.size_names) == 1:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0,))]
+        else:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
+        self.code.add_code("post_compute",
+                """if (result != %(center)s) { histogram(result) += 1; histogram(%(center)s) -= 1; }""" % dict(center=center_name))
+
+        self.code.add_py_hook("post_compute", """
+            # update the histogram
+            if result != %(center)s:
+                self.target.histogram[result] += 1
+                self.target.histogram[int(%(center)s)] -= 1""" % dict(center=center_name))
+
+    def regenerate_histogram(self):
+        conf = self.target.cconf
+        acc = self.code.acc
+        if len(acc.size_names) == 1:
+            conf = conf[acc.border_size[acc.border_names[0][0]]:
+                       -acc.border_size[acc.border_names[1][0]]]
+        elif len(self.code.acc.size_names) == 2:
+            conf = conf[acc.border_size[acc.border_names[0][0]]:
+                       -acc.border_size[acc.border_names[1][0]],
+                       acc.border_size[acc.border_names[0][1]]:
+                       -acc.border_size[acc.border_names[1][1]]]
+            # make the configuration 1d for bincount.
+            conf = np.ravel(conf)
+        else:
+            raise NotImplementedError("Can only handle 1d or 2d arrays")
+        self.target.histogram = np.bincount(conf)
+
+    def new_config(self):
+        """Create a starting histogram."""
+        super(SimpleHistogram, self).new_config()
+        self.regenerate_histogram()
+
+    def init_once(self):
+        """Set up the histogram attributes."""
+        super(SimpleHistogram, self).init_once()
+        self.code.attrs.extend(["histogram"])
+
+    def build_name(self, parts):
+        parts.append("(histogram)")
+
+class ActivityRecord(ExtraStats):
+    """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
+    create a property called "activity" on the target. It is a two-cell
+    array with the value of how many fields have changed their state in the last
+    step and how many did not.
+
+    A value of -1 stands for "no data"."""
+    def visit(self):
+        super(ActivityRecord, self).visit()
+        if len(self.code.acc.size_names) == 1:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0,))]
+        else:
+            center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
+        self.code.add_code("localvars",
+                """activity(0) = 0; activity(1) = 0;""")
+        self.code.add_code("post_compute",
+                """activity(result != %(center)s) += 1;""" % dict(center=center_name))
+        self.code.add_py_hook("init",
+                """self.target.activity[0] = 0; self.target.activity[1] = 0""")
+        self.code.add_py_hook("post_compute", """
+            # count up the activity
+            self.target.activity[int(result != %(center)s)] += 1"""
+                % dict(center=center_name))
+
+    def new_config(self):
+        """Reset the activity counter to -1, which stands for "no data"."""
+        super(ActivityRecord, self).new_config()
+        self.target.activity = np.array([-1, -1])
+
+    def init_once(self):
+        """Set up the activity attributes."""
+        super(ActivityRecord, self).init_once()
+        self.code.attrs.extend(["activity"])
+
+    def build_name(self, parts):
+        parts.append("(activity)")
 
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
@@ -650,6 +782,9 @@ class LinearCellLoop(CellLoop):
                 yield (i,)
         return iter(generator())
 
+    def build_name(self, parts):
+        parts.insert(0, "1d")
+
 class TwoDimCellLoop(CellLoop):
     """The TwoDimCellLoop iterates over all cells from left to right, then from
     top to bottom."""
@@ -660,11 +795,11 @@ class TwoDimCellLoop(CellLoop):
         super(TwoDimCellLoop, self).visit()
         size_names = self.code.acc.size_names
         self.code.add_code("loop_begin",
-                """for(int i=0; i < %s; i++) {
-for(int j=0; j < %s; j++) {""" % (size_names))
+            """for(int i=0; i < %s; i++) {
+                for(int j=0; j < %s; j++) {""" % (size_names))
         self.code.add_code("loop_end",
                 """}
-}""")
+                }""")
 
     def get_iter(self):
         def iterator():
@@ -672,6 +807,9 @@ for(int j=0; j < %s; j++) {""" % (size_names))
                 for j in range(0, self.code.acc.get_size_of(1)):
                     yield (i, j)
         return iter(iterator())
+
+    def build_name(self, parts):
+        parts.insert(0, "2d")
 
 class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
     """Deriving from a CellLoop and this Mixin will cause every cell to be
@@ -707,10 +845,9 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
 
     def visit(self):
         """Adds C code for handling the randseed and skipping."""
-        print "visited"
         super(NondeterministicCellLoopMixin, self).visit()
         self.code.add_code("loop_begin",
-                """if(rand() >= RAND_MAX * %(probab)s) {
+                """if(rand() >= RAND_MAX * NONDET_PROBAB) {
                     %(copy_code)s
                     continue;
                 };""" % dict(probab=self.probab,
@@ -722,11 +859,12 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
                 """randseed(0) = rand();""")
         self.code.attrs.append("randseed")
 
-        self.code.add_py_hook("pre_compute",
-                """if self.random.random() >= %(probab)f:
-    %(copy_code)s
-    continue""" % dict(probab=self.probab,
-                       copy_code=self.code.acc.gen_copy_py_code()))
+        self.code.add_py_hook("pre_compute", """
+            # if the cell isn't executed, just copy instead.
+            if self.random.random() >= NONDET_PROBAB:
+                %(copy_code)s
+                continue""" % dict(probab=self.probab,
+                                   copy_code=self.code.acc.gen_copy_py_code()))
 
     def set_target(self, target):
         """Adds the randseed attribute to the target."""
@@ -737,6 +875,11 @@ class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
     def bind(self, stepfunc):
         super(NondeterministicCellLoopMixin, self).bind(stepfunc)
         stepfunc.random = self.random
+        stepfunc.consts["NONDET_PROBAB"] = self.probab
+
+    def build_name(self, parts):
+        super(NondeterministicCellLoopMixin, self).build_name(parts)
+        parts.insert(0, "nondeterministic (%s)" % (self.probab))
 
 class LinearNondeterministicCellLoop(NondeterministicCellLoopMixin,LinearCellLoop):
     """This Nondeterministic Cell Loop loops over one dimension, skipping cells
@@ -758,7 +901,7 @@ class SimpleNeighbourhood(Neighbourhood):
     offsets = ()
     """The offsets of neighbourhood fields."""
 
-    def __init__(self, names, offsets):
+    def __init__(self, names, offsets, name=""):
         """:param names: A list of names for the neighbouring cells.
         :param offsets: A list of offsets for each of the neighbouring cells."""
         super(Neighbourhood, self).__init__()
@@ -767,6 +910,13 @@ class SimpleNeighbourhood(Neighbourhood):
         assert len(self.names) == len(self.offsets)
         self._sort_names_offsets()
         self.recalc_bounding_box()
+        if name:
+            self.neighbourhood_name = name
+        else:
+            try:
+                self.neighbourhood_name = self.__class__.__name__
+            except AttributeError:
+                self.neighbourhood_name = str(self.__class__)
 
     def visit(self):
         """Adds C and python code to get the neighbouring values and stores
@@ -823,28 +973,150 @@ class SimpleNeighbourhood(Neighbourhood):
         """
         return super(SimpleNeighbourhood, self).bounding_box(steps)
 
-class ElementaryFlatNeighbourhood(SimpleNeighbourhood):
+    def build_name(self, parts):
+        if self.neighbourhood_name:
+            parts.append("with %s" % (self.neighbourhood_name))
+
+class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
+    def __init__(self, *args, **kwargs):
+        super(BetaAsynchronousNeighbourhood, self).__init__(*args, **kwargs)
+        self.center_name = [name for name, offset in zip(self.names, self.offsets)
+                  if offset == (0,) or offset == (0, 0)]
+        if len(self.center_name) != 1:
+            raise NotImplementedError("BetaAsynchronousNeighbourhood can only"
+                    " work with 1d or 2d neighbourhoods with a center.")
+        else:
+            self.center_name = self.center_name[0]
+
+    def visit(self):
+        """Adds C and python code to get the neighbouring values and stores
+        them in local variables. The neighbouring values will be taken from the
+        outer array, the own value will be taken from the inner array."""
+        for name, offset in zip(self.names, self.offsets):
+            if offset != (0,) and offset != (0, 0):
+                self.code.add_code("pre_compute", "%s = %s;" % (name,
+                         self.code.acc.read_access(
+                             gen_offset_pos(self.code.loop.get_pos(), offset))))
+            else:
+                self.code.add_code("pre_compute", "orig_%s = %s;" % (name,
+                         self.code.acc.read_access(
+                             gen_offset_pos(self.code.loop.get_pos(), offset))))
+                self.code.add_code("pre_compute", "%s = %s;" % (name,
+                         self.code.acc.inner_read_access(
+                             self.code.loop.get_pos())))
+
+        self.code.add_code("localvars",
+                "int " + ", ".join(self.names) + ";")
+
+        assignments = ["%s = self.acc.read_from(%s)" % (
+                name if offset != (0,) and offset != (0, 0) else "orig_" + name,
+                "offset_pos(pos, %s)" % (offset,))
+                for name, offset in zip(self.names, self.offsets)]
+
+        if len(self.offsets[0]) == 1:
+            assignments.append("%s = self.acc.read_from_inner((0,))" % self.center_name)
+        else:
+            assignments.append("%s = self.acc.read_from_inner((0, 0))" % self.center_name)
+        self.code.add_code("localvars", "int orig_" + self.center_name + ";")
+        self.code.add_py_hook("pre_compute",
+                "\n".join(assignments))
+
+class BetaAsynchronousAccessor(SimpleStateAccessor):
+    def __init__(self, probab=0.5, **kwargs):
+        super(BetaAsynchronousAccessor, self).__init__(**kwargs)
+        self.probab = probab
+        self.random = Random()
+
+    def init_once(self):
+        super(BetaAsynchronousAccessor, self).init_once()
+        self.code.attrs.extend(["inner", "beta_randseed"])
+        self.code.consts["beta_probab"] = self.probab
+
+    def new_config(self):
+        super(BetaAsynchronousAccessor, self).new_config()
+        # XXX this function assumes, that it will be called before the
+        #     border ensurer runs, so that the config is "small".
+        self.target.inner = self.target.cconf.copy()
+
+    def write_to_inner(self, pos, value):
+        self.target.inner[pos] = value
+
+    def inner_write_access(self, pos):
+        return "inner(%s)" % (",".join(pos))
+
+    def read_from_inner(self, pos):
+        return self.target.inner[pos]
+
+    def inner_read_access(self, pos):
+        return self.inner_write_access(pos)
+
+    def visit(self):
+        """Take care for result and sizeX to exist in python and C code,
+        for the result to be written to the config space and for the configs
+        to be swapped by the python code."""
+        self.code.add_code("localvars",
+         """int result;
+            srand(beta_randseed(0));""")
+        self.code.add_code("post_compute",
+                self.inner_write_access(self.code.loop.get_pos()) + " = result;")
+        self.code.add_code("post_compute",
+                """if(rand() < RAND_MAX * beta_probab) {
+                    %(write)s = result;
+                } else {
+                    result = %(read)s;
+                    %(write)s = result;
+                }
+                %(center)s = orig_%(center)s;""" % \
+        dict(write=self.code.acc.write_access(self.code.loop.get_pos()),
+             read=self.code.acc.read_access(self.code.loop.get_pos()),
+             center=self.code.neigh.center_name))
+
+        self.code.add_code("after_step",
+                """beta_randseed(0) = rand();""")
+
+        self.code.add_py_hook("init",
+                """result = None""")
+        for sizename, value in zip(self.size_names, self.size):
+            self.code.add_py_hook("init",
+                    """%s = %d""" % (sizename, value))
+
+        self.code.add_py_hook("post_compute", """
+            self.acc.write_to_inner(pos, result)
+            if self.target.beta_random.random() < beta_probab:
+                self.acc.write_to(pos, result)
+            else:
+                result = self.acc.read_from(pos)
+                self.acc.write_to(pos, result)
+            %(center)s = orig_%(center)s""" % dict(center=self.code.neigh.center_name))
+
+        self.code.add_py_hook("finalize",
+                """self.acc.swap_configs()""")
+
+    def set_target(self, target):
+        super(BetaAsynchronousAccessor, self).set_target(target)
+        target.beta_randseed = np.array([self.random.random()])
+        target.beta_random = self.random
+
+    def build_name(self, parts):
+        parts.insert(0, "Beta-Asynchronous (%s)" % (self.probab))
+
+def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the neighbourhood used by the elementary cellular automatons.
 
     The neighbours are called l, m and r for left, middle and right."""
-    def __init__(self, **kwargs):
-        super(ElementaryFlatNeighbourhood, self).__init__(
-                list("lmr"),
-                [[-1], [0], [1]], **kwargs)
+    return Base(list("lmr"), [[-1], [0], [1]], **kwargs)
 
-class VonNeumannNeighbourhood(SimpleNeighbourhood):
+def VonNeumannNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the Von Neumann Neighbourhood, in which the cell itself and the
     left, upper, lower and right neighbours are considered.
 
     The neighbours are called l, u, m, d and r for left, up, middle, down and
     right respectively."""
-    def __init__(self, **kwargs):
-        super(VonNeumannNeighbourhood, self).__init__(
-                list("udlrm"),
-                [(0,-1), (0,1), (-1,0), (1,0), (0,0)],
+    return Base(list("uldrm"),
+                [(0,-1), (-1,0), (0,1), (1,0), (0,0)],
                 **kwargs)
 
-class MooreNeighbourhood(SimpleNeighbourhood):
+def MooreNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the Moore Neighbourhood. The cell and all of its 8 neighbours
     are considered for computation.
 
@@ -852,9 +1124,7 @@ class MooreNeighbourhood(SimpleNeighbourhood):
     right-up, left, middle, right, left-down, down and right-down
     respectively."""
 
-    def __init__(self, **kwargs):
-        super(MooreNeighbourhood, self).__init__(
-                "lu u ru l m r ld d rd".split(" "),
+    return Base("lu u ru l m r ld d rd".split(" "),
                 list(product([-1, 0, 1], [-1, 0, 1])),
                 **kwargs)
 
@@ -884,6 +1154,8 @@ class BaseBorderCopier(BorderSizeEnsurer):
         for dim, size_name in enumerate(self.code.acc.size_names):
             size = self.code.acc.get_size_of(dim)
             retargetted = retargetted.replace(size_name, str(size))
+        for border_name, border_size in self.code.acc.border_size.iteritems():
+            retargetted = retargetted.replace(border_name, str(border_size))
         if not HAVE_TUPLE_ARRAY_INDEX:
             retargetted = tuple_array_index_fixup(retargetted)
 
@@ -893,7 +1165,7 @@ class BaseBorderCopier(BorderSizeEnsurer):
         """Append a piece of code to the "after_step" hook as well as the local
         code piece that gets retargetted and run in :meth:`new_config`."""
         self.code.add_py_hook("after_step", code)
-        self.copy_py_code.append(code)
+        self.copy_py_code.append(dedent_python_code(code))
 
 class SimpleBorderCopier(BaseBorderCopier):
     """Copy over cell values, so that reading from a cell at the border over
@@ -938,6 +1210,8 @@ class SimpleBorderCopier(BaseBorderCopier):
         # then go through all dimensions. (subdim)
         # if subdim == dim, only put in the values at the borders
         # else, put in all values
+
+        # TODO change this, so that it uses the accessors border_size property.
         for dim in range(dims):
             slices.append(product(*[range(0, self.dimension_sizes[sd]) if sd != dim else
                                 chain(range(0, abs(bbox[dim][1])),
@@ -987,8 +1261,9 @@ class SimpleBorderCopier(BaseBorderCopier):
                 self.code.acc.write_access(write),
                 self.code.acc.write_access(read)))
 
-            self.tee_copy_hook("""self.acc.write_to(%s,
-    value=self.acc.read_from_next((%s,)))""" % (write, ", ".join(read)))
+            self.tee_copy_hook("""
+                self.acc.write_to(%s,
+                    value=self.acc.read_from_next((%s,)))""" % (write, ", ".join(read)))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
@@ -1008,6 +1283,78 @@ class SimpleBorderCopier(BaseBorderCopier):
                 newpos.append("%s" % (val,))
         return tuple(newpos)
 
+class TwoDimSlicingBorderCopier(BaseBorderCopier):
+    """This class copies, with only little code, each side to the opposite
+    side. It only works on two-dimensional configurations."""
+    def visit(self):
+        """Generate code for copying over or otherwise handling data from the
+        borders."""
+        super(TwoDimSlicingBorderCopier, self).visit()
+
+        self.tee_copy_hook("""# copy the upper portion below the lower border
+            for pos in product(range(0, sizeX), range(0, LOWER_BORDER)):
+                self.acc.write_to((pos[0], sizeY + pos[1]),
+                        self.acc.read_from_next(pos))""")
+
+        self.tee_copy_hook("""# copy the lower portion above the upper border
+            for pos in product(range(0, sizeX), range(0, UPPER_BORDER)):
+                self.acc.write_to((pos[0], -pos[1] - 1),
+                        self.acc.read_from_next((pos[0], sizeY - pos[1] - 1)))""")
+
+        self.tee_copy_hook("""# copy the left portion
+            # plus the upper and lower edges right of the right border
+            for pos in product(range(0, RIGHT_BORDER),
+                               range(-UPPER_BORDER, sizeY + LOWER_BORDER)):
+                self.acc.write_to((sizeX + pos[0], pos[1]),
+                        self.acc.read_from_next(pos))""")
+
+        self.tee_copy_hook("""# copy the right portion
+            # plus the upper and lower edges left of the left border
+            for pos in product(range(0, LEFT_BORDER),
+                               range(-UPPER_BORDER, sizeY + LOWER_BORDER)):
+                self.acc.write_to((-pos[0] - 1, pos[1]),
+                        self.acc.read_from_next((sizeX - pos[0] - 1, pos[1])))""")
+
+        # and now for the fun part ...
+
+        copy_code = []
+        copy_code.append("int x, y;")
+
+        # upper part to lower border
+        copy_code.append("""for(x = 0; x < sizeX; x++) {
+            for(y = 0; y < LOWER_BORDER; y++) {
+                %s = %s;
+            } }""" % (self.code.acc.write_access(("x", "sizeY + y")),
+                      self.code.acc.write_access(("x", "y")) ))
+
+        # lower part to upper border
+        copy_code.append("""for(x = 0; x < sizeX; x++) {
+            for(y = 0; y < UPPER_BORDER; y++) {
+                %s = %s;
+            } }""" % (self.code.acc.write_access(("x", "-y - 1")),
+                      self.code.acc.write_access(("x", "sizeY - y - 1"))))
+
+
+        # left part to right border including upper and lower edges
+        copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
+            for(y = -UPPER_BORDER; y < sizeY + LOWER_BORDER; y++) {
+                %s = %s;
+            } }""" % (self.code.acc.write_access(("sizeX + x", "y")),
+                      self.code.acc.write_access(("x", "y")) ))
+
+        # right part to left border including upper and lower edges
+        copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
+            for(y = -UPPER_BORDER; y < sizeY + LOWER_BORDER; y++) {
+                %s = %s;
+            } }""" % (self.code.acc.write_access(("-x - 1", "y")),
+                  self.code.acc.write_access(("sizeX - x - 1", "y"))))
+
+        self.code.add_code("after_step",
+                "\n".join(copy_code))
+
+    def build_name(self, parts):
+        parts.append("(copy borders)")
+
 class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
     peeking over the border."""
@@ -1015,11 +1362,13 @@ class TwoDimZeroReader(BorderSizeEnsurer):
     # BorderSizeEnsurer, because it already just embeds the confs into
     # np.zero and does that for one or two dimensions.
 
-def elementary_digits_and_values(neighbourhood, base, rule_arr):
+def elementary_digits_and_values(neighbourhood, base, rule_arr=None):
     """From a neighbourhood, the base of the values used and the array that
     holds the results for each combination of neighbourhood values, create a
     list of dictionaries with the neighbourhood values paired with their
-    result_value ordered by the position ordered like the rule array."""
+    result_value ordered by the position like in the rule array.
+
+    If the rule_arr is None, no result_value field will be generated."""
     digits_and_values = []
     offsets = neighbourhood.offsets
     names = neighbourhood.names
@@ -1029,8 +1378,11 @@ def elementary_digits_and_values(neighbourhood, base, rule_arr):
         values = [1 if (i & (base ** k)) > 0 else 0
                 for k in range(len(offsets))]
         asdict = dict(zip(names, values))
-        asdict.update(result_value = rule_arr[i])
         digits_and_values.append(asdict)
+
+    if rule_arr is not None:
+        for index in range(base ** digits):
+            digits_and_values[index].update(result_value = rule_arr[index])
     return digits_and_values
 
 class ElementaryCellularAutomatonBase(Computation):
@@ -1040,6 +1392,7 @@ class ElementaryCellularAutomatonBase(Computation):
 
     This works with any number of dimensions."""
 
+    # TODO get this from target.possible_values instead?
     base = 2
     """The number of different values each cell can have."""
 
@@ -1050,7 +1403,7 @@ class ElementaryCellularAutomatonBase(Computation):
 
     digits_and_values = []
     """This list stores a list of dictionaries that for each combination of
-    values for the neighbourhood cells stores the 'result', too."""
+    values for the neighbourhood cells stores the 'result_value', too."""
 
 
     def __init__(self, rule=None, **kwargs):
@@ -1101,7 +1454,7 @@ class ElementaryCellularAutomatonBase(Computation):
         """Generate the rule lookup array and a pretty printer."""
         super(ElementaryCellularAutomatonBase, self).init_once()
         entries = self.base ** self.digits
-        self.target.rule = np.zeros(entries, int)
+        self.target.rule = np.zeros(entries, np.dtype("i"))
         for digit in range(entries):
             if self.rule & (self.base** digit) > 0:
                 self.target.rule[digit] = 1
@@ -1156,8 +1509,12 @@ class ElementaryCellularAutomatonBase(Computation):
     def pretty_print(self):
         """This method is generated upon init_once and pretty-prints the rules
         that this elementary cellular automaton uses for local steps."""
-        return ["cannot pretty-print with neighbourhoods of more than",
-                "two dimensions"]
+        return ["pretty printer is available only after the WeaveStepFunc "
+                "object has been put together. also: cannot pretty-print "
+                "with neighbourhoods of more than two dimensions"]
+
+    def build_name(self, parts):
+        parts.append("calculating rule %s" % (hex(self.rule)))
 
 class CountBasedComputationBase(Computation):
     """This base class counts the amount of nonzero neighbours excluding the
@@ -1232,13 +1589,22 @@ class LifeCellularAutomatonBase(CountBasedComputationBase):
         result = 0;
       }}""" % self.params)
         self.code.add_py_hook("compute","""
-result = %(central_name)s
-if %(central_name)s == 0:
-    if %(reproduce_min)d <= nonzerocount <= %(reproduce_max)d:
-      result = 1
-else:
-    if not (%(stay_alive_min)d <= nonzerocount <= %(stay_alive_max)d):
-      result = 0""" % self.params)
+            result = %(central_name)s
+            if %(central_name)s == 0:
+                if %(reproduce_min)d <= nonzerocount <= %(reproduce_max)d:
+                  result = 1
+            else:
+                if not (%(stay_alive_min)d <= nonzerocount <= %(stay_alive_max)d):
+                  result = 0""" % self.params)
+
+    def build_name(self, parts):
+        if self.params != dict(reproduce_min=3, reproduce_max=3,
+                stay_alive_min=2, stay_alive_max=3, central_name=self.params["central_name"]):
+            parts.append("calculating life - reproduce "\
+                    "[%(reproduce_min)s:%(reproduce_max)s], "\
+                    "stay alive [%(stay_alive_min)s: %(stay_alive_max)s]" % self.params)
+        else:
+            parts.append("calculating game of life")
 
 CELL_SHADOW, CELL_FULL = "%#"
 BACK_SHADOW, BACK_FULL = ", "
@@ -1312,6 +1678,9 @@ class TestTarget(object):
     """During the step, this is the 'next configuration', otherwise it's the
     previous configuration, because nconf and cconf are swapped after steps."""
 
+    possible_states = [0, 1]
+    """What values the cells can have."""
+
     def __init__(self, size=None, config=None, **kwargs):
         """:param size: The size of the config to generate. Alternatively the
                         size of the supplied config.
@@ -1319,7 +1688,13 @@ class TestTarget(object):
         super(TestTarget, self).__init__(**kwargs)
         if config is None:
             assert size is not None
-            self.cconf = np.zeros(size)
+            try:
+                self.cconf = np.zeros(size, np.dtype("i"))
+            except TypeError:
+                # pypy can't make zeros with tuples as size arg yet.
+                # the patch to pypy is awaiting review/merge
+                assert len(size) == 1
+                self.cconf = np.zeros(size[0], np.dtype("i"))
             rand = Random()
             if HAVE_TUPLE_ARRAY_INDEX:
                 for pos in product(*[range(siz) for siz in size]):
@@ -1344,13 +1719,15 @@ class BinRule(TestTarget):
     rule = None
     """The number of the elementary cellular automaton to simulate."""
 
-    def __init__(self, size=None, deterministic=True, rule=None, config=None, **kwargs):
+    def __init__(self, size=None, deterministic=True, histogram=False, activity=False, rule=None, config=None, beta=False, **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
            :param deterministic: Go over every cell every time or skip cells
                                  randomly?
+           :param histogram: Generate and update a histogram as well?
            :param rule: The rule number for the elementary cellular automaton.
-           :param config: Optionally the configuration to use."""
+           :param config: Optionally the configuration to use.
+           :param beta: Use beta-asynchronism. Not compatible with deterministic=False."""
         if size is None:
             size = config.shape
         super(BinRule, self).__init__(size, config, **kwargs)
@@ -1358,13 +1735,24 @@ class BinRule(TestTarget):
         self.rule = None
         self.computer = ElementaryCellularAutomatonBase(rule)
 
+        if beta and deterministic:
+            acc = BetaAsynchronousAccessor()
+            neighbourhood = ElementaryFlatNeighbourhood(Base=BetaAsynchronousNeighbourhood)
+        elif not beta:
+            acc = SimpleStateAccessor()
+            neighbourhood = ElementaryFlatNeighbourhood()
+        elif beta and not deterministic:
+            raise ValueError("Cannot have beta asynchronism and deterministic=False.")
+
         self.stepfunc = WeaveStepFunc(
-                loop=LinearCellLoop() if deterministic
-                     else LinearNondeterministicCellLoop(),
-                accessor=LinearStateAccessor(),
-                neighbourhood=ElementaryFlatNeighbourhood(),
+                loop=LinearCellLoop() if deterministic else
+                     LinearNondeterministicCellLoop(),
+                accessor=acc,
+                neighbourhood=neighbourhood,
                 extra_code=[SimpleBorderCopier(),
-                    self.computer], target=self)
+                    self.computer] +
+                ([SimpleHistogram()] if histogram else []) +
+                ([ActivityRecord()] if activity else []), target=self)
 
         self.rule_number = self.computer.rule
 
@@ -1381,26 +1769,47 @@ class BinRule(TestTarget):
     def pretty_print(self):
         return self.computer.pretty_print()
 
+    def __str__(self):
+        return str(self.stepfunc)
+
+def categories():
+    all_classes = []
+    categories = {}
+    look_at = WeaveStepFuncVisitor.__subclasses__()
+
+    while len(look_at) > 0:
+        item = look_at.pop()
+        if item.category not in categories:
+            categories[item.category] = []
+        categories[item.category].append(item)
+        all_classes.append(item)
+        look_at.extend([cls for cls in item.__subclasses__() if cls not in all_classes])
+
+    return categories
+
 def test():
     size = 75
 
-    bin_rule = BinRule(size, rule=110)
+    bin_rule = BinRule((size,), rule=105, histogram=True, activity=True, beta=True)
 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
-    pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((20, 20),))
+    pretty_print_array = build_array_pretty_printer((size,), ((abs(b_l), abs(b_r)),), ((0, 0),))
 
-    if USE_WEAVE:
+
+    if HAVE_WEAVE:
         print "weave"
-        for i in range(10000):
+        for i in range(100):
             bin_rule.step_inline()
             pretty_print_array(bin_rule.cconf)
+            print bin_rule.histogram, bin_rule.activity
     else:
         print "pure"
-        for i in range(10000):
+        for i in range(100):
             bin_rule.step_pure_py()
             pretty_print_array(bin_rule.cconf)
+            print bin_rule.histogram, bin_rule.activity
 
 if __name__ == "__main__":
     if "pure" in sys.argv:
-        USE_WEAVE = False
+        HAVE_WEAVE = False
     test()

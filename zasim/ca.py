@@ -5,25 +5,11 @@ import numpy as np
 import random
 import re
 
-try:
+from .features import HAVE_WEAVE
+
+if HAVE_WEAVE:
     from scipy import weave
     from scipy.weave import converters
-    HAVE_WEAVE = True
-except:
-    print "weave is not available."
-    HAVE_WEAVE = False
-
-try:
-    a = np.zeros((100,), int)
-except TypeError:
-    print "using integer array compatibility with float arrays"
-    old_zeros = np.zeros
-    def compatibility_zeros(*args):
-        try:
-            return old_zeros(args[0])
-        except TypeError:
-            return old_zeros(args[0][0])
-    np.zeros = compatibility_zeros
 
 try:
     import pygame
@@ -122,33 +108,35 @@ class CA(object):
             f.write( self.getType() + "\n" )
             f.close()
 
-    ## Returns the type of the cellular automaton.
-    # It's a upper-cased version of CA::title, used to identify it internally as one or
-    # another cellular automaton.
     def getType( self ):
+        """Returns the type of the cellular automaton.
+
+        It's a upper-cased version of CA::title, used to identify it internally as one or
+        another cellular automaton."""
         return self.title.upper()
 
-    ## Returns the current configuration
-    def getConf( self ):
+    def get_config( self ):
+        """Returns the current configuration"""
         return self.currConf.copy()
 
-    ## Returns the cellular automaton's dimension
     def getDim( self ):
+        """Returns the cellular automaton's dimension"""
         return self.dim
 
-    ## Returns the cellular automaton's size as (height,width)
     def getSize( self ):
+        """Returns the cellular automaton's size as (height,width)"""
         return self.size
 
-    ## Returns the cellular automaton's title.
-    # It's a non-upper-cased version of CA::title, used to display it in the titlebar
     def getTitle( self ):
+        """Returns the cellular automaton's title.
+        It's a non-upper-cased version of CA::title, used to display it in the titlebar"""
         return self.title
 
-    ## Imports a configuration from a file in XASIM-Format.
-    # For XASIM-Format, see CA::exportConf.
-    # For vonNeumann cellular automaton, RLE-files are supported as well (see vonNeumann::importConf).
     def importConf( self, filename ):
+        """Imports a configuration from a file in XASIM-Format.
+
+        For XASIM-Format, see CA::exportConf.
+        For vonNeumann cellular automaton, RLE-files are supported as well (see vonNeumann::importConf)."""
         retVal = self.IMPORTOK
         with open( filename, 'r' ) as f:
             lines = f.readlines()
@@ -196,12 +184,12 @@ class CA(object):
         self.nextConf = self.currConf.copy()
         return retVal
 
-    ## Is called in every step of the simulation.
     def loopFunc( self ):
+        """Is called in every step of the simulation."""
         print "function loopFunc() not implemented yet"
 
-    ## Prototype... Not really implemented yet
     def quit( self ):
+        """Prototype... Not really implemented yet"""
         print "function quit() not implemented yet"
 
     ## Resizing the cellular automaton.
@@ -218,12 +206,12 @@ class CA(object):
         self.size = sizeX,sizeY
         if self.getDim() == 1:
             ## The current configuration is stored here
-            self.currConf = np.zeros( sizeX )
+            self.currConf = np.zeros( sizeX, np.dtype("i"))
             ## The next step's configuration is stored here (ping-ponging!).
-            self.nextConf = np.zeros( sizeX )
+            self.nextConf = np.zeros( sizeX, np.dtype("i"))
         elif self.getDim() == 2:
-            self.currConf = np.zeros( self.size )
-            self.nextConf = np.zeros( self.size )
+            self.currConf = np.zeros( self.size, np.dtype("i"))
+            self.nextConf = np.zeros( self.size, np.dtype("i"))
 
     ## Set the current configuration to conf.
     # This is used when switching between marked configurations and cellular automaton types.
@@ -255,11 +243,11 @@ class binRule( CA ):
         self.title = "Rule" + str( self.ruleNr )
 
         if initConf == self.INIT_ZERO:
-            self.currConf = np.zeros(sizeX, int)
+            self.currConf = np.zeros(sizeX, np.dtype("i"))
         elif initConf == self.INIT_ONES:
-            self.currConf = np.ones(sizeX, int)
+            self.currConf = np.ones(sizeX, np.dtype("i"))
         elif initConf == self.INIT_RAND:
-            self.currConf = np.zeros(sizeX, int)
+            self.currConf = np.zeros(sizeX, np.dtype("i"))
             for i in range( sizeX ):
                 self.currConf[i] = random.randint( 0, 1 )
         else:
@@ -273,7 +261,7 @@ class binRule( CA ):
             self.importConf( filename )
 
         ## An array that contains the value table for this particular binary transition rule
-        self.ruleIdx = np.zeros( 8 )
+        self.ruleIdx = np.zeros( 8, np.dtype("i"))
         for i in range( 8 ):
             if ( self.ruleNr & ( 1 << i ) ):
                 self.ruleIdx[i] = 1
@@ -379,14 +367,14 @@ class sandPile( CA ):
 
         ## The histogram over all states in the ca, as numpy.array.
         # Containing the absolute frequency of each state
-        self.histogram = np.zeros( 8, int )
+        self.histogram = np.zeros( 8, int, np.dtype("i"))
 
         if initConf == self.INIT_ZERO:
-            self.currConf = np.zeros( ( sizeX, sizeY ), int )
-            self.nextConf = np.zeros( ( sizeX, sizeY ), int )
+            self.currConf = np.zeros( ( sizeX, sizeY ), int, np.dtype("i"))
+            self.nextConf = np.zeros( ( sizeX, sizeY ), int, np.dtype("i"))
             self.histogram[ 0 ] = self.sizeX * self.sizeY
         elif initConf == self.INIT_RAND:
-            self.currConf = np.zeros( ( sizeX, sizeY ), int )
+            self.currConf = np.zeros( ( sizeX, sizeY ), int, np.dtype("i"))
             for x in range( 1, sizeX-1 ):
                 for y in range( 1, sizeY-1 ):
                     c = random.randint( 0, 3 )
@@ -623,14 +611,14 @@ class vonNeumann ( CA ):
         ## The current configuration is held here
         # as usual, these two arrays contain the real configuration, that is used
         # in every step ... (see vonNeumann::displayConf)
-        self.currConf = np.zeros( (sizeX, sizeY), int )
+        self.currConf = np.zeros( (sizeX, sizeY), np.dtype("i"))
         ## The current configuration is held here
-        self.nextConf = np.zeros( (sizeX, sizeY), int )
+        self.nextConf = np.zeros( (sizeX, sizeY), np.dtype("i"))
         # used when updating only some cells instead of all....
-        self.cActArr = np.zeros( (self.sizeX*self.sizeY), bool )
-        self.nActArr = np.zeros( (self.sizeX*self.sizeY), bool )
-        self.cList = np.zeros( (self.sizeX*self.sizeY), int )
-        self.nList = np.zeros( (self.sizeX*self.sizeY), int )
+        self.cActArr = np.zeros( (self.sizeX*self.sizeY), np.bool )
+        self.nActArr = np.zeros( (self.sizeX*self.sizeY), np.bool )
+        self.cList = np.zeros( (self.sizeX*self.sizeY), np.dtype("i"))
+        self.nList = np.zeros( (self.sizeX*self.sizeY), np.dtype("i"))
         self.cCounter = 0
         self.nCounter = 0
         if confFile != "":
@@ -641,7 +629,7 @@ class vonNeumann ( CA ):
         # between 0 and ~2^13, so we need a dict (see vonNeumann::displayableStateDict)
         # to map the states to 0..28, so the Display-module can display states
         # without knowing the difference
-        self.displayConf = np.zeros( self.size, int)
+        self.displayConf = np.zeros( self.size, np.dtype("i"))
 
 
         for imgFile in ( "images/vonNeumann/U.jpg",    "images/vonNeumann/C00.jpg",
@@ -741,7 +729,7 @@ class vonNeumann ( CA ):
             self.nextConf[x][y] = s
             self.enlist(x,y)
 
-    def getConf( self ):
+    def get_config( self ):
         for i in range( 1, self.sizeX-1 ):
             for j in range( 1, self.sizeY-1 ):
                 if self.displayableStateDict.has_key( self.currConf[i][j] ):
@@ -832,11 +820,11 @@ class vonNeumann ( CA ):
 
     def resize( self, sizeX, sizeY = None ):
         CA.resize( self, sizeX, sizeY )
-        self.displayConf = np.zeros( self.size, int )
-        self.cActArr = np.zeros( self.sizeX*self.sizeY, bool )
-        self.nActArr = np.zeros( self.sizeX*self.sizeY, bool )
-        self.cList = np.zeros( (self.sizeX*self.sizeY), int )
-        self.nList = np.zeros( (self.sizeX*self.sizeY), int )
+        self.displayConf = np.zeros( self.size, np.dtype("i") )
+        self.cActArr = np.zeros( self.sizeX*self.sizeY, np.bool )
+        self.nActArr = np.zeros( self.sizeX*self.sizeY, np.bool )
+        self.cList = np.zeros( (self.sizeX*self.sizeY), np.dtype("i") )
+        self.nList = np.zeros( (self.sizeX*self.sizeY), np.dtype("i") )
 
     def setConf( self, conf ):
         if conf.shape != self.currConf.shape:

@@ -45,6 +45,9 @@ class BaseSimulator(QObject):
     """Is emitted when the shape of changed cells is unknown or not
     interesting."""
 
+    changed = Signal()
+    """Is emitted when the configuration has changed, but there was no step."""
+
     started = Signal()
     """Is emitted when continuous updating has been started."""
 
@@ -57,10 +60,18 @@ class BaseSimulator(QObject):
     snapshot_restored = Signal()
     """Is emitted when a snapshot is restored."""
 
-    def getConf(self):
+    def get_config(self):
         """Returns a copy of the configuration space as a numpy array.
         Its shape matches up with :attr:`shape`, so it also does not
         include any borders."""
+
+    def set_config(self, config):
+        """Sets a new config for the simulator."""
+
+    def set_config_value(self, pos, value=None):
+        """Set the config value at pos to value.
+
+        If value is None, flip the value instead."""
 
     def step(self):
         """Step the simulator once."""
@@ -109,7 +120,7 @@ class CagenSimulator(BaseSimulator):
 
         self.prepared = self._step_func.prepared
 
-    def getConf(self):
+    def get_config(self):
         """Return the config, sans borders."""
         if len(self.shape) == 1:
             ((l, r),) = self._bbox
@@ -118,9 +129,31 @@ class CagenSimulator(BaseSimulator):
             (l, r), (u, d) = self._bbox
             return self._target.cconf[abs(u):-abs(d),abs(l):-abs(r)].copy()
 
+    def set_config(self, config):
+        self._step_func.set_config(config)
+        self.updated.emit()
+
+    def set_config_value(self, pos, value=None):
+        self._step_func.set_config_value(pos[::-1], value)
+        self.changed.emit()
+
     def step(self):
         """Delegate the stepping to the :meth:`WeaveStepFunc.step` method, then
         emit :attr:`updated`."""
         self._step_func.step()
         self.prepared = True
         self.updated.emit()
+
+    def __str__(self):
+        return str(self._step_func)
+
+class ElementaryCagenSimulator(CagenSimulator):
+    """This Simulator has a few special options available only if you have an
+    elementary step func with a rule number."""
+
+    rule_number = 0
+    """The rule number of the target."""
+
+    def __init__(self, step_func, target):
+        super(ElementaryCagenSimulator, self).__init__(step_func=step_func, target=target)
+        self.rule_number = target.rule_number

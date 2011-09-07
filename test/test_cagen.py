@@ -1,9 +1,15 @@
 from __future__ import absolute_import
-from zasim import ca, cagen
-from random import randrange
-from .testutil import *
-from itertools import repeat, chain
 
+from zasim import ca
+from zasim import cagen
+from zasim.features import *
+
+from .testutil import *
+
+from random import randrange
+from itertools import repeat, chain, product
+
+import numpy as np
 import pytest
 
 MIN_SIZE, MAX_SIZE = 5, 25
@@ -21,20 +27,20 @@ class ZerosThenOnesRandom(EvilRandom):
             chain(repeat(0.0, zeros), repeat(1.0)))
 
 class TestCAGen:
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_compare_weaves(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
         br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
-        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.getConf().copy()[1:-1])
+        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.get_config().copy()[1:-1])
 
         for i in range(10):
             br.updateAllCellsWeaveInline()
             br2.step_inline()
-            compare_arrays(br.getConf(), br2.cconf)
+            compare_arrays(br.get_config(), br2.cconf)
 
-        assert_arrays_equal(br.getConf(), br2.cconf)
+        assert_arrays_equal(br.get_config(), br2.cconf)
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_gen_weave_only(self, tested_rule_num):
         confs = TESTED_BINRULE[tested_rule_num]
         br = cagen.BinRule(rule=tested_rule_num, config=confs[0][1:-1])
@@ -56,19 +62,19 @@ class TestCAGen:
     def test_compare_pures(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
         br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
-        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.getConf().copy()[1:-1])
+        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.get_config().copy()[1:-1])
 
         # are the rules the same?
         assert_arrays_equal(br.ruleIdx, br2.rule)
 
-        assert_arrays_equal(br.getConf(), br2.cconf)
+        assert_arrays_equal(br.get_config(), br2.cconf)
 
         for i in range(10):
             br.updateAllCellsPy()
             br2.step_pure_py()
-            compare_arrays(br.getConf(), br2.cconf)
+            compare_arrays(br.get_config(), br2.cconf)
 
-        assert_arrays_equal(br.getConf(), br2.cconf)
+        assert_arrays_equal(br.get_config(), br2.cconf)
 
     def test_run_nondeterministic_pure(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
@@ -77,7 +83,7 @@ class TestCAGen:
         for i in range(10):
             br.step_pure_py()
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_run_nondeterministic_weave(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
         br = cagen.BinRule((size-2,), deterministic=False, rule=rule_num)
@@ -104,13 +110,13 @@ class TestCAGen:
 
 0    1    1    1    0    1    1    0"""
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pretty_print_rules_2d(self):
         conf = np.zeros((10, 10), int)
         t = cagen.TestTarget(config=conf)
 
         l = cagen.LinearCellLoop()
-        acc = cagen.TwoDimStateAccessor()
+        acc = cagen.SimpleStateAccessor()
         neigh = cagen.VonNeumannNeighbourhood()
         compute = cagen.ElementaryCellularAutomatonBase(1515361445)
         copier = cagen.SimpleBorderCopier()
@@ -126,13 +132,13 @@ class TestCAGen:
 
 1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    0    0    1    0    1    1    0    1    0"""
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_weave_game_of_life(self):
         t = cagen.TestTarget(config=GLIDER[0])
 
         l = cagen.TwoDimCellLoop()
-        acc = cagen.TwoDimStateAccessor()
+        acc = cagen.SimpleStateAccessor()
         neigh = cagen.MooreNeighbourhood()
         compute = cagen.LifeCellularAutomatonBase()
         copier = cagen.TwoDimZeroReader()
@@ -145,12 +151,12 @@ class TestCAGen:
             sf.step_inline()
             assert_arrays_equal(glider_conf, t.cconf[1:-1, 1:-1])
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pure_game_of_life(self):
         t = cagen.TestTarget(config=GLIDER[0])
 
         l = cagen.TwoDimCellLoop()
-        acc = cagen.TwoDimStateAccessor()
+        acc = cagen.SimpleStateAccessor()
         neigh = cagen.MooreNeighbourhood()
         compute = cagen.LifeCellularAutomatonBase()
         copier = cagen.TwoDimZeroReader()
@@ -163,7 +169,7 @@ class TestCAGen:
             sf.step_pure_py()
             assert_arrays_equal(glider_conf, t.cconf[1:-1,1:-1])
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pretty_print_config_2d(self, capsys):
         gconf = GLIDER[0]
         conf = np.zeros((gconf.shape[0] + 2, gconf.shape[1] + 2))
@@ -252,7 +258,7 @@ class TestCAGen:
         assert not br2.cconf.any(), "huh, rule0 was supposed to set all"\
                              " fields to zero!"
 
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_weave_nondeterministic_stepfunc_id(self):
         self.body_weave_nondeterministic_stepfunc_1d()
 
@@ -267,7 +273,7 @@ class TestCAGen:
             sf = cagen.WeaveStepFunc(
                     loop=cagen.TwoDimCellLoop() if deterministic else
                           cagen.TwoDimNondeterministicCellLoop(),
-                    accessor=cagen.TwoDimStateAccessor(),
+                    accessor=cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
                     extra_code=[cagen.SimpleBorderCopier(),
                         computer], target=target)
@@ -280,8 +286,8 @@ class TestCAGen:
             uno.step_inline()
         else:
             uno.step_pure_py()
-        assert not uno.getConf().all(), "oops, no cells have been executed :("
-        assert uno.getConf().any(), "oops, all cells have been executed :("
+        assert not uno.get_config().all(), "oops, no cells have been executed :("
+        assert uno.get_config().any(), "oops, all cells have been executed :("
 
         # this is just a sanity check to see if the stepfunc does what we think
         t = cagen.TestTarget(config=conf.copy())
@@ -290,16 +296,16 @@ class TestCAGen:
             dos.step_inline()
         else:
             dos.step_pure_py()
-        assert not dos.getConf().any(), "rule 0 was supposed to turn all"\
+        assert not dos.get_config().any(), "rule 0 was supposed to turn all"\
                                     "fields into 0. huh?"
 
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
-    @pytest.mark.skipif("not ca.HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_weave_nondeterministic_stepfunc_2d(self):
         self.body_nondeterministic_stepfunc_2d()
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pure_nondeterministic_stepfunc_2d(self):
         self.body_nondeterministic_stepfunc_2d(False)
 
@@ -323,23 +329,23 @@ class TestCAGen:
 
         stepfunc = cagen.WeaveStepFunc(
                 loop=cagen.LinearNondeterministicCellLoop(random_generator=rand),
-                accessor=cagen.LinearStateAccessor(),
+                accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.ElementaryFlatNeighbourhood(),
                 extra_code=[cagen.SimpleBorderCopier(),
                     computer], target=t)
 
         stepfunc.gen_code()
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "the step func should have"\
+        assert not stepfunc.get_config().any(), "the step func should have"\
                                             " turned all fields into zeros"
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+        assert not stepfunc.get_config().any(), "there should be no ones in the"\
                                             " config at all."
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+        assert not stepfunc.get_config().any(), "there should be no ones in the"\
                                             " config at all."
 
-    @pytest.mark.skipif("not cagen.HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_nondeterministic_leak_data_2d(self):
         rand = ZerosThenOnesRandom(101)
         conf = np.ones((10,10))
@@ -349,21 +355,235 @@ class TestCAGen:
 
         stepfunc = cagen.WeaveStepFunc(
                 loop=cagen.TwoDimNondeterministicCellLoop(random_generator=rand),
-                accessor=cagen.TwoDimStateAccessor(),
+                accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.VonNeumannNeighbourhood(),
                 extra_code=[cagen.SimpleBorderCopier(),
                     computer], target=t)
 
         stepfunc.gen_code()
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "the step func should have"\
+        assert not stepfunc.get_config().any(), "the step func should have"\
                                             " turned all fields into zeros"
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+        assert not stepfunc.get_config().any(), "there should be no ones in the"\
                                             " config at all."
         stepfunc.step_pure_py()
-        assert not stepfunc.getConf().any(), "there should be no ones in the"\
+        assert not stepfunc.get_config().any(), "there should be no ones in the"\
                                             " config at all."
+
+    def body_compare_twodim_slicing_border_copier_simple_border_copier(self, names, positions):
+        conf = np.zeros((4, 4), int)
+        for num, pos in enumerate(product(range(0, 4), range(0, 4))):
+            conf[pos] = int(str(pos[0] + 1) + str(pos[1] + 1))
+        t1 = cagen.TestTarget(config=conf)
+        t2 = cagen.TestTarget(config=conf)
+
+        names = list("abXde" + "fg" + "hcI" + "Jk" + "lmnop")
+        positions = ((-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
+                     (-2, -1),                             (2, -1),
+                     (-2,  0),           (0,  0),          (2,  0),
+                     (-2,  1),                             (2,  1),
+                     (-2,  2), (-1,  2), (0,  2), (1,  2), (2,  2))
+        n1 = cagen.SimpleNeighbourhood(names, positions)
+        n2 = cagen.SimpleNeighbourhood(names, positions)
+
+        class MyComputation(cagen.Computation):
+            def visit(self):
+                super(MyComputation, self).visit()
+                self.code.add_code("compute",
+                        "result = c * 10;")
+                self.code.add_py_hook("compute",
+                        "result = c * 10")
+
+        sf1 = cagen.WeaveStepFunc(
+                loop=cagen.TwoDimCellLoop(),
+                accessor=cagen.SimpleStateAccessor(),
+                neighbourhood=n1,
+                target=t1,
+                extra_code=[cagen.TwoDimSlicingBorderCopier(), MyComputation()])
+        sf2 = cagen.WeaveStepFunc(
+                loop=cagen.TwoDimCellLoop(),
+                accessor=cagen.SimpleStateAccessor(),
+                neighbourhood=n2,
+                target=t2,
+                extra_code=[cagen.SimpleBorderCopier(), MyComputation()])
+
+        sf1.gen_code()
+        sf2.gen_code()
+
+        print t1.cconf.transpose()
+        print t2.cconf.transpose()
+        assert_arrays_equal(t1.cconf, t2.cconf)
+
+        if HAVE_WEAVE:
+            sf1.step_inline()
+            sf2.step_inline()
+        else:
+            sf1.step_pure_py()
+            sf2.step_pure_py()
+
+        print t1.cconf.transpose()
+        print t2.cconf.transpose()
+        assert_arrays_equal(t1.cconf, t2.cconf)
+
+        if HAVE_WEAVE:
+            sf1.step_pure_py()
+            sf2.step_pure_py()
+
+            print t1.cconf.transpose()
+            print t2.cconf.transpose()
+            assert_arrays_equal(t1.cconf, t2.cconf)
+
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    def test_compare_twodim_slicing_border_copier_simple_border_copier(self):
+        names = list("abXde" + "fg" + "hcI" + "Jk" + "lmnop")
+        positions = ((-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
+                     (-2, -1),                             (2, -1),
+                     (-2,  0),           (0,  0),          (2,  0),
+                     (-2,  1),                             (2,  1),
+                     (-2,  2), (-1,  2), (0,  2), (1,  2), (2,  2))
+        self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
+
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    def test_compare_slicing_simple_border_copier_asymmetric_neighbourhood(self):
+        names = list("abXd" + "ef" + "gcI" + "Jklm")
+        positions = ((-2, -2), (-1, -2), (0, -2), (1, -2),
+                     (-2, -1),                    (1, -1),
+                     (-2,  0),           (0,  0), (1,  0),
+                     (-2,  1), (-1,  1), (0,  1), (1,  1))
+        self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
+        names = list("abXd" + "ef" + "gcI" + "Jklm")
+        positions = ((-1, -2), (0, -2), (1, -2), (2, -2),
+                     (-1, -1),                   (2, -1),
+                     (-1,  0), (0,  0),          (2,  0),
+                     (-1,  1), (0,  1), (1,  1), (2,  1))
+        self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
+        names = list("abXd" + "ecf" + "gI" + "Jklm")
+        positions = ((-1, -1), (0, -1), (1, -1), (2, -1),
+                     (-1,  0), (0,  0),          (2,  0),
+                     (-1,  1),                   (2,  1),
+                     (-1,  2), (0,  2), (1,  2), (2,  2))
+        self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
+        names = list("abXd" + "ecf" + "gI" + "Jklm")
+        positions = ((-2, -1), (-1, -1), (0, -1), (1, -1),
+                     (-2,  0),           (0,  0), (1,  0),
+                     (-2,  1),                    (1,  1),
+                     (-2,  2), (-1,  2), (0,  2), (1,  2))
+        self.body_compare_twodim_slicing_border_copier_simple_border_copier(names, positions)
+
+    def body_histogram_1d(self, inline=False, deterministic=True):
+        br = cagen.BinRule((100,), rule=105, histogram=True, deterministic=deterministic)
+        assert_arrays_equal(br.histogram, np.bincount(br.cconf[1:-1]))
+        for i in range(10):
+            if inline:
+                br.step_inline()
+            else:
+                br.step_pure_py()
+            assert_arrays_equal(br.histogram, np.bincount(br.cconf[1:-1]))
+
+    @pytest.mark.skipif("not HAVE_BINCOUNT")
+    def test_histogram_1d_pure(self):
+        self.body_histogram_1d()
+
+    @pytest.mark.skipif("not HAVE_WEAVE")
+    def test_histogram_1d_weave(self):
+        self.body_histogram_1d(inline=True)
+
+    @pytest.mark.skipif("not HAVE_BINCOUNT")
+    def test_histogram_1d_nondet_pure(self):
+        self.body_histogram_1d(deterministic=False)
+
+    @pytest.mark.skipif("not HAVE_WEAVE")
+    def test_histogram_1d_nondet_weave(self):
+        self.body_histogram_1d(inline=True, deterministic=False)
+
+
+    def body_histogram_2d(self, inline=False, deterministic=True):
+        t = cagen.TestTarget((20, 20))
+
+        compute = cagen.LifeCellularAutomatonBase()
+        if deterministic:
+            l = cagen.TwoDimCellLoop()
+        else:
+            l = cagen.TwoDimNondeterministicCellLoop(probab=0.4)
+
+        acc = cagen.SimpleStateAccessor()
+        neigh = cagen.MooreNeighbourhood()
+        copier = cagen.SimpleBorderCopier()
+        histogram = cagen.SimpleHistogram()
+        sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+                        extra_code=[copier, compute, histogram], target=t)
+
+        sim.gen_code()
+        assert_arrays_equal(sim.target.histogram,
+                            np.bincount(np.ravel(sim.target.cconf[1:-1,1:-1])))
+        for i in range(10):
+            if inline:
+                sim.step_inline()
+            else:
+                sim.step_pure_py()
+            assert_arrays_equal(sim.target.histogram,
+                                np.bincount(np.ravel(sim.target.cconf[1:-1,1:-1])))
+
+    @pytest.mark.skipif("not HAVE_BINCOUNT")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    def test_histogram_2d_pure(self):
+        self.body_histogram_2d()
+
+    @pytest.mark.skipif("not HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    def test_histogram_2d_weave(self):
+        self.body_histogram_2d(inline=True)
+
+    @pytest.mark.skipif("not HAVE_BINCOUNT")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    def test_histogram_2d_nondet_pure(self):
+        self.body_histogram_2d(deterministic=False)
+
+    @pytest.mark.skipif("not HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    def test_histogram_2d_nondet_weave(self):
+        self.body_histogram_2d(inline=True, deterministic=False)
+
+    def body_beta_asynchronism(self, inline=False):
+        fail = True
+        for i in range(50):
+            try:
+                conf = np.zeros((100,), np.dtype("i"))
+            except TypeError:
+                # pypy compat
+                conf = np.zeros(100, np.dtype("i"))
+            br = cagen.BinRule(config=conf, rule=255, beta=True)
+
+            if inline:
+                br.step_inline()
+            else:
+                br.step_pure_py()
+
+            assert_arrays_equal(br.inner, np.ones(100))
+            if abs(sum(br.cconf[1:-1]) - 50) < 10:
+                fail = False
+                break
+        assert not fail, "testing 50 times, never gotten close to half of "\
+                   " the fields updating their outer state."
+
+        conf = np.zeros((100,), np.dtype("i"))
+        br = cagen.BinRule(config=conf, rule=255, beta=True)
+
+        for i in range(20):
+            if inline:
+                br.step_inline()
+            else:
+                br.step_pure_py()
+
+        assert_arrays_equal(br.inner, br.cconf[1:-1])
+
+    @pytest.mark.skipif("not HAVE_WEAVE")
+    def test_beta_asynchronism_inline(self):
+        self.body_beta_asynchronism(True)
+
+    def test_beta_asynchronism_pure(self):
+        self.body_beta_asynchronism(False)
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:

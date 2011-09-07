@@ -1,10 +1,5 @@
-.. zasim documentation master file, created by
-   sphinx-quickstart on Mon Aug 22 10:19:20 2011.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to zasim's documentation!
-=================================
+Welcome to zasim
+================
 
 zasim is a python package for simulating and developing cellular automatons.
 
@@ -29,6 +24,29 @@ Contents:
    cagen
    display
    elementarytools
+   elementarygui
+
+Getting the code
+================
+
+The code is not yet available on the 'net, but it will probably be published soon.
+
+Running zasim
+=============
+
+The main way to use zasim will in the future be to import the modules from
+zasim in an interactive python interpreter, but that is currently not supported
+very well. In order for the interactive mode to work well with the GUI, the GUI
+will have to get its own thread.
+
+Until then, you can just change the code at the bottom of zasim.cagen and
+zasim.display, as well as zasim.elementarygui and invoke them with
+
+::
+
+    python -m zasim.display # for instance
+
+from the console.
 
 Indices and tables
 ==================
