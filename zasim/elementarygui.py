@@ -298,7 +298,7 @@ class ElementaryRuleWindow(QWidget):
         for name, action in neighbourhood_actions.iteritems():
             act_btn = QPushButton(name, self)
             def do_action(act=action):
-                self.doneighbourhood_action(act)
+                self.do_neighbourhood_action(act)
             act_btn.clicked.connect(do_action)
             action_buttons.addWidget(act_btn)
 
