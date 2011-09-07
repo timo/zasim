@@ -35,18 +35,18 @@ Running zasim
 =============
 
 The main way to use zasim will in the future be to import the modules from
-zasim in an interactive python interpreter, but that is currently not supported
-very well. In order for the interactive mode to work well with the GUI, the GUI
-will have to get its own thread.
+zasim in an interactive python interpreter, but that is currently not
+supported by the gui very well. In order for the interactive mode to work
+well with the GUI, the GUI will have to get its own thread.
 
-Until then, you can just change the code at the bottom of zasim.cagen and
-zasim.display, as well as zasim.elementarygui and invoke them with
+Until then, you can use the display or cagen module from the commandline.
+Both offer a commandline argument interface with many different options.
+You can get a usage summary with the following commands:
 
 ::
 
-    python -m zasim.display # for instance
-
-from the console.
+    python -m zasim.display --help
+    python -m zasim.cagen --help
 
 Indices and tables
 ==================
