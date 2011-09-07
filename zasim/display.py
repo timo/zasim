@@ -889,18 +889,23 @@ class EditWindow(QDialog):
 
 def main(width=200, height=200, scale=2,
         onedim=False,
-        beta=1, nondet=1,
+        beta=100, nondet=100,
         life=False, rule=None,
-        copy_borders=True, white=0.5,
+        copy_borders=True, white=50,
         histogram=True, activity=True):
     app = QApplication(sys.argv)
 
+    if white > 1:
+        white = white / 100.
+
+    beta = beta / 100.
+    nondet = nondet / 100.
+
     w, h = width, height
-    print w, h
 
     if onedim and not life:
         onedim_rand = np.zeros((w,), int)
-        for x, y in range(w):
+        for x in range(w):
             onedim_rand[x] = int(random.random() < white)
 
         # get a random beautiful CA
@@ -912,8 +917,6 @@ def main(width=200, height=200, scale=2,
                 histogram=histogram, copy_borders=copy_borders)
 
         sim_obj = ElementaryCagenSimulator(sim.stepfunc, sim)
-        display_a = ZasimDisplay(sim_obj)
-        display_a.set_scale(scale)
 
     else:
         twodim_rand = np.zeros((w, h), int)
@@ -947,12 +950,16 @@ def main(width=200, height=200, scale=2,
         else:
             acc = cagen.SimpleStateAccessor()
             neigh = NeighClass()
-        copier = cagen.TwoDimSlicingBorderCopier() if copy_borders else \
-                cagen.TwoDimZeroReader()
-        hist = cagen.SimpleHistogram()
-        activity = cagen.ActivityRecord()
+
+        extra_code = [compute]
+        extra_code.append(cagen.TwoDimSlicingBorderCopier() if copy_borders else
+                cagen.TwoDimZeroReader())
+        if histogram:
+            extra_code.append(cagen.SimpleHistogram())
+        if activity:
+            extra_code.append(cagen.ActivityRecord())
         sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                        extra_code=[copier, compute, hist, activity], target=t)
+                        extra_code=extra_code, target=t)
 
         sim.gen_code()
 
@@ -964,24 +971,23 @@ def main(width=200, height=200, scale=2,
         else:
             sim_obj = CagenSimulator(sim, t)
 
-        display_b = ZasimDisplay(sim_obj)
-        display_b.set_scale(scale)
-        display_objects.append(display_b)
+    display = ZasimDisplay(sim_obj)
+    display.set_scale(scale)
+    display_objects.append(display)
 
-        display_b.control.start()
+    display.control.start()
 
-        extra_hist = HistogramExtraDisplay(sim_obj, parent=display_b, height=200, maximum= w * h)
-        extra_activity = HistogramExtraDisplay(sim_obj, attribute="activity", parent=display_b, height=200, maximum=w*h)
-
+    if histogram:
+        extra_hist = HistogramExtraDisplay(sim_obj, parent=display, height=200, maximum= w * h)
         extra_hist.show()
+        display.window.attach_display(extra_hist)
+        display.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
+
+    if activity:
+        extra_activity = HistogramExtraDisplay(sim_obj, attribute="activity", parent=display, height=200, maximum=w*h)
         extra_activity.show()
-
-
-        display_b.window.attach_display(extra_hist)
-        display_b.window.attach_display(extra_activity)
-
-        display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
-        display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_activity)
+        display.window.attach_display(extra_activity)
+        display.window.addDockWidget(Qt.RightDockWidgetArea, extra_activity)
 
     sys.exit(app.exec_())
 
@@ -1008,12 +1014,12 @@ if __name__ == "__main__":
             help="the elementary cellular automaton rule number to use")
     argp.add_argument("-c", "--dont-copy-borders", default=True, action="store_false", dest="copy_borders",
             help="copy borders or just read zeros?")
-    argp.add_argument("--white", default=0.2, type=float,
-            help="how many of the cells to make white at the beginning.")
+    argp.add_argument("--white", default=20, type=int,
+            help="what percentage of the cells to make white at the beginning.")
 
-    argp.add_argument("--nondet", default=1, type=float,
+    argp.add_argument("--nondet", default=100, type=int,
             help="with what percentage should cells be executed?")
-    argp.add_argument("--beta", default=1, type=float,
+    argp.add_argument("--beta", default=100, type=int,
             help="with what probability should a cell succeed in exposing its "\
                  "state to its neighbours?")
 
