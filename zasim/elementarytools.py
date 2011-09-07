@@ -81,7 +81,7 @@ def permutations_to_index_map(neighbourhood, permutations, base=2):
         for (a, b) in permutations:
             ndav[a], ndav[b] = ndav[b], ndav[a]
         if ndav != dav:
-            other_index = resultless_dav.find(ndav)
+            other_index = resultless_dav.index(ndav)
             # since we will find the same combination of index/other_index
             # twice, only take the one where other_index is the higher number
             if other_index > index:
@@ -115,11 +115,12 @@ def flip_offset_to_permutation(neighbourhood, permute_func):
 
     return pairs
 
-def mirror_by_axis(neighbourhood, axis=[0], base=2):
+def mirror_by_axis(neighbourhood, axis=[0]):
     def permute_func(position, axis=tuple(axis)):
         return tuple(-a if num in axis else a for num, a in enumerate(position))
 
-    return flip_offset_to_permutation(neighbourhood, permute_func)
+    permutation = flip_offset_to_permutation(neighbourhood, permute_func)
+    return permutations_to_index_map(neighbourhood, permutation)
 
 @neighbourhood_action("flip vertically")
 def flip_v(neighbourhood, digits_and_values, cache={}):
@@ -146,6 +147,7 @@ def rotate_clockwise(neighbourhood, digits_and_values, cache={}):
         def rotate(pos):
             a, b = pos
             return -b, a
-        cache[neighbourhood] = flip_offset_to_permutation(neighbourhood, rotate)
+        permutation = flip_offset_to_permutation(neighbourhood, rotate)
+        cache[neighbourhood] = permutations_to_index_map(neighbourhood, permutation)
 
     return apply_index_map(digits_and_values, cache[neighbourhood])
