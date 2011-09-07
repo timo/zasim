@@ -887,37 +887,46 @@ class EditWindow(QDialog):
         self.accepted.emit()
         self.close()
 
-def main(rule=None):
+def main(width=200, height=200, scale=2,
+        onedim=False,
+        beta=1, nondet=1,
+        life=False, rule=None,
+        copy_borders=True, white=0.5,
+        histogram=True, activity=True):
     app = QApplication(sys.argv)
 
-    scale = 3
-    w, h = 200, 200
+    w, h = width, height
+    print w, h
 
-    onedim, twodim = False, True
-    beta = True
-    nondet = False
-    life = True
+    if onedim and not life:
+        onedim_rand = np.zeros((w,), int)
+        for x, y in range(w):
+            onedim_rand[x] = int(random.random() < white)
 
-    if onedim:
         # get a random beautiful CA
-        sim = cagen.BinRule(rule=random.choice(
-             [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
-             size=(w,))
+        if rule is None:
+            rule=random.choice(
+             [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150])
+
+        sim = cagen.BinRule(rule=rule, size=(w,), nondet=nondet, beta=beta, activity=activity,
+                histogram=histogram, copy_borders=copy_borders)
 
         sim_obj = ElementaryCagenSimulator(sim.stepfunc, sim)
         display_a = ZasimDisplay(sim_obj)
         display_a.set_scale(scale)
 
-    if twodim:
+    else:
         twodim_rand = np.zeros((w, h), int)
         for x, y in product(range(w), range(h)):
-            twodim_rand[x, y] = random.choice([0, 0, 0, 1])
+            twodim_rand[x, y] = int(random.random() < white)
 
         t = cagen.TestTarget(config=twodim_rand)
 
         if life:
             compute = cagen.LifeCellularAutomatonBase()
+            NeighClass = cagen.MooreNeighbourhood
         else:
+            NeighClass = cagen.VonNeumannNeighbourhood
             if rule is not None:
                 rule_number = rule
             else:
@@ -927,22 +936,19 @@ def main(rule=None):
             t.rule_number = rule_number # XXX this must be better.
 
 
-        if beta or not nondet:
+        if beta != 1 or nondet == 1:
             l = cagen.TwoDimCellLoop()
-        elif nondet:
-            l = cagen.TwoDimNondeterministicCellLoop(probab=0.5)
-        if life:
-            NeighClass = cagen.MooreNeighbourhood
-        else:
-            NeighClass = cagen.VonNeumannNeighbourhood
+        elif nondet != 1:
+            l = cagen.TwoDimNondeterministicCellLoop(probab=nondet)
 
-        if beta:
+        if beta != 1:
             acc = cagen.BetaAsynchronousAccessor(probab=0.1)
             neigh = NeighClass(Base=cagen.BetaAsynchronousNeighbourhood)
         else:
             acc = cagen.SimpleStateAccessor()
             neigh = NeighClass()
-        copier = cagen.TwoDimSlicingBorderCopier()
+        copier = cagen.TwoDimSlicingBorderCopier() if copy_borders else \
+                cagen.TwoDimZeroReader()
         hist = cagen.SimpleHistogram()
         activity = cagen.ActivityRecord()
         sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
@@ -977,13 +983,50 @@ def main(rule=None):
         display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
         display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_activity)
 
-    #comp_dlg = StepFuncCompositionDialog()
-    #comp_dlg.show()
-
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
-    import sys
+    import argparse
+
+    argp = argparse.ArgumentParser(
+        description="Run a 1d BinRule, a 2d Game of Life, or a 2d elementary "
+                    "cellular automaton")
+    argp.add_argument("--onedim", default=False, action="store_true",
+            help="generate a one-dimensional cellular automaton")
+    argp.add_argument("--twodim", default=True, action="store_false", dest="onedim",
+            help="generate a two-dimensional cellular automaton")
+    argp.add_argument("--life", default=False, action="store_true",
+            help="generate a conway's game of life - implies --twodim")
+
+    argp.add_argument("-x", "--width", default=200, dest="width", type=int,
+            help="the width of the image surface")
+    argp.add_argument("-y", "--height", default=200, dest="height", type=int,
+            help="the height of the image surface")
+    argp.add_argument("-z", "--scale", default=3, dest="scale", type=int,
+            help="the size of each cell of the configuration")
+    argp.add_argument("-r", "--rule", default=None, type=int,
+            help="the elementary cellular automaton rule number to use")
+    argp.add_argument("-c", "--dont-copy-borders", default=True, action="store_false", dest="copy_borders",
+            help="copy borders or just read zeros?")
+    argp.add_argument("--white", default=0.2, type=float,
+            help="how many of the cells to make white at the beginning.")
+
+    argp.add_argument("--nondet", default=1, type=float,
+            help="with what percentage should cells be executed?")
+    argp.add_argument("--beta", default=1, type=float,
+            help="with what probability should a cell succeed in exposing its "\
+                 "state to its neighbours?")
+
+    argp.add_argument("--no-histogram", default=True, action="store_false", dest="histogram",
+            help="don't display a histogram")
+    argp.add_argument("--no-activity", default=True, action="store_false", dest="activity",
+            help="don't display the activity")
+
+    args = argp.parse_args()
+
+    main(**vars(args))
+
+
     if len(sys.argv) > 1:
         if sys.argv[1].startswith("0x"):
             rule_nr = int(sys.argv[1], 16)
