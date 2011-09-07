@@ -1688,7 +1688,13 @@ class TestTarget(object):
         super(TestTarget, self).__init__(**kwargs)
         if config is None:
             assert size is not None
-            self.cconf = np.zeros(size, np.dtype("i"))
+            try:
+                self.cconf = np.zeros(size, np.dtype("i"))
+            except TypeError:
+                # pypy can't make zeros with tuples as size arg yet.
+                # the patch to pypy is awaiting review/merge
+                assert len(size) == 1
+                self.cconf = np.zeros(size[0], np.dtype("i"))
             rand = Random()
             if HAVE_TUPLE_ARRAY_INDEX:
                 for pos in product(*[range(siz) for siz in size]):
