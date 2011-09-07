@@ -84,10 +84,12 @@ def permutations_to_index_map(neighbourhood, permutations, base=2):
             other_index = resultless_dav.index(ndav)
             # since we will find the same combination of index/other_index
             # twice, only take the one where other_index is the higher number
-            if other_index > index:
-                index_map[index], index_map[other_index] =\
-                        index_map[other_index], index
+            #if other_index > index:
+            print "switching %d and %d" % (other_index, index)
+            index_map[index], index_map[other_index] =\
+                    index_map[other_index], index_map[index]
 
+    print permutations, index_map
     return index_map
 
 def apply_index_map(digits_and_values, index_map):
@@ -105,21 +107,46 @@ def flip_offset_to_permutation(neighbourhood, permute_func):
 
         if new_offset != offset:
             pair = (old_name, offs_to_name[new_offset])
+            pairs.append(pair)
 
-            # only allow changing forwards
-            # this keeps us from generating duplicate pairs as well as makes
-            # permutation cycles lack the incorrect flip operation of the last
-            # element with the first.
-            if pair < pair[::-1]:
-                pairs.append(pair)
+    # it's necessary, to have no "closing pair" for each cycle, so we have to
+    # organize the groups by the cycles they belong to and remove any pair from
+    # every group, that joins a beginning and an end.
+    # it's also necessary to sort them, so that the permutations are processed
+    # in order. thus we clear the pairs array and add each link as we find it.
+    cycle_groups = []
+    pairs_to_consider, pairs = pairs, []
+    while len(pairs_to_consider) > 0:
+        changed_anything = False
+        for a, b in pairs_to_consider:
+            for group in cycle_groups:
+                if a in group or b in group:
+                    # only if this pair does not close a cycle, we add it back
+                    # to the pairs array.
+                    if a in group and not b in group:
+                        group.extend(b)
+                        pairs.append((a, b))
+                        print "added %s to the cycle of %s" % ((a, b), group)
+                    changed_anything = True
+                    pairs_to_consider.remove((a, b))
+                    break
+
+        # if there was no result whatsoever in this round, we have to start
+        # looking for a new cycle. take the first pair, which must belong to
+        # any non-discovered cycle.
+        if not changed_anything:
+            new_pair = pairs_to_consider.pop()
+            print "added %s, it starts a new cycle." % (new_pair,)
+            pairs.append(new_pair)
+            cycle_groups.append(list(new_pair))
 
     return pairs
 
 def mirror_by_axis(neighbourhood, axis=[0]):
-    def permute_func(position, axis=tuple(axis)):
+    def mirror_axis_permutation(position, axis=tuple(axis)):
         return tuple(-a if num in axis else a for num, a in enumerate(position))
 
-    permutation = flip_offset_to_permutation(neighbourhood, permute_func)
+    permutation = flip_offset_to_permutation(neighbourhood, mirror_axis_permutation)
     return permutations_to_index_map(neighbourhood, permutation)
 
 @neighbourhood_action("flip vertically")
