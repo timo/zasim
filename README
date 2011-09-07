@@ -1,3 +1,16 @@
+This is zasim, a python package for simulating and experimenting with
+cellular automata.
+
+Get an overview from docs/index.rst, generate a html documentation using
+sphinx either from tox with tox -e docs or with "make html" from the docs
+subfolder.
+
+Visit the homepage of zasim at http://zasim.wakelift.de/, which is basically
+just the generated html documentation put up on a webserver.
+
+In order to get a complete documentation, you still need to generate the logo
+image from the svg using inkscape with the following commands:
+
 # create the compilation animation picture like this:
 inkscape -f docs/logo.svg -i snake -j -C -e zasim/idle.png
 # create the logo for the documentation with this command:
