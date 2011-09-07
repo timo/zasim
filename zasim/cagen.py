@@ -1792,11 +1792,11 @@ def categories():
 
     return categories
 
-def test(width=75, bordercopy=True, rule=110, histogram=True, activity=False, pure=False, print_rule=True, nondet=1, beta=1, steps=100):
+def test(width=75, copy_borders=True, rule=110, histogram=True, activity=False, pure=False, print_rule=True, nondet=1, beta=1, steps=100):
 
     bin_rule = BinRule((width,), rule=rule,
             histogram=histogram, activity=activity,
-            nondet=nondet, beta=beta)
+            nondet=nondet, beta=beta, copy_borders=copy_borders)
 
     b_l, b_r = bin_rule.stepfunc.neigh.bounding_box()[0]
     pretty_print_array = build_array_pretty_printer((width,), ((abs(b_l), abs(b_r)),), ((0, 0),))
@@ -1827,12 +1827,12 @@ if __name__ == "__main__":
     argp = argparse.ArgumentParser(
         description="Run a generated BinRule simulator and display its results "
                     "on the console")
-    argp.add_argument("-w", "--width", default=70,
+    argp.add_argument("-w", "--width", default=70, type=int,
             help="set the width of the configuration to calculate")
-    argp.add_argument("-b", "--bordercopy", default=True,
+    argp.add_argument("-b", "--dont-copy-borders", default=True, dest="copy_borders", action="store_false",
             help="copy borders around. Otherwise, zeros will be read from "
                     "the borders")
-    argp.add_argument("-r", "--rule", default=110,
+    argp.add_argument("-r", "--rule", default=110, type=int,
             help="select the rule number to calculate")
     argp.add_argument("--histogram", default=False, action="store_true",
             help="calculate a histogram")
@@ -1842,7 +1842,7 @@ if __name__ == "__main__":
             help="use pure python stepfunc even if weave is available")
     argp.add_argument("--print-rule", default=False, action="store_true",
             help="pretty-print the rule")
-    argp.add_argument("-s", "--steps", metavar="STEPS", default=100,
+    argp.add_argument("-s", "--steps", metavar="STEPS", default=100, type=int,
             help="run the simulator for STEPS steps.")
 
     args = argp.parse_args()
