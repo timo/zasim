@@ -28,10 +28,7 @@ def get_swap_usage():
     with open("/proc/self/status", "r") as status:
         line = [line for line in status if line.startswith("VmSwap")][0]
 
-    suffix = line.split()[-1]
-    value = int(line.split()[1])
-    if suffix == "kB":
-        value *= 1024
+    value = int(line.split()[1]) * 1024
     return value
 
 from zasim.elementarytools import minimize_rule_number, neighbourhood_actions
@@ -205,6 +202,9 @@ class Task(object):
         neigh = self.neigh
         total_number = len(self.r_trans_tbl) - 1
         stats_step = max(10, total_number / 2000)
+
+        last_swap_usage = 0
+
         print "writing out the size of the data dictionary every %d steps" % stats_step
         for index in range(total_number):
             number = self.r_trans_tbl[total_number - index]
@@ -215,15 +215,20 @@ class Task(object):
                 self.write_one(self.get_data(number))
                 del self.data[number]
 
-            if get_swap_usage() > 2048:
+            swap_usage = get_swap_usage()
+            if swap_usage > last_swap_usage + 10:
                 self.statsfile.write("%d\n" % (len(self.data)))
                 print "swap usage before cleanup:", get_swap_usage()
                 self.free_up_memory()
                 print "swap usage after cleanup: ", get_swap_usage()
                 self.statsfile.write("%d\n" % (len(self.data)))
+                last_swap_usage = swap_usage
+            elif swap_usage < last_swap_usage:
+                 last_swap_usage = swap_usage
 
             if index % stats_step == 0:
                 self.statsfile.write("%d\n" % (len(self.data)))
+                self.statsfile.flush()
                 del self.r_trans_tbl[total_number - index + 5:]
 
 
