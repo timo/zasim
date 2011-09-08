@@ -88,29 +88,40 @@ class Task(object):
         self.high_repr = 0
         self.biggest_group = []
 
+        self.last_written = len(self.r_trans_tbl)
+        self.next_index_to_write = self.r_trans_tbl[self.last_written - 1]
+
+        self.outfile = open(self.res("output"), "w")
+        self.statsfile = open(self.res("stats"), "w")
+
     def res(self, name):
         """generete a resource filename for the given name"""
         return self.taskname + "_" + name
 
+    def iter_four_bytes(self, stream):
+        text = stream.read(4)
+        while text != "":
+            yield text
+            text = stream.read(4)
+
     def _get_index_translation_table(self):
         """load from disk or create a translation table for array compression."""
+        start = time()
+        struct = Struct("I")
         try:
             with open(self.res("trans_table"), "r") as table:
-                ttable = array.array("L")
-                ttable.fromstring(table.read())
-            for index, number in enumerate(ttable):
-                self.trans_tbl[number] = index
-                self.r_trans_tbl.append(number)
-            del ttable
+                for index, number in enumerate(self.iter_four_bytes(table)):
+                    number = struct.unpack(number)[0]
+                    self.r_trans_tbl.append(number)
             print "got index translation table from file"
         except IOError:
-            struct = Struct("L")
             with open(self.res("trans_table"), "w") as table:
                 for smallnum, num in enumerate(fixed_bits(self.digits, self.bits_set)):
-                    self.trans_tbl[num] = smallnum
                     self.r_trans_tbl.append(num)
                     table.write(struct.pack(num))
             print "wrote index translation table to file"
+
+        print "took %f seconds for index translation table" % (time() - start)
 
     def set_representant(self, numbers):
         """set the representant of the given rule numbers and increment the
@@ -120,16 +131,19 @@ class Task(object):
         increment = 0
         numbers.sort(reverse=True)
         representant = numbers.pop()
-        if representant > self.high_repr:
-            self.high_repr = representant
-        if representant < self.low_repr:
-            self.low_repr = representant
+        #if representant > self.high_repr:
+            #self.high_repr = representant
+        #if representant < self.low_repr:
+            #self.low_repr = representant
         for number in numbers:
-            if self.get_data(number) != representant:
+            if self.get_data(number) == 0:
                 increment += 1
                 self.set_data(number, representant)
             else:
-                print "tried to re-set representant of %d" % number
+                if self.get_data(number) != representant:
+                    print "tried to re-set representant of %d" % number
+                    print "old: %d" % (self.get_data(number))
+                    print "new: %d" % (representant)
 
         repr_score = self.get_data(representant) - increment
         self.set_data(representant, repr_score)
@@ -140,11 +154,27 @@ class Task(object):
         return self.data[number]
 
     def set_data(self, number, data):
+        if number == self.next_index_to_write:
+            self.write_one(data)
+            try:
+                del self.data[number]
+            except:
+                print "could not delete index %d" % number
+            return
         self.data[number] = data
+
+    def write_one(self, data, struct=Struct("l")):
+        self.outfile.write(struct.pack(data))
+        self.last_written -= 1
+        self.next_index_to_write = self.r_trans_tbl[self.last_written - 1]
 
     def already_done(self, number):
         """Has the number already been assigned a representant? Or is it one?"""
-        return self.get_data(number) != 0
+        result = self.get_data(number)
+        if result != 0 and number == self.next_index_to_write:
+            self.write_one(result)
+            del self.data[number]
+        return result != 0
 
     def loop(self):
         start = time()
@@ -153,20 +183,28 @@ class Task(object):
             if not self.already_done(number):
                 representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
                 self.set_representant(everything.keys())
+            if index % 100 == 0:
+                self.statsfile.write("%d\n" % (len(self.data)))
+
+        for key, value in self.data.iteritems():
+            if value != 0:
+                print "value at key %d was not written out and is %d" % (key,value)
 
         print "done %d steps in %s" % (len(self.r_trans_tbl), time() - start)
-        print "representants ranged from %d to %d" % (self.low_repr, self.high_repr)
-        print "biggest group: % 2d %s" % (len(self.biggest_group), self.biggest_group)
+        #print "representants ranged from %d to %d" % (self.low_repr, self.high_repr)
+        #print "biggest group: % 2d %s" % (len(self.biggest_group), self.biggest_group)
 
     def cleanup(self):
+        self.outfile.close()
+        self.statsfile.close()
         del self.data
-        del self.trans_tbl
         del self.r_trans_tbl
 
 def new_main():
+    print "let's go!"
     neigh = cagen.VonNeumannNeighbourhood()
 
-    for bits_set in range(1, 10):
+    for bits_set in range(1, 7):
         print "starting task with %d bits set!" % (bits_set)
         a = Task(neigh, bits_set, "von_neumann")
         a.loop()
