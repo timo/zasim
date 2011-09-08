@@ -97,7 +97,11 @@ class Task(object):
         self.timings = open(self.res("timings"), "w")
 
         self.cache = defaultdict(lambda: 0)
-        self.cachesize = 1000000
+
+        cache_mb_size = 500
+        cache_byte_size = cache_mb_size * 1024 * 1024
+        cache_entry_size = cache_byte_size / 8
+        self.cachesize = cache_entry_size
 
     def res(self, name):
         """generete a resource filename for the given name"""
@@ -171,7 +175,7 @@ class Task(object):
 
             if index % stats_step == 0:
                 endtime, last_time = time() - last_time, time()
-                self.timings.write("%f %d\n" % (endtime, index))
+                self.timings.write("%f\n" % (endtime, index))
 
         print "done %d steps in %s (%d cache hits - %f%%)" % (self.task_size, time() - start, cachehits, 100.0 * cachehits / self.task_size)
         print "    that's a speed of %f steps per second" % (self.task_size / (time() - start))
