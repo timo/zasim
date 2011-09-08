@@ -36,8 +36,7 @@ from zasim import cagen
 
 from struct import Struct
 from time import time
-
-from collections import defaultdict
+import os
 
 # we don't want bits to be flipped when searching for equivalent CAs.
 del neighbourhood_actions["flip all bits"]
@@ -87,171 +86,84 @@ class Task(object):
         else:
             self.taskname = taskname
 
-        self.taskname += "_%d" % (self.bits_set)
+        self.taskname += "_%02d" % (self.bits_set)
 
-        self.trans_tbl = {}
-        self.r_trans_tbl = []
+        self.task_size = 0
         self._get_index_translation_table()
 
-        self.data = defaultdict(lambda: 0)
-
-        self.low_repr = 0
-        self.high_repr = 0
-        self.biggest_group = []
-
-        self.last_written = len(self.r_trans_tbl)
-        self.next_index_to_write = self.r_trans_tbl[self.last_written - 1]
-
         self.outfile = open(self.res("output"), "w")
-        self.statsfile = open(self.res("stats"), "w")
+        self.timings = open(self.res("timings"), "w")
 
     def res(self, name):
         """generete a resource filename for the given name"""
         return self.taskname + "_" + name
 
-    def iter_four_bytes(self, stream):
-        text = stream.read(4)
-        while text != "":
-            yield text
-            text = stream.read(4)
-
     def _get_index_translation_table(self):
-        """load from disk or create a translation table for array compression."""
+        """Trying to validate/create the index table."""
         start = time()
         struct = Struct("I")
         try:
             with open(self.res("trans_table"), "r") as table:
-                for index, number in enumerate(self.iter_four_bytes(table)):
-                    number = struct.unpack(number)[0]
-                    self.r_trans_tbl.append(number)
-            if self.r_trans_tbl[-1] == 0:
-                self.r_trans_tbl.pop()
-            else:
+                table.seek(-4, os.SEEK_END)
+                position = table.tell()
+                self.task_size = position / 4
+                result = table.read(4)
+            result = struct.unpack(result)
+            if result != 0:
                 print "index translation table was incomplete. regenerating!"
                 print "wasted %f seconds" % (time() - start)
                 start = time()
                 raise IOError
-            print "got index translation table from file"
+            print "validated index file from hard drive"
         except IOError:
+            count = 0
             with open(self.res("trans_table"), "w") as table:
-                for smallnum, num in enumerate(fixed_bits(self.digits, self.bits_set)):
-                    self.r_trans_tbl.append(num)
+                for num in fixed_bits(self.digits, self.bits_set):
                     table.write(struct.pack(num))
+                    count += 1
+                # add a "finished" zero-fourbyte
                 table.write(struct.pack(0))
+            self.task_size = count
             print "wrote index translation table to file"
 
         print "took %f seconds for index translation table" % (time() - start)
 
-    def set_representant(self, numbers):
-        """set the representant of the given rule numbers and increment the
-        number of friends the representant has.
-
-        The representant is the lowest number of numbers."""
-        increment = 1
-        numbers.sort(reverse=True)
-        representant = numbers.pop()
-        for number in numbers:
-            if number > self.next_index_to_write:
-                # we have to skip this write, because it would
-                # theoretically overwrite data we already had. this
-                # condition means, we've cleared the dafa file at
-                # least once already. we will need to re-write all low
-                # representants with correct values.
-                increment += 1
-                continue
-            if self.get_data(number) == 0:
-                increment += 1
-                self.set_data(number, representant)
-            else:
-                if self.get_data(number) != representant:
-                    print "tried to re-set representant of %d" % number
-                    print "old: %d" % (self.get_data(number))
-                    print "new: %d" % (representant)
-
-        repr_score = self.get_data(representant) - increment
-        self.set_data(representant, repr_score)
-        if abs(repr_score) > len(self.biggest_group):
-            self.biggest_group = [representant] + numbers
-
-    def get_data(self, number):
-        return self.data[number]
-
-    def set_data(self, number, data):
-        self.data[number] = data
-
-    def write_one(self, data, struct=Struct("l")):
-        self.outfile.write(struct.pack(data))
-        self.last_written -= 1
-        self.next_index_to_write = self.r_trans_tbl[self.last_written - 1]
-
-    def already_done(self, number):
-        """Has the number already been assigned a representant? Or is it one?"""
-        result = self.get_data(number)
-        if result != 0 and number == self.next_index_to_write:
-            self.write_one(result)
-            del self.data[number]
-        return result != 0
-
-    def free_up_memory(self):
-        self.data = defaultdict(lambda: 0)
-        import gc
-        gc.collect()
-
     def loop(self):
         start = time()
         neigh = self.neigh
-        total_number = len(self.r_trans_tbl) - 1
-        stats_step = max(10, total_number / 2000)
+        stats_step = max(10, self.task_size / 2000)
 
-        last_swap_usage = 0
+        packstruct = Struct("l")
 
         print "writing out the size of the data dictionary every %d steps" % stats_step
-        for index in range(total_number):
-            number = self.r_trans_tbl[total_number - index]
-            if not self.already_done(number):
-                representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
-                self.set_representant(everything.keys())
+        print "goint to calculate %d numbers." % (self.task_size)
+        last_time = time()
+        for index, number in enumerate(fixed_bits(self.digits, self.bits_set)):
 
-                self.write_one(self.get_data(number))
-                del self.data[number]
-
-            swap_usage = get_swap_usage()
-            if swap_usage > last_swap_usage + 10:
-                self.statsfile.write("%d\n" % (len(self.data)))
-                print "swap usage before cleanup:", get_swap_usage()
-                self.free_up_memory()
-                print "swap usage after cleanup: ", get_swap_usage()
-                self.statsfile.write("%d\n" % (len(self.data)))
-                last_swap_usage = swap_usage
-            elif swap_usage < last_swap_usage:
-                 last_swap_usage = swap_usage
+            representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
+            if number == representant:
+                self.outfile.write(packstruct.pack(-len(everything)))
+            else:
+                self.outfile.write(packstruct.pack(representant))
 
             if index % stats_step == 0:
-                self.statsfile.write("%d\n" % (len(self.data)))
-                self.statsfile.flush()
-                del self.r_trans_tbl[total_number - index + 5:]
+                endtime, last_time = time() - last_time, time()
+                self.timings.write("%f %d\n" % (endtime, index))
 
 
-        for key, value in self.data.iteritems():
-            if value != 0:
-                print "value at key %d (%s) was not written out and is %d" % (key, bin(key),value)
-                print "  matching index would have been", self.r_trans_tbl.index(key)
-
-        print "done %d steps in %s" % (len(self.r_trans_tbl), time() - start)
+        print "done %d steps in %s" % (self.task_size, time() - start)
         #print "representants ranged from %d to %d" % (self.low_repr, self.high_repr)
         #print "biggest group: % 2d %s" % (len(self.biggest_group), self.biggest_group)
 
     def cleanup(self):
         self.outfile.close()
-        self.statsfile.close()
-        del self.data
-        del self.r_trans_tbl
+        self.timings.close()
 
 def new_main():
     print "let's go!"
     neigh = cagen.VonNeumannNeighbourhood()
 
-    for bits_set in range(1, 7):
+    for bits_set in range(1, 12):
         print "starting task with %d bits set!" % (bits_set)
         a = Task(neigh, bits_set, "von_neumann")
         a.loop()
