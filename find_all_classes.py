@@ -39,6 +39,8 @@ def fixed_bits(M, m):
     """Iterate over all numbers with M bits, of which m are set to 1.
     This iterates in order from smallest to biggest."""
     bit_position = list(range(m))
+    num = int("1" * m, 2)
+    yield num
     while bit_position[-1] != M:
         # find the lowest bit that can move up one
         for pos in range(m):
@@ -54,9 +56,12 @@ def fixed_bits(M, m):
             return
 
         # generate the number from the bits
+        lastnum = num
         num = 0
         for pos in range(m):
             num += 2 ** bit_position[pos]
+
+        assert lastnum < num
 
         yield num
 
