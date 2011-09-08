@@ -38,6 +38,8 @@ from struct import Struct
 from time import time
 import os
 
+from collections import defaultdict
+
 # we don't want bits to be flipped when searching for equivalent CAs.
 del neighbourhood_actions["flip all bits"]
 
@@ -94,6 +96,9 @@ class Task(object):
         self.outfile = open(self.res("output"), "w")
         self.timings = open(self.res("timings"), "w")
 
+        self.cache = defaultdict(lambda: 0)
+        self.cachesize = 1000000
+
     def res(self, name):
         """generete a resource filename for the given name"""
         return self.taskname + "_" + name
@@ -135,23 +140,42 @@ class Task(object):
 
         packstruct = Struct("l")
 
+        cachesize = self.cachesize
+        cachecontents = len(self.cache)
+        cachehits = 0
+        max_cache_fill = 0
+
         print "writing out the size of the data dictionary every %d steps" % stats_step
         print "goint to calculate %d numbers." % (self.task_size)
         last_time = time()
         for index, number in enumerate(fixed_bits(self.digits, self.bits_set)):
 
-            representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
-            if number == representant:
-                self.outfile.write(packstruct.pack(-len(everything)))
+            if self.cache[number] == 0:
+                representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
+                for num in everything:
+                    if num > number and cachecontents < cachesize:
+                        self.cache[num] = representant
+                        cachecontents += 1
+                if number == representant:
+                    self.outfile.write(packstruct.pack(-len(everything)))
+                else:
+                    self.outfile.write(packstruct.pack(representant))
             else:
-                self.outfile.write(packstruct.pack(representant))
+                cachehits += 1
+                if cachecontents > max_cache_fill:
+                    max_cache_fill = cachecontents
+                cachecontents -= 1
+                val = self.cache[number]
+                del self.cache[number]
+                self.outfile.write(packstruct.pack(val))
 
             if index % stats_step == 0:
                 endtime, last_time = time() - last_time, time()
                 self.timings.write("%f %d\n" % (endtime, index))
 
-
-        print "done %d steps in %s" % (self.task_size, time() - start)
+        print "done %d steps in %s (%d cache hits - %f%%)" % (self.task_size, time() - start, cachehits, 100.0 * cachehits / self.task_size)
+        print "    that's a speed of %f steps per second" % (self.task_size / (time() - start))
+        print "      cache was filled with %d at its peak" % (max_cache_fill)
         #print "representants ranged from %d to %d" % (self.low_repr, self.high_repr)
         #print "biggest group: % 2d %s" % (len(self.biggest_group), self.biggest_group)
 
