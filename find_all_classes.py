@@ -27,7 +27,6 @@ chunk."""
 from zasim.elementarytools import minimize_rule_number, neighbourhood_actions
 from zasim import cagen
 
-import array
 from struct import Struct
 from time import time
 
@@ -128,13 +127,9 @@ class Task(object):
         number of friends the representant has.
 
         The representant is the lowest number of numbers."""
-        increment = 0
+        increment = 1
         numbers.sort(reverse=True)
         representant = numbers.pop()
-        #if representant > self.high_repr:
-            #self.high_repr = representant
-        #if representant < self.low_repr:
-            #self.low_repr = representant
         for number in numbers:
             if self.get_data(number) == 0:
                 increment += 1
@@ -154,13 +149,6 @@ class Task(object):
         return self.data[number]
 
     def set_data(self, number, data):
-        if number == self.next_index_to_write:
-            self.write_one(data)
-            try:
-                del self.data[number]
-            except:
-                print "could not delete index %d" % number
-            return
         self.data[number] = data
 
     def write_one(self, data, struct=Struct("l")):
@@ -183,12 +171,16 @@ class Task(object):
             if not self.already_done(number):
                 representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
                 self.set_representant(everything.keys())
+
+                self.write_one(self.get_data(number))
+                del self.data[number]
             if index % 100 == 0:
                 self.statsfile.write("%d\n" % (len(self.data)))
 
         for key, value in self.data.iteritems():
             if value != 0:
                 print "value at key %d was not written out and is %d" % (key,value)
+                print "  matching index would have been", self.r_trans_tbl.index(key)
 
         print "done %d steps in %s" % (len(self.r_trans_tbl), time() - start)
         #print "representants ranged from %d to %d" % (self.low_repr, self.high_repr)
