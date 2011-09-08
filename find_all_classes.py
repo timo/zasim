@@ -24,6 +24,16 @@ disk), as well as a translation table for later aiding in reading out the
 results of the computation, that will be "compressed" into one file per
 chunk."""
 
+def get_swap_usage():
+    with open("/proc/self/status", "r") as status:
+        line = [line for line in status if line.startswith("VmSwap")][0]
+
+    suffix = line.split()[-1]
+    value = int(line.split()[1])
+    if suffix == "kB":
+        value *= 1024
+    return value
+
 from zasim.elementarytools import minimize_rule_number, neighbourhood_actions
 from zasim import cagen
 
@@ -117,12 +127,20 @@ class Task(object):
                 for index, number in enumerate(self.iter_four_bytes(table)):
                     number = struct.unpack(number)[0]
                     self.r_trans_tbl.append(number)
+            if self.r_trans_tbl[-1] == 0:
+                self.r_trans_tbl.pop()
+            else:
+                print "index translation table was incomplete. regenerating!"
+                print "wasted %f seconds" % (time() - start)
+                start = time()
+                raise IOError
             print "got index translation table from file"
         except IOError:
             with open(self.res("trans_table"), "w") as table:
                 for smallnum, num in enumerate(fixed_bits(self.digits, self.bits_set)):
                     self.r_trans_tbl.append(num)
                     table.write(struct.pack(num))
+                table.write(struct.pack(0))
             print "wrote index translation table to file"
 
         print "took %f seconds for index translation table" % (time() - start)
@@ -136,6 +154,14 @@ class Task(object):
         numbers.sort(reverse=True)
         representant = numbers.pop()
         for number in numbers:
+            if number > self.next_index_to_write:
+                # we have to skip this write, because it would
+                # theoretically overwrite data we already had. this
+                # condition means, we've cleared the dafa file at
+                # least once already. we will need to re-write all low
+                # representants with correct values.
+                increment += 1
+                continue
             if self.get_data(number) == 0:
                 increment += 1
                 self.set_data(number, representant)
@@ -169,22 +195,41 @@ class Task(object):
             del self.data[number]
         return result != 0
 
+    def free_up_memory(self):
+        self.data = defaultdict(lambda: 0)
+        import gc
+        gc.collect()
+
     def loop(self):
         start = time()
         neigh = self.neigh
-        for index, number in enumerate(self.r_trans_tbl[::-1]):
+        total_number = len(self.r_trans_tbl) - 1
+        stats_step = max(10, total_number / 2000)
+        print "writing out the size of the data dictionary every %d steps" % stats_step
+        for index in range(total_number):
+            number = self.r_trans_tbl[total_number - index]
             if not self.already_done(number):
                 representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
                 self.set_representant(everything.keys())
 
                 self.write_one(self.get_data(number))
                 del self.data[number]
-            if index % 100 == 0:
+
+            if get_swap_usage() > 2048:
                 self.statsfile.write("%d\n" % (len(self.data)))
+                print "swap usage before cleanup:", get_swap_usage()
+                self.free_up_memory()
+                print "swap usage after cleanup: ", get_swap_usage()
+                self.statsfile.write("%d\n" % (len(self.data)))
+
+            if index % stats_step == 0:
+                self.statsfile.write("%d\n" % (len(self.data)))
+                del self.r_trans_tbl[total_number - index + 5:]
+
 
         for key, value in self.data.iteritems():
             if value != 0:
-                print "value at key %d was not written out and is %d" % (key,value)
+                print "value at key %d (%s) was not written out and is %d" % (key, bin(key),value)
                 print "  matching index would have been", self.r_trans_tbl.index(key)
 
         print "done %d steps in %s" % (len(self.r_trans_tbl), time() - start)
