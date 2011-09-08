@@ -158,8 +158,9 @@ class Task(object):
                 representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
                 for num in everything:
                     if num > number and cachecontents < cachesize:
-                        self.cache[num] = representant
-                        cachecontents += 1
+                        if self.cache[num] == 0:
+                            self.cache[num] = representant
+                            cachecontents += 1
                 if number == representant:
                     self.outfile.write(packstruct.pack(-len(everything)))
                 else:
@@ -175,7 +176,7 @@ class Task(object):
 
             if index % stats_step == 0:
                 endtime, last_time = time() - last_time, time()
-                self.timings.write("%f\n" % (endtime, index))
+                self.timings.write("%f\n" % (endtime/ stats_step ))
 
         print "done %d steps in %s (%d cache hits - %f%%)" % (self.task_size, time() - start, cachehits, 100.0 * cachehits / self.task_size)
         print "    that's a speed of %f steps per second" % (self.task_size / (time() - start))
@@ -187,11 +188,11 @@ class Task(object):
         self.outfile.close()
         self.timings.close()
 
-def new_main():
+def new_main(start, end):
     print "let's go!"
     neigh = cagen.VonNeumannNeighbourhood()
 
-    for bits_set in range(1, 12):
+    for bits_set in range(start, end):
         print "starting task with %d bits set!" % (bits_set)
         a = Task(neigh, bits_set, "von_neumann")
         a.loop()
@@ -199,4 +200,11 @@ def new_main():
         print
 
 if __name__ == "__main__":
-    new_main()
+    import sys
+    if len(sys.argv) == 3:
+        start = int(sys.argv[1])
+        end = int(sys.argv[2]) + 1
+    else:
+        start = 1
+        end = 16
+    new_main(start, end)
