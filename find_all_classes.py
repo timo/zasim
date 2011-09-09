@@ -110,7 +110,7 @@ class Task(object):
                 position = table.tell()
                 self.task_size = position / 4
                 result = table.read(4)
-            result = struct.unpack(result)
+            result = struct.unpack(result)[0]
             if result != 0:
                 print "index translation table was incomplete. regenerating!"
                 print "wasted %f seconds" % (time() - start)
