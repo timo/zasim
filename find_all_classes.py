@@ -86,7 +86,7 @@ class Task(object):
         self.task_size = 0
         self._get_index_translation_table()
 
-        self.timings = open(self.res("timings"), "w")
+        self.timings = open(self.res("timings"), "a")
         self.outfile = None
 
         self.cache = defaultdict(lambda: 0)
@@ -161,6 +161,7 @@ class Task(object):
             return
 
         self.outfile = open(self.res("output"), "a")
+        outfile = self.outfile
         start = time()
         neigh = self.neigh
         stats_step = max(10, self.task_size / 2000)
@@ -178,26 +179,17 @@ class Task(object):
         last_time = time()
         iterator = self.number_iter
         for index, number in iterator:
-
             if self.cache[number] == 0:
                 representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
                 for num in everything:
                     if num > number and cachecontents < cachesize:
-                        try:
-                            if self.cache[num] == 0:
-                                self.cache[num] = representant
-                                cachecontents += 1
-                        except MemoryError:
-                            cachesize = cachecontents - 10
-                            print "cachesize: ", cachesize
-                            del self.cache
-                            print "emergency collect"
-                            gc.collect()
-                            self.cache = defaultdict(lambda: 0)
+                        if self.cache[num] == 0:
+                            self.cache[num] = representant
+                            cachecontents += 1
                 if number == representant:
-                    self.outfile.write(packstruct.pack(-len(everything)))
+                    outfile.write(packstruct.pack(-len(everything)))
                 else:
-                    self.outfile.write(packstruct.pack(representant))
+                    outfile.write(packstruct.pack(representant))
             else:
                 cachehits += 1
                 if cachecontents > max_cache_fill:
@@ -216,8 +208,6 @@ class Task(object):
         print "      cache was filled with %d at its peak" % (max_cache_fill)
         #print "representants ranged from %d to %d" % (self.low_repr, self.high_repr)
         #print "biggest group: % 2d %s" % (len(self.biggest_group), self.biggest_group)
-
-        self.outfile.close()
 
     def loop(self):
         try:
