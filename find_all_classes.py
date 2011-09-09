@@ -91,7 +91,7 @@ class Task(object):
 
         self.cache = defaultdict(lambda: 0)
 
-        cache_mb_size = 120
+        cache_mb_size = 100
         cache_byte_size = cache_mb_size * 1024 * 1024
         cache_entry_size = cache_byte_size / 8
         self.cachesize = cache_entry_size
@@ -172,14 +172,24 @@ class Task(object):
         print "goint to calculate %d numbers." % (self.task_size)
         last_time = time()
         iterator = self.number_iter
+        care_about_ordering = False
         for index, number in iterator:
             if self.cache[number] == 0:
                 representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
-                for num in everything:
-                    if num > number and cachecontents < cachesize:
-                        if self.cache[num] == 0:
-                            self.cache[num] = representant
-                            cachecontents += 1
+                everything = everything.keys()
+                everything.remove(number)
+                try:
+                    everything.remove(representant)
+                except ValueError:
+                    pass
+                if len(everything) > 0:
+                    lowest = everything[0] # try lowering the number of inserted high numbers
+                    for num in everything:
+                        if num > number and cachecontents < cachesize and (num < lowest or not care_about_ordering):
+                            if self.cache[num] == 0:
+                                self.cache[num] = representant
+                                cachecontents += 1
+                            lowest = num
                 if number == representant:
                     outfile.write(packstruct.pack(-len(everything)))
                 else:
@@ -188,6 +198,8 @@ class Task(object):
                 self.cachehits += 1
                 if cachecontents > self.max_cache_fill:
                     self.max_cache_fill = cachecontents
+                    if cachecontents > 0.75 * self.max_cache_fill:
+                        care_about_ordering = True
                 cachecontents -= 1
                 val = self.cache[number]
                 del self.cache[number]
@@ -206,9 +218,10 @@ class Task(object):
         finally:
             if self.outfile:
                 self.outfile.close()
-            print "done %d steps in %s (%d cache hits - %f%%)" % (self.task_size, time() - start, self.cachehits, 100.0 * self.cachehits / self.task_size)
-            print "    that's a speed of %f steps per second" % (self.task_size / (time() - start))
-            print "      cache was filled with %d at its peak" % (self.max_cache_fill)
+            if self.task_size != 0:
+                print "done %d steps in %s (%d cache hits - %f%%)" % (self.task_size, time() - start, self.cachehits, 100.0 * self.cachehits / self.task_size)
+                print "    that's a speed of %f steps per second" % (self.task_size / (time() - start))
+                print "      cache was filled with %d at its peak" % (self.max_cache_fill)
 
 def new_main(start, end):
     print "let's go!"
