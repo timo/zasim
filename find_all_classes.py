@@ -87,6 +87,7 @@ class Task(object):
         self._get_index_translation_table()
 
         self.timings = open(self.res("timings"), "w")
+        self.outfile = None
 
         self.cache = defaultdict(lambda: 0)
 
@@ -152,15 +153,20 @@ class Task(object):
         print "fast-forwarded %d entries" % count
         self.task_size -= count
 
-    def loop(self):
+    def inner_loop(self):
         import gc
+
+        if self.task_size == 0:
+            print "already calculated everything."
+            return
+
+        self.outfile = open(self.res("output"), "a")
         start = time()
         neigh = self.neigh
         stats_step = max(10, self.task_size / 2000)
 
 
         packstruct = Struct("q")
-        self.outfile = open(self.res("output"), "w")
 
         cachesize = self.cachesize
         cachecontents = len(self.cache)
@@ -211,9 +217,14 @@ class Task(object):
         #print "representants ranged from %d to %d" % (self.low_repr, self.high_repr)
         #print "biggest group: % 2d %s" % (len(self.biggest_group), self.biggest_group)
 
-    def cleanup(self):
         self.outfile.close()
-        self.timings.close()
+
+    def loop(self):
+        try:
+            self.inner_loop()
+        finally:
+            if self.outfile:
+                self.outfile.close()
 
 def new_main(start, end):
     print "let's go!"
@@ -223,7 +234,6 @@ def new_main(start, end):
         print "starting task with %d bits set!" % (bits_set)
         a = Task(neigh, bits_set, "von_neumann")
         a.loop()
-        a.cleanup()
         print
 
 if __name__ == "__main__":
