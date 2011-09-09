@@ -24,13 +24,6 @@ disk), as well as a translation table for later aiding in reading out the
 results of the computation, that will be "compressed" into one file per
 chunk."""
 
-def get_swap_usage():
-    with open("/proc/self/status", "r") as status:
-        line = [line for line in status if line.startswith("VmSwap")][0]
-
-    value = int(line.split()[1]) * 1024
-    return value
-
 from zasim.elementarytools import minimize_rule_number, neighbourhood_actions
 from zasim import cagen
 
