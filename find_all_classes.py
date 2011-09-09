@@ -86,15 +86,16 @@ class Task(object):
         self.task_size = 0
         self._get_index_translation_table()
 
-        self.outfile = open(self.res("output"), "w")
         self.timings = open(self.res("timings"), "w")
 
         self.cache = defaultdict(lambda: 0)
 
-        cache_mb_size = 500
+        cache_mb_size = 120
         cache_byte_size = cache_mb_size * 1024 * 1024
         cache_entry_size = cache_byte_size / 8
         self.cachesize = cache_entry_size
+
+        self.fast_forward()
 
     def res(self, name):
         """generete a resource filename for the given name"""
@@ -130,12 +131,36 @@ class Task(object):
 
         print "took %f seconds for index translation table" % (time() - start)
 
+    def iter_n_bytes(self, stream, byte_c=8):
+        text = stream.read(byte_c)
+        while text != "":
+            yield text
+            text = stream.read(byte_c)
+
+    def fast_forward(self):
+        print "attempting fast_forward"
+        self.number_iter = enumerate(fixed_bits(self.digits, self.bits_set))
+        count = 0
+        try:
+            with open(self.res("output"), "r") as prev_output:
+                for data in self.iter_four_bytes(prev_output):
+                    index, number = self.number_iter.next()
+                    count += 1
+
+        except IOError:
+            print "fast_forward encountered IOError."
+        print "fast-forwarded %d entries" % count
+        self.task_size -= count
+
     def loop(self):
+        import gc
         start = time()
         neigh = self.neigh
         stats_step = max(10, self.task_size / 2000)
 
-        packstruct = Struct("l")
+
+        packstruct = Struct("q")
+        self.outfile = open(self.res("output"), "w")
 
         cachesize = self.cachesize
         cachecontents = len(self.cache)
@@ -145,15 +170,24 @@ class Task(object):
         print "writing out the size of the data dictionary every %d steps" % stats_step
         print "goint to calculate %d numbers." % (self.task_size)
         last_time = time()
-        for index, number in enumerate(fixed_bits(self.digits, self.bits_set)):
+        iterator = self.number_iter
+        for index, number in iterator:
 
             if self.cache[number] == 0:
                 representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
                 for num in everything:
                     if num > number and cachecontents < cachesize:
-                        if self.cache[num] == 0:
-                            self.cache[num] = representant
-                            cachecontents += 1
+                        try:
+                            if self.cache[num] == 0:
+                                self.cache[num] = representant
+                                cachecontents += 1
+                        except MemoryError:
+                            cachesize = cachecontents - 10
+                            print "cachesize: ", cachesize
+                            del self.cache
+                            print "emergency collect"
+                            gc.collect()
+                            self.cache = defaultdict(lambda: 0)
                 if number == representant:
                     self.outfile.write(packstruct.pack(-len(everything)))
                 else:
