@@ -86,7 +86,7 @@ class Task(object):
         self.task_size = 0
         self._get_index_translation_table()
 
-        self.timings = open(self.res("timings"), "a")
+        self.timings = open(self.res("timings"), "a", buffering=1)
         self.outfile = None
 
         self.cache = defaultdict(lambda: 0)
@@ -154,25 +154,19 @@ class Task(object):
         self.task_size -= count
 
     def inner_loop(self):
-        import gc
-
         if self.task_size == 0:
             print "already calculated everything."
             return
 
         self.outfile = open(self.res("output"), "a")
         outfile = self.outfile
-        start = time()
         neigh = self.neigh
         stats_step = max(10, self.task_size / 2000)
-
 
         packstruct = Struct("q")
 
         cachesize = self.cachesize
         cachecontents = len(self.cache)
-        cachehits = 0
-        max_cache_fill = 0
 
         print "writing out the size of the data dictionary every %d steps" % stats_step
         print "goint to calculate %d numbers." % (self.task_size)
@@ -191,9 +185,9 @@ class Task(object):
                 else:
                     outfile.write(packstruct.pack(representant))
             else:
-                cachehits += 1
-                if cachecontents > max_cache_fill:
-                    max_cache_fill = cachecontents
+                self.cachehits += 1
+                if cachecontents > self.max_cache_fill:
+                    self.max_cache_fill = cachecontents
                 cachecontents -= 1
                 val = self.cache[number]
                 del self.cache[number]
@@ -201,20 +195,20 @@ class Task(object):
 
             if index % stats_step == 0:
                 endtime, last_time = time() - last_time, time()
-                self.timings.write("%f\n" % (endtime/ stats_step ))
-
-        print "done %d steps in %s (%d cache hits - %f%%)" % (self.task_size, time() - start, cachehits, 100.0 * cachehits / self.task_size)
-        print "    that's a speed of %f steps per second" % (self.task_size / (time() - start))
-        print "      cache was filled with %d at its peak" % (max_cache_fill)
-        #print "representants ranged from %d to %d" % (self.low_repr, self.high_repr)
-        #print "biggest group: % 2d %s" % (len(self.biggest_group), self.biggest_group)
+                self.timings.write("%f\n" % ((endtime * 1000) / stats_step))
 
     def loop(self):
+        start = time()
+        self.cachehits = 0
+        self.max_cache_fill = 0
         try:
             self.inner_loop()
         finally:
             if self.outfile:
                 self.outfile.close()
+            print "done %d steps in %s (%d cache hits - %f%%)" % (self.task_size, time() - start, self.cachehits, 100.0 * self.cachehits / self.task_size)
+            print "    that's a speed of %f steps per second" % (self.task_size / (time() - start))
+            print "      cache was filled with %d at its peak" % (self.max_cache_fill)
 
 def new_main(start, end):
     print "let's go!"
