@@ -143,7 +143,7 @@ class Task(object):
         count = 0
         try:
             with open(self.res("output"), "r") as prev_output:
-                for data in self.iter_four_bytes(prev_output):
+                for data in self.iter_n_bytes(prev_output):
                     index, number = self.number_iter.next()
                     count += 1
 
