@@ -179,7 +179,7 @@ class TestCAGen:
         conf[3,6] = 1
         conf[6,2] = 1
 
-        pp = cagen.build_array_pretty_printer(conf.shape, ((1, 1), (1, 1)))
+        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((1, 1), (1, 1)))
         pp(conf)
         out, err = capsys.readouterr()
         assert out == """\
@@ -196,14 +196,14 @@ class TestCAGen:
         # test pretty-printing with left-border 2 and right-border 1
         # without any extra at the side
         conf = np.array([1,1, 0,1,0,1,1, 1])
-        pp = cagen.build_array_pretty_printer(conf.shape, ((2, 1),))
+        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((2, 1),))
         pp(conf)
         out, err = capsys.readouterr()
         assert out == """%% # ##,\n"""
 
         # test pretty-printing with left-border and right-border 3
         conf = np.array([1,1,0, 1,0,1,1,0,  1,0,1])
-        pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((0, 0),))
+        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((3, 3),), ((0, 0),))
         pp(conf)
         out, err = capsys.readouterr()
         assert out == """%%,# ## %,%\n"""
@@ -212,25 +212,25 @@ class TestCAGen:
         conf = np.array([1,1,1, 0,0,0,1,1,1, 0,0,0])
 
         # add one extra cell from beyond the border
-        pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((1, 1),))
+        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((3, 3),), ((1, 1),))
         pp(conf)
         out, err = capsys.readouterr()
         assert out == ",%%%   ###,,,%\n"
 
         # two extra cells on the left, none on the right
-        pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((2, 0),))
+        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((3, 3),), ((2, 0),))
         pp(conf)
         out, err = capsys.readouterr()
         assert out == ",,%%%   ###,,,\n"
 
         # six extra fields. this is the maximum possible
-        pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((6, 6),))
+        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((3, 3),), ((6, 6),))
         pp(conf)
         out,err = capsys.readouterr()
         assert out == "%%%,,,%%%   ###,,,%%%,,,\n"
 
         with pytest.raises(AssertionError):
-            pp = cagen.build_array_pretty_printer(conf.shape, ((3, 3),), ((7, 6),))
+            pp = cagen.utils.build_array_pretty_printer(conf.shape, ((3, 3),), ((7, 6),))
 
     def body_weave_nondeterministic_stepfunc_1d(self, inline=True):
         conf = np.ones(1000)
