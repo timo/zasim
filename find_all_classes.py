@@ -91,10 +91,12 @@ class Task(object):
 
         self.cache = defaultdict(lambda: 0)
 
-        cache_mb_size = 100
+        cache_mb_size = 80
         cache_byte_size = cache_mb_size * 1024 * 1024
         cache_entry_size = cache_byte_size / 8
         self.cachesize = cache_entry_size
+
+        self.items_done = 0
 
         self.fast_forward()
 
@@ -198,7 +200,7 @@ class Task(object):
                 self.cachehits += 1
                 if cachecontents > self.max_cache_fill:
                     self.max_cache_fill = cachecontents
-                    if cachecontents > 0.75 * self.max_cache_fill:
+                    if cachecontents > 0.75 * cachesize:
                         care_about_ordering = True
                 cachecontents -= 1
                 val = self.cache[number]
@@ -208,6 +210,8 @@ class Task(object):
             if index % stats_step == 0:
                 endtime, last_time = time() - last_time, time()
                 self.timings.write("%f\n" % ((endtime * 1000) / stats_step))
+
+            self.items_done += 1
 
     def loop(self):
         start = time()
@@ -219,8 +223,8 @@ class Task(object):
             if self.outfile:
                 self.outfile.close()
             if self.task_size != 0:
-                print "done %d steps in %s (%d cache hits - %f%%)" % (self.task_size, time() - start, self.cachehits, 100.0 * self.cachehits / self.task_size)
-                print "    that's a speed of %f steps per second" % (self.task_size / (time() - start))
+                print "done %d steps in %s (%d cache hits - %f%%)" % (self.items_done, time() - start, self.cachehits, 100.0 * self.cachehits / self.items_done)
+                print "    that's a speed of %f steps per second" % (self.items_done / (time() - start))
                 print "      cache was filled with %d at its peak" % (self.max_cache_fill)
 
 def new_main(start, end):
