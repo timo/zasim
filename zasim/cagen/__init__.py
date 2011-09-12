@@ -1,43 +1,6 @@
 # coding: utf-8
-"""This module offers the ability to slim down the specification of
-cellular automaton step functions using re-usable components.
-
-You only need to write the core computation once in C and once in python,
-the rest will be done for you by the components offered in this module.
-
-The parts the step function is decomposed into are all subclasses of
-:class:`WeaveStepFuncVisitor`. The base classes available are:
-
-  - A :class:`StateAccessor`
-
-    is responsible for writing to and reading from the configuration as
-    well as knowing what shape and size the configuration has.
-
-  - A :class:`CellLoop`
-
-    defines the order in which to loop over the configuration cells.
-
-  - A :class:`Neighbourhood`
-
-    is responsible for getting the relevant fields for each local step.
-
-  - A :class:`BorderHandler`
-
-    handles the borders of the configuration by copying over parts or writing
-    data. Maybe, in the future, it could also resize configurations on demand.
-
-  - A :class:`Computation`
-
-    handles the computation that turns the data from the neighbourhood into
-    the result that goes into the value for the next step.
-
-All of those classes are used to initialise a :class:`WeaveStepFunc` object,
-which can then target a configuration object with the method
-:meth:`~WeaveStepFunc.set_target`.
-
-.. testsetup:: *
-
-    from zasim.cagen import *
+"""This module compiles all classes from all submodules for easier and less
+verbose importing.
 """
 
 # TODO make it extra hard to change the loop variables using a neighbourhood.
@@ -64,6 +27,7 @@ from .stepfunc import *
 from .target import *
 
 def categories():
+    """Returns a dictionary mapping categories to known classes."""
     all_classes = []
     categories = {}
     look_at = WeaveStepFuncVisitor.__subclasses__()
