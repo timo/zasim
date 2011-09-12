@@ -1,11 +1,13 @@
 import new
 
 from .utils import dedent_python_code, offset_pos
+from .compatibility import CompatibilityException, one_dimension, two_dimensions
 
 from ..features import HAVE_WEAVE, HAVE_TUPLE_ARRAY_INDEX, tuple_array_index_fixup
 
 # TODO how do i get functions for pure-py-code in there without making it ugly?
 from itertools import product
+from collections import defaultdict
 
 if HAVE_WEAVE:
     from scipy import weave
@@ -34,6 +36,9 @@ class StepFunc(object):
 
     prepared = False
     """Is the step function ready?"""
+
+    features = set()
+    """The list of features from the StepFuncVisitors."""
 
     def __init__(self, loop, accessor, neighbourhood, extra_code=[],
                  target=None, size=None, **kwargs):
@@ -89,6 +94,45 @@ class StepFunc(object):
 
         if target is not None:
             self.set_target(target)
+
+        self.features = set()
+        if len(size) == 1:
+            self.features.add(one_dimension)
+        elif len(size) == 2:
+            self.features.add(two_dimensions)
+        conflicts, missing = self._check_compatibility()
+        print conflicts, missing
+        if conflicts or missing:
+            raise CompatibilityException(conflicts, missing)
+
+    def _check_compatibility(self):
+        """Check all visitors for compatibility problems.
+
+        Returns (conflicts, missing), where conflicts is a list of tuples with
+        the conflicting visitor, the feature in question and a list of visitors
+        that provide the feature and missing is a list of tuples with the
+        unsatisfied visitor and the features it's missing."""
+
+        conflicts = []
+        missing = []
+        providers = defaultdict(list)
+
+        for visitor in self.visitors:
+            print visitor, visitor.provides_features
+            self.features.update(visitor.provides_features)
+            for feature in visitor.provides_features:
+                providers[feature].append(visitor)
+
+        for visitor in self.visitors:
+            missing_features = [f for f in visitor.requires_features if f not in self.features]
+            if missing_features:
+                missing.append((visitor, missing_features))
+
+            for incompatibility in visitor.incompatible_features:
+                if incompatibility in self.features:
+                    conflicts.append((visitor, incompatibility, providers[incompatibility]))
+
+        return conflicts, missing
 
     def add_code(self, hook, code):
         """Add a snippet of C code to the section "hook".

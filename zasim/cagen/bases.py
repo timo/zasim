@@ -10,6 +10,10 @@ class StepFuncVisitor(object):
     target = None
     """The configuration object that is being targetted."""
 
+    requires_features = []
+    provides_features = []
+    incompatible_features = []
+
     def bind(self, code):
         """Bind the visitor to a StepFunc.
 

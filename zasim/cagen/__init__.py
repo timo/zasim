@@ -25,6 +25,7 @@ from .simulators import *
 from .stats import *
 from .stepfunc import *
 from .target import *
+from .compatibility import *
 
 def categories():
     """Returns a dictionary mapping categories to known classes."""
