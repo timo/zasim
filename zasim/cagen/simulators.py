@@ -90,13 +90,19 @@ class ElementarySimulator(ElementaryCagenSimulator):
             else:
                 loop = TwoDimNondeterministicCellLoop(probab=nondet)
 
+        if copy_borders:
+            if len(size) == 1:
+                border = SimpleBorderCopier()
+            elif len(size) == 2:
+                border = TwoDimSlicingBorderCopier()
+        else:
+            border = BorderSizeEnsurer()
+
         stepfunc = WeaveStepFunc(
                 loop=loop,
                 accessor=acc,
                 neighbourhood=neighbourhood,
-                extra_code=[TwoDimSlicingBorderCopier() if copy_borders else
-                                BorderSizeEnsurer(),
-                            computer] +
+                extra_code=[border, computer] +
                 ([SimpleHistogram()] if histogram else []) +
                 ([ActivityRecord()] if activity else []), target=target)
         self.computer = computer
