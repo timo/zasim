@@ -154,6 +154,6 @@ class ElementaryCagenSimulator(CagenSimulator):
     rule_number = 0
     """The rule number of the target."""
 
-    def __init__(self, step_func, target):
+    def __init__(self, step_func, target, rule_nr):
         super(ElementaryCagenSimulator, self).__init__(step_func=step_func, target=target)
-        self.rule_number = target.rule_number
+        self.rule_number = rule_nr
