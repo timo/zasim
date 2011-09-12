@@ -1,5 +1,5 @@
-:mod:`zasim.cagen.stepfunc` - The WeaveStepFunc class
-=====================================================
+:mod:`zasim.cagen.stepfunc` - The StepFunc class
+================================================
 
 .. automodule:: zasim.cagen.stepfunc
 

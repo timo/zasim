@@ -9,7 +9,7 @@ You only need to write the core computation once in C and once in python,
 the rest will be done for you by the components offered in this module.
 
 The parts the step function is decomposed into are all subclasses of
-:class:`WeaveStepFuncVisitor`. The base classes available are:
+:class:`StepFuncVisitor`. The base classes available are:
 
 :class:`CellLoop`
     defines the order in which to loop over the configuration cells.
@@ -32,9 +32,9 @@ The parts the step function is decomposed into are all subclasses of
 :class:`ExtraStats`
     compiles extra statistics, such as a histogram of the different cell states
 
-All of those classes are used to initialise a :class:`WeaveStepFunc` object,
+All of those classes are used to initialise a :class:`StepFunc` object,
 which can then target a configuration object with the method
-:meth:`WeaveStepFunc.set_target`.
+:meth:`StepFunc.set_target`.
 
 This package is split into multiple modules:
 
