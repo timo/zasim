@@ -35,11 +35,8 @@ one_dimension = "one_dimension"
 two_dimensions = "two_dimensions"
 """The configuration has two dimensions."""
 
-beta_asynchronism = "beta_asynchronism"
-"""In order to have beta-asynchronism, it's necessary to use both the
-:class:`BetaAsynchronousNeighbourhood` and the :class:`BetaAsynchronousAccessor`.
-
-This feature ensures that."""
+beta_async_neighbourhood = "beta_async_neighbourhood"
+beta_async_accessor = "beta_async_accessor"
 
 histogram = "histogram"
 """This StepFunc has a histogram."""

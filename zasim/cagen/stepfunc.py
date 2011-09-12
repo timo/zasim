@@ -89,21 +89,22 @@ class StepFunc(object):
         for code in self.visitors:
             code.bind(self)
 
-        for code in self.visitors:
-            code.visit()
-
-        if target is not None:
-            self.set_target(target)
-
         self.features = set()
         if len(size) == 1:
             self.features.add(one_dimension)
         elif len(size) == 2:
             self.features.add(two_dimensions)
         conflicts, missing = self._check_compatibility()
-        print conflicts, missing
+
         if conflicts or missing:
             raise CompatibilityException(conflicts, missing)
+
+        for code in self.visitors:
+            code.visit()
+
+        if target is not None:
+            self.set_target(target)
+
 
     def _check_compatibility(self):
         """Check all visitors for compatibility problems.
@@ -118,7 +119,6 @@ class StepFunc(object):
         providers = defaultdict(list)
 
         for visitor in self.visitors:
-            print visitor, visitor.provides_features
             self.features.update(visitor.provides_features)
             for feature in visitor.provides_features:
                 providers[feature].append(visitor)
