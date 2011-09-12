@@ -690,7 +690,7 @@ class WaitAnimationWindow(object):
 
 class StepFuncCompositionDialog(QWidget):
     """With this dialog, the user can, by selecting classes from a categorized
-    tree of classes derived from WeaveStepFuncVisitor, assemble a step
+    tree of classes derived from StepFuncVisitor, assemble a step
     function.
 
     In a later version, the user will also be able to set arguments, such as
@@ -700,7 +700,7 @@ class StepFuncCompositionDialog(QWidget):
     """The categories that can hold only a single class.
 
     These correspond closely to the keyword arguments of
-    :meth:`WeaveStepFunc.__init__` with the same name."""
+    :meth:`StepFunc.__init__` with the same name."""
 
     def __init__(self, **kwargs):
         super(StepFuncCompositionDialog, self).__init__(**kwargs)
@@ -836,7 +836,7 @@ l = %(loop)s()
 acc = %(acc)s()
 neigh = %(neigh)s()
 extra_code = %(extra)s
-sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+sim = cagen.StepFunc(loop=l, accessor=acc, neighbourhood=neigh,
                 extra_code=[extra_code], target=t)
 
 sim.gen_code()

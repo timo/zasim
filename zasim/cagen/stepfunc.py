@@ -13,8 +13,8 @@ if HAVE_WEAVE:
 
 EXTREME_PURE_PY_DEBUG = False
 
-class WeaveStepFunc(object):
-    """The WeaveStepFunc composes different parts into a functioning
+class StepFunc(object):
+    """The StepFunc composes different parts into a functioning
     step function."""
 
     neigh = None
@@ -27,7 +27,7 @@ class WeaveStepFunc(object):
     """The :class:`CellLoop` object in use."""
 
     visitors = None
-    """All :class:`WeaveStepFuncVisitor` objects."""
+    """All :class:`StepFuncVisitor` objects."""
 
     target = None
     """The configuration object that is targetted."""
@@ -47,14 +47,14 @@ class WeaveStepFunc(object):
                          the loop.
         :param neighbourhood: A :class:`Neighbourhood`, that fetches
                               neighbouring cell values into known variables.
-        :param extra_code: Further :class:`WeaveStepFuncVisitor` classes, that
+        :param extra_code: Further :class:`StepFuncVisitor` classes, that
                            add more behaviour.
                            Usually at least a :class:`BorderCopier`.
         :param target: The object to target.
         :param size: If the target is not supplied, the size has to be
                      specified here."""
 
-        super(WeaveStepFunc, self).__init__(**kwargs)
+        super(StepFunc, self).__init__(**kwargs)
 
         # those are for generated c code
         self.sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()

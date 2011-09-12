@@ -122,7 +122,7 @@ class TestCAGen:
         compute = cagen.ElementaryCellularAutomatonBase(1515361445)
         copier = cagen.SimpleBorderCopier()
 
-        sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+        sf = cagen.StepFunc(loop=l, accessor=acc, neighbourhood=neigh,
                            extra_code=[copier, compute], target=t)
 
         res = compute.pretty_print()
@@ -251,7 +251,7 @@ class TestCAGen:
 
         def make_stepfunc(target, deterministic=False):
             computer = cagen.ElementaryCellularAutomatonBase(rule=0)
-            sf = cagen.WeaveStepFunc(
+            sf = cagen.StepFunc(
                     loop=cagen.TwoDimCellLoop() if deterministic else
                           cagen.TwoDimNondeterministicCellLoop(),
                     accessor=cagen.SimpleStateAccessor(),
@@ -308,7 +308,7 @@ class TestCAGen:
         t = cagen.TestTarget(config=conf)
         computer = cagen.ElementaryCellularAutomatonBase(0)
 
-        stepfunc = cagen.WeaveStepFunc(
+        stepfunc = cagen.StepFunc(
                 loop=cagen.LinearNondeterministicCellLoop(random_generator=rand),
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.ElementaryFlatNeighbourhood(),
@@ -334,7 +334,7 @@ class TestCAGen:
         t = cagen.TestTarget(config=conf)
         computer = cagen.ElementaryCellularAutomatonBase(0)
 
-        stepfunc = cagen.WeaveStepFunc(
+        stepfunc = cagen.StepFunc(
                 loop=cagen.TwoDimNondeterministicCellLoop(random_generator=rand),
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.VonNeumannNeighbourhood(),
@@ -376,13 +376,13 @@ class TestCAGen:
                 self.code.add_py_hook("compute",
                         "result = c * 10")
 
-        sf1 = cagen.WeaveStepFunc(
+        sf1 = cagen.StepFunc(
                 loop=cagen.TwoDimCellLoop(),
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=n1,
                 target=t1,
                 extra_code=[cagen.TwoDimSlicingBorderCopier(), MyComputation()])
-        sf2 = cagen.WeaveStepFunc(
+        sf2 = cagen.StepFunc(
                 loop=cagen.TwoDimCellLoop(),
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=n2,
@@ -495,7 +495,7 @@ class TestCAGen:
         neigh = cagen.MooreNeighbourhood()
         copier = cagen.SimpleBorderCopier()
         histogram = cagen.SimpleHistogram()
-        sf = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+        sf = cagen.StepFunc(loop=l, accessor=acc, neighbourhood=neigh,
                         extra_code=[copier, compute, histogram], target=t)
 
         sf.gen_code()

@@ -1,11 +1,11 @@
-class WeaveStepFuncVisitor(object):
+class StepFuncVisitor(object):
     """Base class for step function visitor objects."""
 
     category = "base"
     """The category this object and its subclasses belong to."""
 
     code = None
-    """The :class:`WeaveStepFunc` instance this visitor is bound to."""
+    """The :class:`StepFunc` instance this visitor is bound to."""
 
     target = None
     """The configuration object that is being targetted."""
@@ -24,7 +24,7 @@ class WeaveStepFuncVisitor(object):
 
         .. note::
             Never call this function on your own.
-            This method will be called by :meth:`WeaveStepFunc.__init__`."""
+            This method will be called by :meth:`StepFunc.__init__`."""
 
     def set_target(self, target):
         """Target a CA instance
@@ -37,7 +37,7 @@ class WeaveStepFuncVisitor(object):
     def init_once(self):
         """Initialize data on the target.
 
-        This function will be called when the :class:`WeaveStepFunc` has
+        This function will be called when the :class:`StepFunc` has
         first had its target set."""
 
     def new_config(self):
@@ -48,10 +48,10 @@ class WeaveStepFuncVisitor(object):
         after all new_config hooks have been run, they are multiplied."""
 
     def build_name(self, parts):
-        """Add text to the name of the WeaveStepFunc for easy identification of
+        """Add text to the name of the StepFunc for easy identification of
         what's going on."""
 
-class StateAccessor(WeaveStepFuncVisitor):
+class StateAccessor(StepFuncVisitor):
     """A StateAccessor will supply read and write access to the state array.
 
     It also knows things about how the config space is shaped and sized and
@@ -110,7 +110,7 @@ class StateAccessor(WeaveStepFuncVisitor):
     # TODO this class needs to get a method for generating a view onto the part
     #      of the array inside the borders.
 
-class CellLoop(WeaveStepFuncVisitor):
+class CellLoop(StepFuncVisitor):
     """A CellLoop is responsible for looping over cell space and giving access
     to the current position."""
 
@@ -122,7 +122,7 @@ class CellLoop(WeaveStepFuncVisitor):
     def get_iter(self):
         """Returns an iterator for iterating over the config space in python."""
 
-class Neighbourhood(WeaveStepFuncVisitor):
+class Neighbourhood(StepFuncVisitor):
     """A Neighbourhood is responsible for getting states from neighbouring cells.
 
     :attr:`names` and :attr:`offsets` are sorted by the position of the offset,
@@ -169,20 +169,20 @@ class Neighbourhood(WeaveStepFuncVisitor):
         # this essentially unzips the pairs again.
         self.offsets, self.names = zip(*pairs)
 
-class BorderHandler(WeaveStepFuncVisitor):
+class BorderHandler(StepFuncVisitor):
     """The BorderHandler is responsible for treating the borders of the
     configuration. One example is copying the leftmost border to the rightmost
     border and vice versa or ensuring the border cells are always 0."""
 
     category = "borderhandler"
 
-class Computation(WeaveStepFuncVisitor):
+class Computation(StepFuncVisitor):
     """The Computation is responsible for calculating the result from the data
     gathered from the neighbourhood."""
 
     category = "computation"
 
-class ExtraStats(WeaveStepFuncVisitor):
+class ExtraStats(StepFuncVisitor):
     """Empty base class for histograms, activity counters, ..."""
 
     category = "extrastats"

@@ -40,7 +40,7 @@ class BaseBorderCopier(BorderSizeEnsurer):
 
     .. note::
         In order for this to work you have to use :meth:`tee_copy_hook` instead
-        of :meth:`WeaveStepFunc.add_py_hook` for creating the border fixup
+        of :meth:`StepFunc.add_py_hook` for creating the border fixup
         code, so that it can be retargetted and reused."""
     def visit(self):
         """Initialise :attr:`copy_py_code`."""

@@ -124,7 +124,7 @@ class BaseSimulator(QObject):
                                   "for %s" % (self.__class__))
 
 class CagenSimulator(BaseSimulator):
-    """This Simulator takes a :class:`WeaveStepFunc` and a :class:`TestTarget`
+    """This Simulator takes a :class:`StepFunc` and a :class:`TestTarget`
     instance and packs them together so they are compatible with the
     :class:`BaseSimulator` interface."""
 
@@ -158,7 +158,7 @@ class CagenSimulator(BaseSimulator):
         self.changed.emit()
 
     def step(self):
-        """Delegate the stepping to the :meth:`WeaveStepFunc.step` method, then
+        """Delegate the stepping to the :meth:`StepFunc.step` method, then
         emit :attr:`updated`."""
         self._step_func.step()
         self.prepared = True

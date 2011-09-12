@@ -1,11 +1,11 @@
-from .bases import WeaveStepFuncVisitor
+from .bases import StepFuncVisitor
 from .loops import LinearCellLoop, TwoDimCellLoop
 
 from random import Random
 import numpy as np
 
 
-class NondeterministicCellLoopMixin(WeaveStepFuncVisitor):
+class NondeterministicCellLoopMixin(StepFuncVisitor):
     """Deriving from a CellLoop and this Mixin will cause every cell to be
     skipped with a given probability"""
 

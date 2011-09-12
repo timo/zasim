@@ -30,7 +30,7 @@ def categories():
     """Returns a dictionary mapping categories to known classes."""
     all_classes = []
     categories = {}
-    look_at = WeaveStepFuncVisitor.__subclasses__()
+    look_at = StepFuncVisitor.__subclasses__()
 
     while len(look_at) > 0:
         item = look_at.pop()

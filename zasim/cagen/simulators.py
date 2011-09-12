@@ -7,7 +7,7 @@ from .loops import LinearCellLoop, TwoDimCellLoop
 from .border import SimpleBorderCopier, TwoDimSlicingBorderCopier, BorderSizeEnsurer
 from .stats import SimpleHistogram, ActivityRecord
 from .neighbourhoods import ElementaryFlatNeighbourhood, VonNeumannNeighbourhood, MooreNeighbourhood
-from .stepfunc import WeaveStepFunc
+from .stepfunc import StepFunc
 
 from ..simulator import ElementaryCagenSimulator, CagenSimulator
 
@@ -98,7 +98,7 @@ class ElementarySimulator(ElementaryCagenSimulator):
         else:
             border = BorderSizeEnsurer()
 
-        stepfunc = WeaveStepFunc(
+        stepfunc = StepFunc(
                 loop=loop,
                 accessor=acc,
                 neighbourhood=neighbourhood,
@@ -156,7 +156,7 @@ class GameOfLife(CagenSimulator):
         elif beta != 1 and nondet != 1:
             raise ValueError("Cannot have beta asynchronism and deterministic=False.")
 
-        stepfunc = WeaveStepFunc(
+        stepfunc = StepFunc(
                 loop=TwoDimCellLoop() if nondet == 1.0 else
                      TwoDimNondeterministicCellLoop(probab=nondet),
                 accessor=acc,

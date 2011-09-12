@@ -3,7 +3,7 @@ from .bases import ExtraStats
 import numpy as np
 
 class SimpleHistogram(ExtraStats):
-    """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
+    """Adding this class to the extra code list of a :class:`StepFunc` will
     give access to a new array in the target called "histogram". This value will
     count the amount of cells with the value used as its index."""
 
@@ -53,7 +53,7 @@ class SimpleHistogram(ExtraStats):
         parts.append("(histogram)")
 
 class ActivityRecord(ExtraStats):
-    """Adding this class to the extra code list of a :class:`WeaveStepFunc` will
+    """Adding this class to the extra code list of a :class:`StepFunc` will
     create a property called "activity" on the target. It is a two-cell
     array with the value of how many fields have changed their state in the last
     step and how many did not.
