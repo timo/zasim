@@ -903,10 +903,6 @@ def main(width=200, height=200, scale=2,
     w, h = width, height
 
     if onedim and not life:
-        onedim_rand = np.zeros((w,), int)
-        for x in range(w):
-            onedim_rand[x] = int(random.random() < white)
-
         # get a random beautiful CA
         if rule is None:
             rule=random.choice(
@@ -919,7 +915,7 @@ def main(width=200, height=200, scale=2,
         if life:
             sim_obj = cagen.GameOfLife((w, h), nondet, histogram, activity, None, beta, copy_borders)
         else:
-            sim_obj = cagen.ElementarySimulator((w, h), nondet, histogram, activity, None, None, beta, copy_borders)
+            sim_obj = cagen.ElementarySimulator((w, h), nondet, histogram, activity, rule, None, beta, copy_borders)
 
         if not life:
             print sim_obj.pretty_print()

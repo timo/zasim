@@ -79,9 +79,19 @@ class ElementarySimulator(ElementaryCagenSimulator):
         elif beta != 1 and nondet != 1:
             raise ValueError("Cannot have beta asynchronism and deterministic=False.")
 
+        if len(size) == 1:
+            if nondet == 1.0:
+                loop = LinearCellLoop()
+            else:
+                loop = LinearNondeterministicCellLoop(probab=nondet)
+        elif len(size) == 2:
+            if nondet == 1.0:
+                loop = TwoDimCellLoop()
+            else:
+                loop = TwoDimNondeterministicCellLoop(probab=nondet)
+
         stepfunc = WeaveStepFunc(
-                loop=LinearCellLoop() if nondet == 1.0 else
-                     LinearNondeterministicCellLoop(probab=nondet),
+                loop=loop,
                 accessor=acc,
                 neighbourhood=neighbourhood,
                 extra_code=[TwoDimSlicingBorderCopier() if copy_borders else
