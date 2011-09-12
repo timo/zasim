@@ -13,6 +13,17 @@ except ImportError:
         QObject = object
         print "using lightweight signal"
 
+class TargetProxy(object):
+    def __init__(self, target, attrs):
+        self.target = target
+        self.attrs = attrs
+
+    def __getattr__(self, attr):
+        if attr in self.attrs:
+            return getattr(self.target, attr)
+        else:
+            raise AttributeError("%s not in target attrs" % attr)
+
 class BaseSimulator(QObject):
     """This class serves as the base for simulator objects."""
 
@@ -59,6 +70,12 @@ class BaseSimulator(QObject):
 
     snapshot_restored = Signal()
     """Is emitted when a snapshot is restored."""
+
+    target_attrs = []
+    """The extra-attributes the target has to offer, such as histogram."""
+
+    t = TargetProxy(object(), [])
+    """A proxy object to access the target_attrs."""
 
     def get_config(self):
         """Returns a copy of the configuration space as a numpy array.
@@ -110,6 +127,7 @@ class CagenSimulator(BaseSimulator):
     """This Simulator takes a :class:`WeaveStepFunc` and a :class:`TestTarget`
     instance and packs them together so they are compatible with the
     :class:`BaseSimulator` interface."""
+
     def __init__(self, step_func, target):
         super(CagenSimulator, self).__init__()
         self._step_func = step_func
@@ -119,6 +137,8 @@ class CagenSimulator(BaseSimulator):
         self.shape = self._size
 
         self.prepared = self._step_func.prepared
+
+        self.t = TargetProxy(self._target, self._step_func.attrs)
 
     def get_config(self):
         """Return the config, sans borders."""

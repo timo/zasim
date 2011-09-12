@@ -94,7 +94,9 @@ TESTED_BINRULE = {
             [1,1,1,0,0,0,0,0,1,1],
             [1,0,1,0,0,0,0,1,1,0],
             [1,1,1,0,0,0,1,1,1,1]]}
-TESTED_BINRULE = dict((k, [np.array(arr) for arr in v]) for k, v in TESTED_BINRULE.iteritems())
+TESTED_BINRULE_WITH_BORDERS = dict((k, [np.array(arr) for arr in v]) for k, v in TESTED_BINRULE.iteritems())
+TESTED_BINRULE_WITHOUT_BORDERS = dict((k, [np.array(arr[1:-1]) for arr in v]) for k, v in TESTED_BINRULE.iteritems())
+
 GLIDER = [
     [[0,1,0,0,0],
      [0,0,1,0,0],

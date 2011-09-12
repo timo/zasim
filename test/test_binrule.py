@@ -25,7 +25,7 @@ class TestBinRule:
             assert_arrays_equal(br.get_config(), br2.get_config())
 
     def test_pure_python_only(self, tested_rule_num):
-        confs = TESTED_BINRULE[tested_rule_num]
+        confs = TESTED_BINRULE_WITH_BORDERS[tested_rule_num]
         br = ca.binRule(tested_rule_num, 10, 1, ca.binRule.INIT_ZERO)
         pretty_print_binrule(br.ruleIdx)
         br.setConf(confs[0])
@@ -36,7 +36,7 @@ class TestBinRule:
 
     @pytest.mark.skipif("not HAVE_WEAVE")
     def test_weave_only(self, tested_rule_num):
-        confs = TESTED_BINRULE[tested_rule_num]
+        confs = TESTED_BINRULE_WITH_BORDERS[tested_rule_num]
         br = ca.binRule(tested_rule_num, 10, 1, ca.binRule.INIT_ZERO)
         pretty_print_binrule(br.ruleIdx)
         br.setConf(confs[0])
