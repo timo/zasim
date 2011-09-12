@@ -59,7 +59,7 @@ class ElementarySimulator(ElementaryCagenSimulator):
             if len(size) == 1:
                 neighbourhood_class = ElementaryFlatNeighbourhood
             elif len(size) == 2:
-                if rule < 2 ** 32:
+                if rule is None or rule < 2 ** 32:
                     neighbourhood_class = VonNeumannNeighbourhood
                 else:
                     neighbourhood_class = MooreNeighbourhood
@@ -84,7 +84,7 @@ class ElementarySimulator(ElementaryCagenSimulator):
                      LinearNondeterministicCellLoop(probab=nondet),
                 accessor=acc,
                 neighbourhood=neighbourhood,
-                extra_code=[SimpleBorderCopier() if copy_borders else
+                extra_code=[TwoDimSlicingBorderCopier() if copy_borders else
                                 BorderSizeEnsurer(),
                             computer] +
                 ([SimpleHistogram()] if histogram else []) +

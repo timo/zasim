@@ -454,7 +454,6 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         self.drawing = False
         self.last_draw_pos = QPoint(0,0)
 
-
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
         display.
@@ -596,7 +595,7 @@ class HistogramExtraDisplay(BaseExtraDisplay):
         self.linepos = linepos
 
     def after_step(self):
-        value = getattr(self.sim._target, self.attribute).copy()
+        value = getattr(self.sim.t, self.attribute).copy()
         try:
             self.queue.put_nowait(value)
         except Queue.Full:
@@ -913,63 +912,18 @@ def main(width=200, height=200, scale=2,
             rule=random.choice(
              [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150])
 
-        sim = cagen.BinRule(rule=rule, size=(w,), nondet=nondet, beta=beta, activity=activity,
+        sim_obj = cagen.BinRule(rule=rule, size=(w,), nondet=nondet, beta=beta, activity=activity,
                 histogram=histogram, copy_borders=copy_borders)
 
-        sim_obj = ElementaryCagenSimulator(sim.stepfunc, sim)
-
     else:
-        twodim_rand = np.zeros((w, h), int)
-        for x, y in product(range(w), range(h)):
-            twodim_rand[x, y] = int(random.random() < white)
-
-        t = cagen.TestTarget(config=twodim_rand)
-
         if life:
-            compute = cagen.LifeCellularAutomatonBase()
-            NeighClass = cagen.MooreNeighbourhood
+            sim_obj = cagen.GameOfLife((w, h), nondet, histogram, activity, None, beta, copy_borders)
         else:
-            NeighClass = cagen.VonNeumannNeighbourhood
-            if rule is not None:
-                rule_number = rule
-            else:
-                rule_number = random.randint(0, 2 ** 32)
-
-            compute = cagen.ElementaryCellularAutomatonBase(rule=rule_number)
-            t.rule_number = rule_number # XXX this must be better.
-
-
-        if beta != 1 or nondet == 1:
-            l = cagen.TwoDimCellLoop()
-        elif nondet != 1:
-            l = cagen.TwoDimNondeterministicCellLoop(probab=nondet)
-
-        if beta != 1:
-            acc = cagen.BetaAsynchronousAccessor(probab=0.1)
-            neigh = NeighClass(Base=cagen.BetaAsynchronousNeighbourhood)
-        else:
-            acc = cagen.SimpleStateAccessor()
-            neigh = NeighClass()
-
-        extra_code = [compute]
-        extra_code.append(cagen.TwoDimSlicingBorderCopier() if copy_borders else
-                cagen.TwoDimZeroReader())
-        if histogram:
-            extra_code.append(cagen.SimpleHistogram())
-        if activity:
-            extra_code.append(cagen.ActivityRecord())
-        sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                        extra_code=extra_code, target=t)
-
-        sim.gen_code()
+            sim_obj = cagen.ElementarySimulator((w, h), nondet, histogram, activity, None, None, beta, copy_borders)
 
         if not life:
-            print compute.pretty_print()
-            print compute.rule, hex(compute.rule)
-
-            sim_obj = ElementaryCagenSimulator(sim, t)
-        else:
-            sim_obj = CagenSimulator(sim, t)
+            print sim_obj.pretty_print()
+            print sim_obj.t.rule, hex(sim_obj.rule_number)
 
     display = ZasimDisplay(sim_obj)
     display.set_scale(scale)
