@@ -27,9 +27,6 @@ class ElementarySimulator(ElementaryCagenSimulator):
         :class:`BetaAsynchronousNeighbourhood`, but set beta to a value other
         than 1, you will get a warning."""
 
-    rule_nr = None
-    """The number of the elementary cellular automaton to simulate."""
-
     rule = None
     """The lookup array corresponding to the rule number."""
 
@@ -56,7 +53,6 @@ class ElementarySimulator(ElementaryCagenSimulator):
             size = config.shape
 
         computer = ElementaryCellularAutomatonBase(rule)
-        self.rule_nr = computer.rule
         target = TestTarget(size, config)
 
         if neighbourhood is None:
@@ -97,8 +93,9 @@ class ElementarySimulator(ElementaryCagenSimulator):
         stepfunc.gen_code()
 
         self.rule = target.rule
+        rule_nr = computer.rule
 
-        super(ElementarySimulator, self).__init__(stepfunc, target, rule)
+        super(ElementarySimulator, self).__init__(stepfunc, target, rule_nr)
 
     def pretty_print(self):
         return self.computer.pretty_print()
