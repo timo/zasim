@@ -1,3 +1,8 @@
+"""
+.. testsetup::
+
+    from zasim.cagen import *
+"""
 from .bases import Neighbourhood
 from .utils import gen_offset_pos
 
