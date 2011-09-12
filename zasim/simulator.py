@@ -144,6 +144,17 @@ class CagenSimulator(BaseSimulator):
         self.prepared = True
         self.updated.emit()
 
+    def step_inline(self):
+        """Step the simulator using the weave.inline version of the code."""
+        self._step_func.step_inline()
+        self.prepared = True
+        self.updated.emit()
+
+    def step_pure_py(self):
+        """Step the simulator using the pure python code version."""
+        self._step_func.step_pure_py()
+        self.updated.emit()
+
     def __str__(self):
         return str(self._step_func)
 
