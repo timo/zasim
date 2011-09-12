@@ -68,9 +68,6 @@ class BinRule(ElementaryCagenSimulator):
     def pretty_print(self):
         return self.computer.pretty_print()
 
-    def __str__(self):
-        return str(self.stepfunc)
-
 class GameOfLife(CagenSimulator):
     """A :class:`CagenSimulator` with a target and stepfunc created
     automatically for the given parameters. The supplied life_params are passed
