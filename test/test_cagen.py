@@ -116,7 +116,7 @@ class TestCAGen:
         conf = np.zeros((10, 10), int)
         t = cagen.TestTarget(config=conf)
 
-        l = cagen.LinearCellLoop()
+        l = cagen.TwoDimCellLoop()
         acc = cagen.SimpleStateAccessor()
         neigh = cagen.VonNeumannNeighbourhood()
         compute = cagen.ElementaryCellularAutomatonBase(1515361445)
