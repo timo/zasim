@@ -22,9 +22,8 @@ Contents:
    simulator
    ca
    cagen
-   display
+   gui
    elementarytools
-   elementarygui
 
 Getting the code
 ================
