@@ -17,18 +17,11 @@ Ideas for further utilities:
  * ...
 """
 from __future__ import absolute_import
-try:
-    from PySide.QtCore import *
-    from PySide.QtGui import *
-    print "using pyside"
-except ImportError:
-    from PyQt4.QtCore import *
-    from PyQt4.QtGui import *
-    print "using pyqt4"
 
 import numpy as np
-from .elementarytools import *
-from .cagen import elementary_digits_and_values
+from ..elementarytools import *
+from ..cagen import elementary_digits_and_values
+from ..external.qt import *
 from itertools import product
 
 GAP = object()
