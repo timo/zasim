@@ -1,4 +1,4 @@
-Prebuilt CAs: the ca module
-===========================
+:mod:`zasim.ca` - Prebuilt CAs
+==============================
 
 .. automodule:: zasim.ca

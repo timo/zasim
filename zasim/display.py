@@ -454,7 +454,6 @@ class TwoDimDisplayWidget(BaseDisplayWidget):
         self.drawing = False
         self.last_draw_pos = QPoint(0,0)
 
-
     def paintEvent(self, ev):
         """Get new configurations, update the internal pixmap, refresh the
         display.
@@ -596,7 +595,7 @@ class HistogramExtraDisplay(BaseExtraDisplay):
         self.linepos = linepos
 
     def after_step(self):
-        value = getattr(self.sim._target, self.attribute).copy()
+        value = getattr(self.sim.t, self.attribute).copy()
         try:
             self.queue.put_nowait(value)
         except Queue.Full:
@@ -691,7 +690,7 @@ class WaitAnimationWindow(object):
 
 class StepFuncCompositionDialog(QWidget):
     """With this dialog, the user can, by selecting classes from a categorized
-    tree of classes derived from WeaveStepFuncVisitor, assemble a step
+    tree of classes derived from StepFuncVisitor, assemble a step
     function.
 
     In a later version, the user will also be able to set arguments, such as
@@ -701,7 +700,7 @@ class StepFuncCompositionDialog(QWidget):
     """The categories that can hold only a single class.
 
     These correspond closely to the keyword arguments of
-    :meth:`WeaveStepFunc.__init__` with the same name."""
+    :meth:`StepFunc.__init__` with the same name."""
 
     def __init__(self, **kwargs):
         super(StepFuncCompositionDialog, self).__init__(**kwargs)
@@ -837,7 +836,7 @@ l = %(loop)s()
 acc = %(acc)s()
 neigh = %(neigh)s()
 extra_code = %(extra)s
-sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
+sim = cagen.StepFunc(loop=l, accessor=acc, neighbourhood=neigh,
                 extra_code=[extra_code], target=t)
 
 sim.gen_code()
@@ -887,103 +886,103 @@ class EditWindow(QDialog):
         self.accepted.emit()
         self.close()
 
-def main(rule=None):
+def main(width=200, height=200, scale=2,
+        onedim=False,
+        beta=100, nondet=100,
+        life=False, rule=None,
+        copy_borders=True, white=50,
+        histogram=True, activity=True):
     app = QApplication(sys.argv)
 
-    scale = 3
-    w, h = 200, 200
+    if white > 1:
+        white = white / 100.
 
-    onedim, twodim = False, True
-    beta = True
-    nondet = False
-    life = True
+    beta = beta / 100.
+    nondet = nondet / 100.
 
-    if onedim:
+    w, h = width, height
+
+    if onedim and not life:
         # get a random beautiful CA
-        sim = cagen.BinRule(rule=random.choice(
-             [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150]),
-             size=(w,))
+        if rule is None:
+            rule=random.choice(
+             [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150])
 
-        sim_obj = ElementaryCagenSimulator(sim.stepfunc, sim)
-        display_a = ZasimDisplay(sim_obj)
-        display_a.set_scale(scale)
+        sim_obj = cagen.BinRule(rule=rule, size=(w,), nondet=nondet, beta=beta, activity=activity,
+                histogram=histogram, copy_borders=copy_borders)
 
-    if twodim:
-        twodim_rand = np.zeros((w, h), int)
-        for x, y in product(range(w), range(h)):
-            twodim_rand[x, y] = random.choice([0, 0, 0, 1])
-
-        t = cagen.TestTarget(config=twodim_rand)
-
+    else:
         if life:
-            compute = cagen.LifeCellularAutomatonBase()
+            sim_obj = cagen.GameOfLife((w, h), nondet, histogram, activity, None, beta, copy_borders)
         else:
-            if rule is not None:
-                rule_number = rule
-            else:
-                rule_number = random.randint(0, 2 ** 32)
-
-            compute = cagen.ElementaryCellularAutomatonBase(rule=rule_number)
-            t.rule_number = rule_number # XXX this must be better.
-
-
-        if beta or not nondet:
-            l = cagen.TwoDimCellLoop()
-        elif nondet:
-            l = cagen.TwoDimNondeterministicCellLoop(probab=0.5)
-        if life:
-            NeighClass = cagen.MooreNeighbourhood
-        else:
-            NeighClass = cagen.VonNeumannNeighbourhood
-
-        if beta:
-            acc = cagen.BetaAsynchronousAccessor(probab=0.1)
-            neigh = NeighClass(Base=cagen.BetaAsynchronousNeighbourhood)
-        else:
-            acc = cagen.SimpleStateAccessor()
-            neigh = NeighClass()
-        copier = cagen.TwoDimSlicingBorderCopier()
-        hist = cagen.SimpleHistogram()
-        activity = cagen.ActivityRecord()
-        sim = cagen.WeaveStepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                        extra_code=[copier, compute, hist, activity], target=t)
-
-        sim.gen_code()
+            sim_obj = cagen.ElementarySimulator((w, h), nondet, histogram, activity, rule, None, beta, copy_borders)
 
         if not life:
-            print compute.pretty_print()
-            print compute.rule, hex(compute.rule)
+            print sim_obj.pretty_print()
+            print sim_obj.t.rule, hex(sim_obj.rule_number)
 
-            sim_obj = ElementaryCagenSimulator(sim, t)
-        else:
-            sim_obj = CagenSimulator(sim, t)
+    display = ZasimDisplay(sim_obj)
+    display.set_scale(scale)
+    display_objects.append(display)
 
-        display_b = ZasimDisplay(sim_obj)
-        display_b.set_scale(scale)
-        display_objects.append(display_b)
+    display.control.start()
 
-        display_b.control.start()
-
-        extra_hist = HistogramExtraDisplay(sim_obj, parent=display_b, height=200, maximum= w * h)
-        extra_activity = HistogramExtraDisplay(sim_obj, attribute="activity", parent=display_b, height=200, maximum=w*h)
-
+    if histogram:
+        extra_hist = HistogramExtraDisplay(sim_obj, parent=display, height=200, maximum= w * h)
         extra_hist.show()
+        display.window.attach_display(extra_hist)
+        display.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
+
+    if activity:
+        extra_activity = HistogramExtraDisplay(sim_obj, attribute="activity", parent=display, height=200, maximum=w*h)
         extra_activity.show()
-
-
-        display_b.window.attach_display(extra_hist)
-        display_b.window.attach_display(extra_activity)
-
-        display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
-        display_b.window.addDockWidget(Qt.RightDockWidgetArea, extra_activity)
-
-    #comp_dlg = StepFuncCompositionDialog()
-    #comp_dlg.show()
+        display.window.attach_display(extra_activity)
+        display.window.addDockWidget(Qt.RightDockWidgetArea, extra_activity)
 
     sys.exit(app.exec_())
 
 if __name__ == "__main__":
-    import sys
+    import argparse
+
+    argp = argparse.ArgumentParser(
+        description="Run a 1d BinRule, a 2d Game of Life, or a 2d elementary "
+                    "cellular automaton")
+    argp.add_argument("--onedim", default=False, action="store_true",
+            help="generate a one-dimensional cellular automaton")
+    argp.add_argument("--twodim", default=True, action="store_false", dest="onedim",
+            help="generate a two-dimensional cellular automaton")
+    argp.add_argument("--life", default=False, action="store_true",
+            help="generate a conway's game of life - implies --twodim")
+
+    argp.add_argument("-x", "--width", default=200, dest="width", type=int,
+            help="the width of the image surface")
+    argp.add_argument("-y", "--height", default=200, dest="height", type=int,
+            help="the height of the image surface")
+    argp.add_argument("-z", "--scale", default=3, dest="scale", type=int,
+            help="the size of each cell of the configuration")
+    argp.add_argument("-r", "--rule", default=None, type=int,
+            help="the elementary cellular automaton rule number to use")
+    argp.add_argument("-c", "--dont-copy-borders", default=True, action="store_false", dest="copy_borders",
+            help="copy borders or just read zeros?")
+    argp.add_argument("--white", default=20, type=int,
+            help="what percentage of the cells to make white at the beginning.")
+
+    argp.add_argument("--nondet", default=100, type=int,
+            help="with what percentage should cells be executed?")
+    argp.add_argument("--beta", default=100, type=int,
+            help="with what probability should a cell succeed in exposing its "\
+                 "state to its neighbours?")
+
+    argp.add_argument("--no-histogram", default=True, action="store_false", dest="histogram",
+            help="don't display a histogram")
+    argp.add_argument("--no-activity", default=True, action="store_false", dest="activity",
+            help="don't display the activity")
+
+    args = argp.parse_args()
+
+    main(**vars(args))
+
+
     if len(sys.argv) > 1:
         if sys.argv[1].startswith("0x"):
             rule_nr = int(sys.argv[1], 16)
