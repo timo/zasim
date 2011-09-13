@@ -2,16 +2,11 @@
 cellular automaton simulators."""
 
 try:
-    from PySide.QtCore import QObject, Signal
+    from .external.qt import QObject, Signal
 except ImportError:
-    try:
-        from PyQt4.QtCore import pyqtSignal as Signal
-        from PyQt4.QtCore import QObject
-        print "using PyQt4 signal"
-    except ImportError:
-        from zasim.lightweight_signal import Signal
-        QObject = object
-        print "using lightweight signal"
+    from zasim.lightweight_signal import Signal
+    QObject = object
+    print "using lightweight signal"
 
 class TargetProxy(object):
     def __init__(self, target, attrs):
