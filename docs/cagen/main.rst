@@ -9,7 +9,7 @@ Running this module from the commandline
 
 One example usage:
 
-.. command-output:: python -m zasim.cagen.main -w 80 -r 126 --print-rule -s 30
+.. command-output:: python -m zasim.cagen.main -w 80 -r 126 --print-rule -s 30 --pure
 
 API Documentation
 -----------------
