@@ -1,7 +1,11 @@
 from .bases import CellLoop
+from .compatibility import one_dimension, two_dimensions
 
 class LinearCellLoop(CellLoop):
     """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
+
+    requires_features = [one_dimension]
+
     def get_pos(self):
         return "i"
 
@@ -24,6 +28,9 @@ class LinearCellLoop(CellLoop):
 class TwoDimCellLoop(CellLoop):
     """The TwoDimCellLoop iterates over all cells from left to right, then from
     top to bottom."""
+
+    requires_features = [two_dimensions]
+
     def get_pos(self):
         return "i", "j"
 

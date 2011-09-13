@@ -1,12 +1,16 @@
 from .neighbourhoods import SimpleNeighbourhood
 from .accessors import SimpleStateAccessor
 from .utils import gen_offset_pos
+from .compatibility import beta_async_neighbourhood, beta_async_accessor
 
 from random import Random
 
 import numpy as np
 
 class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
+    requires_features = [beta_async_accessor]
+    provides_features = [beta_async_neighbourhood]
+
     def __init__(self, *args, **kwargs):
         super(BetaAsynchronousNeighbourhood, self).__init__(*args, **kwargs)
         self.center_name = [name for name, offset in zip(self.names, self.offsets)
@@ -51,6 +55,9 @@ class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
                 "\n".join(assignments))
 
 class BetaAsynchronousAccessor(SimpleStateAccessor):
+    requires_features = [beta_async_neighbourhood]
+    provides_features = [beta_async_accessor]
+
     def __init__(self, probab=0.5, **kwargs):
         super(BetaAsynchronousAccessor, self).__init__(**kwargs)
         self.probab = probab

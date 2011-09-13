@@ -5,6 +5,7 @@
 """
 from .bases import Neighbourhood
 from .utils import gen_offset_pos
+from .compatibility import one_dimension
 
 from itertools import product
 
@@ -27,6 +28,11 @@ class SimpleNeighbourhood(Neighbourhood):
         assert len(self.names) == len(self.offsets)
         self._sort_names_offsets()
         self.recalc_bounding_box()
+
+        # if the neighbourhood isn't flat, make one_dimension incompatible
+        if len(self.offsets[0]) == 2 and any(y != 0 for (x, y) in self.offsets):
+            self.incompatible_features = [one_dimension]
+
         if name:
             self.neighbourhood_name = name
         else:

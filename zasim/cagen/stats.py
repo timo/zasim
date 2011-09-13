@@ -1,4 +1,5 @@
 from .bases import ExtraStats
+from .compatibility import histogram, activity
 
 import numpy as np
 
@@ -6,6 +7,8 @@ class SimpleHistogram(ExtraStats):
     """Adding this class to the extra code list of a :class:`StepFunc` will
     give access to a new array in the target called "histogram". This value will
     count the amount of cells with the value used as its index."""
+
+    provides_features = [histogram]
 
     def visit(self):
         super(SimpleHistogram, self).visit()
@@ -59,6 +62,9 @@ class ActivityRecord(ExtraStats):
     step and how many did not.
 
     A value of -1 stands for "no data"."""
+
+    provides_features = [activity]
+
     def visit(self):
         super(ActivityRecord, self).visit()
         if len(self.code.acc.size_names) == 1:
