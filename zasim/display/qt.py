@@ -5,7 +5,8 @@ from ..external.qt import QObject, QImage, QPainter, QPoint, QSize, QRect, Signa
 import numpy as np
 import Queue
 
-"""This module offers drawing capabilities for different formats."""
+"""This module offers drawing capabilities for any image format that QImage
+supports, such as png and jpg."""
 
 class BaseQImagePainter(QObject):
     """This is a base class for implementing renderers for configs based on
@@ -76,6 +77,11 @@ class BaseQImagePainter(QObject):
         """React to a change in the configuration that was not caused by a step
         of the cellular automaton - by a user interaction for instance."""
         self.after_step(False)
+
+    def export(self, filename):
+        if not self._image.save(filename):
+            # TODO find out what caused the error
+            raise Exception("Could not save image to file.")
 
 class LinearQImagePainter(BaseQImagePainter):
     """This class offers drawing for one-dimensional cellular automata, which
