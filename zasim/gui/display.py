@@ -5,7 +5,7 @@ from __future__ import absolute_import
 It will try importing PySide first, and if that fails PyQt. The code will
 constantly be tested with both bindings."""
 
-from .displaywidgets import HistoryDisplayWidget, TwoDimDisplayWidget
+from .displaywidgets import DisplayWidget
 from .control import ControlWidget
 from .mainwin import ZasimMainWindow
 display_objects = []
@@ -33,13 +33,7 @@ class ZasimDisplay(object):
         self.simulator = simulator
 
         if not self.display:
-            if len(simulator.shape) == 1:
-                self.display = HistoryDisplayWidget(self.simulator,
-                            self.simulator.shape[0])
-            elif len(simulator.shape) == 2:
-                self.display = TwoDimDisplayWidget(self.simulator)
-            else:
-                raise ValueError("Unsupported shape size: %d" % len(simulator.shape))
+            self.display = DisplayWidget(self.simulator)
 
         if self.control is None:
             self.control = ControlWidget(self.simulator)

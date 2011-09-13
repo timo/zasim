@@ -8,6 +8,9 @@ import Queue
 """This module offers drawing capabilities for different formats."""
 
 class BaseQImagePainter(QObject):
+
+    update = Signal(["QRect"])
+
     def __init__(self, width, height, queue_size=1, scale=1, **kwargs):
         """Initialize the BaseDisplayWidget.
 
@@ -20,7 +23,7 @@ class BaseQImagePainter(QObject):
         self._width, self._height = width, height
         self.set_scale(scale)
 
-        self.create_image()
+        self.create_image_surf()
         self._queue = Queue.Queue(queue_size)
 
         self._last_step = 0
@@ -41,12 +44,14 @@ class BaseQImagePainter(QObject):
         self._scale = scale
         self.create_image_surf()
 
+    def start_inverting_frames(self): self.invert_odd = True
+    def stop_inverting_frames(self): self.invert_odd = False
+
 class LinearQImagePainter(BaseQImagePainter):
     """This class offers drawing for one-dimensional cellular automata, which
     will fill up the display with a line that moves downwards and wraps at the
     bottom."""
 
-    update = Signal(["QRect"])
     def __init__(self, simulator, lines=None, connect=True, **kwargs):
         self._sim = simulator
         if lines is None:
@@ -86,7 +91,7 @@ class LinearQImagePainter(BaseQImagePainter):
                         pass
 
                 nconf = np.empty((w, 1, 2), np.uint8, "C")
-                if not self.invert_odd or self.odd:
+                if not self._invert_odd or self._odd:
                     nconf[...,0,0] = conf * 255
                 else:
                     nconf[...,0,0] = (1 - conf) * 255
@@ -100,7 +105,7 @@ class LinearQImagePainter(BaseQImagePainter):
                 if update_step:
                     self.last_step += 1
                     y = self.last_step % self.img_height
-                    self.odd = not self.odd
+                    self._odd = not self._odd
         except Queue.Empty:
             pass
 
@@ -129,3 +134,43 @@ class LinearQImagePainter(BaseQImagePainter):
         """React to a change in the configuration that was not caused by a step
         of the cellular automaton - by a user interaction for instance."""
         self.after_step(False)
+
+class TwoDimQImagePainter(BaseQImagePainter):
+    def __init__(self, simulator, connect=True, **kwargs):
+        self._sim = simulator
+        w, h = simulator.shape
+        super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
+
+        if connect:
+            self.connect_simulator()
+
+    def draw_conf(self):
+        try:
+            conf = self._queue.get()
+            self.conf_new = False
+            w, h = self._width, self._height
+            nconf = np.empty((w, h, 2), np.uint8, "C")
+            if not self._invert_odd or self._odd:
+                nconf[...,0] = conf * 255
+            else:
+                nconf[...,0] = 255 - conf * 255
+            nconf[...,1] = nconf[...,0]
+            self.image = QImage(nconf.data, w, h, QImage.Format_RGB444).scaled(
+                    w * self._scale, h * self._scale)
+            self._odd = not self._odd
+        except Queue.Empty:
+            pass
+
+    def connect_simulator(self):
+        self._sim.updated.connect(self.after_step)
+        self._sim.changed.connect(self.after_step)
+
+    def after_step(self):
+        conf = self._sim.get_config().copy()
+        try:
+            self._queue.put_nowait(conf)
+        except Queue.Full:
+            self._queue.get()
+            self._queue.put(conf)
+
+        self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))

@@ -4,7 +4,7 @@ from .elementary import ElementaryRuleWindow
 
 class ZasimMainWindow(QMainWindow):
     """This is a window that manages one simulator. It holds one
-    :class:`Control`, at least one :class:`BaseDisplayWidget` and any number of
+    :class:`Control`, at least one :class:`DisplayWidget` and any number of
     additional views embedded in QDockWidgets."""
 
     control = None
@@ -20,10 +20,10 @@ class ZasimMainWindow(QMainWindow):
     """Additional displays in docks."""
 
 
-    display_attached = Signal(["BaseDisplayWidget"])
+    display_attached = Signal(["DisplayWidget"])
     """Emitted when a new display has been attached"""
 
-    display_detached = Signal(["BaseDisplayWidget"])
+    display_detached = Signal(["DisplayWidget"])
     """Emitted when a display has been detached"""
 
     def __init__(self, simulator, display, control=None, **kwargs):
@@ -31,7 +31,7 @@ class ZasimMainWindow(QMainWindow):
         control widget.
 
         :param simulator: The simulator object to use.
-        :param display: A :class:`BaseDisplayWidget` instance.
+        :param display: A :class:`DisplayWidget` instance.
         :param control: Optionally, a :class:`ControlWidget` instance."""
         super(ZasimMainWindow, self).__init__(**kwargs)
 
@@ -57,9 +57,6 @@ class ZasimMainWindow(QMainWindow):
         layout.addWidget(self.control)
 
         self.setCentralWidget(central_widget)
-
-        self.simulator.updated.connect(self.display.after_step)
-        self.simulator.changed.connect(self.display.conf_changed)
 
         self.control.start_inverting_frames.connect(self.display.start_inverting_frames)
         self.control.stop_inverting_frames.connect(self.display.stop_inverting_frames)
