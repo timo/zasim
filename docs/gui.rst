@@ -11,10 +11,10 @@ documentation.
 .. toctree::
 
     gui/main
+    gui/display
     gui/bases
     gui/mainwin
     gui/control
-    gui/display
     gui/displaywidgets
     gui/histogram
     gui/stepfunc
