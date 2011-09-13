@@ -9,49 +9,72 @@ class BaseConsolePainter(QObject):
     NO_DATA = " "
     PALETTE = [" ", "#", "-", ";"]
 
-    def __init__(self, simulator, extra=None):
+    def __init__(self, simulator, extra=None, connect=True, auto_output=True, **kwargs):
         """Initialise the painter.
 
         :param simulator: The simulator to use.
         """
+        super(BaseConsolePainter, self).__init__(**kwargs)
         self._sim = simulator
         self._data = []
         self._last_conf = None
+        self._auto_output = auto_output
+
+        if connect:
+            self.connect_simulator()
+
+    def connect_simulator(self):
+        self._sim.changed.connect(self.conf_changed)
+        self._sim.updated.connect(self.after_step)
 
     def after_step(self, update_step=True):
         self._last_conf = self._sim.get_config().copy()
-        self.draw_conf()
+        self.draw_conf(update_step)
+        if self._auto_output:
+            print str(self)
+
+    def conf_changed(self):
+        self.after_step(False)
+
+    def __str__(self):
+        return "\n".join(self._data + [""])
+
 
 class LinearConsolePainter(BaseConsolePainter):
+    """This painter draws the configs as they happen, newer configs pushing
+    older configs out through the top."""
+
     NO_DATA = " "
     PALETTE = [" ", "#", "-", ";"]
-    def __init__(self, simulator, lines):
-        super(LinearConsolePainter, self).__init__(simulator)
+    def __init__(self, simulator, lines, **kwargs):
+        super(LinearConsolePainter, self).__init__(simulator, **kwargs)
 
         self._lines = lines
         self._data = [self.NO_DATA * self._sim.shape[0]]
 
-    def draw_conf(self):
+    def draw_conf(self, update_step=True):
         newline = "".join(self.PALETTE[value] for value in self._last_conf)
-        if len(self._data) == self._lines:
+        if len(self._data) == self._lines and update_step:
             self._data.pop(0)
+        elif update_step:
+            self._data.pop(-1)
         self._data.append(newline)
-
-    def __str__(self):
-        return "\n".join(self._data + [""])
 
     def export(self, filename):
         with open(filename, "w") as out:
             out.write("\n".join(self._data + [""]))
 
+
 class TwoDimConsolePainter(BaseConsolePainter):
-    def __init__(self, simulator, lines):
-        super(LinearConsolePainter, self).__init__(simulator)
+    """This painter always draws the most current config."""
+
+    def __init__(self, simulator, lines, **kwargs):
+        super(LinearConsolePainter, self).__init__(simulator, **kwargs)
 
         self._data = [[self.NO_DATA * self._sim.shape[0]]
                       for i in range(self._sim.shape[1])]
 
-    def draw_conf(self):
+    def draw_conf(self, update_step=True):
         self._data = []
         for line in self._last_conf:
             newline = "".join(self.PALETTE[value] for value in line)
