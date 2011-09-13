@@ -80,7 +80,7 @@ if __name__ == "__main__":
             help="the height of the image surface")
     argp.add_argument("-z", "--scale", default=3, dest="scale", type=int,
             help="the size of each cell of the configuration")
-    argp.add_argument("-r", "--rule", default=None, type=int,
+    argp.add_argument("-r", "--rule", default=None, type=str,
             help="the elementary cellular automaton rule number to use")
     argp.add_argument("-c", "--dont-copy-borders", default=True, action="store_false", dest="copy_borders",
             help="copy borders or just read zeros?")
@@ -100,14 +100,7 @@ if __name__ == "__main__":
 
     args = argp.parse_args()
 
+    if args.rule.startswith("0x"):
+        args.rule = int(args.rule, 16)
+
     main(**vars(args))
-
-
-    if len(sys.argv) > 1:
-        if sys.argv[1].startswith("0x"):
-            rule_nr = int(sys.argv[1], 16)
-        else:
-            rule_nr = int(sys.argv[1])
-        main(rule_nr)
-    else:
-        main()
