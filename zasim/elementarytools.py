@@ -12,7 +12,7 @@ the table-like step functions of elementary cellular automatons.
 
 """
 from __future__ import absolute_import
-from .cagen import elementary_digits_and_values, rule_nr_to_rule_arr
+from .cagen.utils import elementary_digits_and_values, rule_nr_to_rule_arr
 
 neighbourhood_actions = {}
 def neighbourhood_action(name):
@@ -80,11 +80,15 @@ def permutation_to_index_map(neighbourhood, permutation, base=2):
     return index_map
 
 def apply_index_map_values(digits_and_values, index_map):
-    return [digits_and_values[index_map[i]] for i, _ in enumerate(digits_and_values)]
+    new = [value.copy() for value in digits_and_values]
+    for i, _ in enumerate(digits_and_values):
+        new[index_map[i]]["result_value"] = digits_and_values[i]["result_value"]
+
+    return new
 
 def apply_index_map(results, index_map):
-    if isinstance(results, dict):
-        return apply_index_map_values(results)
+    if isinstance(results, list):
+        return apply_index_map_values(results, index_map)
     return [results[index_map[i]] for i in range(len(results))]
 
 def flip_offset_to_permutation(neighbourhood, permute_func):

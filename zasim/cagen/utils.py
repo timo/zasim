@@ -51,6 +51,9 @@ def dedent_python_code(code):
             resultlines.extend(lines[1:])
     return "\n".join(resultlines)
 
+def rule_nr_to_rule_arr(number, digits, base=2):
+    return [int(number & (base ** index) > 0) for index in range(digits)]
+
 def elementary_digits_and_values(neighbourhood, base, rule_arr=None):
     """From a neighbourhood, the base of the values used and the array that
     holds the results for each combination of neighbourhood values, create a
