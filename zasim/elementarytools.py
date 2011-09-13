@@ -87,7 +87,7 @@ def apply_index_map_values(digits_and_values, index_map):
     return new
 
 def apply_index_map(results, index_map):
-    if isinstance(results, list):
+    if isinstance(results[0], dict):
         return apply_index_map_values(results, index_map)
     return [results[index_map[i]] for i in range(len(results))]
 
@@ -116,14 +116,14 @@ def mirror_by_axis(neighbourhood, axis=[0]):
 @neighbourhood_action("flip vertically")
 def flip_v(neighbourhood, results, cache={}):
     if neighbourhood not in cache:
-        cache[neighbourhood] = mirror_by_axis(neighbourhood, [0])
+        cache[neighbourhood] = mirror_by_axis(neighbourhood, [1])
 
     return apply_index_map(results, cache[neighbourhood])
 
 @neighbourhood_action("flip horizontally")
 def flip_h(neighbourhood, results, cache={}):
     if neighbourhood not in cache:
-        cache[neighbourhood] = mirror_by_axis(neighbourhood, [1])
+        cache[neighbourhood] = mirror_by_axis(neighbourhood, [0])
     return apply_index_map(results, cache[neighbourhood])
 
 @neighbourhood_action("rotate clockwise")
