@@ -75,7 +75,7 @@ class LinearQImagePainter(BaseQImagePainter):
         scale = self._scale
         peek = None
         try:
-            painter = QPainter(self.image)
+            painter = QPainter(self._image)
             while rendered < min(100, self.img_height):
                 update_step, conf = peek or self._queue.get_nowait()
 
@@ -97,8 +97,8 @@ class LinearQImagePainter(BaseQImagePainter):
                     nconf[...,0,0] = (1 - conf) * 255
                 nconf[...,1] = nconf[...,0]
 
-                image = QImage(nconf.data, w, 1, QImage.Format_RGB444).scaled(w * scale, scale)
-                painter.drawImage(QPoint(0, y * scale), image)
+                _image = QImage(nconf.data, w, 1, QImage.Format_RGB444).scaled(w * scale, scale)
+                painter.drawImage(QPoint(0, y * scale), _image)
 
                 self.queued_steps -= 1
                 rendered += 1
@@ -146,7 +146,7 @@ class TwoDimQImagePainter(BaseQImagePainter):
 
     def draw_conf(self):
         try:
-            conf = self._queue.get()
+            conf = self._queue.get_nowait()
             self.conf_new = False
             w, h = self._width, self._height
             nconf = np.empty((w, h, 2), np.uint8, "C")
@@ -155,7 +155,7 @@ class TwoDimQImagePainter(BaseQImagePainter):
             else:
                 nconf[...,0] = 255 - conf * 255
             nconf[...,1] = nconf[...,0]
-            self.image = QImage(nconf.data, w, h, QImage.Format_RGB444).scaled(
+            self._image = QImage(nconf.data, w, h, QImage.Format_RGB444).scaled(
                     w * self._scale, h * self._scale)
             self._odd = not self._odd
         except Queue.Empty:

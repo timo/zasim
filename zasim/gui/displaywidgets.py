@@ -1,7 +1,7 @@
-from ..external.qt import QGLWidget, QPainter, QPoint
+from ..external.qt import QWidget, QPainter, QPoint
 from ..display import LinearQImagePainter, TwoDimQImagePainter
 
-class DisplayWidget(QGLWidget):
+class DisplayWidget(QWidget):
     """A Display widget for one- and twodimensional configs.
 
     Based on zasim.display."""
@@ -52,16 +52,22 @@ class DisplayWidget(QGLWidget):
         else:
             raise ValueError("Simulators with %d dimensions are not supported for display" % len(shape))
 
-
         self._scale = scale
+        self._width = width
+        self._height = height
+
+        self.display.update.connect(self.update)
 
     def start_inverting_frames(self): self.display.start_inverting_frames()
     def stop_inverting_frames(self): self.display.stop_inverting_frames()
     def set_scale(self, scale):
         self._scale = scale
         self.display.set_scale(scale)
+        self.setFixedSize(self._width * scale, self._height * scale)
 
     def paintEvent(self, event):
+        self.display.draw_conf()
+
         copier = QPainter(self)
         copier.drawImage(QPoint(0, 0), self.display._image)
         del copier
@@ -77,7 +83,7 @@ class DisplayWidget(QGLWidget):
         self.drawing = False
 
     def mouseMoveEvent(self, event):
-        new_draw_pos = (event.x() / self.img_scale, event.y() / self.img_scale)
+        new_draw_pos = (event.x() / self._scale, event.y() / self._scale)
         if len(self._simulator.shape) == 1:
             if self.last_draw_pos[0] != new_draw_pos[0]:
                 self.sim.set_config_value(new_draw_pos[0])
