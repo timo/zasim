@@ -6,7 +6,7 @@ import pytest
 class TestCompatibility:
     def test_onedim_loop_twodim_conf(self):
         with pytest.raises(cagen.CompatibilityException):
-            sf = cagen.WeaveStepFunc(
+            sf = cagen.StepFunc(
                     loop=cagen.LinearCellLoop(),
                     accessor=cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
@@ -15,7 +15,7 @@ class TestCompatibility:
 
     def test_twodim_loop_onedim_conf(self):
         with pytest.raises(cagen.CompatibilityException):
-            sf = cagen.WeaveStepFunc(
+            sf = cagen.StepFunc(
                     loop=cagen.TwoDimCellLoop(),
                     accessor = cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
@@ -24,7 +24,7 @@ class TestCompatibility:
 
     def test_onedim_conf_twodim_neighbourhood(self):
         with pytest.raises(cagen.CompatibilityException):
-            sf = cagen.WeaveStepFunc(
+            sf = cagen.StepFunc(
                     loop=cagen.LinearCellLoop(),
                     accessor = cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
@@ -33,7 +33,7 @@ class TestCompatibility:
 
     def test_incomplete_beta_async(self):
         with pytest.raises(cagen.CompatibilityException):
-            sf = cagen.WeaveStepFunc(
+            sf = cagen.StepFunc(
                     loop=cagen.LinearCellLoop(),
                     accessor = cagen.BetaAsynchronousAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
@@ -41,7 +41,7 @@ class TestCompatibility:
                     size=(100,))
 
         with pytest.raises(cagen.CompatibilityException):
-            sf = cagen.WeaveStepFunc(
+            sf = cagen.StepFunc(
                     loop=cagen.LinearCellLoop(),
                     accessor = cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(Base=cagen.BetaAsynchronousNeighbourhood),
