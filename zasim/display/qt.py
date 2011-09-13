@@ -8,16 +8,22 @@ import Queue
 """This module offers drawing capabilities for different formats."""
 
 class BaseQImagePainter(QObject):
+    """This is a base class for implementing renderers for configs based on
+    QImage."""
 
     update = Signal(["QRect"])
+    """This signal will be emitted when the configuration has changed.
+
+    Its first argument is the area of change as a QRect."""
 
     def __init__(self, width, height, queue_size=1, scale=1, **kwargs):
-        """Initialize the BaseDisplayWidget.
+        """Initialize the BaseQImagePainter.
 
         :param width: The width of the image to build.
         :param height: The height of the image to build.
         :param queue_size: The amount of histories that may pile up before
                            forcing a redraw.
+        :param scale: The scale for the image.
         """
         super(BaseQImagePainter, self).__init__(**kwargs)
         self._width, self._height = width, height
@@ -53,6 +59,13 @@ class LinearQImagePainter(BaseQImagePainter):
     bottom."""
 
     def __init__(self, simulator, lines=None, connect=True, **kwargs):
+        """Initialise the LinearQImagePainter.
+
+        :param simulator: The simulator to use.
+        :param lines: The number of lines to display at once.
+        :param connect: Should the painter be connected to the simulators
+                        change signals?
+        """
         self._sim = simulator
         if lines is None:
             lines = simulator.shape[0]
@@ -136,7 +149,14 @@ class LinearQImagePainter(BaseQImagePainter):
         self.after_step(False)
 
 class TwoDimQImagePainter(BaseQImagePainter):
+    """This class offers rendering a two-dimensional simulator config to
+    a QImage"""
     def __init__(self, simulator, connect=True, **kwargs):
+        """Initialise the TwoDimQImagePainter.
+
+        :param simulator: The simulator to use.
+        :param connect: Connect the painter to the simulators change signals?
+        """
         self._sim = simulator
         w, h = simulator.shape
         super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
