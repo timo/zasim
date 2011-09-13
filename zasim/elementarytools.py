@@ -22,7 +22,7 @@ def neighbourhood_action(name):
     return appender
 
 def digits_and_values_to_rule_nr(digits_and_values, base=2):
-    if isinstance(digits_and_values, dict):
+    if isinstance(digits_and_values[0], dict):
         digits_and_values = [val["result_value"] for val in digits_and_values]
     num = 0
     for digit, value in enumerate(digits_and_values):
@@ -56,7 +56,13 @@ def minimize_rule_values(neighbourhood, digits_and_values):
 
 @neighbourhood_action("flip all bits")
 def flip_all(neighbourhood, results, base=2):
-    return [base - 1 - res for res in results]
+    if isinstance(results[0], dict):
+        nres = [val.copy() for val in results]
+        for val in nres:
+            val["result_value"] = base - 1 - val["result_value"]
+        return nres
+    else:
+        return [base - 1 - res for res in results]
 
 def permutation_to_index_map(neighbourhood, permutation, base=2):
     """Figure out from the given neighbourhood and the permutation what

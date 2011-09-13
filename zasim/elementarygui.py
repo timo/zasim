@@ -323,7 +323,7 @@ class ElementaryRuleWindow(QWidget):
         return self.rule_nr
 
     def minimize_rule_number(self):
-        best_num, (best_route, result), _ = minimize_rule_number(self.neighbourhood, self.digits_and_values)
+        best_num, (best_route, result), _ = minimize_rule_values(self.neighbourhood, self.digits_and_values)
         if best_num == self.rule_nr:
             QMessageBox.information(self, "No optimization found",
                     """This rule set is already the lowest I can make out of it.""")
@@ -335,9 +335,8 @@ class ElementaryRuleWindow(QWidget):
                     defaultButton=QMessageBox.Ok)
             if okay == QMessageBox.Ok:
                 for num, data in enumerate(result):
-                    val = data["result_value"]
-                    self.n_r_widgets[num].result_widget.set_value(val)
-                self.digits_and_values = result
+                    self.n_r_widgets[num].result_widget.set_value(data)
+                self.digits_and_values = elementary_digits_and_values(self.neighbourhood, self.base, result)
                 self.recalculate_rule_number()
 
     def do_neighbourhood_action(self, action):
