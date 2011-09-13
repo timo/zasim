@@ -1,4 +1,7 @@
 from ..external.qt import *
+import numpy as np
+from itertools import product
+import random
 
 class ControlWidget(QWidget):
     """Control a simulator with buttons or from the interactive console."""
