@@ -85,10 +85,10 @@ class DisplayWidget(QWidget):
 
     def mouseMoveEvent(self, event):
         new_draw_pos = (event.x() / self._scale, event.y() / self._scale)
-        if len(self._simulator.shape) == 1:
+        if len(self._sim.shape) == 1:
             if self.last_draw_pos[0] != new_draw_pos[0]:
-                self.sim.set_config_value(new_draw_pos[0])
+                self._sim.set_config_value(new_draw_pos[0])
         else:
             if self.last_draw_pos != new_draw_pos:
-                self.sim.set_config_value(new_draw_pos)
+                self._sim.set_config_value(new_draw_pos)
 

@@ -16,7 +16,7 @@ class BaseQImagePainter(QObject):
 
     Its first argument is the area of change as a QRect."""
 
-    def __init__(self, width, height, queue_size=1, scale=1, **kwargs):
+    def __init__(self, width, height, queue_size=1, scale=1, connect=True, **kwargs):
         """Initialize the BaseQImagePainter.
 
         :param width: The width of the image to build.
@@ -24,6 +24,7 @@ class BaseQImagePainter(QObject):
         :param queue_size: The amount of histories that may pile up before
                            forcing a redraw.
         :param scale: The scale for the image.
+        :param connect: Connect the update signals from the simulator?
         """
         super(BaseQImagePainter, self).__init__(**kwargs)
         self._width, self._height = width, height
@@ -38,6 +39,9 @@ class BaseQImagePainter(QObject):
         self._invert_odd = False
         self._odd = False
 
+        if connect:
+            self.connect_simulator()
+
     def create_image_surf(self):
         """Create the image surface when the display is created."""
         self._image = QImage(self._width * self._scale,
@@ -50,8 +54,27 @@ class BaseQImagePainter(QObject):
         self._scale = scale
         self.create_image_surf()
 
+    def after_step(self, update_step=True):
+        """Implement this in a subclass to fetch the config from the simulator.
+
+        :param update_step: Was this update caused by a step or just a change?
+        """
+
+    def draw_conf(self):
+        """Get the conf/confs enqueued/set by `after_step` and draw them to
+        `_image`."""
+
     def start_inverting_frames(self): self._invert_odd = True
     def stop_inverting_frames(self): self._invert_odd = False
+
+    def connect_simulator(self):
+        self._sim.changed.connect(self.conf_changed)
+        self._sim.updated.connect(self.after_step)
+
+    def conf_changed(self):
+        """React to a change in the configuration that was not caused by a step
+        of the cellular automaton - by a user interaction for instance."""
+        self.after_step(False)
 
 class LinearQImagePainter(BaseQImagePainter):
     """This class offers drawing for one-dimensional cellular automata, which
@@ -74,12 +97,6 @@ class LinearQImagePainter(BaseQImagePainter):
                 simulator.shape[0], lines, lines,
                 **kwargs)
 
-        if connect:
-            self.connect_simulator()
-
-    def connect_simulator(self):
-        self._sim.changed.connect(self.conf_changed)
-        self._sim.updated.connect(self.after_step)
 
     def draw_conf(self):
         rendered = 0
@@ -124,29 +141,14 @@ class LinearQImagePainter(BaseQImagePainter):
 
     def after_step(self, update_step=True):
         conf = self._sim.get_config().copy()
-        try:
-            self._queue.put_nowait(conf)
-        except Queue.Full:
-            # the queue is initialised to hold as much lines as the
-            # screen does. if we have more changes queued up than can
-            # fit on the screen, we can just skip some of them.
+        if self._queue.full():
             self._queue.get()
-            self._queue.put((update_step, conf))
-            # theoretically, in this case, the queued steps var would
-            # have to be treated in a special way so that the update
-            # line wanders around so that it still works, but
-            # since the whole screen will get updated anyway, we
-            # don't need to care at all.
+        self._queue.put((update_step, conf))
 
         self._queued_steps += 1
         self.update.emit(QRect(
             QPoint(0, ((self.last_step + self.queued_steps - 1) % self.img_height) * self.img_scale),
             QSize(self.img_width * self.img_scale, self.img_scale)))
-
-    def conf_changed(self):
-        """React to a change in the configuration that was not caused by a step
-        of the cellular automaton - by a user interaction for instance."""
-        self.after_step(False)
 
 class TwoDimQImagePainter(BaseQImagePainter):
     """This class offers rendering a two-dimensional simulator config to
@@ -166,7 +168,7 @@ class TwoDimQImagePainter(BaseQImagePainter):
 
     def draw_conf(self):
         try:
-            conf = self._queue.get_nowait()
+            update_step, conf = self._queue.get_nowait()
             self.conf_new = False
             w, h = self._width, self._height
             nconf = np.empty((w, h, 2), np.uint8, "C")
@@ -177,20 +179,15 @@ class TwoDimQImagePainter(BaseQImagePainter):
             nconf[...,1] = nconf[...,0]
             self._image = QImage(nconf.data, w, h, QImage.Format_RGB444).scaled(
                     w * self._scale, h * self._scale)
-            self._odd = not self._odd
+            if update_step:
+                self._odd = not self._odd
         except Queue.Empty:
             pass
 
-    def connect_simulator(self):
-        self._sim.updated.connect(self.after_step)
-        self._sim.changed.connect(self.after_step)
-
-    def after_step(self):
+    def after_step(self, update_step=True):
         conf = self._sim.get_config().copy()
-        try:
-            self._queue.put_nowait(conf)
-        except Queue.Full:
+        if not self._queue.empty():
             self._queue.get()
-            self._queue.put(conf)
+        self._queue.put((update_step, conf))
 
         self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
