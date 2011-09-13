@@ -20,6 +20,7 @@ Contents:
    :maxdepth: 2
 
    simulator
+   display
    ca
    cagen
    gui
