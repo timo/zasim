@@ -4,7 +4,7 @@ from ..display.qt import LinearQImagePainter, TwoDimQImagePainter
 class DisplayWidget(QWidget):
     """A Display widget for one- and twodimensional configs.
 
-    Based on zasim.display."""
+    Based on `zasim.display.qt`"""
 
     def __init__(self, simulator, width=None, height=None, **kwargs):
         """Initialize the DisplayWidget.
