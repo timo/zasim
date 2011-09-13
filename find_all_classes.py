@@ -1,137 +1,248 @@
-from zasim.elementarytools import minimize_rule_number
-from zasim.cagen import elementary_digits_and_values
+"""
+Find all Classes
+================
+
+Given a neighbourhood and a set of "equivalency operations", this script finds
+out, how many classes of really different rules there are.
+
+Chunking up the work
+====================
+
+Since the only operation that changes the amount of bits set in the
+config is the bit flip, we remove that one from the "interesting" operations.
+Then, we chunk up the complete work into big chunks:
+
+ - all 32 bit integers with 1 bit set
+ - all 32 bit integers with 2 bits set
+ - ...
+ - all 32 bit integers with 16 bits set
+
+:meth:`iterate_fixed_bitnum` offers an iterator over all numbers with
+M bits, of which m bits are set. In the first step, it will be used to
+generate a list of all numbers in the interesting chunk (or get it from
+disk), as well as a translation table for later aiding in reading out the
+results of the computation, that will be "compressed" into one file per
+chunk."""
+
+from zasim.elementarytools import minimize_rule_number, neighbourhood_actions
 from zasim import cagen
-import numpy as np
-from time import time, sleep
+
+from struct import Struct
+from time import time
 import os
-import multiprocessing
-import Queue
 
-filepath = "find_results.txt"
+from collections import defaultdict
 
-neigh = cagen.VonNeumannNeighbourhood()
-rule = np.zeros(2 ** len(neigh.offsets), dtype=np.dtype("i"))
-maximum_number = 2 ** (2 ** len(neigh.offsets))
-try:
-    with open(filepath, "r") as old_results:
-        old_results.seek(-1000, os.SEEK_END)
-        lastdata = old_results.read().replace("\n", "<")
-        numbers = lastdata.split("<")
-        numbers = map(int, numbers)
-        start_num = max(numbers)
-except IOError:
-    start_num = maximum_number
+# we don't want bits to be flipped when searching for equivalent CAs.
+del neighbourhood_actions["flip all bits"]
 
+def fixed_bits(M, m):
+    """Iterate over all numbers with M bits, of which m are set to 1.
+    This iterates in order from smallest to biggest."""
+    bit_position = list(range(m))
+    num = int("1" * m, 2)
+    yield num
+    while bit_position[-1] != M:
+        # find the lowest bit that can move up one
+        for pos in range(m):
+            if pos == m - 1 or bit_position[pos + 1] != bit_position[pos] + 1:
+                # found a bit to move, move it.
+                bit_position[pos] += 1
 
-print "resuming from %d" % (start_num)
+                # rewind all the lower bits
+                bit_position[:pos] = range(pos)
+                break
 
-known_bits = multiprocessing.Array("B", int(maximum_number / 8 + 10), lock=False)
-print "array len is", len(known_bits)
-program_running = multiprocessing.Value('f', 1)
-array_lock = multiprocessing.RLock()
+        if bit_position[-1] == M:
+            return
 
-def set_bits(bits):
-    with array_lock:
-        for bit in bits:
-            known_bits[bit / 8] |= 1 >> (bit % 8)
+        # generate the number from the bits
+        lastnum = num
+        num = 0
+        for pos in range(m):
+            num += 2 ** bit_position[pos]
 
-def ask_bit(bit):
-    with array_lock:
-        return (known_bits[bit / 8] & (1 >> (bit % 8))) > 0
+        assert lastnum < num
 
-def find_old_bits():
-    try:
-        print "going to fill up the known_bits array from old data."
-        starttime = time()
-        with open(filepath, "r") as old_results:
+        yield num
+
+class Task(object):
+    def __init__(self, neighbourhood, bits_set, taskname=None, base=2):
+        """Create a task for finding all equivalency classes of the given
+        neighbourhood out of all those numbers that have `bits_set` bits set."""
+
+        self.neigh = neighbourhood
+        self.base = base
+        self.digits = base ** len(self.neigh.offsets)
+        self.bits_set = bits_set
+
+        if taskname is None:
+            self.taskname = neighbourhood.__name__
+        else:
+            self.taskname = taskname
+
+        self.taskname += "_%02d" % (self.bits_set)
+
+        self.task_size = 0
+        self._get_index_translation_table()
+
+        self.timings = open(self.res("timings"), "a", buffering=1)
+        self.outfile = None
+
+        self.cache = defaultdict(lambda: 0)
+
+        cache_mb_size = 80
+        cache_byte_size = cache_mb_size * 1024 * 1024
+        cache_entry_size = cache_byte_size / 8
+        self.cachesize = cache_entry_size
+
+        self.items_done = 0
+
+        self.fast_forward()
+
+    def res(self, name):
+        """generete a resource filename for the given name"""
+        return self.taskname + "_" + name
+
+    def _get_index_translation_table(self):
+        """Trying to validate/create the index table."""
+        start = time()
+        struct = Struct("I")
+        try:
+            with open(self.res("trans_table"), "r") as table:
+                table.seek(-4, os.SEEK_END)
+                position = table.tell()
+                self.task_size = position / 4
+                result = table.read(4)
+            result = struct.unpack(result)[0]
+            if result != 0:
+                print "index translation table was incomplete. regenerating!"
+                print "wasted %f seconds" % (time() - start)
+                start = time()
+                raise IOError
+            print "validated index file from hard drive"
+        except IOError:
             count = 0
-            for line in old_results:
-                numbers = line.strip().split("<")
-                numbers = map(int, numbers)
-                numbers = [num for num in numbers if num < start_num]
-                set_bits(numbers)
-                count += 1
-        print "done! yay. took me %s seconds for %d lines" % (time() - starttime, count)
-    except IOError:
-        print "could not fill up the known_bits array."
+            with open(self.res("trans_table"), "w") as table:
+                for num in fixed_bits(self.digits, self.bits_set):
+                    table.write(struct.pack(num))
+                    count += 1
+                # add a "finished" zero-fourbyte
+                table.write(struct.pack(0))
+            self.task_size = count
+            print "wrote index translation table to file"
 
-def deal_with_range(start, stop, skip, data_queue):
-    cache_hits = 0
-    starttime = time()
+        print "took %f seconds for index translation table" % (time() - start)
 
-    for rule_nr in range(start, stop, skip):
-        if ask_bit(rule_nr):
-            cache_hits += 1
-            continue
-        for digit in range(len(rule)):
-            if rule_nr & (2 ** digit) > 0:
-                rule[digit] = 1
-            else:
-                rule[digit] = 0
-        dav = elementary_digits_and_values(neigh, 2, rule)
-        lower, (route, _), cache = minimize_rule_number(neigh, dav)
-        if lower < rule_nr:
-            nom = cache.keys()
-            set_bits(nom)
-            data_queue.put(nom)
+    def iter_n_bytes(self, stream, byte_c=8):
+        text = stream.read(byte_c)
+        while text != "":
+            yield text
+            text = stream.read(byte_c)
 
-    print "range(%d, %d, %d) took %s - %d cache hits" % (start, stop, skip, time() - starttime, cache_hits)
+    def fast_forward(self):
+        print "attempting fast_forward"
+        self.number_iter = enumerate(fixed_bits(self.digits, self.bits_set))
+        count = 0
+        try:
+            with open(self.res("output"), "r") as prev_output:
+                for data in self.iter_n_bytes(prev_output):
+                    index, number = self.number_iter.next()
+                    count += 1
 
-def master():
-    find_old_bits()
-    def write_out_results(queue):
-        with open(filepath, "a") as results:
-            while program_running.value > 0:
+        except IOError:
+            print "fast_forward encountered IOError."
+        print "fast-forwarded %d entries" % count
+        self.task_size -= count
+
+    def inner_loop(self):
+        if self.task_size == 0:
+            print "already calculated everything."
+            return
+
+        self.outfile = open(self.res("output"), "a")
+        outfile = self.outfile
+        neigh = self.neigh
+        stats_step = max(10, self.task_size / 2000)
+
+        packstruct = Struct("q")
+
+        cachesize = self.cachesize
+        cachecontents = len(self.cache)
+
+        print "writing out the size of the data dictionary every %d steps" % stats_step
+        print "goint to calculate %d numbers." % (self.task_size)
+        last_time = time()
+        iterator = self.number_iter
+        care_about_ordering = False
+        for index, number in iterator:
+            if self.cache[number] == 0:
+                representant, (path, rule_arr), everything = minimize_rule_number(neigh, number)
+                everything = everything.keys()
+                everything.remove(number)
                 try:
-                    data = queue.get(timeout=1)
-                    data.sort()
-                    results.write("<".join(map(str,data)))
-                    results.write("\n")
-                except Queue.Empty:
-                    print "timed out. program_running.value = ", program_running.value
+                    everything.remove(representant)
+                except ValueError:
+                    pass
+                if len(everything) > 0:
+                    lowest = everything[0] # try lowering the number of inserted high numbers
+                    for num in everything:
+                        if num > number and cachecontents < cachesize and (num < lowest or not care_about_ordering):
+                            if self.cache[num] == 0:
+                                self.cache[num] = representant
+                                cachecontents += 1
+                            lowest = num
+                if number == representant:
+                    outfile.write(packstruct.pack(-len(everything)))
+                else:
+                    outfile.write(packstruct.pack(representant))
+            else:
+                self.cachehits += 1
+                if cachecontents > self.max_cache_fill:
+                    self.max_cache_fill = cachecontents
+                    if cachecontents > 0.75 * cachesize:
+                        care_about_ordering = True
+                cachecontents -= 1
+                val = self.cache[number]
+                del self.cache[number]
+                self.outfile.write(packstruct.pack(val))
 
-        print "done writing out results"
+            if index % stats_step == 0:
+                endtime, last_time = time() - last_time, time()
+                self.timings.write("%f\n" % ((endtime * 1000) / stats_step))
 
-    queue = multiprocessing.Queue(100)
-    write_proc = multiprocessing.Process(target=write_out_results, args=(queue,))
-    write_proc.start()
-    processes = []
-    num_done = 0
-    last_done_time = time()
-    try:
-        process_limit = multiprocessing.cpu_count()
-    except NotImplementedError:
-        process_limit = 2
-    process_limit += 1
+            self.items_done += 1
 
-    chunksize = min(1000, start_num / (process_limit * 2))
+    def loop(self):
+        start = time()
+        self.cachehits = 0
+        self.max_cache_fill = 0
+        try:
+            self.inner_loop()
+        finally:
+            if self.outfile:
+                self.outfile.close()
+            if self.task_size != 0:
+                print "done %d steps in %s (%d cache hits - %f%%)" % (self.items_done, time() - start, self.cachehits, 100.0 * self.cachehits / self.items_done)
+                print "    that's a speed of %f steps per second" % (self.items_done / (time() - start))
+                print "      cache was filled with %d at its peak" % (self.max_cache_fill)
 
-    for bunch in range(start_num / chunksize):
-        while len(processes) >= process_limit:
-            for proc in processes:
-                if not proc.is_alive():
-                    processes.remove(proc)
-                    proc.join()
-                    num_done += chunksize
-                    if num_done % (chunksize * (process_limit + 3)) == 0:
-                        time_taken = time() - last_done_time
-                        print "%d nums took %s time" % (chunksize, time_taken / (process_limit + 3))
-                        last_done_time = time()
+def new_main(start, end):
+    print "let's go!"
+    neigh = cagen.VonNeumannNeighbourhood()
 
-            sleep(0.1)
-        proc = multiprocessing.Process(target=deal_with_range,
-            args = (max(1, start_num - bunch * chunksize),
-                    max(0, start_num - bunch * chunksize - chunksize),
-                    -1, queue))
-        proc.start()
-        processes.append(proc)
-        assert write_proc.is_alive()
-    for proc in processes:
-        print "joining a process"
-        proc.join()
-    program_running.value = 0
-    print "finished. setting program_running.value = ", program_running.value
-    write_proc.join()
+    for bits_set in range(start, end):
+        print "starting task with %d bits set!" % (bits_set)
+        a = Task(neigh, bits_set, "von_neumann")
+        a.loop()
+        print
 
 if __name__ == "__main__":
-    master()
+    import sys
+    if len(sys.argv) == 3:
+        start = int(sys.argv[1])
+        end = int(sys.argv[2]) + 1
+    else:
+        start = 1
+        end = 16
+    new_main(start, end)

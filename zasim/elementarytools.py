@@ -12,7 +12,7 @@ the table-like step functions of elementary cellular automatons.
 
 """
 from __future__ import absolute_import
-from .cagen import elementary_digits_and_values
+from .cagen.utils import elementary_digits_and_values, rule_nr_to_rule_arr
 
 neighbourhood_actions = {}
 def neighbourhood_action(name):
@@ -22,16 +22,19 @@ def neighbourhood_action(name):
     return appender
 
 def digits_and_values_to_rule_nr(digits_and_values, base=2):
+    if isinstance(digits_and_values[0], dict):
+        digits_and_values = [val["result_value"] for val in digits_and_values]
     num = 0
-    for digit, values in enumerate(digits_and_values):
-        num += values["result_value"] * (base ** digit)
+    for digit, value in enumerate(digits_and_values):
+        num += value * (base ** digit)
     return num
 
 _minimize_cache = {}
-def minimize_rule_number(neighbourhood, digits_and_values):
-    original = digits_and_values_to_rule_nr(digits_and_values)
-    cache = {original: ([], digits_and_values)}
-    tries = [([name], digits_and_values) for name in neighbourhood_actions]
+def minimize_rule_number(neighbourhood, number, base=2):
+    digits = base ** len(neighbourhood.offsets)
+    rule_arr = rule_nr_to_rule_arr(number, digits, base)
+    cache = {number: ([], rule_arr)}
+    tries = [([name], rule_arr) for name in neighbourhood_actions]
 
     for route, data in tries:
         new = neighbourhood_actions[route[-1]](neighbourhood, data)
@@ -47,14 +50,19 @@ def minimize_rule_number(neighbourhood, digits_and_values):
     lowest_number = min(cache.keys())
     return lowest_number, cache[lowest_number], cache
 
+def minimize_rule_values(neighbourhood, digits_and_values):
+    number = digits_and_values_to_rule_nr(digits_and_values)
+    return minimize_rule_number(neighbourhood, number)
+
 @neighbourhood_action("flip all bits")
-def flip_all(neighbourhood, digits_and_values, base=2):
-    ndav = []
-    for data in digits_and_values:
-        ndata = data.copy()
-        ndata["result_value"] = base - 1 - data["result_value"]
-        ndav.append(ndata)
-    return ndav
+def flip_all(neighbourhood, results, base=2):
+    if isinstance(results[0], dict):
+        nres = [val.copy() for val in results]
+        for val in nres:
+            val["result_value"] = base - 1 - val["result_value"]
+        return nres
+    else:
+        return [base - 1 - res for res in results]
 
 def permutation_to_index_map(neighbourhood, permutation, base=2):
     """Figure out from the given neighbourhood and the permutation what
@@ -77,8 +85,17 @@ def permutation_to_index_map(neighbourhood, permutation, base=2):
 
     return index_map
 
-def apply_index_map(digits_and_values, index_map):
-    return [digits_and_values[index_map[i]] for i, _ in enumerate(digits_and_values)]
+def apply_index_map_values(digits_and_values, index_map):
+    new = [value.copy() for value in digits_and_values]
+    for i, _ in enumerate(digits_and_values):
+        new[index_map[i]]["result_value"] = digits_and_values[i]["result_value"]
+
+    return new
+
+def apply_index_map(results, index_map):
+    if isinstance(results[0], dict):
+        return apply_index_map_values(results, index_map)
+    return [results[index_map[i]] for i in range(len(results))]
 
 def flip_offset_to_permutation(neighbourhood, permute_func):
     """Apply the permute_func, which takes in the offset and returns a new
@@ -103,31 +120,24 @@ def mirror_by_axis(neighbourhood, axis=[0]):
     return permutation_to_index_map(neighbourhood, permutation)
 
 @neighbourhood_action("flip vertically")
-def flip_v(neighbourhood, digits_and_values, cache={}):
-    if neighbourhood not in cache:
-        cache[neighbourhood] = mirror_by_axis(neighbourhood, [0])
-
-    return apply_index_map(digits_and_values, cache[neighbourhood])
-
-@neighbourhood_action("flip horizontally")
-def flip_h(neighbourhood, digits_and_values, cache={}):
+def flip_v(neighbourhood, results, cache={}):
     if neighbourhood not in cache:
         cache[neighbourhood] = mirror_by_axis(neighbourhood, [1])
-    return apply_index_map(digits_and_values, cache[neighbourhood])
 
-#@neighbourhood_action("flip both")
-#def flip_both(neighbourhood, digits_and_values, cache={}):
-    #if neighbourhood not in cache:
-        #cache[neighbourhood] = mirror_by_axis(neighbourhood, [0, 1])
-    #return flip_values(digits_and_values, cache[neighbourhood])
+    return apply_index_map(results, cache[neighbourhood])
+
+@neighbourhood_action("flip horizontally")
+def flip_h(neighbourhood, results, cache={}):
+    if neighbourhood not in cache:
+        cache[neighbourhood] = mirror_by_axis(neighbourhood, [0])
+    return apply_index_map(results, cache[neighbourhood])
 
 @neighbourhood_action("rotate clockwise")
-def rotate_clockwise(neighbourhood, digits_and_values, cache={}):
+def rotate_clockwise(neighbourhood, results, cache={}):
     if neighbourhood not in cache:
-        def rotate(pos):
-            a, b = pos
+        def rotate((a, b)):
             return b, -a
         permutation = flip_offset_to_permutation(neighbourhood, rotate)
         cache[neighbourhood] = permutation_to_index_map(neighbourhood, permutation)
 
-    return apply_index_map(digits_and_values, cache[neighbourhood])
+    return apply_index_map(results, cache[neighbourhood])
