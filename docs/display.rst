@@ -10,4 +10,4 @@ plaintext and html are going to be added.
 .. toctree::
 
     display/qt
-
+    display/console
