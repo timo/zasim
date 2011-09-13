@@ -44,8 +44,8 @@ class BaseQImagePainter(QObject):
         self._scale = scale
         self.create_image_surf()
 
-    def start_inverting_frames(self): self.invert_odd = True
-    def stop_inverting_frames(self): self.invert_odd = False
+    def start_inverting_frames(self): self._invert_odd = True
+    def stop_inverting_frames(self): self._invert_odd = False
 
 class LinearQImagePainter(BaseQImagePainter):
     """This class offers drawing for one-dimensional cellular automata, which
