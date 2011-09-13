@@ -28,7 +28,7 @@ class BaseQImagePainter(QObject):
         """
         super(BaseQImagePainter, self).__init__(**kwargs)
         self._width, self._height = width, height
-        self.set_scale(scale)
+        self._scale = scale
 
         self.create_image_surf()
         self._queue = Queue.Queue(queue_size)
@@ -51,8 +51,9 @@ class BaseQImagePainter(QObject):
 
     def set_scale(self, scale):
         """Change the scale of the display."""
-        self._scale = scale
-        self.create_image_surf()
+        if self._scale != scale:
+            self._scale = scale
+            self._image = self._image.scaled(self._width * scale, self._height * scale)
 
     def after_step(self, update_step=True):
         """Implement this in a subclass to fetch the config from the simulator.
