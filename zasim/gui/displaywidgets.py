@@ -60,6 +60,7 @@ class DisplayWidget(QWidget):
 
     def start_inverting_frames(self): self.display.start_inverting_frames()
     def stop_inverting_frames(self): self.display.stop_inverting_frames()
+
     def set_scale(self, scale):
         self._scale = scale
         self.display.set_scale(scale)
