@@ -1,5 +1,5 @@
 from ..external.qt import QWidget, QPainter, QPoint
-from ..display import LinearQImagePainter, TwoDimQImagePainter
+from ..display.qt import LinearQImagePainter, TwoDimQImagePainter
 
 class DisplayWidget(QWidget):
     """A Display widget for one- and twodimensional configs.

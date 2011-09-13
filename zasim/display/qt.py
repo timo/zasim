@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from .external.qt import QObject, QImage, QPainter, QPoint, QSize, QRect, Signal
+from ..external.qt import QObject, QImage, QPainter, QPoint, QSize, QRect, Signal
 
 import numpy as np
 import Queue
