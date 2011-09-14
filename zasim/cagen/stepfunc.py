@@ -43,6 +43,12 @@ class StepFunc(object):
     features = set()
     """The list of features from the StepFuncVisitors."""
 
+    possible_values = ()
+    """A tuple containing all possible values for cells.
+
+    Do not set this yourself. This is set from the constructor and taken from
+    the `target` object!"""
+
     def __init__(self, loop, accessor, neighbourhood, extra_code=[],
                  target=None, size=None, **kwargs):
         """The Constructor creates a weave-based step function from the
@@ -86,6 +92,9 @@ class StepFunc(object):
         if size is None:
             size = target.cconf.shape
         self.acc.set_size(size)
+
+        if target is not None:
+            self.possible_values = target.possible_values
 
         self.visitors = [self.acc, self.neigh, self.loop] + extra_code
 

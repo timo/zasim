@@ -14,10 +14,6 @@ class ElementaryCellularAutomatonBase(Computation):
 
     This works with any number of dimensions."""
 
-    # TODO get this from target.possible_values instead?
-    base = 2
-    """The number of different values each cell can have."""
-
     rule = 0
     """The elementary cellular automaton rule to use.
 
@@ -40,7 +36,7 @@ class ElementaryCellularAutomatonBase(Computation):
 
         First, find out, how many possible combinations there are.
         That's simply the nuber of cells in the neighbourhood as the exponent
-        of :attr:`base`.
+        of the number of `possible_values`.
         Then, normalise the neighbourhood cells by sorting their positions
         first by X, then by Y axis.
         Finally, create code, that sums up all the values and looks up the
@@ -50,6 +46,12 @@ class ElementaryCellularAutomatonBase(Computation):
 
         self.neigh = zip(self.code.neigh.offsets, self.code.neigh.names)
         self.digits = len(self.neigh)
+
+        self.base = len(self.code.possible_values)
+        # the numbers in the possible values list have to start at 0 and go
+        # all the way up to base-1.
+        assert self.code.possible_values == tuple(range(self.base))
+        print "base is", self.base
 
         if self.rule is None:
             self.rule = randrange(0, self.base ** self.base ** self.digits)
@@ -77,9 +79,14 @@ class ElementaryCellularAutomatonBase(Computation):
         super(ElementaryCellularAutomatonBase, self).init_once()
         entries = self.base ** self.digits
         self.target.rule = np.zeros(entries, np.dtype("i"))
-        for digit in range(entries):
-            if self.rule & (self.base** digit) > 0:
-                self.target.rule[digit] = 1
+        rule = self.rule
+
+        for e in range(entries-1, -1, -1):
+            d = int(rule // (self.base ** e))
+            rule -= d * (self.base ** e)
+            self.target.rule[e] = d
+
+        print self.target.rule
 
         # and now do some heavy work to generate a pretty-printer!
         bbox = self.code.neigh.bounding_box()
@@ -144,11 +151,7 @@ class CountBasedComputationBase(Computation):
     nonzerocount of type int.
 
     The name of the central neighbour will be provided as self.central_name.
-
-    .. warning::
-        If the values are not limited to 0 and 1, the value of nonzerocount
-        will be the sum of the neighbourhood cells values, rather than the
-        count of nonzero neighbourhood cells."""
+    """
 
     def visit(self):
         """Generate code that calculates nonzerocount from all neighbourhood
@@ -166,7 +169,11 @@ class CountBasedComputationBase(Computation):
             self.central_name = None
 
         self.code.add_code("localvars", "int nonzerocount;")
-        code = "nonzerocount = %s" % (" + ".join(names))
+        if self.code.possible_values == (0, 1):
+            single_values = names
+        else:
+            single_values = ["int(%d != 0)" % name for name in names]
+        code = "nonzerocount = %s" % (" + ".join(single_values))
 
         self.code.add_code("compute", code + ";")
         self.code.add_py_hook("compute", code)

@@ -2,14 +2,14 @@ from .simulators import BinRule
 from ..display.console import LinearConsolePainter
 from ..features import HAVE_WEAVE
 
-def test(width=75, copy_borders=True, rule=110, histogram=True, activity=False, pure=False, print_rule=True, nondet=100, beta=100, steps=100):
+def test(width=75, copy_borders=True, rule=None, histogram=True, activity=False, pure=False, print_rule=True, nondet=100, beta=100, steps=100, base=2):
 
     beta = beta / 100.
     nondet = nondet / 100.
 
     bin_rule = BinRule((width,), rule=rule,
             histogram=histogram, activity=activity,
-            nondet=nondet, beta=beta, copy_borders=copy_borders)
+            nondet=nondet, beta=beta, copy_borders=copy_borders, base=base)
 
     display = LinearConsolePainter(bin_rule, 1)
 
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     argp.add_argument("-b", "--dont-copy-borders", default=True, dest="copy_borders", action="store_false",
             help="copy borders around. Otherwise, zeros will be read from "
                     "the borders")
-    argp.add_argument("-r", "--rule", default=110, type=int,
+    argp.add_argument("-r", "--rule", default=None, type=int,
             help="select the rule number to calculate")
     argp.add_argument("--histogram", default=False, action="store_true",
             help="calculate a histogram")
@@ -61,6 +61,8 @@ if __name__ == "__main__":
     argp.add_argument("--beta", default=100, type=int,
             help="with what probability should a cell succeed in exposing its "\
                  "state to its neighbours?")
+    argp.add_argument("--base", default=2, type=int,
+            help="The base of cell values. Base 2 gives you 0 and 1, for example.")
 
     args = argp.parse_args()
 
