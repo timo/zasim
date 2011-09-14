@@ -133,7 +133,7 @@ class CagenSimulator(BaseSimulator):
 
         self.prepared = self._step_func.prepared
 
-        self.t = TargetProxy(self._target, self._step_func.attrs)
+        self.t = TargetProxy(self._target, self._step_func.attrs + ["possible_values"])
 
     def get_config(self):
         """Return the config, sans borders."""

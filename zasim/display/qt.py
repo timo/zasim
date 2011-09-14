@@ -17,6 +17,8 @@ class BaseQImagePainter(QObject):
 
     Its first argument is the area of change as a QRect."""
 
+    PALETTE = [0xf00, 0x00f, 0x0f0, 0xff0, 0xff0, 0xf0f]
+
     def __init__(self, width, height, queue_size=1, scale=1, connect=True, **kwargs):
         """Initialize the BaseQImagePainter.
 
@@ -99,6 +101,9 @@ class LinearQImagePainter(BaseQImagePainter):
         self._sim = simulator
         if lines is None:
             lines = simulator.shape[0]
+        self._last_step = 0
+
+        self.palette = self.PALETTE[:len(self._sim.t.possible_values)]
 
         super(LinearQImagePainter, self).__init__(
                 simulator.shape[0], lines, lines,
@@ -107,13 +112,13 @@ class LinearQImagePainter(BaseQImagePainter):
 
     def draw_conf(self):
         rendered = 0
-        y = self.last_step % self._height
+        y = self._last_step % self._height
         w = self._width
         scale = self._scale
         peek = None
         try:
             painter = QPainter(self._image)
-            while rendered < min(100, self.img_height):
+            while rendered < min(100, self._height):
                 update_step, conf = peek or self._queue.get_nowait()
 
                 if not update_step:
@@ -127,21 +132,26 @@ class LinearQImagePainter(BaseQImagePainter):
                     except Queue.Empty:
                         pass
 
-                nconf = np.empty((w, 1, 2), np.uint8, "C")
+                nconf = np.empty((w, 1), np.uint16, "C")
+
                 if not self._invert_odd or self._odd:
-                    nconf[...,0,0] = conf * 255
+                    nconf[conf==1] = 0
+                    nconf[conf==0] = 0xfff
                 else:
-                    nconf[...,0,0] = (1 - conf) * 255
-                nconf[...,1] = nconf[...,0]
+                    nconf[conf==0] = 0
+                    nconf[conf==1] = 0xfff
+
+                for num, value in enumerate(self.palette):
+                    nconf[conf == num+2] = value
 
                 _image = QImage(nconf.data, w, 1, QImage.Format_RGB444).scaled(w * scale, scale)
                 painter.drawImage(QPoint(0, y * scale), _image)
 
-                self.queued_steps -= 1
+                self._queued_steps -= 1
                 rendered += 1
                 if update_step:
-                    self.last_step += 1
-                    y = self.last_step % self.img_height
+                    self._last_step += 1
+                    y = self._last_step % self._height
                     self._odd = not self._odd
         except Queue.Empty:
             pass
@@ -154,8 +164,8 @@ class LinearQImagePainter(BaseQImagePainter):
 
         self._queued_steps += 1
         self.update.emit(QRect(
-            QPoint(0, ((self.last_step + self.queued_steps - 1) % self.img_height) * self.img_scale),
-            QSize(self.img_width * self.img_scale, self.img_scale)))
+            QPoint(0, ((self._last_step + self._queued_steps - 1) % self._height) * self._scale),
+            QSize(self._width * self._scale, self._scale)))
 
 class TwoDimQImagePainter(BaseQImagePainter):
     """This class offers rendering a two-dimensional simulator config to
@@ -170,6 +180,8 @@ class TwoDimQImagePainter(BaseQImagePainter):
         w, h = simulator.shape
         super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
 
+        self.palette = self.PALETTE[:len(self._sim.t.possible_values)]
+
         if connect:
             self.connect_simulator()
 
@@ -178,12 +190,18 @@ class TwoDimQImagePainter(BaseQImagePainter):
             update_step, conf = self._queue.get_nowait()
             self.conf_new = False
             w, h = self._width, self._height
-            nconf = np.empty((w, h, 2), np.uint8, "C")
+            nconf = np.empty((w, h), np.uint16, "C")
+
             if not self._invert_odd or self._odd:
-                nconf[...,0] = conf * 255
+                nconf[conf==1] = 0
+                nconf[conf==0] = 0xfff
             else:
-                nconf[...,0] = 255 - conf * 255
-            nconf[...,1] = nconf[...,0]
+                nconf[conf==0] = 0
+                nconf[conf==1] = 0xfff
+
+            for num, value in enumerate(self.palette):
+                nconf[conf == num+2] = value
+
             self._image = QImage(nconf.data, w, h, QImage.Format_RGB444).scaled(
                     w * self._scale, h * self._scale)
             if update_step:

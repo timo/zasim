@@ -12,7 +12,8 @@ def main(width=200, height=200, scale=2,
         beta=100, nondet=100,
         life=False, rule=None,
         copy_borders=True, white=50,
-        histogram=True, activity=True):
+        histogram=True, activity=True,
+        base=2):
     app = QApplication(sys.argv)
 
     if white > 1:
@@ -25,18 +26,14 @@ def main(width=200, height=200, scale=2,
 
     if onedim and not life:
         # get a random beautiful CA
-        if rule is None:
-            rule=random.choice(
-             [22, 26, 30, 45, 60, 73, 90, 105, 110, 122, 106, 150])
-
         sim_obj = cagen.BinRule(rule=rule, size=(w,), nondet=nondet, beta=beta, activity=activity,
-                histogram=histogram, copy_borders=copy_borders)
+                histogram=histogram, copy_borders=copy_borders, base=base)
 
     else:
         if life:
             sim_obj = cagen.GameOfLife((w, h), nondet, histogram, activity, None, beta, copy_borders)
         else:
-            sim_obj = cagen.ElementarySimulator((w, h), nondet, histogram, activity, rule, None, beta, copy_borders)
+            sim_obj = cagen.ElementarySimulator((w, h), nondet, histogram, activity, rule, None, beta, copy_borders, base=base)
 
         if not life:
             print sim_obj.pretty_print()
@@ -97,6 +94,8 @@ if __name__ == "__main__":
             help="don't display a histogram")
     argp.add_argument("--no-activity", default=True, action="store_false", dest="activity",
             help="don't display the activity")
+    argp.add_argument("--base", default=2, type=int,
+            help="The base of the cells.")
 
     args = argp.parse_args()
 
