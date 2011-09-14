@@ -1,5 +1,5 @@
-from .utils import build_array_pretty_printer
 from .simulators import BinRule
+from ..display.console import LinearConsolePainter
 from ..features import HAVE_WEAVE
 
 def test(width=75, copy_borders=True, rule=110, histogram=True, activity=False, pure=False, print_rule=True, nondet=100, beta=100, steps=100):
@@ -11,18 +11,15 @@ def test(width=75, copy_borders=True, rule=110, histogram=True, activity=False, 
             histogram=histogram, activity=activity,
             nondet=nondet, beta=beta, copy_borders=copy_borders)
 
-    b_l, b_r = bin_rule._step_func.neigh.bounding_box()[0]
-    pretty_print_array = build_array_pretty_printer((width,), ((abs(b_l), abs(b_r)),), ((0, 0),))
+    display = LinearConsolePainter(bin_rule, 1)
 
     if print_rule:
         print bin_rule.pretty_print()
-
 
     if HAVE_WEAVE and not pure:
         print "weave"
         for i in range(steps):
             bin_rule.step_inline()
-            pretty_print_array(bin_rule.get_config())
             if histogram:
                 print bin_rule.histogram
             if activity:
@@ -31,7 +28,6 @@ def test(width=75, copy_borders=True, rule=110, histogram=True, activity=False, 
         print "pure"
         for i in range(steps):
             bin_rule.step_pure_py()
-            pretty_print_array(bin_rule.get_config())
             if histogram:
                 print bin_rule.histogram
             if activity:

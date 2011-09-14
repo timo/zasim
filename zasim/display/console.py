@@ -31,7 +31,7 @@ class BaseConsolePainter(QObject):
         self._last_conf = self._sim.get_config().copy()
         self.draw_conf(update_step)
         if self._auto_output:
-            print str(self)
+            print str(self),
 
     def conf_changed(self):
         self.after_step(False)
