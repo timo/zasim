@@ -100,7 +100,10 @@ if __name__ == "__main__":
 
     args = argp.parse_args()
 
-    if args.rule.startswith("0x"):
-        args.rule = int(args.rule, 16)
+    if args.rule:
+        if args.rule.startswith("0x"):
+            args.rule = int(args.rule, 16)
+        else:
+            args.rule = int(args.rule)
 
     main(**vars(args))
