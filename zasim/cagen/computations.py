@@ -51,7 +51,6 @@ class ElementaryCellularAutomatonBase(Computation):
         # the numbers in the possible values list have to start at 0 and go
         # all the way up to base-1.
         assert self.code.possible_values == tuple(range(self.base))
-        print "base is", self.base
 
         if self.rule is None:
             self.rule = randrange(0, self.base ** self.base ** self.digits)
@@ -85,8 +84,6 @@ class ElementaryCellularAutomatonBase(Computation):
             d = int(rule // (self.base ** e))
             rule -= d * (self.base ** e)
             self.target.rule[e] = d
-
-        print self.target.rule
 
         # and now do some heavy work to generate a pretty-printer!
         bbox = self.code.neigh.bounding_box()
