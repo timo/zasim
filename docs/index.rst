@@ -20,7 +20,6 @@ Contents:
    :maxdepth: 2
 
    simulator
-   ca
    cagen
    gui
    elementarytools
