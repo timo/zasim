@@ -87,3 +87,4 @@ class TwoDimConsolePainter(BaseConsolePainter):
         with open(filename, "w") as out:
             out.write("\n".join(self._data + [""]))
 
+# TODO write mixins that add border copying to the configs prior to drawing
