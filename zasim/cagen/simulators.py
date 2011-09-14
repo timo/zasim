@@ -35,6 +35,7 @@ class ElementarySimulator(ElementaryCagenSimulator):
                  rule=None, config=None,
                  beta=1, copy_borders=True,
                  neighbourhood=None,
+                 base=2,
                  **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
@@ -48,12 +49,14 @@ class ElementarySimulator(ElementaryCagenSimulator):
                         result to the neighbouring cells.
                         This is incompatible with the nondet parameter.
            :param copy_borders: Copy over data from the other side?
-           :param neighbourhood: The neighbourhood to use."""
+           :param neighbourhood: The neighbourhood to use.
+           :param base: The base of possible values for the configuration.
+           """
         if size is None:
             size = config.shape
 
         computer = ElementaryCellularAutomatonBase(rule)
-        target = TestTarget(size, config)
+        target = TestTarget(size, config, base=base)
 
         if neighbourhood is None:
             if len(size) == 1:
