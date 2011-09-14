@@ -82,8 +82,8 @@ class ElementaryCellularAutomatonBase(Computation):
         rule = self.rule
 
         for e in range(entries-1, -1, -1):
-            d = int(rule // (3 ** e))
-            rule -= d * (3 ** e)
+            d = int(rule // (self.base ** e))
+            rule -= d * (self.base ** e)
             self.target.rule[e] = d
 
         print self.target.rule
