@@ -20,6 +20,7 @@ Contents:
    :maxdepth: 2
 
    simulator
+   display
    cagen
    gui
    elementarytools
@@ -44,7 +45,7 @@ You can get a usage summary with the following commands:
 
 ::
 
-    python -m zasim.display --help
+    python -m zasim.gui.main --help
     python -m zasim.cagen.main --help
 
 Indices and tables

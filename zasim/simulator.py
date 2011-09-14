@@ -41,11 +41,11 @@ class BaseSimulator(QObject):
     """Wether the simulator needs to run any kind of preparation before being
     able to perform steps"""
 
-    rect_updated = Signal(tuple)
-    """Is emitted when only a rectangular shaped area of the conf has changed."""
+    #rect_updated = Signal(tuple)
+    #"""Is emitted when only a rectangular shaped area of the conf has changed."""
 
-    positions_updated = Signal(list)
-    """Is emitted when only a list of cells have changed."""
+    #positions_updated = Signal(list)
+    #"""Is emitted when only a list of cells have changed."""
 
     updated = Signal()
     """Is emitted when the shape of changed cells is unknown or not

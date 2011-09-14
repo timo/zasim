@@ -1,3 +1,4 @@
+from __future__ import print_function
 import new
 
 from .utils import dedent_python_code, offset_pos
@@ -8,6 +9,8 @@ from ..features import HAVE_WEAVE, HAVE_TUPLE_ARRAY_INDEX, tuple_array_index_fix
 # TODO how do i get functions for pure-py-code in there without making it ugly?
 from itertools import product
 from collections import defaultdict
+
+import sys
 
 if HAVE_WEAVE:
     from scipy import weave
@@ -234,7 +237,7 @@ class StepFunc(object):
             self.step_inline()
             self.step = self.step_inline
         except:
-            print "falling back to pure python step function"
+            print("falling back to pure python step function", file=sys.stderr)
 
             self.step_pure_py()
             self.step = self.step_pure_py
