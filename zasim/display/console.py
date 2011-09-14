@@ -68,7 +68,7 @@ class LinearConsolePainter(BaseConsolePainter):
 class TwoDimConsolePainter(BaseConsolePainter):
     """This painter always draws the most current config."""
 
-    def __init__(self, simulator, lines, **kwargs):
+    def __init__(self, simulator, **kwargs):
         super(LinearConsolePainter, self).__init__(simulator, **kwargs)
 
         self._data = [[self.NO_DATA * self._sim.shape[0]]
