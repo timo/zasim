@@ -3,7 +3,6 @@ from __future__ import absolute_import
 from zasim import ca
 from zasim import cagen
 from zasim.features import *
-from zasim.simulator import CagenSimulator
 
 from .testutil import *
 
@@ -149,69 +148,6 @@ class TestCAGen:
         for glider_conf in GLIDER[1:]:
             sim.step_pure_py()
             assert_arrays_equal(glider_conf, sim.get_config())
-
-    @pytest.mark.skipif("not HAVE_MULTIDIM")
-    def test_pretty_print_config_2d(self, capsys):
-        gconf = GLIDER[0]
-        conf = np.zeros((gconf.shape[0] + 2, gconf.shape[1] + 2))
-        conf[1:-1,1:-1] = gconf
-
-        # manually create the border.
-        conf[3,6] = 1
-        conf[6,2] = 1
-
-        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((1, 1), (1, 1)))
-        pp(conf)
-        out, err = capsys.readouterr()
-        assert out == """\
-,,,,,,,
-, #   ,
-,  #  ,
-,###  %
-,     ,
-,     ,
-,,%,,,,
-"""
-
-    def test_pretty_print_config_1d(self, capsys):
-        # test pretty-printing with left-border 2 and right-border 1
-        # without any extra at the side
-        conf = np.array([1,1, 0,1,0,1,1, 1])
-        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((2, 1),))
-        pp(conf)
-        out, err = capsys.readouterr()
-        assert out == """%% # ##,\n"""
-
-        # test pretty-printing with left-border and right-border 3
-        conf = np.array([1,1,0, 1,0,1,1,0,  1,0,1])
-        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((3, 3),), ((0, 0),))
-        pp(conf)
-        out, err = capsys.readouterr()
-        assert out == """%%,# ## %,%\n"""
-
-    def test_pretty_print_config_1d_extra(self, capsys):
-        conf = np.array([1,1,1, 0,0,0,1,1,1, 0,0,0])
-
-        # add one extra cell from beyond the border
-        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((3, 3),), ((1, 1),))
-        pp(conf)
-        out, err = capsys.readouterr()
-        assert out == ",%%%   ###,,,%\n"
-
-        # two extra cells on the left, none on the right
-        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((3, 3),), ((2, 0),))
-        pp(conf)
-        out, err = capsys.readouterr()
-        assert out == ",,%%%   ###,,,\n"
-
-        # six extra fields. this is the maximum possible
-        pp = cagen.utils.build_array_pretty_printer(conf.shape, ((3, 3),), ((6, 6),))
-        pp(conf)
-        out,err = capsys.readouterr()
-        assert out == "%%%,,,%%%   ###,,,%%%,,,\n"
-
-        with pytest.raises(AssertionError):
-            pp = cagen.utils.build_array_pretty_printer(conf.shape, ((3, 3),), ((7, 6),))
 
     def body_weave_nondeterministic_stepfunc_1d(self, inline=True):
         conf = np.ones(1000)
