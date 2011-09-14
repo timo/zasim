@@ -40,7 +40,9 @@ class SimpleHistogram(ExtraStats):
             conf = np.ravel(conf)
         else:
             raise NotImplementedError("Can only handle 1d or 2d arrays")
-        self.target.histogram = np.bincount(conf)
+        self.target.histogram = np.zeros(len(self.target.possible_values))
+        histogram = np.bincount(conf)
+        self.target.histogram[:len(histogram)] = histogram
 
     def new_config(self):
         """Create a starting histogram."""
