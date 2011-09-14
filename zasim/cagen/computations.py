@@ -169,7 +169,7 @@ class CountBasedComputationBase(Computation):
             self.central_name = None
 
         self.code.add_code("localvars", "int nonzerocount;")
-        if self.target.possible_values == (0, 1):
+        if self.code.possible_values == (0, 1):
             single_values = names
         else:
             single_values = ["int(%d != 0)" % name for name in names]
