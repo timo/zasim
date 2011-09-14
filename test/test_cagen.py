@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-from zasim import ca
 from zasim import cagen
 from zasim.features import *
 
@@ -28,19 +27,6 @@ class ZerosThenOnesRandom(EvilRandom):
 
 class TestCAGen:
     @pytest.mark.skipif("not HAVE_WEAVE")
-    def test_compare_weaves(self, rule_num):
-        size = randrange(MIN_SIZE, MAX_SIZE)
-        br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
-        br2 = cagen.BinRule((size-2,), rule=rule_num, config=br.get_config().copy()[1:-1])
-
-        for i in range(10):
-            br.updateAllCellsWeaveInline()
-            br2.step_inline()
-            compare_arrays(br.get_config()[1:-1], br2.get_config())
-
-        assert_arrays_equal(br.get_config()[1:-1], br2.get_config())
-
-    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_gen_weave_only(self, tested_rule_num):
         confs = TESTED_BINRULE_WITHOUT_BORDERS[tested_rule_num]
         br = cagen.BinRule(rule=tested_rule_num, config=confs[0])
@@ -58,23 +44,6 @@ class TestCAGen:
         for conf in confs[1:]:
             br.step_pure_py()
             assert_arrays_equal(br.get_config(), conf)
-
-    def test_compare_pures(self, rule_num):
-        size = randrange(MIN_SIZE, MAX_SIZE)
-        br = ca.binRule(rule_num, size, 1, ca.binRule.INIT_RAND)
-        br2 = cagen.BinRule(rule=rule_num, config=br.get_config().copy()[1:-1])
-
-        # are the rules the same?
-        assert_arrays_equal(br.ruleIdx, br2.rule)
-
-        assert_arrays_equal(br.get_config()[1:-1], br2.get_config())
-
-        for i in range(10):
-            br.updateAllCellsPy()
-            br2.step_pure_py()
-            compare_arrays(br.get_config()[1:-1], br2.get_config())
-
-        assert_arrays_equal(br.get_config()[1:-1], br2.get_config())
 
     def test_run_nondeterministic_pure(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)

@@ -21,7 +21,6 @@ Contents:
 
    simulator
    display
-   ca
    cagen
    gui
    elementarytools
