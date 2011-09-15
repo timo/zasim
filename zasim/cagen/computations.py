@@ -1,7 +1,7 @@
 # * coding: utf8
 from random import randrange
 from .bases import Computation
-from .utils import elementary_digits_and_values
+from .utils import elementary_digits_and_values, rule_nr_to_rule_arr
 
 import new
 
@@ -80,10 +80,7 @@ class ElementaryCellularAutomatonBase(Computation):
         self.target.rule = np.zeros(entries, np.dtype("i"))
         rule = self.rule
 
-        for e in range(entries-1, -1, -1):
-            d = int(rule // (self.base ** e))
-            rule -= d * (self.base ** e)
-            self.target.rule[e] = d
+        self.target.rule = np.array(rule_nr_to_rule_arr(rule, self.digits, self.base))
 
         # and now do some heavy work to generate a pretty-printer!
         bbox = self.code.neigh.bounding_box()
