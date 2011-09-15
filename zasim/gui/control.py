@@ -86,7 +86,7 @@ class ControlWidget(QWidget):
         """Step the simulator from the timer.
 
         .. note::
-            This is called by the timer that is controlled by :meth:`start` and
+            This is called by the timer that is controlled by `start` and
             :meth:`stop`. You should not call it yourself."""
         self.killTimer(self.timer_id)
         self.step()
@@ -95,18 +95,6 @@ class ControlWidget(QWidget):
     def step(self):
         """Step the simulator, update all displays."""
         self.sim.step()
-
-    def fullspeed(self):
-        """Run the stepping function without any timer delays."""
-        last_time = time.time()
-        last_step = 0
-        while self.isVisible():
-            self.step()
-            last_step += 1
-            QApplication.processEvents()
-            if last_step % 1000 == 1:
-                diff, last_time = time.time() - last_time, time.time()
-                print last_step, diff
 
     def set_config(self, conf=None):
         if conf is None:
