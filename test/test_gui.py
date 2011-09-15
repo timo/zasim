@@ -151,21 +151,35 @@ class TestGui:
         stepfunc_action = menu.findChild(QAction, u"new")
         stepfunc_action.trigger()
 
-        for execution in seconds(0.1):
+        for execution in seconds(0.2):
             self.app.processEvents()
 
         stepfunc_window = self.app.activeWindow()
         tree = stepfunc_window.findChild(QWidget, u"parts")
         QTest.keyClick(tree, Qt.Key_Right)
+        for execution in seconds(0.05):
+            self.app.processEvents()
         QTest.keyClick(tree, Qt.Key_Return)
+        for execution in seconds(0.05):
+            self.app.processEvents()
         for i in range(5):
             QTest.keyClick(tree, Qt.Key_Left)
+            for execution in seconds(0.05):
+                self.app.processEvents()
             QTest.keyClick(tree, Qt.Key_Left)
+            for execution in seconds(0.05):
+                self.app.processEvents()
             QTest.keyClick(tree, Qt.Key_Down)
+            for execution in seconds(0.05):
+                self.app.processEvents()
             QTest.keyClick(tree, Qt.Key_Return)
+            for execution in seconds(0.05):
+                self.app.processEvents()
 
         close = stepfunc_window.findChild(QPushButton, u"cancel")
         QTest.mouseClick(close, Qt.LeftButton)
+        for execution in seconds(0.05):
+            self.app.processEvents()
 
 
 def produce_more(calls, arg, values, filter_func=lambda call: True):
