@@ -70,6 +70,7 @@ class TestGui:
         QTest.qWaitForWindowShown(display.window)
 
         reset_button = display.control.findChild(QWidget, u"reset")
+        assert reset_button is not None
 
         display.control.zero_percentage.setValue(33)
         QTest.mouseClick(reset_button, Qt.LeftButton)
@@ -107,6 +108,7 @@ class TestGui:
         QTest.qWaitForWindowShown(display.window)
 
         menu = display.window.menuBar().findChild(QMenu, u"simulator_menu")
+        assert menu is not None
         QTest.mouseClick(menu, Qt.LeftButton)
 
         elementary_action = menu.findChild(QAction, u"stepfunc_table")
@@ -148,6 +150,7 @@ class TestGui:
         QTest.qWaitForWindowShown(display.window)
 
         menu = display.window.menuBar().findChild(QMenu, u"simulator_menu")
+        assert menu is not None
         QTest.mouseClick(menu, Qt.LeftButton)
 
         stepfunc_action = menu.findChild(QAction, u"new")
