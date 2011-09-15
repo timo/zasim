@@ -17,7 +17,7 @@ class BaseQImagePainter(QObject):
 
     Its first argument is the area of change as a QRect."""
 
-    PALETTE = [0xf00, 0x00f, 0x0f0, 0xff0, 0xff0, 0xf0f]
+    PALETTE = [0xf00, 0x00f, 0x0f0, 0xff0, 0x0ff, 0xf0f]
 
     def __init__(self, width, height, queue_size=1, scale=1, connect=True, **kwargs):
         """Initialize the BaseQImagePainter.

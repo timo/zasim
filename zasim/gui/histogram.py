@@ -7,7 +7,8 @@ class HistogramExtraDisplay(BaseExtraDisplay):
     that is an one-dimensional array and display its values over time as
     colored vertical lines."""
     colors = [QColor("black"), QColor("white"), QColor("red"), QColor("blue"),
-              QColor("green"), QColor("yellow")]
+              QColor("green"), QColor.fromRgb(255, 255, 0),
+              QColor.fromRgb(0, 255, 255), QColor.fromRgb(255, 0, 255)]
     def __init__(self, sim, attribute="histogram", width=400, maximum=1.0, **kwargs):
         super(HistogramExtraDisplay, self).__init__(title=attribute, sim=sim, width=width, **kwargs)
         self.linepos = 0
