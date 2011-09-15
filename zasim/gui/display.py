@@ -13,16 +13,16 @@ display_objects = []
 class ZasimDisplay(object):
 
     simulator = None
-    """The :class:`Simulator` object for this display."""
+    """The `Simulator` object for this display."""
 
     display = None
-    """The :class:`BaseDisplayWidget` in use."""
+    """The `BaseDisplayWidget` in use."""
 
     window = None
-    """The :class:`ZasimMainWindow` instance in use."""
+    """The `ZasimMainWindow` instance in use."""
 
     control = None
-    """The :class:`ControlWidget` in use."""
+    """The `ControlWidget` in use."""
 
     def __init__(self, simulator):
         """Instantiate a Display (thas is: a window with a display widget and

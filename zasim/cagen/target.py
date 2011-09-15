@@ -7,7 +7,7 @@ import numpy as np
 
 class TestTarget(object):
     """The TestTarget is a simple class that can act as a target for a
-    :class:`StepFunc`."""
+    `StepFunc`."""
 
     cconf = None
     """The current config the cellular automaton works on."""

@@ -4,7 +4,7 @@ from .elementary import ElementaryRuleWindow
 
 class ZasimMainWindow(QMainWindow):
     """This is a window that manages one simulator. It holds one
-    :class:`Control`, at least one :class:`DisplayWidget` and any number of
+    `Control`, at least one `DisplayWidget` and any number of
     additional views embedded in QDockWidgets."""
 
     control = None
@@ -31,8 +31,8 @@ class ZasimMainWindow(QMainWindow):
         control widget.
 
         :param simulator: The simulator object to use.
-        :param display: A :class:`DisplayWidget` instance.
-        :param control: Optionally, a :class:`ControlWidget` instance."""
+        :param display: A `DisplayWidget` instance.
+        :param control: Optionally, a `ControlWidget` instance."""
         super(ZasimMainWindow, self).__init__(**kwargs)
 
         self.setAttribute(Qt.WA_DeleteOnClose)

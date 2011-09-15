@@ -1,6 +1,6 @@
-"""The compatibility module offers a way for :class:`StepFuncVisitor` objects
+"""The compatibility module offers a way for `StepFuncVisitor` objects
 to express, what combinations are acceptable and what combinations are going to
-break, allowing the constructor of the :class:`StepFunc` to bail out soon
+break, allowing the constructor of the `StepFunc` to bail out soon
 instead of causing an unexpected result during execution.
 
 Each *StepFuncVisitor* has three attributes:

@@ -12,19 +12,19 @@ from .stepfunc import StepFunc
 from ..simulator import ElementaryCagenSimulator, CagenSimulator
 
 class ElementarySimulator(ElementaryCagenSimulator):
-    """A :class:`ElementaryCagenSimulator` with a target and stepfunc created
+    """A `ElementaryCagenSimulator` with a target and stepfunc created
     automatically for the given parameters.
 
-    Set neighbourhood to None and a :class:`ElementaryFlatNeighbourhood`
+    Set neighbourhood to None and a `ElementaryFlatNeighbourhood`
     will be used if the config is one-dimensional, otherwise a
-    :class:`VonNeumannNeighbourhood` will be created. If the rule number
-    is out of range for it, a :class:`MooreNeighbourhood` will be used
+    `VonNeumannNeighbourhood` will be created. If the rule number
+    is out of range for it, a `MooreNeighbourhood` will be used
     instead.
 
     .. note ::
 
         If you supply a neighbourhood, that is not based on
-        :class:`BetaAsynchronousNeighbourhood`, but set beta to a value other
+        `BetaAsynchronousNeighbourhood`, but set beta to a value other
         than 1, you will get a warning."""
 
     rule = None
@@ -122,9 +122,9 @@ class ElementarySimulator(ElementaryCagenSimulator):
 BinRule = ElementarySimulator
 
 class GameOfLife(CagenSimulator):
-    """A :class:`CagenSimulator` with a target and stepfunc created
+    """A `CagenSimulator` with a target and stepfunc created
     automatically for the given parameters. The supplied life_params are passed
-    as keyword arguments to :class:`LifeCellularAutomatonBase`."""
+    as keyword arguments to `LifeCellularAutomatonBase`."""
     def __init__(self, size=None, nondet=1,
                  histogram=False, activity=False,
                  config=None,
@@ -143,7 +143,7 @@ class GameOfLife(CagenSimulator):
                         This is incompatible with the nondet parameter.
            :param copy_borders: Copy over data from the other side?
            :param life_params: Those parameters are passed on to the constructor
-                               of :class:`LifeCellularAutomatonBase`."""
+                               of `LifeCellularAutomatonBase`."""
         if size is None:
             size = config.shape
 

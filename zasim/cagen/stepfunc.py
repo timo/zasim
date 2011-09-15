@@ -23,16 +23,16 @@ class StepFunc(object):
     step function."""
 
     neigh = None
-    """The :class:`Neighbourhood` object in use."""
+    """The `Neighbourhood` object in use."""
 
     acc = None
-    """The :class:`StateAccessor` object in use."""
+    """The `StateAccessor` object in use."""
 
     loop = None
-    """The :class:`CellLoop` object in use."""
+    """The `CellLoop` object in use."""
 
     visitors = None
-    """All :class:`StepFuncVisitor` objects."""
+    """All `StepFuncVisitor` objects."""
 
     target = None
     """The configuration object that is targetted."""
@@ -54,16 +54,16 @@ class StepFunc(object):
         """The Constructor creates a weave-based step function from the
         specified parts.
 
-        :param loop: A :class:`CellLoop`, that adds a loop at loop_begin
+        :param loop: A `CellLoop`, that adds a loop at loop_begin
                      and loop_end.
-        :param accessor: A :class:`StateAccessor`, that handles accesses to the
+        :param accessor: A `StateAccessor`, that handles accesses to the
                          state array as well as setting the cell value during
                          the loop.
-        :param neighbourhood: A :class:`Neighbourhood`, that fetches
+        :param neighbourhood: A `Neighbourhood`, that fetches
                               neighbouring cell values into known variables.
-        :param extra_code: Further :class:`StepFuncVisitor` classes, that
+        :param extra_code: Further `StepFuncVisitor` classes, that
                            add more behaviour.
-                           Usually at least a :class:`BorderCopier`.
+                           Usually at least a `BorderCopier`.
         :param target: The object to target.
         :param size: If the target is not supplied, the size has to be
                      specified here."""

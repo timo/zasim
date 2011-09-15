@@ -8,7 +8,7 @@ import new
 import numpy as np
 
 class ElementaryCellularAutomatonBase(Computation):
-    """Infer a 'Gödel numbering' from the used :class:`Neighbourhood` and
+    """Infer a 'Gödel numbering' from the used `Neighbourhood` and
     create a computation that corresponds to the rule'th possible combination
     of values for the neighbourhood cells.
 

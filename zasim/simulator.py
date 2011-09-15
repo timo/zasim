@@ -119,9 +119,9 @@ class BaseSimulator(QObject):
                                   "for %s" % (self.__class__))
 
 class CagenSimulator(BaseSimulator):
-    """This Simulator takes a :class:`StepFunc` and a :class:`TestTarget`
+    """This Simulator takes a `StepFunc` and a `TestTarget`
     instance and packs them together so they are compatible with the
-    :class:`BaseSimulator` interface."""
+    `BaseSimulator` interface."""
 
     def __init__(self, step_func, target):
         super(CagenSimulator, self).__init__()

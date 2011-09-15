@@ -235,7 +235,7 @@ class NextToResult(QWidget):
 class ElementaryRuleWindow(QWidget):
     """A window usable to modify the table of an elementary step function."""
     def __init__(self, neighbourhood, rule=0, base=2, **kwargs):
-        """:param neighbourhood: The :class:`Neighbourhood` instance to get the
+        """:param neighbourhood: The `Neighbourhood` instance to get the
                 data from.
            :param rule: The rule to set at the beginning.
            :param base: The numerical base for the cells."""

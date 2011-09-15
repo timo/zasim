@@ -5,7 +5,7 @@ class StepFuncVisitor(object):
     """The category this object and its subclasses belong to."""
 
     code = None
-    """The :class:`StepFunc` instance this visitor is bound to."""
+    """The `StepFunc` instance this visitor is bound to."""
 
     target = None
     """The configuration object that is being targetted."""
@@ -41,7 +41,7 @@ class StepFuncVisitor(object):
     def init_once(self):
         """Initialize data on the target.
 
-        This function will be called when the :class:`StepFunc` has
+        This function will be called when the `StepFunc` has
         first had its target set."""
 
     def new_config(self):
