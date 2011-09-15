@@ -37,6 +37,7 @@ class ControlWidget(QWidget):
         l.addSpacing(11)
         reset_button = QPushButton("&reset", self)
         reset_button.clicked.connect(self.set_config)
+        self.reset_button = reset_button
         l.addWidget(reset_button)
 
         self.zero_percentage = QSpinBox(self)

@@ -49,6 +49,21 @@ class TestGui:
         assert not display.control.stop_button.isVisible()
         QTest.qWait(100)
 
+    def test_reset_button(self):
+        other_thread = QThread()
+        sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base)
+
+        sim_obj.moveToThread(other_thread)
+
+        display = ZasimDisplay(sim_obj)
+        display.set_scale(scale)
+
+        QTest.qWaitForWindowShown(display.window)
+
+        QTest.mouseDClick(display.control.zero_percentage, Qt.LeftButton)
+        QTest.keyClick(display.control.zero_percentage, Qt.Backspace)
+        QTest.keyClicks(display.control.zero_percentage, "33")
+        QTest.mouseClick(display.control.reset_button, Qt.LeftButton)
 
 def produce_more(calls, arg, values, filter_func=lambda call: True):
     """Add, to all `calls`, a call for each `value` for the `arg`, so that
