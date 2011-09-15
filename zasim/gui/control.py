@@ -115,6 +115,6 @@ class ControlWidget(QWidget):
             zero_perc = self.zero_percentage.value() / 100.
             for pos in positions:
                 if random.random() > zero_perc:
-                    conf[pos] = 1
+                    conf[pos] = random.choice(self.sim.t.possible_values[1:])
 
         self.sim.set_config(conf)
