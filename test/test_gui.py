@@ -1,17 +1,23 @@
-from PySide.QtCore import *
-from PySide.QtGui import *
-from PySide.QtTest import *
+try:
+    from PySide.QtCore import *
+    from PySide.QtGui import *
+    from PySide.QtTest import *
+    HAVE_QT = True
+except ImportError:
+    HAVE_QT = False
 
 from zasim.gui.display import ZasimDisplay
 from zasim import cagen
 
 import time
+import pytest
 
 def seconds(num):
     end = time.time() + num
     while time.time() < end:
         yield 1
 
+@pytest.mark.skipif("not HAVE_QT")
 class TestGui:
     def setup_class(cls):
         """craetes a QT app and a socket spy"""
