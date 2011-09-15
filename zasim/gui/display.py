@@ -24,7 +24,7 @@ class ZasimDisplay(object):
     control = None
     """The :class:`ControlWidget` in use."""
 
-    def __init__(self, simulator):#, display_widget=None, main_window=None, control_widget=None):
+    def __init__(self, simulator):
         """Instantiate a Display (thas is: a window with a display widget and
         simulation controls) from a simulator.
 
