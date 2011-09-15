@@ -1,4 +1,4 @@
-from ..external.qt import QGLWidget, QImage, QDockWidget, QScrollArea, QSize, QEvent, Qt
+from ..external.qt import QWidget, QImage, QDockWidget, QScrollArea, QSize, QEvent, Qt
 import Queue
 
 class BaseExtraDisplay(QDockWidget):
@@ -6,7 +6,7 @@ class BaseExtraDisplay(QDockWidget):
     for things such as histograms."""
     def __init__(self, title, sim, width, height, parent=None, **kwargs):
         super(BaseExtraDisplay, self).__init__(unicode(title))
-        self.display_widget = QGLWidget(self)
+        self.display_widget = QWidget(self)
         self.scroller = QScrollArea(self)
         self.scroller.setWidget(self.display_widget)
         self.display_widget.setFixedSize(QSize(width, height))

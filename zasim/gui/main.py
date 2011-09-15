@@ -5,7 +5,6 @@ from ..external.qt import QApplication, Qt
 from .. import cagen
 
 import sys
-import random
 
 def main(width=200, height=200, scale=2,
         onedim=False,

@@ -55,6 +55,7 @@ class ZasimMainWindow(QMainWindow):
 
         layout.addWidget(scroller)
         layout.addWidget(self.control)
+        self.control.setObjectName("control")
 
         self.setCentralWidget(central_widget)
 
@@ -68,15 +69,23 @@ class ZasimMainWindow(QMainWindow):
 
     def setup_menu(self):
         simulator_menu = self.menuBar().addMenu("Simulator")
-        simulator_menu.addAction("&New...").activated.connect(self.show_new_sim_dlg)
-        simulator_menu.addAction("Open &Stepfunc Table").activated.connect(self.open_elementary_tool)
-        simulator_menu.addAction("&Quit").activated.connect(self.close)
+        simulator_menu.setObjectName("simulator_menu")
+        new_a = simulator_menu.addAction("&New...")
+        new_a.setObjectName("new")
+        new_a.activated.connect(self.show_new_sim_dlg)
+        stepf_a = simulator_menu.addAction("Open &Stepfunc Table")
+        stepf_a.setObjectName("stepfunc_table")
+        stepf_a.activated.connect(self.open_elementary_tool)
+        quit_a = simulator_menu.addAction("&Quit")
+        quit_a.setObjectName("quit")
+        quit_a.activated.connect(self.close)
 
     def open_elementary_tool(self):
         if self.elementary_tool and not self.elementary_tool.isVisible():
             self.elementary_tool = None
         if self.elementary_tool is None:
             self.elementary_tool = ElementaryRuleWindow(self.simulator._step_func.neigh, self.simulator.rule_number)
+            self.elementary_tool.setObjectName("elementary_tool")
             self.elementary_tool.show()
 
     def show_new_sim_dlg(self):
@@ -87,6 +96,7 @@ class ZasimMainWindow(QMainWindow):
             self.comp_dlg = None
         if self.comp_dlg is None:
             self.comp_dlg = StepFuncCompositionDialog()
+            self.comp_dlg.setObjectName("composition_dialog")
             self.comp_dlg.show()
 
     def attach_display(self, display):

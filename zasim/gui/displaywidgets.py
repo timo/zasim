@@ -56,6 +56,7 @@ class DisplayWidget(QWidget):
         self._width = width
         self._height = height
 
+        self.display.setObjectName("display")
         self.display.update.connect(self.update)
 
     def start_inverting_frames(self): self.display.start_inverting_frames()

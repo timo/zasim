@@ -153,6 +153,7 @@ class BaseNeighbourhoodDisplay(QWidget):
         for (row, col) in positions:
             offset = (row + offs_x, col + offs_y)
             subwidget = self.create_subwidget(offset, self.values.get(offset, GAP))
+            subwidget.setObjectName("cell_%d_%d" % offset)
             self.subwidgets[offset] = subwidget
             if subwidget is not None:
                 self.layout.addWidget(subwidget, row, col)
@@ -210,6 +211,9 @@ class NextToResult(QWidget):
         self.result_widget = result_widget
         self.neighbourhood_widget = neighbourhood_widget
 
+        self.result_widget.setObjectName("result")
+        self.neighbourhood_widget.setObjectName("neighbourhood")
+
         if direction in "lr":
             layout = QHBoxLayout()
             spacing = self.result_widget.width()
@@ -249,6 +253,7 @@ class ElementaryRuleWindow(QWidget):
 
         self.n_r_widgets = []
         self.display_widget = QWidget(self)
+        self.display_widget.setObjectName("display_widget")
         self.display_layout = QGridLayout(self.display_widget)
         self.display_layout.setSizeConstraint(QLayout.SetFixedSize)
 
@@ -262,6 +267,7 @@ class ElementaryRuleWindow(QWidget):
             n_w = BaseNeighbourhoodDisplay(neighbourhood, data, parent=self)
             r_w = EditableCellDisplayWidget(result, pos, base=base, parent=self)
             n_r_w = NextToResult(n_w, r_w, parent=self, direction="r")
+            n_r_w.setObjectName("block_%d" % pos)
 
             r_w.value_changed.connect(self._result_changed)
 
@@ -274,16 +280,19 @@ class ElementaryRuleWindow(QWidget):
 
         self.scroll_area = QScrollArea(self)
         self.scroll_area.setWidget(self.display_widget)
+        self.scroll_area.setObjectName("scroll_area")
 
         layout = QVBoxLayout(self)
 
         self.rule_nr_display = QLabel("Editing rule %s" % hex(self.rule_nr), self)
+        self.rule_nr_display.setObjectName("rule_nr_display")
         layout.addWidget(self.rule_nr_display)
         layout.addWidget(self.scroll_area)
 
         action_buttons = QHBoxLayout(self)
         minimize_button = QPushButton("Minimize rule number", self)
         minimize_button.clicked.connect(self.minimize_rule_number)
+        minimize_button.setObjectName("minimize")
         action_buttons.addWidget(minimize_button)
 
         action_buttons.addSpacing(11)
@@ -293,6 +302,7 @@ class ElementaryRuleWindow(QWidget):
             def do_action(act=action):
                 self.do_neighbourhood_action(act)
             act_btn.clicked.connect(do_action)
+            act_btn.setObjectName("action_%s" % name)
             action_buttons.addWidget(act_btn)
 
         layout.addLayout(action_buttons)

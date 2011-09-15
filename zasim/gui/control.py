@@ -22,13 +22,17 @@ class ControlWidget(QWidget):
         """Setup the widgets, connect the signals&slots."""
         l = QHBoxLayout(self)
         self.start_button = QPushButton("&Start", self)
+        self.start_button.setObjectName("start")
         self.stop_button = QPushButton("&Stop", self)
+        self.stop_button.setObjectName("stop")
         self.stop_button.hide()
+
         delay = QSpinBox()
         delay.setMinimum(0)
         delay.setMaximum(10000)
         delay.setSuffix(" ms")
         delay.setValue(self.timer_delay)
+        delay.setObjectName("delay")
 
         l.addWidget(self.start_button)
         l.addWidget(self.stop_button)
@@ -37,6 +41,7 @@ class ControlWidget(QWidget):
         l.addSpacing(11)
         reset_button = QPushButton("&reset", self)
         reset_button.clicked.connect(self.set_config)
+        reset_button.setObjectName("reset")
         l.addWidget(reset_button)
 
         self.zero_percentage = QSpinBox(self)
@@ -44,12 +49,14 @@ class ControlWidget(QWidget):
         self.zero_percentage.setMinimum(1)
         self.zero_percentage.setValue(50)
         self.zero_percentage.setSuffix("% black")
+        self.zero_percentage.setObjectName("zero_percentage")
         l.addWidget(self.zero_percentage)
 
         self.invert_frames = QCheckBox(self)
         self.invert_frames.setChecked(False)
         self.invert_frames.setText("&invert odd frames")
         self.invert_frames.stateChanged.connect(self.invert_odd)
+        self.invert_frames.setObjectName("invert_frames")
         l.addWidget(self.invert_frames)
 
         self.setLayout(l)
@@ -86,7 +93,7 @@ class ControlWidget(QWidget):
         """Step the simulator from the timer.
 
         .. note::
-            This is called by the timer that is controlled by :meth:`start` and
+            This is called by the timer that is controlled by `start` and
             :meth:`stop`. You should not call it yourself."""
         self.killTimer(self.timer_id)
         self.step()
@@ -95,18 +102,6 @@ class ControlWidget(QWidget):
     def step(self):
         """Step the simulator, update all displays."""
         self.sim.step()
-
-    def fullspeed(self):
-        """Run the stepping function without any timer delays."""
-        last_time = time.time()
-        last_step = 0
-        while self.isVisible():
-            self.step()
-            last_step += 1
-            QApplication.processEvents()
-            if last_step % 1000 == 1:
-                diff, last_time = time.time() - last_time, time.time()
-                print last_step, diff
 
     def set_config(self, conf=None):
         if conf is None:

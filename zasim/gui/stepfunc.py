@@ -34,7 +34,7 @@ class StepFuncCompositionDialog(QWidget):
 
         self.setup_ui()
         self.part_tree.currentItemChanged.connect(self.update_docs)
-        self.part_tree.itemDoubleClicked.connect(self.dbl_click_item)
+        self.part_tree.itemActivated.connect(self.dbl_click_item)
 
         self.cancel_button.clicked.connect(self.close)
         self.create_button.clicked.connect(self.create)
@@ -84,6 +84,7 @@ This pane at the bottom will display documentation."""
         left_pane = QVBoxLayout()
         self.part_tree = QTreeWidget(upper_widget)
         self.part_tree.setHeaderHidden(True)
+        self.part_tree.setObjectName("parts")
         left_pane.addWidget(self.part_tree)
 
         for (category, classes) in categories.iteritems():
@@ -103,18 +104,21 @@ This pane at the bottom will display documentation."""
         for num, category in enumerate(self.single_categories):
             label = QLabel(category, self)
             slot = QPushButton(self)
+            slot.setObjectName("slot_%s" % category)
             right_pane.addWidget(label, num, 0)
             right_pane.addWidget(slot, num, 1)
             self.category_buttons[category] = slot
         num += 1
         label = QLabel("additionals", self)
         self.additional_list = QListWidget(self)
+        self.additional_list.setObjectName("additional_list")
         right_pane.addWidget(label, num, 0, 1, 2)
         right_pane.addWidget(self.additional_list, num + 1, 0, 1, 2)
 
         # lower part: documentation
         self.doc_display = QTextEdit(self)
         self.doc_display.setReadOnly(True)
+        self.doc_display.setObjectName("doc_display")
 
         outer_layout.addWidget(self.doc_display)
 
@@ -125,7 +129,9 @@ This pane at the bottom will display documentation."""
         button_layout.addStretch()
 
         self.cancel_button = QPushButton("Cancel", self)
+        self.cancel_button.setObjectName("cancel")
         self.create_button = QPushButton("Create", self)
+        self.create_button.setObjectName("create")
 
         button_layout.addWidget(self.cancel_button)
         button_layout.addWidget(self.create_button)
@@ -138,6 +144,8 @@ This pane at the bottom will display documentation."""
         correct slot at the right."""
 
         cls = item.data(0, CLASS_OBJECT_ROLE)
+        if cls is None:
+            return
         if cls.category in self.single_categories:
             button = self.category_buttons[cls.category]
             button.setText(cls.__name__)
