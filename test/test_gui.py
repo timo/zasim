@@ -58,17 +58,27 @@ class TestGui:
         for execution in seconds(0.1):
             self.app.processEvents()
 
-def produce_more(calls, arg, values):
+def produce_more(calls, arg, values, filter_func=lambda call: True):
     """Add, to all `calls`, a call for each `value` for the `arg`, so that
     all combinations will exist in the returned list.
 
-    If calls is empty, generate a dict for each value as the result."""
+    If calls is empty, generate a dict for each value as the result.
+
+    If the filter_func is supplied, every old call will be passed to it and,
+    if the filter_func returns True, new calls will be produced based on the
+    values supplied. If the filter_func returns False, only the first value
+    will be set on the old call.
+    """
     if not calls:
         return [{arg: value} for value in values]
 
     ncalls = []
     for call in calls:
-        for value in values:
+        if filter_func(call):
+            values_to_use = values
+        else:
+            values_to_use = values[:1]
+        for value in values_to_use:
             new_call = call.copy()
             new_call[arg] = value
             ncalls.append(new_call)
@@ -84,7 +94,8 @@ def pytest_generate_tests(metafunc):
     if "base" in metafunc.funcargnames:
         calls = produce_more(calls, "base", [2, 3, 5])
     if "histogram" in metafunc.funcargnames:
-        calls = produce_more(calls, "histogram", [True, False])
+        calls = produce_more(calls, "histogram", [False, True],
+                lambda call: len(call["size"]) == 2)
 
     for call in calls:
         metafunc.addcall(funcargs=call)
