@@ -8,6 +8,7 @@ except ImportError:
 
 if HAVE_QT:
     from zasim.gui.display import ZasimDisplay
+    from zasim.gui.histogram import HistogramExtraDisplay
     from zasim import cagen
 
 import time
@@ -25,7 +26,7 @@ class TestGui:
         cls.app = QApplication(["test"])
         cls.app.setApplicationName("zasim gui test")
 
-    def test_start_stop_elementary(self, size, base, scale):
+    def test_start_stop_elementary(self, size, base, scale, histogram):
         other_thread = QThread()
         sim_obj = cagen.ElementarySimulator(size, rule=99, copy_borders=True, base=base)
 
@@ -33,6 +34,13 @@ class TestGui:
 
         display = ZasimDisplay(sim_obj)
         display.set_scale(scale)
+
+        if histogram:
+            extra_hist = HistogramExtraDisplay(sim_obj, parent=display,
+                        height=200, maximum=size[0] * size[1])
+            extra_hist.show()
+            display.window.attach_display(extra_hist)
+            display.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
 
         other_thread.start()
 
@@ -75,6 +83,8 @@ def pytest_generate_tests(metafunc):
         calls = produce_more(calls, "size", [(100,), (100, 100)])
     if "base" in metafunc.funcargnames:
         calls = produce_more(calls, "base", [2, 3, 5])
+    if "histogram" in metafunc.funcargnames:
+        calls = produce_more(calls, "histogram", [True, False])
 
     for call in calls:
         metafunc.addcall(funcargs=call)
