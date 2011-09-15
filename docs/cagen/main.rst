@@ -1,5 +1,17 @@
 :mod:`zasim.cagen.main` - Running cagen as a program
 ====================================================
 
-.. automodule:: zasim.cagen.main
+Running this module from the commandline
+----------------------------------------
 
+.. command-output:: python -m zasim.cagen.main --help
+  :shell:
+
+One example usage:
+
+.. command-output:: python -m zasim.cagen.main -w 80 -r 126 --print-rule -s 30 --pure
+
+API Documentation
+-----------------
+
+.. automodule:: zasim.cagen.main

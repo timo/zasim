@@ -61,4 +61,4 @@ This package is split into multiple modules:
 
     you can also write
 
-        >> from zasim.cagen import LinearCellLoop
+        >>> from zasim.cagen import LinearCellLoop
