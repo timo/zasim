@@ -6,8 +6,9 @@ try:
 except ImportError:
     HAVE_QT = False
 
-from zasim.gui.display import ZasimDisplay
-from zasim import cagen
+if HAVE_QT:
+    from zasim.gui.display import ZasimDisplay
+    from zasim import cagen
 
 import time
 import pytest
