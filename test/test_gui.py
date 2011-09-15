@@ -28,7 +28,7 @@ class TestGui:
         cls.app = QApplication(["test"])
         cls.app.setApplicationName("zasim gui test")
 
-    def test_start_stop_elementary(self, size, base, scale, histogram):
+    def test_start_stop_binrule(self, size, base, scale, histogram):
         other_thread = QThread()
         sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base, histogram=histogram)
 
@@ -88,6 +88,58 @@ class TestGui:
         zeros = histogram[0]
         other = sum(histogram[1:])
         assert abs((1.0 * zeros / (zeros + other)) - 0.99) < 0.2
+
+    def find_message_box(self, timeout=10):
+        end = time.time() + timeout
+        while time.time() < end:
+            widgets = self.app.allWidgets()
+            for widget in widgets:
+                if isinstance(widget, QMessageBox):
+                    return widget
+            self.app.processEvents()
+
+    def test_elementary_gui(self, base):
+        other_thread = QThread()
+        sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=base)
+
+        sim_obj.moveToThread(other_thread)
+
+        display = ZasimDisplay(sim_obj)
+        display.window.moveToThread(other_thread)
+        display.set_scale(1)
+
+        QTest.qWaitForWindowShown(display.window)
+
+        menu = display.window.menuBar().findChild(QMenu, u"simulator_menu")
+        QTest.mouseClick(menu, Qt.LeftButton)
+
+        elementary_action = menu.findChild(QAction, u"stepfunc_table")
+        elementary_action.trigger()
+
+        for execution in seconds(0.1):
+            self.app.processEvents()
+
+        elementary_window = self.app.activeWindow()
+
+        actions = [act for act in elementary_window.findChildren(QPushButton)
+                    if act.objectName().startswith("action_")]
+
+        for action in actions:
+            QTest.mouseClick(action, Qt.LeftButton)
+            for execution in seconds(0.1):
+                self.app.processEvents()
+
+        #minimize = elementary_window.findChild(QPushButton, u"minimize")
+
+        #print "clicking now"
+        #class foo(QThread):
+            #def run(self):
+                #QTest.mouseClick(minimize, Qt.LeftButton)
+        #t = foo()
+        #t.start()
+
+        #popup = self.find_message_box()
+        #popup.close()
 
 def produce_more(calls, arg, values, filter_func=lambda call: True):
     """Add, to all `calls`, a call for each `value` for the `arg`, so that

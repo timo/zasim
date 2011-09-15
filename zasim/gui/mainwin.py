@@ -69,9 +69,16 @@ class ZasimMainWindow(QMainWindow):
 
     def setup_menu(self):
         simulator_menu = self.menuBar().addMenu("Simulator")
-        simulator_menu.addAction("&New...").activated.connect(self.show_new_sim_dlg)
-        simulator_menu.addAction("Open &Stepfunc Table").activated.connect(self.open_elementary_tool)
-        simulator_menu.addAction("&Quit").activated.connect(self.close)
+        simulator_menu.setObjectName("simulator_menu")
+        new_a = simulator_menu.addAction("&New...")
+        new_a.setObjectName("new")
+        new_a.activated.connect(self.show_new_sim_dlg)
+        stepf_a = simulator_menu.addAction("Open &Stepfunc Table")
+        stepf_a.setObjectName("stepfunc_table")
+        stepf_a.activated.connect(self.open_elementary_tool)
+        quit_a = simulator_menu.addAction("&Quit")
+        quit_a.setObjectName("quit")
+        quit_a.activated.connect(self.close)
 
     def open_elementary_tool(self):
         if self.elementary_tool and not self.elementary_tool.isVisible():
