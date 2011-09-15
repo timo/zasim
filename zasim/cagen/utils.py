@@ -75,7 +75,7 @@ def rule_nr_to_rule_arr(number, digits, base=2):
 
     return result
 
-def elementary_digits_and_values(neighbourhood, base, rule_arr=None):
+def elementary_digits_and_values(neighbourhood, base=2, rule_arr=None):
     """From a neighbourhood, the base of the values used and the array that
     holds the results for each combination of neighbourhood values, create a
     list of dictionaries with the neighbourhood values paired with their
@@ -88,8 +88,7 @@ def elementary_digits_and_values(neighbourhood, base, rule_arr=None):
     digits = len(offsets)
 
     for i in range(base ** digits):
-        values = [1 if (i & (base ** k)) > 0 else 0
-                for k in range(len(offsets))]
+        values = rule_nr_to_rule_arr(i, digits, base)
         asdict = dict(zip(names, values))
         digits_and_values.append(asdict)
 

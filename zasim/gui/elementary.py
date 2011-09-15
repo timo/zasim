@@ -103,7 +103,8 @@ class EditableCellDisplayWidget(QPushButton):
         paint = QPainter(self)
         paint.fillRect(event.rect(), self.bg_color)
         if self.hasFocus():
-            paint.setPen(QColor("red"))
+            paint.setPen(QColor("red") if self.bg_color != QColor("red")
+                         else QColor("black"))
             paint.drawRect(QRect(1, 1, self.width() - 3, self.height() - 3))
 
 class BaseNeighbourhoodDisplay(QWidget):
@@ -118,12 +119,13 @@ class BaseNeighbourhoodDisplay(QWidget):
     This class itself displays white or black blocks in the shape of the
     neighbourhood."""
 
-    def __init__(self, neighbourhood, values=None, **kwargs):
+    def __init__(self, neighbourhood, values=None, base=2, **kwargs):
         super(BaseNeighbourhoodDisplay, self).__init__(**kwargs)
         self.neighbourhood = neighbourhood
         self.offsets = neighbourhood.offsets
         self.names = neighbourhood.names
         self.bbox = self.neighbourhood.bounding_box()
+        self.base = base
 
         if values is None:
             values = dict((offs, 0) for offs in self.offsets)
@@ -327,7 +329,7 @@ class ElementaryRuleWindow(QWidget):
         for digit, values in enumerate(self.digits_and_values):
             num += values["result_value"] * (self.base ** digit)
         self.rule_nr = num
-        self.rule_nr_display.setText("Editing rule %d" % (hex(self.rule_nr)))
+        self.rule_nr_display.setText("Editing rule %s" % (hex(self.rule_nr)))
         return self.rule_nr
 
     def minimize_rule_number(self):
