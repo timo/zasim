@@ -24,7 +24,6 @@ def make_palette_qc():
     return result
 
 PALETTE_QC = make_palette_qc()
-print PALETTE_QC
 
 del make_palette_qc
 
