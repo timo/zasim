@@ -28,7 +28,7 @@ class TestGui:
 
     def test_start_stop_elementary(self, size, base, scale, histogram):
         other_thread = QThread()
-        sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base)
+        sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base, histogram=histogram)
 
         sim_obj.moveToThread(other_thread)
 
