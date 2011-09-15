@@ -69,8 +69,10 @@ class TestGui:
 
         QTest.qWaitForWindowShown(display.window)
 
+        reset_button = display.control.findChild(QWidget, u"reset")
+
         display.control.zero_percentage.setValue(33)
-        QTest.mouseClick(display.control.reset_button, Qt.LeftButton)
+        QTest.mouseClick(reset_button, Qt.LeftButton)
 
         config = sim_obj.get_config()
         histogram = np.bincount(config.ravel())
@@ -79,7 +81,7 @@ class TestGui:
         assert abs((1.0 * zeros / (zeros + other)) - 0.33) < 0.2
 
         display.control.zero_percentage.setValue(99)
-        QTest.mouseClick(display.control.reset_button, Qt.LeftButton)
+        QTest.mouseClick(reset_button, Qt.LeftButton)
 
         config = sim_obj.get_config()
         histogram = np.bincount(config.ravel())
