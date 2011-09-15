@@ -55,6 +55,7 @@ class ZasimMainWindow(QMainWindow):
 
         layout.addWidget(scroller)
         layout.addWidget(self.control)
+        self.control.setObjectName("control")
 
         self.setCentralWidget(central_widget)
 
@@ -77,6 +78,7 @@ class ZasimMainWindow(QMainWindow):
             self.elementary_tool = None
         if self.elementary_tool is None:
             self.elementary_tool = ElementaryRuleWindow(self.simulator._step_func.neigh, self.simulator.rule_number)
+            self.elementary_tool.setObjectName("elementary_tool")
             self.elementary_tool.show()
 
     def show_new_sim_dlg(self):
@@ -87,6 +89,7 @@ class ZasimMainWindow(QMainWindow):
             self.comp_dlg = None
         if self.comp_dlg is None:
             self.comp_dlg = StepFuncCompositionDialog()
+            self.comp_dlg.setObjectName("composition_dialog")
             self.comp_dlg.show()
 
     def attach_display(self, display):
