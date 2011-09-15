@@ -20,7 +20,7 @@ from __future__ import absolute_import
 
 import numpy as np
 from ..elementarytools import *
-from ..cagen import elementary_digits_and_values
+from ..cagen import elementary_digits_and_values, rule_nr_to_rule_arr
 from ..external.qt import *
 from itertools import product
 
@@ -246,10 +246,7 @@ class ElementaryRuleWindow(QWidget):
         self.base = base
         self.entries = len(self.neighbourhood.offsets)
 
-        self.rule = np.zeros(self.base ** self.entries, dtype=np.dtype("i"))
-        for digit in range(len(self.rule)):
-            if self.rule_nr & (self.base** digit) > 0:
-                self.rule[digit] = 1
+        self.rule = np.array(rule_nr_to_rule_arr(self.rule_nr, self.base ** self.entries, self.base))
 
         self.n_r_widgets = []
         self.display_widget = QWidget(self)
