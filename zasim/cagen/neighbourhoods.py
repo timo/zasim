@@ -104,9 +104,8 @@ def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the neighbourhood used by the elementary cellular automatons.
 
     The neighbours are called l, m and r for left, middle and right."""
-    result = Base(list("lmr"), [[-1], [0], [1]], **kwargs)
-    result.neighbourhood_name = "ElementaryFlatNeighbourhood"
-    return result
+    return Base(list("lmr"), [[-1], [0], [1]],
+                "ElementaryFlatNeighbourhood", **kwargs)
 
 def VonNeumannNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the Von Neumann Neighbourhood, in which the cell itself and the
@@ -114,11 +113,10 @@ def VonNeumannNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
 
     The neighbours are called l, u, m, d and r for left, up, middle, down and
     right respectively."""
-    result = Base(list("uldrm"),
+    return Base(list("uldrm"),
                 [(0,-1), (-1,0), (0,1), (1,0), (0,0)],
+                "VonNeumannNeighbourhood",
                 **kwargs)
-    result.neighbourhood_name = "VonNeumannNeighbourhood"
-    return result
 
 def MooreNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the Moore Neighbourhood. The cell and all of its 8 neighbours
@@ -128,8 +126,7 @@ def MooreNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     right-up, left, middle, right, left-down, down and right-down
     respectively."""
 
-    result = Base("lu u ru l m r ld d rd".split(" "),
+    return Base("lu u ru l m r ld d rd".split(" "),
                 list(product([-1, 0, 1], [-1, 0, 1])),
+                "MooreNeighbourhood",
                 **kwargs)
-    result.neighbourhood_name = "MooreNeighbourhood"
-    return result
