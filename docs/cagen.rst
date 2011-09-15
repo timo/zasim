@@ -52,6 +52,7 @@ This package is split into multiple modules:
     cagen/beta_async
     cagen/main
     cagen/simulators
+    cagen/utils
 
 .. note::
 

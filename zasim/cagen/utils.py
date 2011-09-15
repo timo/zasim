@@ -1,5 +1,10 @@
+"""
+.. testsetup:: *
+
+    from zasim.cagen.utils import *
+
+"""
 from ..features import HAVE_TUPLE_ARRAY_INDEX
-import sys
 
 if HAVE_TUPLE_ARRAY_INDEX:
     def offset_pos(pos, offset):
@@ -52,7 +57,23 @@ def dedent_python_code(code):
     return "\n".join(resultlines)
 
 def rule_nr_to_rule_arr(number, digits, base=2):
-    return [int(number & (base ** index) > 0) for index in range(digits)]
+    """Given a rule `number`, the number of cells the neighbourhood has
+    (as `digits`) and the `base` of the cells, this function calculates the
+    lookup array for computing that rule.
+
+    >>> rule_nr_to_rule_arr(110, 3)
+    [0, 1, 1, 1, 0, 1, 1, 0]
+    >>> rule_nr_to_rule_arr(26, 3, 3)
+    [2, 2, 2, ...]
+    """
+    entries = base ** digits
+    result = [0 for index in range(entries)]
+    for e in range(entries - 1, -1, -1):
+        d = int(number // (base ** e))
+        number -= d * (base ** e)
+        result[e] = d
+
+    return result
 
 def elementary_digits_and_values(neighbourhood, base, rule_arr=None):
     """From a neighbourhood, the base of the values used and the array that
