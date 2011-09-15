@@ -135,7 +135,7 @@ class TestGui:
         #popup = self.find_message_box()
         #popup.close()
 
-    def test_stepfunc_comp(self):
+    def SKIP_stepfunc_comp(self):
         sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=2)
 
         display = ZasimDisplay(sim_obj)
