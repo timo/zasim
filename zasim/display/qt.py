@@ -1,12 +1,32 @@
 from __future__ import absolute_import
 
-from ..external.qt import QObject, QImage, QPainter, QPoint, QSize, QRect, Signal
+from ..external.qt import QObject, QImage, QPainter, QPoint, QSize, QRect, QColor, Signal
 
 import numpy as np
 import Queue
 
 """This module offers drawing capabilities for any image format that QImage
 supports, such as png and jpg."""
+
+PALETTE_444 = [0x0, 0xfff, 0xf00, 0x00f, 0x0f0, 0xff0, 0x0ff, 0xf0f]
+
+def make_palette_qc():
+    result = []
+    for color in PALETTE_444:
+        b = (color & 0xf) << 4 | (color & 0xf)
+        color = color >> 4
+        g = (color & 0xf) << 4 | (color & 0xf)
+        color = color >> 4
+        r = (color & 0xf) << 4 | (color & 0xf)
+
+        result.append(QColor.fromRgb(r, g, b))
+
+    return result
+
+PALETTE_QC = make_palette_qc()
+print PALETTE_QC
+
+del make_palette_qc
 
 class BaseQImagePainter(QObject):
     """This is a base class for implementing renderers for configs based on
@@ -16,8 +36,6 @@ class BaseQImagePainter(QObject):
     """This signal will be emitted when the configuration has changed.
 
     Its first argument is the area of change as a QRect."""
-
-    PALETTE = [0xf00, 0x00f, 0x0f0, 0xff0, 0x0ff, 0xf0f]
 
     def __init__(self, width, height, queue_size=1, scale=1, connect=True, **kwargs):
         """Initialize the BaseQImagePainter.
@@ -103,7 +121,7 @@ class LinearQImagePainter(BaseQImagePainter):
             lines = simulator.shape[0]
         self._last_step = 0
 
-        self.palette = self.PALETTE[:len(self._sim.t.possible_values)]
+        self.palette = PALETTE_444[2:len(self._sim.t.possible_values)]
 
         super(LinearQImagePainter, self).__init__(
                 simulator.shape[0], lines, lines,
@@ -180,7 +198,7 @@ class TwoDimQImagePainter(BaseQImagePainter):
         w, h = simulator.shape
         super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
 
-        self.palette = self.PALETTE[:len(self._sim.t.possible_values)]
+        self.palette = PALETTE_444[2:len(self._sim.t.possible_values)]
 
         if connect:
             self.connect_simulator()

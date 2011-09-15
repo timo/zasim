@@ -22,16 +22,19 @@ import numpy as np
 from ..elementarytools import *
 from ..cagen import elementary_digits_and_values, rule_nr_to_rule_arr
 from ..external.qt import *
+from ..display.qt import PALETTE_QC
 from itertools import product
+
+import random
 
 GAP = object()
 """The value passed to create_subwidget when a position is not held by a
 field."""
 
-CELL_COL = {1: "white",
-            0: "black",
-            GAP: "gray"}
+CELL_COL = dict(enumerate(PALETTE_QC))
 """What colors to use for what field values."""
+
+CELL_COL[GAP] = QColor("gray")
 
 class CellDisplayWidget(QLabel):
     """A little Widget that displays a cell in a neighbourhood."""
@@ -51,7 +54,7 @@ class CellDisplayWidget(QLabel):
     def __pixmap_for_value(self, value):
         """Create a pixmap for the value of the cell."""
         pixmap = QPixmap(QSize(self.width(), self.height()))
-        pixmap.fill(QColor(CELL_COL[value]))
+        pixmap.fill(CELL_COL[value])
         return pixmap
 
 class EditableCellDisplayWidget(QPushButton):
@@ -75,7 +78,7 @@ class EditableCellDisplayWidget(QPushButton):
         self.setFixedSize(size, size)
         self.setFlat(True)
         self.setAutoFillBackground(True)
-        self.bg_color = QColor(CELL_COL[self.value])
+        self.bg_color = CELL_COL[self.value]
         self.position = position
 
         self.clicked.connect(self._change_value)
@@ -83,13 +86,13 @@ class EditableCellDisplayWidget(QPushButton):
     def _change_value(self):
         """Called by the clicked signal of the underlying QPushButton."""
         self.value = (self.value + 1) % self.base
-        self.bg_color = QColor(CELL_COL[self.value])
+        self.bg_color = CELL_COL[self.value]
         self.update()
         self.value_changed.emit(self.position, self.value)
 
     def set_value(self, value, emit=False):
         self.value = value
-        self.bg_color = QColor(CELL_COL[self.value])
+        self.bg_color = CELL_COL[self.value]
         self.update()
         if emit:
             self.value_changed.emit(self.position, self.value)
@@ -234,19 +237,22 @@ class NextToResult(QWidget):
 
 class ElementaryRuleWindow(QWidget):
     """A window usable to modify the table of an elementary step function."""
-    def __init__(self, neighbourhood, rule=0, base=2, **kwargs):
+    def __init__(self, neighbourhood, rule=None, base=2, **kwargs):
         """:param neighbourhood: The `Neighbourhood` instance to get the
                 data from.
            :param rule: The rule to set at the beginning.
            :param base: The numerical base for the cells."""
         super(ElementaryRuleWindow, self).__init__(**kwargs)
         self.neighbourhood = neighbourhood
-        self.rule_nr = rule
 
         self.base = base
         self.entries = len(self.neighbourhood.offsets)
 
-        self.rule = np.array(rule_nr_to_rule_arr(self.rule_nr, self.base ** self.entries, self.base))
+        if rule is None:
+            rule = random.randrange(0, base ** (base ** self.entries))
+        self.rule_nr = rule
+
+        self.rule = np.array(rule_nr_to_rule_arr(self.rule_nr, self.entries, self.base))
 
         self.n_r_widgets = []
         self.display_widget = QWidget(self)
@@ -391,15 +397,14 @@ class ElementaryRuleWindow(QWidget):
         self._rewrap_grid(old_width = event.oldSize().width())
 
 def main():
-    from .cagen import VonNeumannNeighbourhood
-    from random import randrange
+    from ..cagen import VonNeumannNeighbourhood
     import sys
 
     app = QApplication(sys.argv)
 
     vn = VonNeumannNeighbourhood()
 
-    dvw = ElementaryRuleWindow(vn, rule=randrange(1024))
+    dvw = ElementaryRuleWindow(vn, base=3)
     dvw.show()
 
     sys.exit(app.exec_())
