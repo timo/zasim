@@ -1,3 +1,21 @@
+"""This module offers `CellLoop` classes for nondeterministic step function
+execution.
+
+The idea behind this is, that in a physical realisation of a cellular automaton, the
+single cells may not update with the exact same frequency, so that the order in
+which the cells execute may be arbitrary and asynchronous.
+
+This is formally defined with a probability that decides, for each cell in turn, if
+it may update or not.
+
+Implementation details
+----------------------
+
+This implementation offers the `NondeterministicCellLoopMixin`, which you can add as
+a first base class next to any kind of `CellLoop`. For your convenience, the classes
+`LinearNondeterministicCellLoop` and `TwoDimNondeterministicCellLoop` are already
+composed for you.
+"""
 from .bases import StepFuncVisitor
 from .loops import LinearCellLoop, TwoDimCellLoop
 
