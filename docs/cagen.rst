@@ -1,12 +1,16 @@
-Programmatically generated CAs: the cagen package
-=================================================
+:mod:`zasim.cagen` - Programmatically generating CAs
+====================================================
 
 Zasim offers a package for generating all the code needed to create and run a
 step function without having to re-write boilerplate code. This is achieved by
 offering a lot of re-usable components.
 
-You only need to write the core computation once in C and once in python,
-the rest will be done for you by the components offered in this module.
+This package also contains :doc:`pre-built simulators for commonly used cellular
+automata <cagen/simulators>`.
+
+When creating a new computation, you only need to write the core
+computation once in C and once in python, the rest will be done for you by
+the components offered in this module.
 
 The parts the step function is decomposed into are all subclasses of
 :class:`StepFuncVisitor`. The base classes available are:

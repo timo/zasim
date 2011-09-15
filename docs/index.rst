@@ -14,17 +14,6 @@ When in a more finished state, its main features will be:
   - Manipulate cellular space through UI or code.
   - It runs fast, but developing new cellular automatons is simple.
 
-Contents:
-
-.. toctree::
-   :maxdepth: 2
-
-   simulator
-   display
-   cagen
-   gui
-   elementarytools
-
 Getting the code
 ================
 
@@ -34,19 +23,27 @@ still require resolving.
 Running zasim
 =============
 
-The main way to use zasim will in the future be to import the modules from
-zasim in an interactive python interpreter, but that is currently not
-supported by the gui very well. In order for the interactive mode to work
-well with the GUI, the GUI will have to get its own thread.
+Until using zasim in an interactive interpreter gets more convenient,
+you can use the gui or cagen packages from the commandline. Both offer a
+commandline argument interface with many different options. You can get a
+usage summary with the following commands:
 
-Until then, you can use the display or cagen module from the commandline.
-Both offer a commandline argument interface with many different options.
-You can get a usage summary with the following commands:
+You can find :doc:`info on how to start the gui from the commandline <gui/main>`
+and :doc:`how to start the commandline version <cagen/main>` with complete usage
+summaries.
 
-::
 
-    python -m zasim.gui.main --help
-    python -m zasim.cagen.main --help
+API Documentation
+=================
+
+.. toctree::
+   :maxdepth: 2
+
+   simulator
+   display
+   cagen
+   gui
+   elementarytools
 
 Indices and tables
 ==================
