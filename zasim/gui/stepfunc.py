@@ -34,7 +34,7 @@ class StepFuncCompositionDialog(QWidget):
 
         self.setup_ui()
         self.part_tree.currentItemChanged.connect(self.update_docs)
-        self.part_tree.itemDoubleClicked.connect(self.dbl_click_item)
+        self.part_tree.itemActivated.connect(self.dbl_click_item)
 
         self.cancel_button.clicked.connect(self.close)
         self.create_button.clicked.connect(self.create)
@@ -144,6 +144,8 @@ This pane at the bottom will display documentation."""
         correct slot at the right."""
 
         cls = item.data(0, CLASS_OBJECT_ROLE)
+        if cls is None:
+            return
         if cls.category in self.single_categories:
             button = self.category_buttons[cls.category]
             button.setText(cls.__name__)

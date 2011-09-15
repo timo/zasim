@@ -99,13 +99,9 @@ class TestGui:
             self.app.processEvents()
 
     def test_elementary_gui(self, base):
-        other_thread = QThread()
         sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=base)
 
-        sim_obj.moveToThread(other_thread)
-
         display = ZasimDisplay(sim_obj)
-        display.window.moveToThread(other_thread)
         display.set_scale(1)
 
         QTest.qWaitForWindowShown(display.window)
@@ -140,6 +136,37 @@ class TestGui:
 
         #popup = self.find_message_box()
         #popup.close()
+
+    def test_stepfunc_comp(self):
+        sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=2)
+
+        display = ZasimDisplay(sim_obj)
+        display.set_scale(1)
+
+        QTest.qWaitForWindowShown(display.window)
+
+        menu = display.window.menuBar().findChild(QMenu, u"simulator_menu")
+        QTest.mouseClick(menu, Qt.LeftButton)
+
+        stepfunc_action = menu.findChild(QAction, u"new")
+        stepfunc_action.trigger()
+
+        for execution in seconds(0.1):
+            self.app.processEvents()
+
+        stepfunc_window = self.app.activeWindow()
+        tree = stepfunc_window.findChild(QWidget, u"parts")
+        QTest.keyClick(tree, Qt.Key_Right)
+        QTest.keyClick(tree, Qt.Key_Return)
+        for i in range(5):
+            QTest.keyClick(tree, Qt.Key_Left)
+            QTest.keyClick(tree, Qt.Key_Left)
+            QTest.keyClick(tree, Qt.Key_Down)
+            QTest.keyClick(tree, Qt.Key_Return)
+
+        close = stepfunc_window.findChild(QPushButton, u"cancel")
+        QTest.mouseClick(close, Qt.LeftButton)
+
 
 def produce_more(calls, arg, values, filter_func=lambda call: True):
     """Add, to all `calls`, a call for each `value` for the `arg`, so that
