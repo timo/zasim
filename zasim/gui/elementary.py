@@ -322,7 +322,7 @@ class ElementaryRuleWindow(QWidget):
         for digit, values in enumerate(self.digits_and_values):
             num += values["result_value"] * (self.base ** digit)
         self.rule_nr = num
-        self.rule_nr_display.setText("Editing rule %d" % (self.rule_nr))
+        self.rule_nr_display.setText("Editing rule %d" % (hex(self.rule_nr)))
         return self.rule_nr
 
     def minimize_rule_number(self):
