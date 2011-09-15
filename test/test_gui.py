@@ -29,10 +29,8 @@ class TestGui:
         cls.app.setApplicationName("zasim gui test")
 
     def test_start_stop_binrule(self, size, base, scale, histogram):
-        other_thread = QThread()
         sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base, histogram=histogram)
 
-        sim_obj.moveToThread(other_thread)
 
         display = ZasimDisplay(sim_obj)
         display.set_scale(scale)
@@ -44,7 +42,6 @@ class TestGui:
             display.window.attach_display(extra_hist)
             display.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
 
-        other_thread.start()
 
         QTest.mouseClick(display.control.start_button, Qt.LeftButton)
 
@@ -59,10 +56,7 @@ class TestGui:
         assert not display.control.stop_button.isVisible()
 
     def test_reset_button(self):
-        other_thread = QThread()
         sim_obj = cagen.ElementarySimulator((1000, 100), copy_borders=True, base=3)
-
-        sim_obj.moveToThread(other_thread)
 
         display = ZasimDisplay(sim_obj)
         display.set_scale(1)
