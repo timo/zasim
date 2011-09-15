@@ -135,11 +135,11 @@ class LinearQImagePainter(BaseQImagePainter):
                 nconf = np.empty((w, 1), np.uint16, "C")
 
                 if not self._invert_odd or self._odd:
-                    nconf[conf==1] = 0
-                    nconf[conf==0] = 0xfff
-                else:
                     nconf[conf==0] = 0
                     nconf[conf==1] = 0xfff
+                else:
+                    nconf[conf==1] = 0
+                    nconf[conf==0] = 0xfff
 
                 for num, value in enumerate(self.palette):
                     nconf[conf == num+2] = value
@@ -193,11 +193,11 @@ class TwoDimQImagePainter(BaseQImagePainter):
             nconf = np.empty((w, h), np.uint16, "C")
 
             if not self._invert_odd or self._odd:
-                nconf[conf==1] = 0
-                nconf[conf==0] = 0xfff
-            else:
                 nconf[conf==0] = 0
                 nconf[conf==1] = 0xfff
+            else:
+                nconf[conf==1] = 0
+                nconf[conf==0] = 0xfff
 
             for num, value in enumerate(self.palette):
                 nconf[conf == num+2] = value
