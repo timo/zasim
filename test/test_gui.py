@@ -11,13 +11,7 @@ if HAVE_QT:
     from zasim.gui.histogram import HistogramExtraDisplay
     from zasim import cagen
 
-import time
 import pytest
-
-def seconds(num):
-    end = time.time() + num
-    while time.time() < end:
-        yield 1
 
 @pytest.mark.skipif("not HAVE_QT")
 class TestGui:
@@ -44,19 +38,17 @@ class TestGui:
 
         other_thread.start()
 
+        QTest.qWaitForWindowShown(display.window)
+
         QTest.mouseClick(display.control.start_button, Qt.LeftButton)
 
-        for execution in seconds(0.1):
-            self.app.processEvents()
+        QTest.qWait(100)
         assert not display.control.start_button.isVisible()
-        for execution in seconds(0.1):
-            self.app.processEvents()
         QTest.mouseClick(display.control.stop_button, Qt.LeftButton)
-        for execution in seconds(0.1):
-            self.app.processEvents()
+        QTest.qWait(100)
         assert not display.control.stop_button.isVisible()
-        for execution in seconds(0.1):
-            self.app.processEvents()
+        QTest.qWait(100)
+
 
 def produce_more(calls, arg, values, filter_func=lambda call: True):
     """Add, to all `calls`, a call for each `value` for the `arg`, so that
