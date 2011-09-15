@@ -1,3 +1,35 @@
+"""This module implements a Neighbourhood and a StateAccessor for beta-asynchronous
+step function execution.
+
+The idea behind beta asynchronous execution is, that in a physical realisation of
+a cellular automaton, there may be delays in communication between the cells
+whenever the value of a neighbour is read.
+
+This is simulated by splitting the value of a cell into an inner and an outer value.
+
+At the beginning of each step, each cell reads its own inner value and the outer
+value of each surrounding cell. These values are then used just like during normal
+calculation. At the end of the step, the cell then writes the result to its inner
+value and, with the probability set before, updates the outer value with the inner
+value.
+
+Implementation details
+----------------------
+
+This implementation realises the above specification by offering both a
+`Neighbourhood` base class as well as a `StateAccessor` derived from
+`SimpleStateAccessor`.
+
+The `BetaAsynchronousNeighbourhood` acts just like `SimpleNeighbourhood`, but reads
+the current outer value into orig_foo and the inner value into foo (assuming foo is
+the name of the central cell.)
+
+The `BetaAsynchronousAccessor` takes care of updating the outer state with the inner
+state at the end of the computation and ensures that, in case there's any stats
+object in place, at the end of the computation "foo" (as defined above) contains the
+outer value of the current cell.
+"""
+
 from .neighbourhoods import SimpleNeighbourhood
 from .accessors import SimpleStateAccessor
 from .utils import gen_offset_pos
@@ -87,9 +119,6 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
         return self.inner_write_access(pos)
 
     def visit(self):
-        """Take care for result and sizeX to exist in python and C code,
-        for the result to be written to the config space and for the configs
-        to be swapped by the python code."""
         self.code.add_code("localvars",
          """int result;
             srand(beta_randseed(0));""")

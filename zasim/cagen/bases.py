@@ -100,7 +100,9 @@ class StateAccessor(StepFuncVisitor):
         """Swap out all configs"""
 
     def set_size(self, size):
-        """Set the size of the target."""
+        """Set the size of the target.
+
+        This is supposed to be called exactly once by `StepFunc`."""
 
     def gen_copy_code(self):
         """Generate a bit of C code to copy the current field over from the old
