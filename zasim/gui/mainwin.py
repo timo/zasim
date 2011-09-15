@@ -48,7 +48,10 @@ class ZasimMainWindow(QMainWindow):
 
         layout = QVBoxLayout(central_widget)
 
-        layout.addWidget(QLabel(str(self.simulator), self))
+        sim_name = QLabel(str(self.simulator), self)
+        # make text selectable and links (if any) clickable
+        sim_name.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        layout.addWidget(sim_name)
 
         scroller = QScrollArea()
         scroller.setWidget(self.display)

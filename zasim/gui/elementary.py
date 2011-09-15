@@ -286,6 +286,8 @@ class ElementaryRuleWindow(QWidget):
 
         self.rule_nr_display = QLabel("Editing rule %s" % hex(self.rule_nr), self)
         self.rule_nr_display.setObjectName("rule_nr_display")
+        # make text selectable and links (if any) clickable
+        self.rule_nr_display.setTextInteractionFlags(Qt.TextBrowserInteraction)
         layout.addWidget(self.rule_nr_display)
         layout.addWidget(self.scroll_area)
 
