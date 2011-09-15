@@ -125,6 +125,8 @@ class TestGui:
             for execution in seconds(0.1):
                 self.app.processEvents()
 
+        self.app.closeAllWindows()
+
         #minimize = elementary_window.findChild(QPushButton, u"minimize")
 
         #print "clicking now"
@@ -137,7 +139,6 @@ class TestGui:
         #popup = self.find_message_box()
         #popup.close()
 
-    @pytest.mark.skip("crashes on jenkins :(")
     def test_stepfunc_comp(self):
         sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=2)
 
@@ -157,6 +158,7 @@ class TestGui:
 
         stepfunc_window = self.app.activeWindow()
         tree = stepfunc_window.findChild(QWidget, u"parts")
+        assert tree is not None
         QTest.keyClick(tree, Qt.Key_Right)
         for execution in seconds(0.05):
             self.app.processEvents()
@@ -165,23 +167,17 @@ class TestGui:
             self.app.processEvents()
         for i in range(5):
             QTest.keyClick(tree, Qt.Key_Left)
-            for execution in seconds(0.05):
-                self.app.processEvents()
             QTest.keyClick(tree, Qt.Key_Left)
-            for execution in seconds(0.05):
-                self.app.processEvents()
             QTest.keyClick(tree, Qt.Key_Down)
-            for execution in seconds(0.05):
-                self.app.processEvents()
             QTest.keyClick(tree, Qt.Key_Return)
-            for execution in seconds(0.05):
-                self.app.processEvents()
 
         close = stepfunc_window.findChild(QPushButton, u"cancel")
+        assert close is not None
         QTest.mouseClick(close, Qt.LeftButton)
         for execution in seconds(0.05):
             self.app.processEvents()
 
+        self.app.closeAllWindows()
 
 def produce_more(calls, arg, values, filter_func=lambda call: True):
     """Add, to all `calls`, a call for each `value` for the `arg`, so that
