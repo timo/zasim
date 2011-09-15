@@ -11,7 +11,13 @@ if HAVE_QT:
     from zasim.gui.histogram import HistogramExtraDisplay
     from zasim import cagen
 
+import time
 import pytest
+
+def seconds(num):
+    end = time.time() + num
+    while time.time() < end:
+        yield 1
 
 @pytest.mark.skipif("not HAVE_QT")
 class TestGui:
@@ -38,30 +44,31 @@ class TestGui:
 
         other_thread.start()
 
-        QTest.qWaitForWindowShown(display.window)
-
         QTest.mouseClick(display.control.start_button, Qt.LeftButton)
 
-        QTest.qWait(100)
+        for execution in seconds(0.1):
+            self.app.processEvents()
         assert not display.control.start_button.isVisible()
+        for execution in seconds(0.1):
+            self.app.processEvents()
         QTest.mouseClick(display.control.stop_button, Qt.LeftButton)
-        QTest.qWait(100)
+        for execution in seconds(0.1):
+            self.app.processEvents()
         assert not display.control.stop_button.isVisible()
-        QTest.qWait(100)
 
     def test_reset_button(self):
         other_thread = QThread()
-        sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base)
+        sim_obj = cagen.ElementarySimulator((1000, 100), copy_borders=True, base=3)
 
         sim_obj.moveToThread(other_thread)
 
         display = ZasimDisplay(sim_obj)
-        display.set_scale(scale)
+        display.set_scale(1)
 
         QTest.qWaitForWindowShown(display.window)
 
         QTest.mouseDClick(display.control.zero_percentage, Qt.LeftButton)
-        QTest.keyClick(display.control.zero_percentage, Qt.Backspace)
+        QTest.keyClick(display.control.zero_percentage, Qt.Key_Backspace)
         QTest.keyClicks(display.control.zero_percentage, "33")
         QTest.mouseClick(display.control.reset_button, Qt.LeftButton)
 
