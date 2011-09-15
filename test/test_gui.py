@@ -14,6 +14,8 @@ if HAVE_QT:
 import time
 import pytest
 
+import numpy as np
+
 def seconds(num):
     end = time.time() + num
     while time.time() < end:
@@ -67,10 +69,23 @@ class TestGui:
 
         QTest.qWaitForWindowShown(display.window)
 
-        QTest.mouseDClick(display.control.zero_percentage, Qt.LeftButton)
-        QTest.keyClick(display.control.zero_percentage, Qt.Key_Backspace)
-        QTest.keyClicks(display.control.zero_percentage, "33")
+        display.control.zero_percentage.setValue(33)
         QTest.mouseClick(display.control.reset_button, Qt.LeftButton)
+
+        config = sim_obj.get_config()
+        histogram = np.bincount(config.ravel())
+        zeros = histogram[0]
+        other = sum(histogram[1:])
+        assert abs((1.0 * zeros / (zeros + other)) - 0.33) < 0.2
+
+        display.control.zero_percentage.setValue(99)
+        QTest.mouseClick(display.control.reset_button, Qt.LeftButton)
+
+        config = sim_obj.get_config()
+        histogram = np.bincount(config.ravel())
+        zeros = histogram[0]
+        other = sum(histogram[1:])
+        assert abs((1.0 * zeros / (zeros + other)) - 0.99) < 0.2
 
 def produce_more(calls, arg, values, filter_func=lambda call: True):
     """Add, to all `calls`, a call for each `value` for the `arg`, so that
