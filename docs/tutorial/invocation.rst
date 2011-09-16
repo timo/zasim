@@ -74,6 +74,5 @@ zasim can not only run the computations using regular - but usually slow
 - python code. It can also execute the step functions in generated C code
 instead, which gives a pretty noticable performance improvement.
 
-For this to work, however, you need to have `SciPy`_ installed on your system.
+For this to work, however, you need to have `SciPy` installed on your system.
 
-.. _SciPy: http://scipy.org/
