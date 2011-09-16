@@ -1,4 +1,5 @@
 from ..external.qt import *
+import random
 
 class WaitAnimationWindow(QObject):
     """Display a cute animation, so that the user isn't annoyed by those long,
