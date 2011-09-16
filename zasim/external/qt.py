@@ -5,7 +5,6 @@ import sys
 try:
     from PySide.QtCore import *
     from PySide.QtGui import *
-    print("using pyside", file=sys.stderr)
 except ImportError:
     # first, set QString and QVariant to api version 2, which causes them
     # to be created as normal python objects.
