@@ -15,6 +15,7 @@ def test(width=75, copy_borders=True, rule=None, histogram=True, activity=False,
 
     if print_rule:
         print bin_rule.pretty_print()
+        print bin_rule.rule_number, "==", hex(bin_rule.rule_number)
 
     if HAVE_WEAVE and not pure:
         print "weave"
