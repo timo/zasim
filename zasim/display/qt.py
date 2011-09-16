@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
-from ..external.qt import QObject, QImage, QPainter, QPoint, QSize, QRect, QColor, Signal
+from ..external.qt import (QObject, QImage, QPainter, QPoint, QSize, QRect,
+                           QColor, QBuffer, QIODevice, Signal)
 
 import numpy as np
 import Queue
@@ -101,6 +102,14 @@ class BaseQImagePainter(QObject):
         if not self._image.save(filename):
             # TODO find out what caused the error
             raise Exception("Could not save image to file.")
+
+    def _repr_png_(self):
+        """For IPython, display the image as an embedded image."""
+        buf = QBuffer()
+        buf.open(QIODevice.ReadWrite)
+        self._image.save(buf, "PNG")
+        buf.close()
+        return str(buf.data())
 
 class LinearQImagePainter(BaseQImagePainter):
     """This class offers drawing for one-dimensional cellular automata, which
