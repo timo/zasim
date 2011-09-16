@@ -141,7 +141,7 @@ class BaseNeighbourhoodDisplay(QWidget):
             # for making the code easier, we will only handle 2d neighbourhoods
             # by trivially turning a 1d neighbourhood into a 2d neighbourhood.
             self.offsets = tuple((x, 0) for x in self.offsets)
-            self.bbox = self.bbox, (0, 0)
+            self.bbox = self.bbox[0], (0, 1)
 
         self.subwidgets = {}
 
