@@ -70,6 +70,8 @@ class LinearConsolePainter(BaseConsolePainter):
         newline = "".join(self.PALETTE[value] for value in self._last_conf)
         if len(self._data) == self._lines and update_step:
             self._data.pop(0)
+        elif not update_step:
+            self._data.pop(-1)
         self._data.append(newline)
 
     def export(self, filename):
