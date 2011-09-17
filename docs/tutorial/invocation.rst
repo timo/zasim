@@ -36,6 +36,7 @@ many lines it will display before it stops calculating.
 
 .. _elementary cellular automaton: http://en.wikipedia.org/wiki/Elementary_cellular_automaton
 
+
 beta and nondet
 ---------------
 
@@ -66,6 +67,21 @@ the triangle structures quite noticably.
 
 .. command-output:: python -m zasim.cagen.main --rule 146 --width 90 --print-rule --pure --beta 70
     :ellipsis: 40
+
+ 
+base
+----
+
+The traditional elementary cellular automaton is based on cells that have
+either the value 0 or 1. The concept can easily be extended to cells with
+an arbitrary number of different values. By supplying the *--base*, you
+can choose any number, but higher values cause a very steep incline of
+rule numbers. Also, at one point the palette of ascii characters that are
+configured for zasim will run out.
+
+The default base is, of course, 2. Supplying a base of 1 is nonsensical,
+because every cell could only have the value 0.
+
 
 The mysterious pure flag
 ------------------------
