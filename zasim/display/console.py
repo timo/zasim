@@ -7,7 +7,8 @@ class BaseConsolePainter(QObject):
     configuration of a simulator as an ascii-art string."""
 
     NO_DATA = " "
-    PALETTE = [" ", "#", "-", ";"]
+    PALETTE =       ["#", " ", "-", ";", ",", "^", "+", "Y"]
+    HTML_PALETTE = "#000 #fff #f00 #00f #0f0 #ff0 #0ff #f0f".split(" ")
 
     def __init__(self, simulator, extra=None, connect=True, auto_output=True, **kwargs):
         """Initialise the painter.
@@ -39,13 +40,26 @@ class BaseConsolePainter(QObject):
     def __str__(self):
         return "\n".join(self._data + [""])
 
+    def _repr_html_(self):
+        """IPython in version 0.11 and newer allows to display objects as html
+        or png. This function turns the config into a html table."""
+        value = """\
+    <table style="border:0px;">
+      %s
+    </table>"""
+        def line_to_html(data):
+            return ('<tr><td style="width: 10px; height: 10px; background: ' +
+                    '">&nbsp;</td><td style="width: 10px; height: 10px; background: '.join(self.HTML_PALETTE[self.PALETTE.index(value)] for value in data) +
+                    '">&nbsp;</td></tr>')
+
+        content = "\n".join(line_to_html(line) for line in self._data)
+
+        return value % content
 
 class LinearConsolePainter(BaseConsolePainter):
     """This painter draws the configs as they happen, newer configs pushing
     older configs out through the top."""
 
-    NO_DATA = " "
-    PALETTE = [" ", "#", "-", ";"]
     def __init__(self, simulator, lines, **kwargs):
         super(LinearConsolePainter, self).__init__(simulator, **kwargs)
 
@@ -56,7 +70,7 @@ class LinearConsolePainter(BaseConsolePainter):
         newline = "".join(self.PALETTE[value] for value in self._last_conf)
         if len(self._data) == self._lines and update_step:
             self._data.pop(0)
-        elif update_step:
+        elif not update_step:
             self._data.pop(-1)
         self._data.append(newline)
 

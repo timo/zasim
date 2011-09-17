@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
-from ..external.qt import QObject, QImage, QPainter, QPoint, QSize, QRect, QColor, Signal
+from ..external.qt import (QObject, QImage, QPainter, QPoint, QSize, QRect,
+                           QColor, QBuffer, QIODevice, Signal)
 
 import numpy as np
 import Queue
@@ -102,6 +103,14 @@ class BaseQImagePainter(QObject):
             # TODO find out what caused the error
             raise Exception("Could not save image to file.")
 
+    def _repr_png_(self):
+        """For IPython, display the image as an embedded image."""
+        buf = QBuffer()
+        buf.open(QIODevice.ReadWrite)
+        self._image.save(buf, "PNG")
+        buf.close()
+        return str(buf.data())
+
 class LinearQImagePainter(BaseQImagePainter):
     """This class offers drawing for one-dimensional cellular automata, which
     will fill up the display with a line that moves downwards and wraps at the
@@ -180,6 +189,8 @@ class LinearQImagePainter(BaseQImagePainter):
         self._queue.put((update_step, conf))
 
         self._queued_steps += 1
+
+        self.draw_conf()
         self.update.emit(QRect(
             QPoint(0, ((self._last_step + self._queued_steps - 1) % self._height) * self._scale),
             QSize(self._width * self._scale, self._scale)))
@@ -232,4 +243,5 @@ class TwoDimQImagePainter(BaseQImagePainter):
             self._queue.get()
         self._queue.put((update_step, conf))
 
+        self.draw_conf()
         self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
