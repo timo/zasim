@@ -9,6 +9,7 @@ except ImportError:
 if HAVE_QT:
     from zasim.gui.display import ZasimDisplay
     from zasim.gui.histogram import HistogramExtraDisplay
+    from zasim.gui.animation import WaitAnimationWindow
     from zasim import cagen
 
 import time
@@ -208,6 +209,14 @@ class TestGui:
             self.app.processEvents()
 
         self.app.closeAllWindows()
+
+    def test_animation(self):
+        anim = WaitAnimationWindow()
+
+        for execution in seconds(1):
+            self.app.processEvents()
+
+        fail_on_exceptions()
 
 def produce_more(calls, arg, values, filter_func=lambda call: True):
     """Add, to all `calls`, a call for each `value` for the `arg`, so that
