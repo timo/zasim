@@ -21,6 +21,31 @@ def seconds(num):
     while time.time() < end:
         yield 1
 
+import sys
+import traceback
+
+_exceptions = []
+def my_except_hook(cls, instance, traceback):
+    print "oh god, an exception!"
+    print cls
+    print instance
+    print traceback
+    print
+    traceback.print_exception(cls, instance, traceback)
+    _exceptions.append((cls, instance, traceback))
+
+def fail_on_exceptions():
+    exc = _exceptions[:]
+    [_exceptions.remove(a) for a in exc]
+    if exc:
+        pytest.fail("There were exceptions in the base.\n%s" % (exc[0]))
+
+def setup_module():
+    sys.excepthook = my_except_hook
+
+def teardown_module():
+    sys.excepthook = sys.__excepthook__
+
 @pytest.mark.skipif("not HAVE_QT")
 class TestGui:
     def setup_class(cls):
@@ -29,8 +54,8 @@ class TestGui:
         cls.app.setApplicationName("zasim gui test")
 
     def test_start_stop_binrule(self, size, base, scale, histogram):
+        print size, base, scale, histogram
         sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base, histogram=histogram)
-
 
         display = ZasimDisplay(sim_obj)
         display.set_scale(scale)
@@ -42,6 +67,7 @@ class TestGui:
             display.window.attach_display(extra_hist)
             display.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
 
+        QTest.qWaitForWindowShown(display.window)
 
         QTest.mouseClick(display.control.start_button, Qt.LeftButton)
 
@@ -54,6 +80,9 @@ class TestGui:
         for execution in seconds(0.1):
             self.app.processEvents()
         assert not display.control.stop_button.isVisible()
+
+        self.app.closeAllWindows()
+        fail_on_exceptions()
 
     def test_reset_button(self):
         sim_obj = cagen.ElementarySimulator((1000, 100), copy_borders=True, base=3)
@@ -83,6 +112,8 @@ class TestGui:
         zeros = histogram[0]
         other = sum(histogram[1:])
         assert abs((1.0 * zeros / (zeros + other)) - 0.99) < 0.2
+
+        fail_on_exceptions()
 
     def find_message_box(self, timeout=10):
         end = time.time() + timeout
@@ -122,6 +153,8 @@ class TestGui:
                 self.app.processEvents()
 
         self.app.closeAllWindows()
+
+        fail_on_exceptions()
 
         #minimize = elementary_window.findChild(QPushButton, u"minimize")
 
