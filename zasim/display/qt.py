@@ -189,6 +189,8 @@ class LinearQImagePainter(BaseQImagePainter):
         self._queue.put((update_step, conf))
 
         self._queued_steps += 1
+
+        self.draw_conf()
         self.update.emit(QRect(
             QPoint(0, ((self._last_step + self._queued_steps - 1) % self._height) * self._scale),
             QSize(self._width * self._scale, self._scale)))
@@ -241,4 +243,5 @@ class TwoDimQImagePainter(BaseQImagePainter):
             self._queue.get()
         self._queue.put((update_step, conf))
 
+        self.draw_conf()
         self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
