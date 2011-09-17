@@ -60,8 +60,6 @@ class LinearConsolePainter(BaseConsolePainter):
     """This painter draws the configs as they happen, newer configs pushing
     older configs out through the top."""
 
-    NO_DATA = " "
-    PALETTE = [" ", "#", "-", ";"]
     def __init__(self, simulator, lines, **kwargs):
         super(LinearConsolePainter, self).__init__(simulator, **kwargs)
 
@@ -72,8 +70,6 @@ class LinearConsolePainter(BaseConsolePainter):
         newline = "".join(self.PALETTE[value] for value in self._last_conf)
         if len(self._data) == self._lines and update_step:
             self._data.pop(0)
-        elif update_step:
-            self._data.pop(-1)
         self._data.append(newline)
 
     def export(self, filename):
