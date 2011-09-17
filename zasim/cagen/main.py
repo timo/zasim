@@ -21,19 +21,19 @@ def test(width=75, copy_borders=True, rule=None, histogram=True, activity=False,
         for i in range(steps):
             bin_rule.step_inline()
             if histogram:
-                print bin_rule.histogram
+                print bin_rule.t.histogram
             if activity:
-                print bin_rule.activity
+                print bin_rule.t.activity
     else:
         print "pure"
         for i in range(steps):
             bin_rule.step_pure_py()
             if histogram:
-                print bin_rule.histogram
+                print bin_rule.t.histogram
             if activity:
-                print bin_rule.activity
+                print bin_rule.t.activity
 
-if __name__ == "__main__":
+def main(args=None):
     import argparse
 
     argp = argparse.ArgumentParser(
@@ -64,7 +64,10 @@ if __name__ == "__main__":
     argp.add_argument("--base", default=2, type=int,
             help="The base of cell values. Base 2 gives you 0 and 1, for example.")
 
-    args = argp.parse_args()
+    args = argp.parse_args(args)
 
     test(**vars(args))
 
+
+if __name__ == "__main__":
+    main()
