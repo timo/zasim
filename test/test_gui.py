@@ -210,7 +210,7 @@ def pytest_generate_tests(metafunc):
     if "size" in metafunc.funcargnames:
         calls = produce_more(calls, "size", [(100,), (100, 100)])
     if "base" in metafunc.funcargnames:
-        calls = produce_more(calls, "base", [2, 3, 5])
+        calls = produce_more(calls, "base", [2, 3])
     if "histogram" in metafunc.funcargnames:
         calls = produce_more(calls, "histogram", [False, True],
                 lambda call: len(call["size"]) == 2)
