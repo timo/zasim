@@ -14,6 +14,10 @@ class ControlWidget(QWidget):
         super(ControlWidget, self).__init__(**kwargs)
 
         self.sim = simulator
+
+        self.sim_timer = QTimer(self)
+        self.sim_timer.timeout.connect(self.sim.step)
+
         self.timer_delay = 0
 
         self._setup_ui()
@@ -73,13 +77,13 @@ class ControlWidget(QWidget):
 
     def start(self):
         """Start running the simulator."""
-        self.timer_id = self.startTimer(self.timer_delay)
+        self.sim_timer.start(self.timer_delay)
         self.start_button.hide()
         self.stop_button.show()
 
     def stop(self):
         """Stop the simulator."""
-        self.killTimer(self.timer_id)
+        self.sim_timer.stop()
         self.stop_button.hide()
         self.start_button.show()
 
@@ -88,20 +92,7 @@ class ControlWidget(QWidget):
         if delay.endswith("ms"):
             delay = delay[:-2]
         self.timer_delay = int(delay)
-
-    def timerEvent(self, event):
-        """Step the simulator from the timer.
-
-        .. note::
-            This is called by the timer that is controlled by `start` and
-            :meth:`stop`. You should not call it yourself."""
-        self.killTimer(self.timer_id)
-        self.step()
-        self.timer_id = self.startTimer(self.timer_delay)
-
-    def step(self):
-        """Step the simulator, update all displays."""
-        self.sim.step()
+        self.start()
 
     def set_config(self, conf=None):
         if conf is None:
@@ -113,3 +104,4 @@ class ControlWidget(QWidget):
                     conf[pos] = random.choice(self.sim.t.possible_values[1:])
 
         self.sim.set_config(conf)
+
