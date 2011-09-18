@@ -21,7 +21,7 @@ only tested with PySide and is not guaranteed to work with PyQt.
 .. _NumPy: http://numpy.org
 .. _SciPy: http://scipy.org
 .. _GCC: http://gcc.gnu.org
-.. _PySide: http:/pyside.org
+.. _PySide: http://pyside.org
 
 
 Installing zasim
