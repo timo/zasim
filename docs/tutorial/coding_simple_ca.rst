@@ -60,29 +60,30 @@ of zeros. The code looks like this:
     >>> config = np.array([0] * 30 + [1] + [0] * 30)
     >>> sim = cagen.ElementarySimulator(config=config, rule=126)
     >>> display = LinearConsolePainter(sim, lines=1)
-                                  #                              
+                                  #
     >>> sim.step()
-                                 ###                             
+                                 ###
     >>> sim.step()
-                                ## ##                            
+                                ## ##
 
 As you can see, the config gets printed once when the display object is
 created and then after each step. The same goes for stepping in a loop:
 
 .. doctest:: a
+    :options: +NORMALIZE_WHITESPACE
 
     >>> for i in range(10): sim.step()
     ... 
-                               #######                           
-                              ##     ##                          
-                             ####   ####                         
-                            ##  ## ##  ##                        
-                           ###############                       
-                          ##             ##                      
-                         ####           ####                     
-                        ##  ##         ##  ##                    
-                       ########       ########                   
-                      ##      ##     ##      ##                  
+                               #######
+                              ##     ##
+                             ####   ####
+                            ##  ## ##  ##
+                           ###############
+                          ##             ##
+                         ####           ####
+                        ##  ##         ##  ##
+                       ########       ########
+                      ##      ##     ##      ##
 
 Now to explain the lines, one by one.
 
