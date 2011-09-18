@@ -210,13 +210,9 @@ class TwoDimQImagePainter(BaseQImagePainter):
 
         self.palette = PALETTE_444[2:len(self._sim.t.possible_values)]
 
-        if connect:
-            self.connect_simulator()
-
     def draw_conf(self):
         try:
             update_step, conf = self._queue.get_nowait()
-            self.conf_new = False
             w, h = self._width, self._height
             nconf = np.empty((w, h), np.uint16, "C")
 
@@ -239,9 +235,8 @@ class TwoDimQImagePainter(BaseQImagePainter):
 
     def after_step(self, update_step=True):
         conf = self._sim.get_config().copy()
-        if not self._queue.empty():
-            self._queue.get()
         self._queue.put((update_step, conf))
 
         self.draw_conf()
         self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
+
