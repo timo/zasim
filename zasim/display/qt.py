@@ -245,3 +245,6 @@ class TwoDimQImagePainter(BaseQImagePainter):
 
         self.draw_conf()
         self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
+
+# TODO make a painter that continuously moves up the old configurations for saner
+#      display in ipython rich consoles and such.
