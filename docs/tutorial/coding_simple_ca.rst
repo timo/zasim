@@ -28,7 +28,7 @@ from zasim and the `~zasim.display.console` module from the display
 package. In order to create our own starting configuration, we also need
 `numpy`, which is usually imported under the name "np".
 
-.. doctest::
+.. doctest:: a
 
     >>> from zasim import cagen
     >>> from zasim.display.console import LinearConsolePainter
@@ -54,13 +54,13 @@ We will just go ahead and choose rule 126, which will paint a sierpinski
 triangle. As starting configuration we use a single one surrounded by lots
 of zeros. The code looks like this:
 
-.. testsetup::
+.. testsetup:: a
 
     from zasim import cagen
     from zasim.display.console import LinearConsolePainter
     import numpy as np
 
-.. doctest::
+.. doctest:: a
     :options: +NORMALIZE_WHITESPACE
 
     >>> config = np.array([0] * 30 + [1] + [0] * 30)
@@ -75,7 +75,7 @@ of zeros. The code looks like this:
 As you can see, the config gets printed once when the display object is
 created and then after each step. The same goes for stepping in a loop:
 
-.. doctest::
+.. doctest:: a
     :options: +NORMALIZE_WHITESPACE
 
     >>> for i in range(10): sim.step()
@@ -132,6 +132,7 @@ to directly connect to the `~zasim.simulator.Simulator.changed` and
 `~zasim.simulator.Simulator.updated` signals of the simulator. The other
 tells the display to output its data after every change.
 
+
 IPython interactivity helpers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -152,6 +153,7 @@ display function from IPython directtly::
 
     >>> from IPython.core.display import display
     >>> display(disp)
+    [the configuration would be displayed here]
 
 If you want to show the config as a picture, rather than an HTML table,
 you can use the LinearQImagePainter instead, which works much like the
@@ -168,3 +170,62 @@ though, that the position the configuration is painted to travels downwards
 and is wrapped from the bottom back up to the top, so sometimes you will
 see the current configuration in the middle, older values above and even
 older values directly below.
+
+
+The Game of Life - 2d CAs
+-------------------------
+
+Although the `ElementarySimulator` supports 2d configurations as well, the
+`Game of Life simulator <zasim.cagen.simulators.GameOfLife>` is much nicer
+to look at in general. For our next adventure, we instantiate a GameOfLife
+and the matching `~zasim.display.console.TwoDimConsolePainter`.
+
+.. doctest:: b
+
+    >>> from zasim import cagen
+    >>> from zasim.display.console import TwoDimConsolePainter
+    >>> import numpy as np
+
+The most symbolic figure of Game of Life is probably the glider. We will
+create an empty configuration and paste a glider into it, as well as an
+obstacle for it to collide with:
+
+.. doctest:: b
+    :options: +NORMALIZE_WHITESPACE
+
+    >>> config = np.zeros((10, 6), dtype=int)
+    >>> config[0:3,0:3] = np.array([
+    ...    [0,1,0],
+    ...    [0,0,1],
+    ...    [1,1,1]])
+    >>> config[9, 4] = 1
+    >>> config
+    array([[0, 1, 0, 0, 0, 0],
+           [0, 0, 1, 0, 0, 0],
+           [1, 1, 1, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 1, 0]])
+
+And now we can put the configuration into the simulator, like this:
+
+.. doctest:: b
+    :options: +NORMALIZE_WHITESPACE
+
+    >>> sim = cagen.GameOfLife(config=config)
+    >>> disp = TwoDimConsolePainter(sim)
+     #    
+      #   
+    ###   
+    <BLANKLINE>
+    <BLANKLINE>
+    <BLANKLINE>
+    <BLANKLINE>
+    <BLANKLINE>
+    <BLANKLINE>
+        # 
+
