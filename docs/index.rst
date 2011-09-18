@@ -35,8 +35,13 @@ summaries.
 Tutorial
 ========
 
-This documentation contains a :doc:`tutorial <tutorial>` that guides you through usage of and
+This documentation contains a tutorial that guides you through usage of and
 development with zasim.
+
+.. toctree::
+    :maxdepth: 2
+
+    tutorial
 
 API Documentation
 =================

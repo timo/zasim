@@ -11,5 +11,5 @@ Running the gui from the commandline
 Api Documentation
 -----------------
 
-.. automodule:: zasim.cagen.main
+.. automodule:: zasim.gui.main
 
