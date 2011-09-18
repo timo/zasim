@@ -7,7 +7,7 @@ class BaseConsolePainter(QObject):
     configuration of a simulator as an ascii-art string."""
 
     NO_DATA = " "
-    PALETTE =       ["#", " ", "-", ";", ",", "^", "+", "Y"]
+    PALETTE =       [" ", "#", "-", ";", ",", "^", "+", "Y"]
     HTML_PALETTE = "#000 #fff #f00 #00f #0f0 #ff0 #0ff #f0f".split(" ")
 
     def __init__(self, simulator, extra=None, connect=True, auto_output=True, **kwargs):

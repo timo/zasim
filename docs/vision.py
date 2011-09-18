@@ -95,7 +95,7 @@ diff_disp = zasim.display.DiffDisplay(diff)
 
 # TODO zellularautomat game of life
 # TODO moebius-bandtransformation
-# TODO beliebige wände aneinanderkopieren
+# TODO beliebige waende aneinanderkopieren
 
 
 # 1. qt geschwindigkeit untersuchen: 1x1 pixel pro feld, 3x3 pixel, bilder

@@ -87,7 +87,7 @@ class ZasimMainWindow(QMainWindow):
         if self.elementary_tool and not self.elementary_tool.isVisible():
             self.elementary_tool = None
         if self.elementary_tool is None:
-            self.elementary_tool = ElementaryRuleWindow(self.simulator._step_func.neigh, self.simulator.rule_number)
+            self.elementary_tool = ElementaryRuleWindow(self.simulator._step_func.neigh, self.simulator.rule_number, base=len(self.simulator.t.possible_values))
             self.elementary_tool.setObjectName("elementary_tool")
             self.elementary_tool.show()
 

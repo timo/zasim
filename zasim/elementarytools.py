@@ -112,32 +112,32 @@ def flip_offset_to_permutation(neighbourhood, permute_func):
 
     return permutation
 
-def mirror_by_axis(neighbourhood, axis=[0]):
+def mirror_by_axis(neighbourhood, axis=[0], base=2):
     def mirror_axis_permutation(position, axis=tuple(axis)):
         return tuple(-a if num in axis else a for num, a in enumerate(position))
 
     permutation = flip_offset_to_permutation(neighbourhood, mirror_axis_permutation)
-    return permutation_to_index_map(neighbourhood, permutation)
+    return permutation_to_index_map(neighbourhood, permutation, base)
 
 @neighbourhood_action("flip vertically")
-def flip_v(neighbourhood, results, cache={}):
+def flip_v(neighbourhood, results, cache={}, base=2):
     if neighbourhood not in cache:
-        cache[neighbourhood] = mirror_by_axis(neighbourhood, [1])
+        cache[neighbourhood] = mirror_by_axis(neighbourhood, [1], base)
 
     return apply_index_map(results, cache[neighbourhood])
 
 @neighbourhood_action("flip horizontally")
-def flip_h(neighbourhood, results, cache={}):
+def flip_h(neighbourhood, results, cache={}, base=2):
     if neighbourhood not in cache:
-        cache[neighbourhood] = mirror_by_axis(neighbourhood, [0])
+        cache[neighbourhood] = mirror_by_axis(neighbourhood, [0], base)
     return apply_index_map(results, cache[neighbourhood])
 
 @neighbourhood_action("rotate clockwise")
-def rotate_clockwise(neighbourhood, results, cache={}):
+def rotate_clockwise(neighbourhood, results, cache={}, base=2):
     if neighbourhood not in cache:
         def rotate((a, b)):
             return b, -a
         permutation = flip_offset_to_permutation(neighbourhood, rotate)
-        cache[neighbourhood] = permutation_to_index_map(neighbourhood, permutation)
+        cache[neighbourhood] = permutation_to_index_map(neighbourhood, permutation, base)
 
     return apply_index_map(results, cache[neighbourhood])

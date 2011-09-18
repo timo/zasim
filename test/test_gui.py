@@ -9,6 +9,7 @@ except ImportError:
 if HAVE_QT:
     from zasim.gui.display import ZasimDisplay
     from zasim.gui.histogram import HistogramExtraDisplay
+    from zasim.gui.animation import WaitAnimationWindow
     from zasim import cagen
 
 import time
@@ -21,6 +22,31 @@ def seconds(num):
     while time.time() < end:
         yield 1
 
+import sys
+import traceback
+
+_exceptions = []
+def my_except_hook(cls, instance, traceback):
+    print "oh god, an exception!"
+    print cls
+    print instance
+    print traceback
+    print
+    traceback.print_exception(cls, instance, traceback)
+    _exceptions.append((cls, instance, traceback))
+
+def fail_on_exceptions():
+    exc = _exceptions[:]
+    [_exceptions.remove(a) for a in exc]
+    if exc:
+        pytest.fail("There were exceptions in the base.\n%s" % (exc[0]))
+
+def setup_module():
+    sys.excepthook = my_except_hook
+
+def teardown_module():
+    sys.excepthook = sys.__excepthook__
+
 @pytest.mark.skipif("not HAVE_QT")
 class TestGui:
     def setup_class(cls):
@@ -29,8 +55,8 @@ class TestGui:
         cls.app.setApplicationName("zasim gui test")
 
     def test_start_stop_binrule(self, size, base, scale, histogram):
+        print size, base, scale, histogram
         sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base, histogram=histogram)
-
 
         display = ZasimDisplay(sim_obj)
         display.set_scale(scale)
@@ -42,6 +68,7 @@ class TestGui:
             display.window.attach_display(extra_hist)
             display.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
 
+        QTest.qWaitForWindowShown(display.window)
 
         QTest.mouseClick(display.control.start_button, Qt.LeftButton)
 
@@ -54,6 +81,9 @@ class TestGui:
         for execution in seconds(0.1):
             self.app.processEvents()
         assert not display.control.stop_button.isVisible()
+
+        self.app.closeAllWindows()
+        fail_on_exceptions()
 
     def test_reset_button(self):
         sim_obj = cagen.ElementarySimulator((1000, 100), copy_borders=True, base=3)
@@ -83,6 +113,8 @@ class TestGui:
         zeros = histogram[0]
         other = sum(histogram[1:])
         assert abs((1.0 * zeros / (zeros + other)) - 0.99) < 0.2
+
+        fail_on_exceptions()
 
     def find_message_box(self, timeout=10):
         end = time.time() + timeout
@@ -122,6 +154,8 @@ class TestGui:
                 self.app.processEvents()
 
         self.app.closeAllWindows()
+
+        fail_on_exceptions()
 
         #minimize = elementary_window.findChild(QPushButton, u"minimize")
 
@@ -176,6 +210,14 @@ class TestGui:
 
         self.app.closeAllWindows()
 
+    def test_animation(self):
+        anim = WaitAnimationWindow()
+
+        for execution in seconds(1):
+            self.app.processEvents()
+
+        fail_on_exceptions()
+
 def produce_more(calls, arg, values, filter_func=lambda call: True):
     """Add, to all `calls`, a call for each `value` for the `arg`, so that
     all combinations will exist in the returned list.
@@ -210,7 +252,7 @@ def pytest_generate_tests(metafunc):
     if "size" in metafunc.funcargnames:
         calls = produce_more(calls, "size", [(100,), (100, 100)])
     if "base" in metafunc.funcargnames:
-        calls = produce_more(calls, "base", [2, 3, 5])
+        calls = produce_more(calls, "base", [2, 3])
     if "histogram" in metafunc.funcargnames:
         calls = produce_more(calls, "histogram", [False, True],
                 lambda call: len(call["size"]) == 2)
