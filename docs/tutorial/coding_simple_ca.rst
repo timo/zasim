@@ -18,8 +18,8 @@ simulator prototypes with interesting parameters you can tweak and the
 simulator on the console as ascii art - or as images when using the rich
 consoles from IPython.
 
-Starting out
-------------
+Starting out: 1d CA
+-------------------
 
 Starting out with zasim is quite easy. First, open up your favorite
 interactive console, be it the vanilla python interpreter, bpython, IPython
@@ -65,7 +65,7 @@ of zeros. The code looks like this:
 
     >>> config = np.array([0] * 30 + [1] + [0] * 30)
     >>> sim = cagen.ElementarySimulator(config=config, rule=126)
-    >>> display = LinearConsolePainter(sim, lines=1)
+    >>> disp = LinearConsolePainter(sim, lines=1)
                                   #
     >>> sim.step()
                                  ###
@@ -115,7 +115,7 @@ the rule number to use to 126.
 
 ::
 
-    >>> display = LinearConsolePainter(sim, lines=1)
+    >>> disp = LinearConsolePainter(sim, lines=1)
 
 The `~zasim.display.console.LinearConsolePainter` takes as first argument
 the simulator to take configurations from and the `lines` keyword argument
@@ -131,3 +131,40 @@ case just the `display`. Since we supplied the default value for
 to directly connect to the `~zasim.simulator.Simulator.changed` and
 `~zasim.simulator.Simulator.updated` signals of the simulator. The other
 tells the display to output its data after every change.
+
+IPython interactivity helpers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you use the new IPython with qtconsole or the notebook web-app, you can
+also display configurations in-line, right inside the applications, as
+images or HTML. This is how that works:
+
+For a html-based display, you can just set `auto_output` for the
+`LinearConsolePainter` to false and display the configuration like this::
+
+    >>> disp
+    [the configuration would be displayed here]
+
+This does not work in functions or loops, however, because it relies on the
+interpreter automatically displaying the representation of any value that
+is not caught. If you want to force the display, you can just import the
+display function from IPython directtly::
+
+    >>> from IPython.core.display import display
+    >>> display(disp)
+
+If you want to show the config as a picture, rather than an HTML table,
+you can use the LinearQImagePainter instead, which works much like the
+LinearConsolePainter::
+
+    >>> from zasim.display.qt import LinearQImagePainter
+    >>> disp = LinearQImagePainter(sim, lines=50, scale=4)
+    >>> disp
+    [the configuration would be displayed here]
+
+For a QImage based painter, it is much more sensible to use a higher
+`lines` value, because this way, the image would be a bit bigger. Note
+though, that the position the configuration is painted to travels downwards
+and is wrapped from the bottom back up to the top, so sometimes you will
+see the current configuration in the middle, older values above and even
+older values directly below.
