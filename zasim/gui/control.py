@@ -63,6 +63,9 @@ class ControlWidget(QWidget):
         self.invert_frames.setObjectName("invert_frames")
         l.addWidget(self.invert_frames)
 
+        self.framerate = FramerateWidget(self.sim)
+        l.addWidget(self.framerate)
+
         self.setLayout(l)
 
         self.start_button.clicked.connect(self.start)
@@ -78,12 +81,14 @@ class ControlWidget(QWidget):
     def start(self):
         """Start running the simulator."""
         self.sim_timer.start(self.timer_delay)
+        self.sim.start()
         self.start_button.hide()
         self.stop_button.show()
 
     def stop(self):
         """Stop the simulator."""
         self.sim_timer.stop()
+        self.sim.stop()
         self.stop_button.hide()
         self.start_button.show()
 
@@ -105,3 +110,29 @@ class ControlWidget(QWidget):
 
         self.sim.set_config(conf)
 
+class FramerateWidget(QLabel):
+    def __init__(self, sim, **kwargs):
+        super(FramerateWidget, self).__init__(**kwargs)
+
+        self._sim = sim
+        self._last_frame = sim.step_number
+
+        self._sim.started.connect(self.started)
+        self._sim.stopped.connect(self.stopped)
+
+        self.setText("0 fps")
+
+    def started(self):
+        self.frame_timer = self.startTimer(1000)
+        self._last_frame = self._sim.step_number
+
+    def stopped(self):
+        self.killTimer(self.frame_timer)
+        self.setText("n/a fps")
+
+    def timerEvent(self, event):
+        frame = self._sim.step_number
+        diff = frame - self._last_frame
+        self._last_frame = frame
+
+        self.setText("%d fps" % diff)
