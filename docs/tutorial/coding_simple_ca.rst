@@ -91,7 +91,7 @@ created and then after each step. The same goes for stepping in a loop:
                        ########       ########
                       ##      ##     ##      ##
 
-Now to explain the lines, one by one.
+Now to explain the lines, one by one::
 
     >>> config = np.array([0] * 30 + [1] + [0] * 30)
 
@@ -99,6 +99,8 @@ This simply creates a numpy array from thirty zeros, one one and another 30
 zeros. This will give us a prettier picture than the random configuration
 we would have gotten, had we supplied the size argument, rather than a
 configuration.
+
+::
 
     >>> sim = cagen.ElementarySimulator(config=config, rule=126)
 
@@ -110,6 +112,8 @@ commandline to the `zasim.cagen.main` module.
 
 In this case we create such a simulator from the config we built and set
 the rule number to use to 126.
+
+::
 
     >>> display = LinearConsolePainter(sim, lines=1)
 
