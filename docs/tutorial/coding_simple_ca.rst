@@ -28,7 +28,7 @@ from zasim and the `~zasim.display.console` module from the display
 package. In order to create our own starting configuration, we also need
 `numpy`, which is usually imported under the name "np".
 
-.. doctest:: a
+.. doctest::
 
     >>> from zasim import cagen
     >>> from zasim.display.console import LinearConsolePainter
@@ -54,7 +54,13 @@ We will just go ahead and choose rule 126, which will paint a sierpinski
 triangle. As starting configuration we use a single one surrounded by lots
 of zeros. The code looks like this:
 
-.. doctest:: a
+.. testsetup::
+
+    from zasim import cagen
+    from zasim.display.console import LinearConsolePainter
+    import numpy as np
+
+.. doctest::
     :options: +NORMALIZE_WHITESPACE
 
     >>> config = np.array([0] * 30 + [1] + [0] * 30)
@@ -69,7 +75,7 @@ of zeros. The code looks like this:
 As you can see, the config gets printed once when the display object is
 created and then after each step. The same goes for stepping in a loop:
 
-.. doctest:: a
+.. doctest::
     :options: +NORMALIZE_WHITESPACE
 
     >>> for i in range(10): sim.step()
