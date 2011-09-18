@@ -111,3 +111,12 @@ the simulator to take configurations from and the `lines` keyword argument
 controls how many lines are to be stored in the display. For interactive
 console use, 1 is a good value, because otherwise, after each step, the
 `LinearConsolePainter` would print out its complete data.
+
+Each call to sim.step will afterwards run the step function on
+the configuration and signal all connected displays - in this
+case just the `display`. Since we supplied the default value for
+`LinearConsolePainter` while constructing it, it has `connect` and
+`auto_output` set to true. The `connect` parameter tells the display
+to directly connect to the `~zasim.simulator.Simulator.changed` and
+`~zasim.simulator.Simulator.updated` signals of the simulator. The other
+tells the display to output its data after every change.
