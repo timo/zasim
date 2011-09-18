@@ -18,10 +18,10 @@ only tested with PySide and is not guaranteed to work with PyQt.
 .. [1] The same subset of zasim you get if you have neither SciPy nor
        PySide is also usable with pypy 1.6 or newer.
 
-.. _ NumPy: http://numpy.org
-.. _ SciPy: http://scipy.org
-.. _ GCC: http://gcc.gnu.org
-.. _ PySide: http:/pyside.org
+.. _NumPy: http://numpy.org
+.. _SciPy: http://scipy.org
+.. _GCC: http://gcc.gnu.org
+.. _PySide: http:/pyside.org
 
 
 Installing zasim
