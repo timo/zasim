@@ -55,7 +55,7 @@ triangle. As starting configuration we use a single one surrounded by lots
 of zeros. The code looks like this:
 
 .. doctest:: a
-
+    :options: +NORMALIZE_WHITESPACE
 
     >>> config = np.array([0] * 30 + [1] + [0] * 30)
     >>> sim = cagen.ElementarySimulator(config=config, rule=126)
