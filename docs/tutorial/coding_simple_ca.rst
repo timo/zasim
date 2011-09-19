@@ -193,19 +193,19 @@ obstacle for it to collide with:
 .. doctest:: b
     :options: +NORMALIZE_WHITESPACE
 
-    >>> config = np.zeros((6, 10), dtype=int)
-    >>> config[0:3,0:3] = np.array([
+    >>> config = np.zeros((6, 11), dtype=int)
+    >>> config[0:3,1:4] = np.array([
     ...    [0,1,0],
     ...    [0,0,1],
     ...    [1,1,1]])
     >>> config[3:6, 9] = [1, 1, 1]
     >>> config
-    array([[0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
-           [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
-           [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
-           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
+    array([[0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+           [0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0],
+           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0]])
 
 And now we can put the configuration into the simulator, like this:
 
@@ -214,9 +214,9 @@ And now we can put the configuration into the simulator, like this:
 
     >>> sim = cagen.GameOfLife(config=config)
     >>> disp = TwoDimConsolePainter(sim)
-     #
       #
-    ###
+       #
+     ###
              #
              #
              #
