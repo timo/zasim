@@ -1,4 +1,4 @@
-from ..external.qt import QWidget, QPainter, QPoint
+from ..external.qt import QWidget, QPainter, Qt
 from ..display.qt import LinearQImagePainter, TwoDimQImagePainter
 
 class DisplayWidget(QWidget):
@@ -15,6 +15,8 @@ class DisplayWidget(QWidget):
                            forcing a redraw.
         """
         super(DisplayWidget, self).__init__(**kwargs)
+
+        self.setAttribute(Qt.WA_OpaquePaintEvent)
 
         self._sim = simulator
 
@@ -68,10 +70,8 @@ class DisplayWidget(QWidget):
         self.setFixedSize(self._width * scale, self._height * scale)
 
     def paintEvent(self, event):
-        self.display.draw_conf()
-
         copier = QPainter(self)
-        copier.drawImage(QPoint(0, 0), self.display._image)
+        copier.drawImage(event.rect(), self.display._image, event.rect())
         del copier
 
     def mousePressEvent(self, event):

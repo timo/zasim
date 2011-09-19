@@ -1,4 +1,4 @@
-from ..external.qt import QColor, QPainter, QPoint, QLine
+from ..external.qt import QColor, QPainter, QLine, Qt
 from .bases import BaseExtraDisplay
 import Queue
 
@@ -41,7 +41,7 @@ class HistogramExtraDisplay(BaseExtraDisplay):
             pass
 
         copier = QPainter(self.display_widget)
-        copier.drawImage(QPoint(0, 0), self.image)
+        copier.drawImage(event.rect(), self.image, event.rect())
         del copier
         self.linepos = linepos
 

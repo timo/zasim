@@ -88,6 +88,7 @@ class BaseSimulator(QObject):
     def step(self):
         """Step the simulator once."""
         self.updated.emit()
+        self.step_number += 1
 
     def copy(self):
         """Duplicate the simulator."""
@@ -157,17 +158,20 @@ class CagenSimulator(BaseSimulator):
         emit :attr:`updated`."""
         self._step_func.step()
         self.prepared = True
+        self.step_number += 1
         self.updated.emit()
 
     def step_inline(self):
         """Step the simulator using the weave.inline version of the code."""
         self._step_func.step_inline()
         self.prepared = True
+        self.step_number += 1
         self.updated.emit()
 
     def step_pure_py(self):
         """Step the simulator using the pure python code version."""
         self._step_func.step_pure_py()
+        self.step_number += 1
         self.updated.emit()
 
     def __str__(self):

@@ -14,6 +14,10 @@ class ControlWidget(QWidget):
         super(ControlWidget, self).__init__(**kwargs)
 
         self.sim = simulator
+
+        self.sim_timer = QTimer(self)
+        self.sim_timer.timeout.connect(self.sim.step)
+
         self.timer_delay = 0
 
         self._setup_ui()
@@ -59,6 +63,9 @@ class ControlWidget(QWidget):
         self.invert_frames.setObjectName("invert_frames")
         l.addWidget(self.invert_frames)
 
+        self.framerate = FramerateWidget(self.sim)
+        l.addWidget(self.framerate)
+
         self.setLayout(l)
 
         self.start_button.clicked.connect(self.start)
@@ -73,13 +80,15 @@ class ControlWidget(QWidget):
 
     def start(self):
         """Start running the simulator."""
-        self.timer_id = self.startTimer(self.timer_delay)
+        self.sim_timer.start(self.timer_delay)
+        self.sim.start()
         self.start_button.hide()
         self.stop_button.show()
 
     def stop(self):
         """Stop the simulator."""
-        self.killTimer(self.timer_id)
+        self.sim_timer.stop()
+        self.sim.stop()
         self.stop_button.hide()
         self.start_button.show()
 
@@ -88,20 +97,7 @@ class ControlWidget(QWidget):
         if delay.endswith("ms"):
             delay = delay[:-2]
         self.timer_delay = int(delay)
-
-    def timerEvent(self, event):
-        """Step the simulator from the timer.
-
-        .. note::
-            This is called by the timer that is controlled by `start` and
-            :meth:`stop`. You should not call it yourself."""
-        self.killTimer(self.timer_id)
-        self.step()
-        self.timer_id = self.startTimer(self.timer_delay)
-
-    def step(self):
-        """Step the simulator, update all displays."""
-        self.sim.step()
+        self.start()
 
     def set_config(self, conf=None):
         if conf is None:
@@ -113,3 +109,30 @@ class ControlWidget(QWidget):
                     conf[pos] = random.choice(self.sim.t.possible_values[1:])
 
         self.sim.set_config(conf)
+
+class FramerateWidget(QLabel):
+    def __init__(self, sim, **kwargs):
+        super(FramerateWidget, self).__init__(**kwargs)
+
+        self._sim = sim
+        self._last_frame = sim.step_number
+
+        self._sim.started.connect(self.started)
+        self._sim.stopped.connect(self.stopped)
+
+        self.setText("0 fps")
+
+    def started(self):
+        self.frame_timer = self.startTimer(1000)
+        self._last_frame = self._sim.step_number
+
+    def stopped(self):
+        self.killTimer(self.frame_timer)
+        self.setText("n/a fps")
+
+    def timerEvent(self, event):
+        frame = self._sim.step_number
+        diff = frame - self._last_frame
+        self._last_frame = frame
+
+        self.setText("%d fps" % diff)
