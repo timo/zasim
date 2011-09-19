@@ -193,23 +193,19 @@ obstacle for it to collide with:
 .. doctest:: b
     :options: +NORMALIZE_WHITESPACE
 
-    >>> config = np.zeros((10, 6), dtype=int)
+    >>> config = np.zeros((6, 10), dtype=int)
     >>> config[0:3,0:3] = np.array([
     ...    [0,1,0],
     ...    [0,0,1],
     ...    [1,1,1]])
-    >>> config[9, 4] = 1
+    >>> config[3:6, 9] = [1, 1, 1]
     >>> config
-    array([[0, 1, 0, 0, 0, 0],
-           [0, 0, 1, 0, 0, 0],
-           [1, 1, 1, 0, 0, 0],
-           [0, 0, 0, 0, 0, 0],
-           [0, 0, 0, 0, 0, 0],
-           [0, 0, 0, 0, 0, 0],
-           [0, 0, 0, 0, 0, 0],
-           [0, 0, 0, 0, 0, 0],
-           [0, 0, 0, 0, 0, 0],
-           [0, 0, 0, 0, 1, 0]])
+    array([[0, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+           [0, 0, 1, 0, 0, 0, 0, 0, 0, 0],
+           [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+           [0, 0, 0, 0, 0, 0, 0, 0, 0, 1]])
 
 And now we can put the configuration into the simulator, like this:
 
@@ -218,14 +214,11 @@ And now we can put the configuration into the simulator, like this:
 
     >>> sim = cagen.GameOfLife(config=config)
     >>> disp = TwoDimConsolePainter(sim)
-     #    
-      #   
-    ###   
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-    <BLANKLINE>
-        # 
+     #
+      #
+    ###
+             #
+             #
+             #
 
+Stepping a few times will show the typical glider movement.
