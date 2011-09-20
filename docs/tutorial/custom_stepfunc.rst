@@ -218,3 +218,63 @@ normal construction of the StepFunc will continue. Otherwise, a
 `~zasim.cagen.compatibility.CompatibilityException` will be raised.
 
 
+Toying around
+-------------
+
+The best way to figure out, what's going on is to just plug a couple different
+StepFuncVisitors together and see what comes out. The interesting parts are the
+properties `pure_py_code_text` for the generated python code and `code_text`
+for the generated C++ code:
+
+.. doctest:: a
+
+    >>> from zasim.cagen import *
+    >>> # create a random configuration, base 2, 15 cells wide
+    >>> t = TestTarget(size=(15,), base=2)
+    >>> a = SimpleStateAccessor()
+    >>> # Create a border of constant zeros around the configuration
+    >>> b = BorderSizeEnsurer()
+    >>> # Calculate the normal elementary cellular automaton number 99
+    >>> c = ElementaryCellularAutomatonBase(rule=99)
+    >>> # loop over a one-dimensional space
+    >>> l = LinearCellLoop()
+    >>> # Take the first neighbour from the right and left
+    >>> n = ElementaryFlatNeighbourhood()
+    >>> # finally, compose the parts into a whole
+    >>> sf = StepFunc(loop=l, accessor=a, neighbourhood=n,
+    ...               extra_code=[b, c], target=t)
+    >>> sf.gen_code()
+    >>> print sf.pure_py_code_text
+    def step_pure_py(self):
+    # from hook init
+        result = None
+        sizeX = 15
+        for pos in self.loop.get_iter():
+    # from hook pre_compute
+            l = self.acc.read_from(offset_pos(pos, (-1,)))
+            m = self.acc.read_from(offset_pos(pos, (0,)))
+            r = self.acc.read_from(offset_pos(pos, (1,)))
+    # from hook compute
+            result = 0
+            result += l * 4
+            result += m * 2
+            result += r * 1
+            result = self.target.rule[int(result)]
+    # from hook post_compute
+            self.acc.write_to(pos, result)
+    # from hook after_step
+    <BLANKLINE>
+    # from hook finalize
+        self.acc.swap_configs()
+
+As you can see, the generated python code is divided into multiple sections.
+This is due to the way the visitors work. Their visit methods are called in
+order, so if they just appended their code, it would come out interleaved, so
+instead, there are the sections `init`, `pre_compute`, `compute`,
+`post_compute`, `after_step` and `finalize`. Each StepFuncVisitor will call
+add_py_hook with a section name and a string containing the python code to add
+and the StepFunc will correct the indentation of the code and add it to the
+given category.
+
+The C++ code, that gets generated works the same way, although the sections are
+not the same.
