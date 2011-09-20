@@ -82,10 +82,37 @@ Now we can feed that into a StepFunc and see what happens.
     sf.gen_code()
     print sf.pure_py_code_text
 
-And this is the generated python code:
+And this is the generated python code::
+
+    def step_pure_py(self):
+    # from hook init
+        result = None
+        sizeX = 15
+        for pos in self.loop.get_iter():
+    # from hook pre_compute
+            l = self.acc.read_from(offset_pos(pos, (-1,)))
+            m = self.acc.read_from(offset_pos(pos, (0,)))
+            r = self.acc.read_from(offset_pos(pos, (1,)))
+    # from hook compute
+            sup = max(l, m)
+            second_sup = min(l, m)
+
+            for val in [r]:
+                if val > sup:
+                    second_sup, sup = sup, val
+                elif val > second_sup:
+                    second_sup = val
+            result = second_sup
+    # from hook post_compute
+            self.acc.write_to(pos, result)
+    # from hook after_step
+
+    # from hook finalize
+        self.acc.swap_configs()
 
 .. testoutput:: a
     :options: +NORMALIZE_WHITESPACE
+    :hide:
 
     def step_pure_py(self):
     # from hook init
