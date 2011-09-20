@@ -147,3 +147,21 @@ There are other actions, that happen, which don't fit this pattern:
    dimension with a configuration, that's two-dimensional, will get
    noticed straight away.
 
+
+Keeping the data together: the `Target`
+---------------------------------------
+
+In the previous section, the *target instance* has been mentioned, but there was
+not yet any explanation for what it is or does. The target, however, is very
+simple. All it has to do is basically keep the configuration and a bunch of
+additional attributes together in one namespace. The only class currently useful
+as a target is the `~zasim.cagen.target.TestTarget`, which takes a config - or
+a size, which will generate a random config - and a base as arguments and offers
+the attributes `cconf` and `possible_values`.
+
+Additional attributes will then be added by the `StepFunc` on an as-needed
+basis. These include `nconf`, the "next configuration" set by the
+`SimpleStateAccessor`, `randseed`, the random seed to be used in the next step
+of the step function, set by `~zasim.cagen.nondeterministic.NondeterministicCellLoopMixin`,
+`activity`, or `histogram`, set by the `stats classes <zasim.cagen.stats` or
+anything else.
