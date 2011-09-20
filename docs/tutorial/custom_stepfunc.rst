@@ -1,3 +1,5 @@
+.. _tutorial_stepfunc:
+
 Assembling a custom StepFunc
 ============================
 
@@ -214,4 +216,5 @@ that none of them are present.
 If neither the missing nor the incompatible list have any entries,
 normal construction of the StepFunc will continue. Otherwise, a
 `~zasim.cagen.compatibility.CompatibilityException` will be raised.
+
 

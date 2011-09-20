@@ -3,7 +3,7 @@ to express, what combinations are acceptable and what combinations are going to
 break, allowing the constructor of the `StepFunc` to bail out soon
 instead of causing an unexpected result during execution.
 
-Each *StepFuncVisitor* has three attributes:
+Each `StepFuncVisitor` has three attributes:
 
     - requires_features
 
