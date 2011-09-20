@@ -297,7 +297,12 @@ Using a wrong combination of StepFuncVisitors will result in such an exception:
     ...
       File "zasim/cagen/stepfunc.py", line 114, in __init__
         raise CompatibilityException(conflicts, missing)
-    CompatibilityException: <CompatibilityException([], [(<zasim.cagen.loops.LinearCellLoop object at 0x3fae790>, ['one_dimension'])])>
+    CompatibilityException: <Compatibility Exception:
+        missing features:
+     ...
+        feature conflicts:
+          (<zasim.cagen.loops.LinearCellLoop object at 0x31eca90>, ['one_dimension'])
+      >
 
 This exception shows, that the LinearCellLoop misses the feature `one_dimension`.
 

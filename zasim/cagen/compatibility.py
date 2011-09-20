@@ -23,8 +23,19 @@ class CompatibilityException(Exception):
         self.conflicts = conflicts
         self.missing = missing
 
+    #def __repr__(self):
+        #return "<CompatibilityException(conflicts=%s, missing=%s)>" % (self.conflicts, self.missing)
+
     def __str__(self):
-        return "<CompatibilityException(%s, %s)>" % (self.conflicts, self.missing)
+        return """\
+<Compatibility Exception:
+    feature conflicts:
+      %s
+
+    missing features:
+      %s
+  >""" % ("\n      ".join(map(str, self.conflicts)),
+          "\n      ".join(map(str, self.missing)))
 
 class CompatibilityFeature(object):
     pass
