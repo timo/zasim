@@ -266,6 +266,7 @@ for the generated C++ code:
     <BLANKLINE>
     # from hook finalize
         self.acc.swap_configs()
+    <BLANKLINE>
 
 As you can see, the generated python code is divided into multiple sections.
 This is due to the way the visitors work. Their visit methods are called in
@@ -278,3 +279,25 @@ given category.
 
 The C++ code, that gets generated works the same way, although the sections are
 not the same.
+
+Using a wrong combination of StepFuncVisitors will result in such an exception:
+
+.. doctest:: b
+
+    >>> from zasim.cagen import *
+    >>> # this time, the configuration is two-dimensional
+    >>> t = TestTarget(size=(15,15), base=2)
+    >>> a = SimpleStateAccessor()
+    >>> # we carelessly forgot to use the correct loop for the two-dimensional
+    >>> # config
+    >>> l = LinearCellLoop()
+    >>> n = ElementaryFlatNeighbourhood()
+    >>> sf = StepFunc(loop=l, accessor=a, neighbourhood=n, target=t)
+    Traceback (most recent call last):
+    ...
+      File "zasim/cagen/stepfunc.py", line 114, in __init__
+        raise CompatibilityException(conflicts, missing)
+    CompatibilityException: <CompatibilityException([], [(<zasim.cagen.loops.LinearCellLoop object at 0x3fae790>, ['one_dimension'])])>
+
+This exception shows, that the LinearCellLoop misses the feature `one_dimension`.
+
