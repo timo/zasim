@@ -98,3 +98,52 @@ interface. Those slots are:
    cellular automaton originally envisioned by Von Neumann, Langton's ant or
    any other would have the bulk of their implementation in one of those. Some
    may also need special instances of `CellLoop` or `StateAccessor` to work.
+
+The `StepFunc` works by calling the following method on each `StepFuncVisitor`
+in turn:
+
+ * `~zasim.cagen.bases.StepFuncVisitor.bind` with itself as the `code` argument.
+   This binds the StepFuncVisitor to the StepFunc. The StepFuncVisitor should
+   not allow another StepFunc to bind it to itself after this.
+
+ * `~zasim.cagen.bases.StepFuncVisitor.visit`, to let it generate any code for
+   the step function body
+
+ * `~zasim.cagen.bases.StepFuncVisitor.set_target` with the target instance as
+   the `target` argument. This makes the target accessible to the
+   StepFuncVisitor, so that any new attributes [1]_ can be set.
+
+ * `~zasim.cagen.bases.StepFuncVisitor.init_once`, which allows for actions,
+   that depend on the target, but are only needed to be run once, not whenever
+   the configuration has changed.
+
+ * `~zasim.cagen.bases.StepFuncVisitor.new_config`, in which the StepFuncVisitor
+   can perform any tasks necessary to bring a changed configuration into a sane
+   state. Any `BorderHandler`, for instance, would work their magic here.
+
+.. [1] For an example of this, see 
+       `zasim.cagen.nondeterministic.NondeterministicCellLoopMixin.set_target`,
+       which populates the randseed attribute, that was previously added to the
+       targets attribute list in the visit method.
+
+There are other actions, that happen, which don't fit this pattern:
+
+ * At the very beginning, the `StepFunc` will tell the `StateAccessor`, how
+   big the configuration array is, by calling its `set_size` method.
+
+ * After `new_config` has been called on all visitors, the `StepFunc` will call
+   `~zasim.cagen.bases.StateAccessor.multiplicate_config`, which takes care of
+   populating a kind of history of configs. Usually, a `StateAccessor` would
+   keep at least a *current config* and a *next config* internally. This is the
+   code, that makes sure, that every external change to the configuration will
+   be reflected in both of these.
+
+ * After setting the size on the accessor, it will extract the `possible_values`
+   property of the target instance and set self.possible_values to it.
+
+ * After calling `bind` on all visitors, the StepFunc will `run a compatibility
+   check <zasim.cagen.stepfunc.StepFunc._check_compatibility>` of all
+   StepFuncVisitors, to make sure simple errors like using a loop for one
+   dimension with a configuration, that's two-dimensional, will get
+   noticed straight away.
+
