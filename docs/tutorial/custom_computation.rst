@@ -180,7 +180,7 @@ something like this::
         # in order to loop over the values in C, we create an array from them
         # the C compiler will probably completely optimise this away.
         self.code.add_code("localvars",
-            """int neigh_arr[%d]; int neigh_idx;""" % len(self.code.neigh.names - 2))
+            """int neigh_arr[%d]; int neigh_idx;""" % (len(self.code.neigh.names) - 2))
         self.code.add_code("compute",
             """neigh_arr = {%s};""" % (", ".join(self.code.neigh.names[2:])))
         self.code.add_code("compute",
