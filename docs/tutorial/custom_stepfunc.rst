@@ -162,6 +162,26 @@ the attributes `cconf` and `possible_values`.
 Additional attributes will then be added by the `StepFunc` on an as-needed
 basis. These include `nconf`, the "next configuration" set by the
 `SimpleStateAccessor`, `randseed`, the random seed to be used in the next step
-of the step function, set by `~zasim.cagen.nondeterministic.NondeterministicCellLoopMixin`,
-`activity`, or `histogram`, set by the `stats classes <zasim.cagen.stats` or
-anything else.
+of the step function, set by 
+`~zasim.cagen.nondeterministic.NondeterministicCellLoopMixin`, `activity`, or
+`histogram`, set by the `stats classes <zasim.cagen.stats` or anything else.
+
+
+A common interface: the `Simulator`
+-----------------------------------
+
+In order for :ref:`displays <display-package>` and `controls
+<zasim.gui.control>` to work, there is a unified interface for all kinds of
+simulators, wether they are based on a `StepFunc` class and a `TestTarget`, or
+any other class you can come up with. This interface is defined and documented
+in `zasim.simulator`. There is a special class for a Simulator built from a
+`StepFunc` and a `TestTarget`, which is the `~zasim.simulator.CagenSimulator`
+and a class for a StepFunc and TestTarget based simulator, that also
+offers a rule number, like the elementary cellular automaton would, called
+`~zasim.simulator.ElementaryCagenSimulator`.
+
+In fact, the simulators from `zasim.cagen.simulators` are all derived from
+either the `ElementaryCagenSimulator` or the `CagenSimulator`.
+
+The `CagenSimulator` and the `ElementaryCagenSimulator` are both constructed
+from a `StepFunc` and a `TestTarget`

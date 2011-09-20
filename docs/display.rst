@@ -1,3 +1,5 @@
+.. _display-package:
+
 :mod:`zasim.display` - Package for displaying configs
 =====================================================
 
