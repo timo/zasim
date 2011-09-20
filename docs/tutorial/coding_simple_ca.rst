@@ -172,7 +172,7 @@ see the current configuration in the middle, older values above and even
 older values directly below.
 
 
-The Game of Life - 2d CAs
+The Game of Life - 2d CA
 -------------------------
 
 Although the `ElementarySimulator` supports 2d configurations as well, the
@@ -221,4 +221,7 @@ And now we can put the configuration into the simulator, like this:
              #
              #
 
-Stepping a few times will show the typical glider movement.
+Stepping a few times will show the typical glider movement, until it
+collides with the blocks at the end. This specific configuration will
+eventually die out.
+
