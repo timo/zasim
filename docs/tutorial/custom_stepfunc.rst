@@ -164,7 +164,7 @@ basis. These include `nconf`, the "next configuration" set by the
 `SimpleStateAccessor`, `randseed`, the random seed to be used in the next step
 of the step function, set by 
 `~zasim.cagen.nondeterministic.NondeterministicCellLoopMixin`, `activity`, or
-`histogram`, set by the `stats classes <zasim.cagen.stats` or anything else.
+`histogram`, set by the `stats classes <zasim.cagen.stats>` or anything else.
 
 
 A common interface: the `Simulator`
@@ -185,3 +185,33 @@ either the `ElementaryCagenSimulator` or the `CagenSimulator`.
 
 The `CagenSimulator` and the `ElementaryCagenSimulator` are both constructed
 from a `StepFunc` and a `TestTarget`
+
+
+Ensuring compatibility
+----------------------
+
+Before doing too much, the `StepFunc` constructor will check compatibility
+between the StepFuncVisitors. The way this works is, that each StepFuncVisitor
+has three properties, that have to be set after bind has been set. Those are:
+
+`provides_features`
+    A list of features, that the StepFunc gains through this StepFuncVisitor.
+
+`requires_features`
+    A list of features, that this StepFuncVisitor requires the StepFunc to have.
+
+`incompatible_features`
+    A list of features, that this StepFuncVisitor can't function with.
+
+The only features, that are not provided by any StepFuncVisitors, but by the
+StepFunc itself, are `one_dimension` and `two_dimensions`.
+
+The StepFunc goes through all StepFuncVisitors and adds up the provides_features
+into one big set, then goes through all the requires_features and checks if any
+are missing and finally goes through the incompatible_features to make sure, 
+that none of them are present.
+
+If neither the missing nor the incompatible list have any entries,
+normal construction of the StepFunc will continue. Otherwise, a
+`~zasim.cagen.compatibility.CompatibilityException` will be raised.
+
