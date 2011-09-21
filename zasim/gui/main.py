@@ -4,35 +4,53 @@ from .histogram import HistogramExtraDisplay
 from ..external.qt import QApplication, Qt
 from .. import cagen
 
+import numpy as np
+
 import sys
 
 def main(width=200, height=200, scale=2,
         onedim=False,
         beta=100, nondet=100,
         life=False, rule=None,
-        copy_borders=True, white=50,
+        copy_borders=True, black=None,
         histogram=True, activity=True,
         base=2):
     app = QApplication(sys.argv)
 
-    if white > 1:
-        white = white / 100.
+    if black > 1:
+        black = black / 100.
 
     beta = beta / 100.
     nondet = nondet / 100.
 
     w, h = width, height
+    if onedim:
+        size = (w,)
+    else:
+        size = w, h
+
+    if black is not None:
+        print size, base
+        rands = np.random.rand(*size)
+        config = np.random.randint(0, base, size)
+        config[rands < black] = 0
+
+        size = None
+    else:
+        config = None
+
+    print size, config
 
     if onedim and not life:
         # get a random beautiful CA
-        sim_obj = cagen.BinRule(rule=rule, size=(w,), nondet=nondet, beta=beta, activity=activity,
+        sim_obj = cagen.BinRule(rule=rule, size=size, config=config, nondet=nondet, beta=beta, activity=activity,
                 histogram=histogram, copy_borders=copy_borders, base=base)
 
     else:
         if life:
-            sim_obj = cagen.GameOfLife((w, h), nondet, histogram, activity, None, beta, copy_borders)
+            sim_obj = cagen.GameOfLife(size, nondet, histogram, activity, config, beta, copy_borders)
         else:
-            sim_obj = cagen.ElementarySimulator((w, h), nondet, histogram, activity, rule, None, beta, copy_borders, base=base)
+            sim_obj = cagen.ElementarySimulator(size, nondet, histogram, activity, rule, config, beta, copy_borders, base=base)
 
         if not life:
             print sim_obj.pretty_print()
@@ -80,8 +98,8 @@ if __name__ == "__main__":
             help="the elementary cellular automaton rule number to use")
     argp.add_argument("-c", "--dont-copy-borders", default=True, action="store_false", dest="copy_borders",
             help="copy borders or just read zeros?")
-    argp.add_argument("--white", default=20, type=int,
-            help="what percentage of the cells to make white at the beginning.")
+    argp.add_argument("--black", default=None, type=int,
+            help="what percentage of the cells to make black at the beginning.")
 
     argp.add_argument("--nondet", default=100, type=int,
             help="with what percentage should cells be executed?")
