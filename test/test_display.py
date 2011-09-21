@@ -14,14 +14,13 @@ class TestCAGen:
         gconf = GLIDER[0]
         simo = cagen.GameOfLife(config=gconf)
         display = TwoDimConsolePainter(simo)
-        simo.step()
 
         out, err = capsys.readouterr()
         assert out == """\
-     
-# #  
- ##  
  #   
+  #  
+###  
+     
      
 """
 
@@ -29,7 +28,6 @@ class TestCAGen:
         conf = np.array([1,0,1,1,0])
         br = cagen.BinRule(config=conf, rule=204)
         display = LinearConsolePainter(br, 1)
-        br.step()
 
         out, err = capsys.readouterr()
         assert out == """# ## \n"""

@@ -3,7 +3,7 @@ to express, what combinations are acceptable and what combinations are going to
 break, allowing the constructor of the `StepFunc` to bail out soon
 instead of causing an unexpected result during execution.
 
-Each *StepFuncVisitor* has three attributes:
+Each `StepFuncVisitor` has three attributes:
 
     - requires_features
 
@@ -23,8 +23,19 @@ class CompatibilityException(Exception):
         self.conflicts = conflicts
         self.missing = missing
 
+    #def __repr__(self):
+        #return "<CompatibilityException(conflicts=%s, missing=%s)>" % (self.conflicts, self.missing)
+
     def __str__(self):
-        return "<CompatibilityException(%s, %s)>" % (self.conflicts, self.missing)
+        return """\
+<Compatibility Exception:
+    feature conflicts:
+      %s
+
+    missing features:
+      %s
+  >""" % ("\n      ".join(map(str, self.conflicts)),
+          "\n      ".join(map(str, self.missing)))
 
 class CompatibilityFeature(object):
     pass

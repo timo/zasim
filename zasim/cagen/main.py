@@ -7,6 +7,11 @@ def test(width=75, copy_borders=True, rule=None, histogram=True, activity=False,
     beta = beta / 100.
     nondet = nondet / 100.
 
+    if rule is not None:
+        if rule.startswith("0x"):
+            rule = int(rule, 16)
+        rule = int(rule)
+
     bin_rule = BinRule((width,), rule=rule,
             histogram=histogram, activity=activity,
             nondet=nondet, beta=beta, copy_borders=copy_borders, base=base)
@@ -15,6 +20,7 @@ def test(width=75, copy_borders=True, rule=None, histogram=True, activity=False,
 
     if print_rule:
         print bin_rule.pretty_print()
+        print bin_rule.rule_number, "==", hex(bin_rule.rule_number)
 
     if HAVE_WEAVE and not pure:
         print "weave"
@@ -44,7 +50,7 @@ def main(args=None):
     argp.add_argument("-b", "--dont-copy-borders", default=True, dest="copy_borders", action="store_false",
             help="copy borders around. Otherwise, zeros will be read from "
                     "the borders")
-    argp.add_argument("-r", "--rule", default=None, type=int,
+    argp.add_argument("-r", "--rule", default=None,
             help="select the rule number to calculate")
     argp.add_argument("--histogram", default=False, action="store_true",
             help="calculate a histogram")

@@ -14,6 +14,8 @@ class BaseConsolePainter(QObject):
         """Initialise the painter.
 
         :param simulator: The simulator to use.
+        :param connect: Connect the signals of the simulator immediately?
+        :param auto_output: Automatically output after every step?
         """
         super(BaseConsolePainter, self).__init__(**kwargs)
         self._sim = simulator
@@ -66,6 +68,8 @@ class LinearConsolePainter(BaseConsolePainter):
         self._lines = lines
         self._data = [self.NO_DATA * self._sim.shape[0]]
 
+        self.after_step()
+
     def draw_conf(self, update_step=True):
         newline = "".join(self.PALETTE[value] for value in self._last_conf)
         if len(self._data) == self._lines and update_step:
@@ -87,6 +91,8 @@ class TwoDimConsolePainter(BaseConsolePainter):
 
         self._data = [[self.NO_DATA * self._sim.shape[0]]
                       for i in range(self._sim.shape[1])]
+
+        self.after_step()
 
     def draw_conf(self, update_step=True):
         self._data = []
