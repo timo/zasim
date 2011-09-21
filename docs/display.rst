@@ -4,10 +4,13 @@
 =====================================================
 
 This package offers functionality to display the configs of simulators in
-different formats. At the moment, only a Qt.QImage based rendering method
-is supported and that only does configs with ones and zeros as values, but
-in the future, palettes for different types of configs and renderers for
-plaintext and html are going to be added.
+different formats. At the moment, there are display methods for images based on
+QImage and for ascii art. Both can handle arbitrary field values, if the right
+palette is supplied.
+
+For interactive use with IPython, the QImage based renderers offer embedding
+their images into the shell as PNG images and the console based renderers offer
+rendering as HTML tables.
 
 .. toctree::
 
