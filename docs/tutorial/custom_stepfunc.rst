@@ -149,6 +149,15 @@ There are other actions, that happen, which don't fit this pattern:
    dimension with a configuration, that's two-dimensional, will get
    noticed straight away.
 
+And `StepFunc` has another neat feature. Each visitor is able to contribute a
+little part to a common name for the StepFunc. Such a name is generated when
+calling str on the StepFunc and will call build_name on all StepFuncVisitor
+objects that are part of the StepFunc. A name could be, for instance::
+
+    2d with VonNeumannNeighbourhood (copy borders) calculating rule 0x915b8b0a (histogram)
+    1d with ElementaryFlatNeighbourhood calculating rule 0xa5
+    2d with MooreNeighbourhood calculating game of life (activity)
+
 
 Keeping the data together: the `Target`
 ---------------------------------------
@@ -188,6 +197,9 @@ either the `ElementaryCagenSimulator` or the `CagenSimulator`.
 The `CagenSimulator` and the `ElementaryCagenSimulator` are both constructed
 from a `StepFunc` and a `TestTarget`
 
+The Simulator grants access to the extra attributes of the target via the `t`
+property. It is a `~zasim.simulator.TargetProxy` object, that will allow
+access to the extra attrs and nothing else.
 
 Ensuring compatibility
 ----------------------
