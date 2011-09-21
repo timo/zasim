@@ -1,6 +1,11 @@
 :mod:`zasim.cagen.main` - Running cagen as a program
 ====================================================
 
+.. seealso::
+
+    The tutorial section has a :ref:`chapter on invoking zasim from the
+    commandline <tutorial_invocation>`.
+
 Running this module from the commandline
 ----------------------------------------
 

@@ -1,3 +1,5 @@
+.. _tutorial_invocation:
+
 Invoking zasim from the commandline
 ===================================
 
