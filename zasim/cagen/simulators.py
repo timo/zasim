@@ -11,6 +11,80 @@ from .stepfunc import StepFunc
 
 from ..simulator import ElementaryCagenSimulator, CagenSimulator
 
+import inspect
+
+def automatic_stepfunc(size=None, config=None, computation=None,
+                       nondet=1, beta=1,
+                       histogram=False, activity=False,
+                       copy_borders=True, neighbourhood=None,
+                       base=2, extra_code=None,
+                       target_class=TestTarget, **kwargs):
+    """From the given parameters, assemble a StepFunc with the given
+    computation and extra_code objects. Returns the stepfunc."""
+    if size is None:
+        size = config.shape
+
+    target = target_class(size, config, base=base)
+
+    if neighbourhood is None:
+        if len(size) == 1:
+            neighbourhood_class = ElementaryFlatNeighbourhood
+        elif len(size) == 2:
+            neighbourhood_class = VonNeumannNeighbourhood
+
+    if beta != 1 and nondet == 1:
+        acc = BetaAsynchronousAccessor(beta)
+        if neighbourhood is None:
+            neighbourhood = neighbourhood_class(Base=BetaAsynchronousNeighbourhood)
+        elif inspect.isfunction(neighbourhood):
+            neighbourhood = neighbourhood(Base=BetaAsynchronousNeighbourhood)
+        elif not isinstance(neighbourhood, BetaAsynchronousNeighbourhood):
+            raise ValueError("If you set beta to a value other than 1, you "
+                             "must supply a neighbourhood that is based on "
+                             "BetaAsynchronousNeighbourhood.")
+    elif beta == 1:
+        acc = SimpleStateAccessor()
+        if neighbourhood is None:
+            neighbourhood = neighbourhood_class()
+        elif inspect.isfunction(neighbourhood):
+            neighbourhood = neighbourhood()
+
+    elif beta != 1 and nondet != 1:
+        raise ValueError("Cannot have beta asynchronism and deterministic=False.")
+
+    if len(size) == 1:
+        if nondet == 1.0:
+            loop = LinearCellLoop()
+        else:
+            loop = LinearNondeterministicCellLoop(probab=nondet)
+    elif len(size) == 2:
+        if nondet == 1.0:
+            loop = TwoDimCellLoop()
+        else:
+            loop = TwoDimNondeterministicCellLoop(probab=nondet)
+
+    if copy_borders:
+        if len(size) == 1:
+            border = SimpleBorderCopier()
+        elif len(size) == 2:
+            border = TwoDimSlicingBorderCopier()
+    else:
+        border = BorderSizeEnsurer()
+
+    if extra_code is None:
+        extra_code = []
+
+    stepfunc = StepFunc(
+            loop=loop,
+            accessor=acc,
+            neighbourhood=neighbourhood,
+            extra_code=[border, computation] +
+            ([SimpleHistogram()] if histogram else []) +
+            ([ActivityRecord()] if activity else []) +
+            extra_code, target=target)
+
+    return stepfunc
+
 class ElementarySimulator(ElementaryCagenSimulator):
     """A `ElementaryCagenSimulator` with a target and stepfunc created
     automatically for the given parameters.
@@ -56,59 +130,24 @@ class ElementarySimulator(ElementaryCagenSimulator):
             size = config.shape
 
         computer = ElementaryCellularAutomatonBase(rule)
-        target = TestTarget(size, config, base=base)
 
-        if neighbourhood is None:
-            if len(size) == 1:
-                neighbourhood_class = ElementaryFlatNeighbourhood
-            elif len(size) == 2:
-                if rule is None or rule < 2 ** 32:
-                    neighbourhood_class = VonNeumannNeighbourhood
-                else:
-                    neighbourhood_class = MooreNeighbourhood
-
-        if beta != 1 and nondet == 1:
-            acc = BetaAsynchronousAccessor(beta)
-            if neighbourhood is None:
-                neighbourhood = neighbourhood_class(Base=BetaAsynchronousNeighbourhood)
-            elif not isinstance(neighbourhood, BetaAsynchronousNeighbourhood):
-                raise ValueError("If you set beta to a value other than 1, you "
-                                 "must supply a neighbourhood that is based on "
-                                 "BetaAsynchronousNeighbourhood.")
-        elif beta == 1:
-            acc = SimpleStateAccessor()
-            if neighbourhood is None:
-                neighbourhood = neighbourhood_class()
-        elif beta != 1 and nondet != 1:
-            raise ValueError("Cannot have beta asynchronism and deterministic=False.")
-
-        if len(size) == 1:
-            if nondet == 1.0:
-                loop = LinearCellLoop()
-            else:
-                loop = LinearNondeterministicCellLoop(probab=nondet)
-        elif len(size) == 2:
-            if nondet == 1.0:
-                loop = TwoDimCellLoop()
-            else:
-                loop = TwoDimNondeterministicCellLoop(probab=nondet)
-
-        if copy_borders:
-            if len(size) == 1:
-                border = SimpleBorderCopier()
-            elif len(size) == 2:
-                border = TwoDimSlicingBorderCopier()
-        else:
-            border = BorderSizeEnsurer()
-
-        stepfunc = StepFunc(
-                loop=loop,
-                accessor=acc,
-                neighbourhood=neighbourhood,
-                extra_code=[border, computer] +
-                ([SimpleHistogram()] if histogram else []) +
-                ([ActivityRecord()] if activity else []), target=target)
         self.computer = computer
+
+        if len(size) > 1:
+            if rule is None or rule < 2 ** 32:
+                neighbourhood = VonNeumannNeighbourhood
+            else:
+                neighbourhood = MooreNeighbourhood
+        else:
+            neighbourhood = ElementaryFlatNeighbourhood
+
+        stepfunc = automatic_stepfunc(size=size, config=config, computation=computer,
+                nondet=nondet, beta=beta,
+                histogram=histogram, activity=activity,
+                copy_borders=copy_borders, neighbourhood=neighbourhood,
+                base=base, extra_code=[])
+
+        target = stepfunc.target
         stepfunc.gen_code()
 
         self.rule = target.rule
@@ -144,31 +183,17 @@ class GameOfLife(CagenSimulator):
            :param copy_borders: Copy over data from the other side?
            :param life_params: Those parameters are passed on to the constructor
                                of `LifeCellularAutomatonBase`."""
-        if size is None:
-            size = config.shape
 
         computer = LifeCellularAutomatonBase(**life_params)
-        target = TestTarget(size, config)
 
-        if beta != 1 and nondet == 1:
-            acc = BetaAsynchronousAccessor(beta)
-            neighbourhood = MooreNeighbourhood(Base=BetaAsynchronousNeighbourhood)
-        elif beta == 1:
-            acc = SimpleStateAccessor()
-            neighbourhood = MooreNeighbourhood()
-        elif beta != 1 and nondet != 1:
-            raise ValueError("Cannot have beta asynchronism and deterministic=False.")
+        stepfunc = automatic_stepfunc(size=size, config=config, computation=computer,
+                nondet=nondet, beta=beta,
+                histogram=histogram, activity=activity,
+                copy_borders=copy_borders, neighbourhood=MooreNeighbourhood,
+                extra_code=[])
 
-        stepfunc = StepFunc(
-                loop=TwoDimCellLoop() if nondet == 1.0 else
-                     TwoDimNondeterministicCellLoop(probab=nondet),
-                accessor=acc,
-                neighbourhood=neighbourhood,
-                extra_code=[TwoDimSlicingBorderCopier() if copy_borders else
-                                BorderSizeEnsurer(),
-                            computer] +
-                ([SimpleHistogram()] if histogram else []) +
-                ([ActivityRecord()] if activity else []), target=target)
+        target = stepfunc.target
         stepfunc.gen_code()
 
         super(GameOfLife, self).__init__(stepfunc, target)
+
