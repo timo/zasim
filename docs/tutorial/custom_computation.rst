@@ -158,6 +158,10 @@ As you can see, the code was successfully inserted. Let's see what it does!
 
 Apparently, this yields a stable configuration soon. Well, that was interesting!
 
+
+Generating C code, too
+----------------------
+
 The one thing, that's still missing is generated C code. It would probably look
 something like this::
 
