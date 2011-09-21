@@ -8,12 +8,12 @@ which the cells execute may be arbitrary and asynchronous.
 This is formally defined with a probability that decides, for each cell in turn, if
 it may update or not.
 
-See also
---------
+.. seealso::
 
-`zasim.cagen.beta_async` implements a different kind of asynchronous execution. While
-the formal definitions are compatible, the implementations in nondeterministic should
-not be mixed with the implementations in beta_async.
+    `zasim.cagen.beta_async` implements a different kind of asynchronous
+    execution. While the formal definitions are compatible, the implementations
+    in nondeterministic should not be mixed with the implementations in
+    beta_async.
 
 Implementation details
 ----------------------

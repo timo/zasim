@@ -13,13 +13,13 @@ calculation. At the end of the step, the cell then writes the result to its inne
 value and, with the probability set before, updates the outer value with the inner
 value.
 
-See also
---------
+.. seealso::
 
-`zasim.cagen.nondeterministic` implements a different kind of asynchronous
-execution. While the formal definitions are compatible, the implementations
-in nondeterministic should not be mixed with the implementations in
-beta_async.
+    `zasim.cagen.nondeterministic` implements a different kind of asynchronous
+    execution. While the formal definitions are compatible, the implementations
+    in nondeterministic should not be mixed with the implementations in
+    beta_async.
+
 
 Implementation details
 ----------------------
