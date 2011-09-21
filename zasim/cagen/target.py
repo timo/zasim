@@ -12,10 +12,6 @@ class TestTarget(object):
     cconf = None
     """The current config the cellular automaton works on."""
 
-    nconf = None
-    """During the step, this is the 'next configuration', otherwise it's the
-    previous configuration, because nconf and cconf are swapped after steps."""
-
     possible_values = (0, 1)
     """What values the cells can have."""
 
