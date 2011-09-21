@@ -5,6 +5,13 @@ Zasim offers a package for generating all the code needed to create and run a
 step function without having to re-write boilerplate code. This is achieved by
 offering a lot of re-usable components.
 
+.. seealso::
+
+    The tutorial section describes all classes involved in more detail and gives
+    an example for how to make new Computation classes.
+
+    You can start with :ref:`tutorial_stepfunc`.
+
 This package also contains :doc:`pre-built simulators for commonly used cellular
 automata <cagen/simulators>`.
 
