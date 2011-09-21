@@ -1,3 +1,10 @@
+"""This module offers the `BaseQImageRenderer` base class and its two
+subclasses `LinearQImageRenderer` for rendering one-dimensional configs and
+`TwoDimQImageRenderer` for rendering two-dimensional configs to QImages.
+
+These classes also offer a _repr_png_ method, that is used by IPython to display
+configurations in-line."""
+
 from __future__ import absolute_import
 
 from ..external.qt import (QObject, QImage, QPainter, QPoint, QSize, QRect,
@@ -6,8 +13,6 @@ from ..external.qt import (QObject, QImage, QPainter, QPoint, QSize, QRect,
 import numpy as np
 import Queue
 
-"""This module offers drawing capabilities for any image format that QImage
-supports, such as png and jpg."""
 
 PALETTE_444 = [0x0, 0xfff, 0xf00, 0x00f, 0x0f0, 0xff0, 0x0ff, 0xf0f]
 
