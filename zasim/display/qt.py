@@ -51,6 +51,14 @@ PALETTE_QC = make_palette_qc(PALETTE_444)
 
 del make_palette_qc
 
+def qimage_to_pngstr(image):
+    buf = QBuffer()
+    buf.open(QIODevice.ReadWrite)
+    image.save(buf, "PNG")
+    buf.close()
+    return str(buf.data())
+
+
 class BaseQImagePainter(QObject):
     """This is a base class for implementing renderers for configs based on
     QImage."""
@@ -128,11 +136,7 @@ class BaseQImagePainter(QObject):
 
     def _repr_png_(self):
         """For IPython, display the image as an embedded image."""
-        buf = QBuffer()
-        buf.open(QIODevice.ReadWrite)
-        self._image.save(buf, "PNG")
-        buf.close()
-        return str(buf.data())
+        return qimage_to_pngstr(self._image)
 
 class LinearQImagePainter(BaseQImagePainter):
     """This class offers drawing for one-dimensional cellular automata, which
@@ -265,3 +269,40 @@ class TwoDimQImagePainter(BaseQImagePainter):
 
 # TODO make a painter that continuously moves up the old configurations for saner
 #      display in ipython rich consoles and such.
+
+def display_table(images, columns=1):
+    col_widths = [0 for col in range(columns)]
+    row_heights = [0 for row in range(len(images) / columns + 1)]
+
+    for num, img in enumerate(images):
+        row = num / columns
+        col = num % columns
+
+        w, h = img.width(), img.height()
+
+        col_widths[col] = max(col_widths[col], w)
+        row_heights[row] = max(row_heights[row], h)
+
+    image = QImage(sum(col_widths) + 20 * (columns - 1),
+                   sum(row_heights) + 20 * (len(images) / columns - 1),
+                   QImage.Format_RGB444)
+    image.fill(0xfff)
+
+    try:
+        painter = QPainter(image)
+        x, y = 0, 0
+        for num, img in enumerate(images):
+            row = num / columns
+            col = num % columns
+            if col == 0:
+                x = 0
+
+            painter.drawImage(QPoint(x, y), img)
+
+            x += col_widths[col] + 20
+            if col == columns - 1:
+                y += row_heights[row] + 20
+    finally:
+        painter.end()
+
+    return image
