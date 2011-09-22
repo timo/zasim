@@ -157,6 +157,7 @@ class CagenSimulator(BaseSimulator):
         """Delegate the stepping to the :meth:`StepFunc.step` method, then
         emit :attr:`updated`."""
         self._step_func.step()
+        # XXX what's the order? what happens if a slot called from here changes something?
         self.prepared = True
         self.step_number += 1
         self.updated.emit()
