@@ -201,6 +201,44 @@ The Simulator grants access to the extra attributes of the target via the `t`
 property. It is a `~zasim.simulator.TargetProxy` object, that will allow
 access to the extra attrs and nothing else.
 
+
+Signals and Slots
+-----------------
+
+The `Simulator` interface offers a couple of signals,
+most notably `~zasim.simulator.BaseSimulator.updated` and
+`~zasim.simulator.BaseSimulator.changed`, which you can connect any python
+function or Qt slot to. `updated` will be emitted, when the simulator has made
+a step and `changed` will be emitted when the configuration has changed due to
+some other event, such as the user drawing on the image. Connecting functions to
+those signals works like this::
+
+    >>> from zasim.cagen.simulators import ElementaryCagenSimulator
+    >>> sim = ElementaryCagenSimulator(size=(10,), rule=110)
+    >>> def fizzbuzz():
+    >>>     if sim.step_number % 3 == 0:
+    >>>         if sim.step_number % 5 == 0:
+    >>>             print "fizzbuzz"
+    >>>         else:
+    >>>             print "fizz"
+    >>>     elif sim.step_number % 5 == 0:
+    >>>         print "buzz"
+    >>> sim.updated.connect(fizzbuzz)
+    >>> sim.step()
+    >>> sim.step()
+    >>> sim.step()
+    fizz
+    >>> sim.step()
+    >>> sim.step()
+    buzz
+    >>> # and disconnect the function again
+    >>> sim.updated.disconnect(fizzbuzz)
+
+This is how the display classes work: They connect `updated` to
+`~zasim.display.console.BaseConsolePainter.after_step` and `changed` to
+`~zasim.display.console.BaseConsolePainter.conf_changed`.
+
+
 Ensuring compatibility
 ----------------------
 
