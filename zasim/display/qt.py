@@ -16,9 +16,9 @@ import Queue
 
 PALETTE_444 = [0x0, 0xfff, 0xf00, 0x00f, 0x0f0, 0xff0, 0x0ff, 0xf0f]
 
-def make_palette_qc():
+def make_palette_qc(pal):
     result = []
-    for color in PALETTE_444:
+    for color in pal:
         b = (color & 0xf) << 4 | (color & 0xf)
         color = color >> 4
         g = (color & 0xf) << 4 | (color & 0xf)
@@ -29,7 +29,7 @@ def make_palette_qc():
 
     return result
 
-PALETTE_QC = make_palette_qc()
+PALETTE_QC = make_palette_qc(PALETTE_444)
 
 del make_palette_qc
 
