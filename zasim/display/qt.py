@@ -29,6 +29,24 @@ def make_palette_qc(pal):
 
     return result
 
+def make_gray_palette(number):
+    """Generates a grayscale with `number` entries.
+
+    :returns: the RGB_444 palette and the QColor palette
+    """
+    if number > 0xf:
+        raise ValueError("cannot make 4bit grayscale with %d numbers" % number)
+
+    pal_444 = []
+    pal_qc = []
+    for i in range(number):
+        perc = 1.0 * i / number
+        of_444 = int(0xf * perc)
+        pal_444.append(of_444 + of_444 << 1 + of_444 << 2)
+        pal_qc.append(QColor.fromRgbF(perc, perc, perc))
+
+    return pal_444, pal_qc
+
 PALETTE_QC = make_palette_qc(PALETTE_444)
 
 del make_palette_qc
