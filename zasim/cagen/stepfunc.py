@@ -190,6 +190,7 @@ class StepFunc(object):
 
         code_bits = []
         for section in self.sections:
+            code_bits.append("/* from section %s */" % section)
             code_bits.extend(self.code[section])
         self.code_text = "\n".join(code_bits)
 
