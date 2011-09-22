@@ -357,7 +357,7 @@ Here you see a few snapshots from the SillyComputation in action.
         images.append(disp._image)
         captions.append(sim.step_number)
     image_data = qimage_to_pngstr(display_table(images, 3, captions))
-    alt = "this is a game of life test image"
+    alt = "a few pictures from the SillyComputation"
 
 As you can see, the computation creates stable borders, but diagonals will march
 and depending on the placement of the other colorful blocks, these will form
