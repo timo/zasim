@@ -218,15 +218,14 @@ class StepFunc(object):
         code_bits.append("")
         code_text = "\n".join(code_bits)
 
-        codefile = tempfile.NamedTemporaryFile(prefix="zasim_cagen", suffix=".py", delete=False)
-        with codefile.file:
-            codefile.write(code_text)
-
+        self.codefile = tempfile.NamedTemporaryFile(prefix="zasim_cagen", suffix=".py", delete=True)
+        with self.codefile.file:
+            self.codefile.write(code_text)
 
         myglob = globals()
         myloc = locals()
         myglob.update(self.consts)
-        execfile(codefile.name, myglob, myloc)
+        execfile(self.codefile.name, myglob, myloc)
         self.pure_py_code_text = code_text
         self.step_pure_py = new.instancemethod(myloc["step_pure_py"], self, self.__class__)
 
