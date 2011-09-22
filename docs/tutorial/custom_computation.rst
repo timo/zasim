@@ -5,9 +5,10 @@ In this section we will take a look at how to create custom StepFuncVisitors.
 The goal will be to create a nonsensical new StepFunc, just to find out how that
 works.
 
-The plan is to prepopulate the whole configuration with random numbers between
-zero and ten and in each step, each cell takes the second-biggest value from
-its neighbourhood.
+The plan is to prepopulate the whole configuration with random numbers and in
+each step, each cell takes the second-biggest value from its neighbourhood. What
+this particular implementation does is slightly different from this description,
+but that results in a much more exciting computation.
 
 The first step is to figure out, what the computation would in fact look
 like. We can just use the code that the `SimpleNeighbourhood` class generates
