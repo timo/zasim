@@ -13,6 +13,7 @@ from itertools import product
 from collections import defaultdict
 
 import sys
+import tempfile
 
 if HAVE_WEAVE:
     from scipy import weave
@@ -215,12 +216,16 @@ class StepFunc(object):
         append_code("finalize")
         code_bits.append("")
         code_text = "\n".join(code_bits)
-        code_object = compile(code_text, "<string>", "exec")
+
+        codefile = tempfile.NamedTemporaryFile(prefix="zasim_cagen", suffix=".py", delete=False)
+        with codefile.file:
+            codefile.write(code_text)
+
 
         myglob = globals()
         myloc = locals()
         myglob.update(self.consts)
-        exec code_object in myglob, myloc
+        execfile(codefile.name, myglob, myloc)
         self.pure_py_code_text = code_text
         self.step_pure_py = new.instancemethod(myloc["step_pure_py"], self, self.__class__)
 
