@@ -201,3 +201,53 @@ something like this::
     self.code.add_code("compute",
        """result = second_sup;""")
 
+The generated C code for a simple example looks like this:
+
+.. sourcecode:: c
+
+    /* from section headers */
+    /* from section localvars */
+    int result;
+    int l, u, m, d, r;
+    int sup, second_sup;
+    int neigh_idx;
+    /* from section loop_begin */
+    for(int i=0; i < sizeX; i++) {
+                    for(int j=0; j < sizeY; j++) {
+    /* from section pre_compute */
+    l = cconf(i + -1 + LEFT_BORDER, j + 0 + UPPER_BORDER);
+    u = cconf(i + 0 + LEFT_BORDER, j + -1 + UPPER_BORDER);
+    m = cconf(i + 0 + LEFT_BORDER, j + 0 + UPPER_BORDER);
+    d = cconf(i + 0 + LEFT_BORDER, j + 1 + UPPER_BORDER);
+    r = cconf(i + 1 + LEFT_BORDER, j + 0 + UPPER_BORDER);
+    /* from section compute */
+
+                if (l > u) {
+                    sup = l;
+                    second_sup = u;
+                } else {
+                    sup = u;
+                    second_sup = l;
+                }
+    int neigh_arr[3] = {m, d, r};
+
+                    for (neigh_idx = 0; neigh_idx < 3; neigh_idx++) {
+                        if (neigh_arr[neigh_idx] > sup) {
+                            second_sup = sup;
+                            sup = neigh_arr[neigh_idx];
+                        } else if (neigh_arr[neigh_idx] > second_sup) {
+                            second_sup = neigh_arr[neigh_idx];
+                        }
+                    }
+    result = second_sup;
+    /* from section post_compute */
+    nconf(i + LEFT_BORDER,j + UPPER_BORDER) = result;
+    if (result != m) { histogram(result) += 1; histogram(m) -= 1; }
+    /* from section loop_end */
+    }
+                    }
+    /* from section after_step */
+
+
+..
+    FIXME generate this block above with doctest
