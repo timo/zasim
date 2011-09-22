@@ -331,6 +331,9 @@ The generated C code for a simple example looks like this:
             super(SillySim, self).__init__(stepfunc, self.target)
 
     from zasim.display.qt import TwoDimQImagePainter, qimage_to_pngstr, display_table
+    from zasim.external.qt import QApplication
+
+    app = QApplication([])
 
     base = 8
     size = (50, 50)
@@ -343,9 +346,11 @@ The generated C code for a simple example looks like this:
     sim = SillySim(config=config, base=8)
     disp = TwoDimQImagePainter(sim, scale=3)
     images = []
+    captions = []
     for i in range(9):
-        for i in range(5):
+        for j in range(5 + 5 * i):
             sim.step()
         images.append(disp._image)
-    image_data = qimage_to_pngstr(display_table(images, 3))
+        captions.append(sim.step_number)
+    image_data = qimage_to_pngstr(display_table(images, 3, captions))
     alt = "this is a game of life test image"

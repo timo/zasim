@@ -8,7 +8,7 @@ configurations in-line."""
 from __future__ import absolute_import
 
 from ..external.qt import (QObject, QImage, QPainter, QPoint, QSize, QRect,
-                           QColor, QBuffer, QIODevice, Signal)
+                           QColor, QBuffer, QIODevice, Signal, Qt)
 
 import numpy as np
 import Queue
@@ -270,7 +270,7 @@ class TwoDimQImagePainter(BaseQImagePainter):
 # TODO make a painter that continuously moves up the old configurations for saner
 #      display in ipython rich consoles and such.
 
-def display_table(images, columns=1):
+def display_table(images, columns=1, captions=None):
     col_widths = [0 for col in range(columns)]
     row_heights = [0 for row in range(len(images) / columns + 1)]
 
@@ -284,9 +284,12 @@ def display_table(images, columns=1):
         row_heights[row] = max(row_heights[row], h)
 
     image = QImage(sum(col_widths) + 20 * (columns - 1),
-                   sum(row_heights) + 20 * (len(images) / columns - 1),
+                   sum(row_heights) + 60 * (len(images) / columns),
                    QImage.Format_RGB444)
     image.fill(0xfff)
+
+    if captions is None:
+        captions = map(str, range(1, len(images) + 1))
 
     try:
         painter = QPainter(image)
@@ -298,10 +301,13 @@ def display_table(images, columns=1):
                 x = 0
 
             painter.drawImage(QPoint(x, y), img)
+            rect = QRect(QPoint(x, y + row_heights[row]),
+                         QSize(col_widths[col], 50))
+            painter.drawText(rect, Qt.AlignCenter, unicode(captions[num]))
 
             x += col_widths[col] + 20
             if col == columns - 1:
-                y += row_heights[row] + 20
+                y += row_heights[row] + 60
     finally:
         painter.end()
 
