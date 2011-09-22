@@ -163,7 +163,7 @@ Keeping the data together: the `Target`
 ---------------------------------------
 
 In the previous section, the *target instance* has been mentioned, but there was
-not yet any explanation for what it is or does. The target, however, is very
+not yet any explanation for what it is or does. The target is, however, very
 simple. All it has to do is basically keep the configuration and a bunch of
 additional attributes together in one namespace. The only class currently useful
 as a target is the `~zasim.cagen.target.TestTarget`, which takes a config - or
