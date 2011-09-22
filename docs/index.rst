@@ -30,7 +30,8 @@ usage summary with the following commands:
 
 You can find :doc:`info on how to start the gui from the commandline <gui/main>`
 and :doc:`how to start the commandline version <cagen/main>` with complete usage
-summaries.
+summaries. There is also a section in the tutorial :ref:`about how to run the
+commandline version <tutorial_invocation>`.
 
 Tutorial
 ========
