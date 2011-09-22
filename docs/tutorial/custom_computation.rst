@@ -248,6 +248,10 @@ The generated C code for a simple example looks like this:
                     }
     /* from section after_step */
 
+The fruit of our efforts
+------------------------
+
+Here you see a few snapshots from the SillyComputation in action.
 
 .. proceduralimage::
 
@@ -354,3 +358,12 @@ The generated C code for a simple example looks like this:
         captions.append(sim.step_number)
     image_data = qimage_to_pngstr(display_table(images, 3, captions))
     alt = "this is a game of life test image"
+
+As you can see, the computation creates stable borders, but diagonals will march
+and depending on the placement of the other colorful blocks, these will form
+stable borders afterwards or march on and conquer the whole cell space.
+
+Since the picture above is re-generated each time the documentation changes,
+I cannot describe what exactly happens in the picture above, but you may also
+notice, that chessboard like local configurations will become semi-stable,
+switching its colors every step.
