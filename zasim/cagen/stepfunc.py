@@ -218,7 +218,7 @@ class StepFunc(object):
         code_bits.append("")
         code_text = "\n".join(code_bits)
 
-        self.codefile = tempfile.NamedTemporaryFile(prefix="zasim_cagen", suffix=".py", delete=True)
+        self.codefile = tempfile.NamedTemporaryFile(prefix="zasim_cagen_", suffix=".py", delete=True)
         with self.codefile.file:
             self.codefile.write(code_text)
 
