@@ -7,7 +7,7 @@ class BaseInitialConfiguration(object):
     """This class defines the interface that initial configuration generators
     should have to the outside."""
 
-    def generate(self, size_hint=None, dtype=np.uint8):
+    def generate(self, size_hint=None, dtype=int):
         """Generate the configuration.
 
         :param size_hint: What size to generate. This can be None, if the
@@ -31,7 +31,7 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
         self.base = base
         self.percentages = percentages
 
-    def generate(self, size_hint=None, dtype=np.uint8):
+    def generate(self, size_hint=None, dtype=int):
         if size_hint is None:
             size_hint = (random.randrange(1, 100),)
         size = []
