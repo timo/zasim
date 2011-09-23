@@ -483,13 +483,13 @@ class TestCAGen:
         from zasim.cagen import main
 
         main.main("--width 90 --pure --steps 10".split(" "))
-        main.main("--steps 5 --steps 10".split(" "))
-        main.main("--nondet 50 --steps 10".split(" "))
-        main.main("--beta 50 --steps 10".split(" "))
+        main.main("--steps 5 --rule 10".split(" "))
+        main.main("--nondet 50 --steps 10 --rule 0x20".split(" "))
+        main.main("--beta 50 --steps 10 --print-rule".split(" "))
         main.main("--base 4 --nondet 20 --steps 10".split(" "))
         main.main("--base 3 --beta 30 --steps 10".split(" "))
         main.main("--beta 30 --pure --activity --steps 10".split(" "))
-        main.main("--beta 30 --histogram --steps 10".split(" "))
+        main.main("--beta 30 --histogram --steps 10 --print-rule".split(" "))
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:
