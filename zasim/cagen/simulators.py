@@ -50,7 +50,7 @@ def automatic_stepfunc(size=None, config=None, computation=None,
             neighbourhood = neighbourhood()
 
     elif beta != 1 and nondet != 1:
-        raise ValueError("Cannot have beta asynchronism and deterministic=False.")
+        raise ValueError("Cannot have beta asynchronism and deterministic != 1.")
 
     if len(size) == 1:
         if nondet == 1.0:
