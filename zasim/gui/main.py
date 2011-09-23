@@ -1,12 +1,10 @@
 from .display import ZasimDisplay
 from .histogram import HistogramExtraDisplay
 
-from ..external.qt import QApplication, Qt
+from ..external.qt import Qt, app
 from .. import cagen
 
 import numpy as np
-
-import sys
 
 def main(width=200, height=200, scale=2,
         onedim=False,
@@ -15,8 +13,6 @@ def main(width=200, height=200, scale=2,
         copy_borders=True, black=None,
         histogram=True, activity=True,
         base=2):
-    app = QApplication(sys.argv)
-
     if black > 1:
         black = black / 100.
 

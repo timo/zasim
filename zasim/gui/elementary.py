@@ -402,8 +402,6 @@ def main():
     from ..cagen import VonNeumannNeighbourhood
     import sys
 
-    app = QApplication(sys.argv)
-
     vn = VonNeumannNeighbourhood()
 
     dvw = ElementaryRuleWindow(vn, base=3)

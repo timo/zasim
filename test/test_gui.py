@@ -2,6 +2,8 @@ try:
     from PySide.QtCore import *
     from PySide.QtGui import *
     from PySide.QtTest import *
+
+    app = qApp or QApplication([])
     HAVE_QT = True
 except ImportError:
     HAVE_QT = False
@@ -49,11 +51,6 @@ def teardown_module():
 
 @pytest.mark.skipif("not HAVE_QT")
 class TestGui:
-    def setup_class(cls):
-        """craetes a QT app and a socket spy"""
-        cls.app = QApplication(["test"])
-        cls.app.setApplicationName("zasim gui test")
-
     def test_start_stop_binrule(self, size, base, scale, histogram):
         print size, base, scale, histogram
         sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base, histogram=histogram)
@@ -73,16 +70,16 @@ class TestGui:
         QTest.mouseClick(display.control.start_button, Qt.LeftButton)
 
         for execution in seconds(0.1):
-            self.app.processEvents()
+            app.processEvents()
         assert not display.control.start_button.isVisible()
         for execution in seconds(0.1):
-            self.app.processEvents()
+            app.processEvents()
         QTest.mouseClick(display.control.stop_button, Qt.LeftButton)
         for execution in seconds(0.1):
-            self.app.processEvents()
+            app.processEvents()
         assert not display.control.stop_button.isVisible()
 
-        self.app.closeAllWindows()
+        app.closeAllWindows()
         fail_on_exceptions()
 
     def test_reset_button(self):
@@ -119,11 +116,11 @@ class TestGui:
     def find_message_box(self, timeout=10):
         end = time.time() + timeout
         while time.time() < end:
-            widgets = self.app.allWidgets()
+            widgets = app.allWidgets()
             for widget in widgets:
                 if isinstance(widget, QMessageBox):
                     return widget
-            self.app.processEvents()
+            app.processEvents()
 
     def test_elementary_gui(self, base):
         sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=base)
@@ -141,9 +138,9 @@ class TestGui:
         elementary_action.trigger()
 
         for execution in seconds(0.1):
-            self.app.processEvents()
+            app.processEvents()
 
-        elementary_window = self.app.activeWindow()
+        elementary_window = app.activeWindow()
 
         actions = [act for act in elementary_window.findChildren(QPushButton)
                     if act.objectName().startswith("action_")]
@@ -151,9 +148,9 @@ class TestGui:
         for action in actions:
             QTest.mouseClick(action, Qt.LeftButton)
             for execution in seconds(0.1):
-                self.app.processEvents()
+                app.processEvents()
 
-        self.app.closeAllWindows()
+        app.closeAllWindows()
 
         fail_on_exceptions()
 
@@ -185,17 +182,17 @@ class TestGui:
         stepfunc_action.trigger()
 
         for execution in seconds(0.2):
-            self.app.processEvents()
+            app.processEvents()
 
-        stepfunc_window = self.app.activeWindow()
+        stepfunc_window = app.activeWindow()
         tree = stepfunc_window.findChild(QWidget, u"parts")
         assert tree is not None
         QTest.keyClick(tree, Qt.Key_Right)
         for execution in seconds(0.05):
-            self.app.processEvents()
+            app.processEvents()
         QTest.keyClick(tree, Qt.Key_Return)
         for execution in seconds(0.05):
-            self.app.processEvents()
+            app.processEvents()
         for i in range(5):
             QTest.keyClick(tree, Qt.Key_Left)
             QTest.keyClick(tree, Qt.Key_Left)
@@ -206,15 +203,15 @@ class TestGui:
         assert close is not None
         QTest.mouseClick(close, Qt.LeftButton)
         for execution in seconds(0.05):
-            self.app.processEvents()
+            app.processEvents()
 
-        self.app.closeAllWindows()
+        app.closeAllWindows()
 
     def test_animation(self):
         anim = WaitAnimationWindow()
 
         for execution in seconds(1):
-            self.app.processEvents()
+            app.processEvents()
 
         fail_on_exceptions()
 

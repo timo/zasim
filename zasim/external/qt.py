@@ -17,3 +17,6 @@ except ImportError:
     from PyQt4.QtGui import *
     Signal = pyqtSignal
     print ("using pyqt4", file=sys.stderr)
+
+import sys
+app = QApplication(sys.argv)
