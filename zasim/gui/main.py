@@ -5,6 +5,7 @@ from ..external.qt import Qt, app
 from .. import cagen
 
 import numpy as np
+import sys
 
 def main(width=200, height=200, scale=2,
         onedim=False,
