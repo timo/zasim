@@ -38,3 +38,13 @@ class TestConfig:
         assert not any(crr == 0)
         assert any(crr == 1)
         assert any(crr == 2)
+
+    def test_random_errors_1d(self):
+        with pytest.raises(ValueError):
+            a = config.RandomInitialConfiguration(2, 1.0, 1.0)
+        with pytest.raises(ValueError):
+            b = config.RandomInitialConfiguration(2, 0.1, 0.1, 0.8)
+        with pytest.raises(TypeError):
+            c = config.RandomInitialConfiguration(2, [0.1, 0.9])
+        with pytest.raises(ValueError):
+            d = config.RandomInitialConfiguration(2, 0.1, 0.8)
