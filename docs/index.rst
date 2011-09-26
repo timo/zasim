@@ -51,6 +51,7 @@ API Documentation
    :maxdepth: 2
 
    simulator
+   config
    display
    cagen
    gui
