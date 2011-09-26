@@ -141,9 +141,10 @@ class TestGui:
             app.processEvents()
 
         elementary_window = app.activeWindow()
+        assert elementary_window is not None
 
         actions = [act for act in elementary_window.findChildren(QPushButton)
-                    if act.objectName().startswith("action_")]
+                    if act is not None and act.objectName().startswith("action_")]
 
         for action in actions:
             QTest.mouseClick(action, Qt.LeftButton)
