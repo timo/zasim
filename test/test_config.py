@@ -33,3 +33,8 @@ class TestConfig:
         assert not any(brr == 1)
         assert all(brr == 0)
 
+        c = config.RandomInitialConfiguration(3, 0)
+        crr = c.generate((1000,))
+        assert not any(crr == 0)
+        assert any(crr == 1)
+        assert any(crr == 2)
