@@ -176,7 +176,10 @@ class CagenSimulator(BaseSimulator):
         self.updated.emit()
 
     def __str__(self):
-        return str(self._step_func)
+        try:
+            return str(self._step_func)
+        except:
+            return repr(self)
 
 class ElementaryCagenSimulator(CagenSimulator):
     """This Simulator has a few special options available only if you have an

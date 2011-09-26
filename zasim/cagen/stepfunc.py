@@ -297,8 +297,10 @@ class StepFunc(object):
         self.acc.multiplicate_config()
 
     def __str__(self):
-        name_parts = []
-        for code in self.visitors:
-            code.build_name(name_parts)
-        return " ".join(name_parts)
-
+        try:
+            name_parts = []
+            for code in self.visitors:
+                code.build_name(name_parts)
+            return " ".join(name_parts)
+        except:
+            return repr(self)
