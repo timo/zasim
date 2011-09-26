@@ -12,7 +12,7 @@ class TestConfig:
         assert not any(arr < 0)
         assert any(arr == 0)
         assert any(arr == 1)
-        assert len(arr) == 10
+        assert len(arr) == 1000
 
         b = config.RandomInitialConfiguration(base=3)
         brr = b.generate((1000,))
