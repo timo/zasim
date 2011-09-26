@@ -12,6 +12,7 @@ from .stepfunc import StepFunc
 from ..simulator import ElementaryCagenSimulator, CagenSimulator
 
 import inspect
+import numpy as np
 
 def automatic_stepfunc(size=None, config=None, computation=None,
                        nondet=1, beta=1,
@@ -21,10 +22,11 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                        target_class=TestTarget, **kwargs):
     """From the given parameters, assemble a StepFunc with the given
     computation and extra_code objects. Returns the stepfunc."""
-    if size is None:
+    if size is None and isinstance(config, np.array):
         size = config.shape
 
     target = target_class(size, config, base=base)
+    size = target.size
 
     if neighbourhood is None:
         if len(size) == 1:

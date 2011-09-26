@@ -47,7 +47,7 @@ class TestCAGen:
 
     def test_run_nondeterministic_pure(self, rule_num):
         size = randrange(MIN_SIZE, MAX_SIZE)
-        br = cagen.BinRule((size-2,), nondet=0.5, rule=rule_num)
+        br = cagen.BinRule((size,), nondet=0.5, rule=rule_num)
 
         for i in range(10):
             br.step_pure_py()
