@@ -122,7 +122,7 @@ class TestGui:
                     return widget
             app.processEvents()
 
-    def test_elementary_gui(self, base):
+    def SKIP_elementary_gui(self, base):
         sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=base)
 
         display = ZasimDisplay(sim_obj)
