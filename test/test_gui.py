@@ -51,7 +51,7 @@ def teardown_module():
 
 @pytest.mark.skipif("not HAVE_QT")
 class TestGui:
-    def test_start_stop_binrule(self, size, base, scale, histogram):
+    def SKIP_start_stop_binrule(self, size, base, scale, histogram):
         print size, base, scale, histogram
         sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base, histogram=histogram)
 
