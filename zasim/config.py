@@ -1,4 +1,17 @@
-"""This module implements different ways to create configurations."""
+"""This module implements different ways to create configurations.
+
+The idea behind the API is, to let the user set any settings in the constructor
+of any InitialConfiguration instance and to let the Target instance pass a size
+hint and datatype when generating the config.
+
+This way, the Target doesn't have to know anything about what configuration to
+generate and how to do it.
+
+By letting the Target only supply a size_hint, the InitialConfiguration is
+allowed to dictate what size the configuration should have. This is important
+especially for loading configurations from files.
+
+"""
 
 import random
 import numpy as np
