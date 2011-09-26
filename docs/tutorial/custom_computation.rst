@@ -349,12 +349,12 @@ Here you see a few snapshots from the SillyComputation in action.
     disp = TwoDimQImagePainter(sim, scale=3)
     images = []
     captions = []
-    for i in range(9):
+    for i in range(12):
         for j in range(2 + 2 * i):
             sim.step()
         images.append(disp._image)
         captions.append(sim.step_number)
-    image_data = qimage_to_pngstr(display_table(images, 3, captions))
+    image_data = qimage_to_pngstr(display_table(images, 4, captions))
     alt = "a few pictures from the SillyComputation"
 
 As you can see, the computation creates stable borders, but diagonals will march
