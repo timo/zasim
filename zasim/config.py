@@ -31,6 +31,22 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
 
         self.base = base
         self.percentages = percentages
+        if len(self.percentages) > self.base:
+            raise ValueError("Cannot have more percentage values than values.")
+
+        rest = self.base - len(self.percentages)
+        if self.percentages:
+            self.cumulative_percentages = [sum(self.percentages[:index + 1]) for index in range(len(self.percentages))]
+        else:
+            self.cumulative_percentages = [1.0 / self.base]
+
+        if self.cumulative_percentages[-1] > 1.0:
+            raise ValueError("Probabilities must not add up to more than 1.0")
+
+        rest_percentage = 1.0 - self.cumulative_percentages[-1]
+
+        for number in range(rest):
+            self.cumulative_percentages.append(self.cumulative_percentages[-1] + rest_percentage / rest)
 
     def generate(self, size_hint=None, dtype=int):
         if size_hint is None:
@@ -43,18 +59,8 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
         randoms = np.random.rand(*size)
         arr = np.zeros(randoms.size, dtype=np.dtype(dtype))
 
-        rest = self.base - len(self.percentages)
-        if self.percentages:
-            cumulative_percentages = [sum(self.percentages[:index + 1]) for index in range(len(self.percentages))]
-        else:
-            cumulative_percentages = [1.0 / self.base]
-
-        rest_percentage = 1.0 - cumulative_percentages[-1]
-        for number in range(rest):
-            cumulative_percentages.append(cumulative_percentages[-1] + rest_percentage / rest)
-
         for pos in product(*[range(siz) for siz in size]):
-            arr[pos] = min(idx for idx, perc in enumerate(cumulative_percentages)
+            arr[pos] = min(idx for idx, perc in enumerate(self.cumulative_percentages)
                            if randoms[pos] < perc)
 
         return arr
