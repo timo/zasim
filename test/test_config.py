@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 from zasim import config
+from zasim.features import HAVE_MULTIDIM
 
 import pytest
 
@@ -48,3 +49,40 @@ class TestConfig:
             c = config.RandomInitialConfiguration(2, [0.1, 0.9])
         with pytest.raises(ValueError):
             d = config.RandomInitialConfiguration(2, 0.1, 0.8)
+
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    def test_random_2d(self):
+        a = config.RandomInitialConfiguration()
+        arr = a.generate((100,100))
+        assert not (arr > 2).any()
+        assert not (arr < 0).any()
+        assert (arr == 0).any()
+        assert (arr == 1).any()
+        assert arr.size == 100 * 100
+
+        b = config.RandomInitialConfiguration(base=3)
+        brr = b.generate((100,100))
+        assert not (brr > 3).any()
+        assert not (brr < 0).any()
+        assert (brr == 0).any()
+        assert (brr == 1).any()
+        assert (brr == 2).any()
+
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    def test_random_2d_probabilities(self):
+        a = config.RandomInitialConfiguration(2, 0)
+        arr = a.generate((100,100))
+        assert not (arr == 0).any()
+        assert (arr == 1).all()
+
+        b = config.RandomInitialConfiguration(2, 1)
+        brr = b.generate((100,100))
+        assert not (brr == 1).any()
+        assert (brr == 0).all()
+
+        c = config.RandomInitialConfiguration(3, 0)
+        crr = c.generate((100,100))
+        assert not (crr == 0).any()
+        assert (crr == 1).any()
+        assert (crr == 2).any()
+

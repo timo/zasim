@@ -48,6 +48,9 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
         for number in range(rest):
             self.cumulative_percentages.append(self.cumulative_percentages[-1] + rest_percentage / rest)
 
+        if rest == 0 and self.cumulative_percentages[-1] != 1.0:
+            raise ValueError("Probabilities must add up to 1.0")
+
     def generate(self, size_hint=None, dtype=int):
         if size_hint is None:
             size_hint = (random.randrange(1, 100),)
@@ -57,7 +60,7 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
             size.append(random.randrange(1, 100) if entry is None else entry)
 
         randoms = np.random.rand(*size)
-        arr = np.zeros(randoms.size, dtype=np.dtype(dtype))
+        arr = np.zeros(randoms.shape, dtype=np.dtype(dtype))
 
         for pos in product(*[range(siz) for siz in size]):
             arr[pos] = min(idx for idx, perc in enumerate(self.cumulative_percentages)
