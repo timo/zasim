@@ -337,8 +337,6 @@ Here you see a few snapshots from the SillyComputation in action.
     from zasim.display.qt import TwoDimQImagePainter, qimage_to_pngstr, display_table
     from zasim.external.qt import QApplication
 
-    app = QApplication([])
-
     base = 8
     size = (50, 50)
     black = 0.85
