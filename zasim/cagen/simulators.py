@@ -22,7 +22,7 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                        target_class=TestTarget, **kwargs):
     """From the given parameters, assemble a StepFunc with the given
     computation and extra_code objects. Returns the stepfunc."""
-    if size is None and isinstance(config, np.array):
+    if size is None and isinstance(config, np.ndarray):
         size = config.shape
 
     target = target_class(size, config, base=base)
