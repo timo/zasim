@@ -2,6 +2,7 @@
 
 import random
 import numpy as np
+from itertools import product
 
 class BaseInitialConfiguration(object):
     """This class defines the interface that initial configuration generators
@@ -34,9 +35,23 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
     def generate(self, size_hint=None, dtype=int):
         if size_hint is None:
             size_hint = (random.randrange(1, 100),)
+
         size = []
         for entry in size_hint:
             size.append(random.randrange(1, 100) if entry is None else entry)
-        randoms = np.random.rand(size)
-        arr = np.zeros_like(randoms)
-        
+
+        randoms = np.random.rand(*size)
+        arr = np.zeros(randoms.size, dtype=np.dtype(dtype))
+
+        cumulative_percentages = [sum(self.percentages[:index + 1]) for index in range(len(self.percentages))]
+
+        rest = self.base - len(cumulative_percentages)
+        rest_percentage = 1.0 - cumulative_percentages[-1]
+        for number in range(rest):
+            cumulative_percentages.append(cumulative_percentages[-1] + rest_percentage / rest)
+
+        for pos in product(*[range(siz) for siz in size]):
+            arr[pos] = min(idx for idx, perc in enumerate(cumulative_percentages)
+                           if randoms[pos] < perc)
+
+        return arr
