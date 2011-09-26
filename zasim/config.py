@@ -52,6 +52,7 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
             self.cumulative_percentages = [sum(self.percentages[:index + 1]) for index in range(len(self.percentages))]
         else:
             self.cumulative_percentages = [1.0 / self.base]
+            rest -= 1
 
         if self.cumulative_percentages[-1] > 1.0:
             raise ValueError("Probabilities must not add up to more than 1.0")

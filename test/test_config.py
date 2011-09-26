@@ -9,7 +9,7 @@ class TestConfig:
     def test_random_1d(self):
         a = config.RandomInitialConfiguration()
         arr = a.generate((1000,))
-        assert not any(arr > 2)
+        assert not any(arr >= 2)
         assert not any(arr < 0)
         assert any(arr == 0)
         assert any(arr == 1)
@@ -17,7 +17,7 @@ class TestConfig:
 
         b = config.RandomInitialConfiguration(base=3)
         brr = b.generate((1000,))
-        assert not any(brr > 3)
+        assert not any(brr >= 3)
         assert not any(brr < 0)
         assert any(brr == 0)
         assert any(brr == 1)
