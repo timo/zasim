@@ -350,7 +350,7 @@ Here you see a few snapshots from the SillyComputation in action.
     images = []
     captions = []
     for i in range(9):
-        for j in range(5 + 5 * i):
+        for j in range(2 + 2 * i):
             sim.step()
         images.append(disp._image)
         captions.append(sim.step_number)
