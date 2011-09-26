@@ -1,4 +1,5 @@
 from __future__ import print_function
+from . import WANT_GUI
 
 import sys
 
@@ -18,5 +19,11 @@ except ImportError:
     Signal = pyqtSignal
     print ("using pyqt4", file=sys.stderr)
 
-import sys
-app = QApplication(sys.argv)
+import os
+app = None
+if "DISPLAY" in os.environ and os.environ["DISPLAY"]:
+    import sys
+    if WANT_GUI:
+        app = QApplication(sys.argv)
+if app is None:
+    app = QApplication(sys.argv, False)

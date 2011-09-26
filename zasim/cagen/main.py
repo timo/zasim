@@ -1,3 +1,7 @@
+from .. import external
+
+external.WANT_GUI = False
+
 from .simulators import BinRule
 from ..display.console import LinearConsolePainter
 from ..features import HAVE_WEAVE
