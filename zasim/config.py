@@ -13,6 +13,8 @@ especially for loading configurations from files.
 
 """
 
+from features import HAVE_NUMPY_RANDOM, HAVE_MULTIDIM
+
 import random
 import numpy as np
 from itertools import product
@@ -21,7 +23,7 @@ class BaseInitialConfiguration(object):
     """This class defines the interface that initial configuration generators
     should have to the outside."""
 
-    def generate(self, size_hint=None, dtype=int):
+    def generate(self, size_hint=None, dtype=np.dtype("i")):
         """Generate the configuration.
 
         :param size_hint: What size to generate. This can be None, if the
@@ -65,7 +67,7 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
         if rest == 0 and self.cumulative_percentages[-1] != 1.0:
             raise ValueError("Probabilities must add up to 1.0")
 
-    def generate(self, size_hint=None, dtype=int):
+    def generate(self, size_hint=None, dtype=np.dtype("i")):
         if size_hint is None:
             size_hint = (random.randrange(1, 100),)
 
@@ -73,8 +75,14 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
         for entry in size_hint:
             size.append(random.randrange(1, 100) if entry is None else entry)
 
-        randoms = np.random.rand(*size)
-        arr = np.zeros(randoms.shape, dtype=np.dtype(dtype))
+        if not HAVE_NUMPY_RANDOM and not HAVE_MULTIDIM:
+            # pypy compatibility
+            assert len(size) == 1
+            randoms = np.array([random.random() for i in range(size[0])])
+            arr = np.zeros(len(randoms), dtype=dtype)
+        else:
+            randoms = np.random.rand(*size)
+            arr = np.zeros(randoms.shape, dtype=dtype)
 
         for pos in product(*[range(siz) for siz in size]):
             arr[pos] = min(idx for idx, perc in enumerate(self.cumulative_percentages)
