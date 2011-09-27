@@ -14,7 +14,10 @@ if HAVE_TUPLE_ARRAY_INDEX:
         (6,)
         >>> offset_pos((1, 2, 3), (9, 8, 7))
         (10, 10, 10)"""
-        return tuple([a + b for a, b in zip(pos, offset)])
+        if len(pos) == 1:
+            return (pos[0] + offset[0],)
+        else:
+            return tuple([a + b for a, b in zip(pos, offset)])
 else:
     def offset_pos(pos, offset):
         """Offset a position by an offset. Only works for 1d."""
