@@ -1,5 +1,7 @@
 from __future__ import absolute_import
 
+from .testutil import assert_arrays_equal
+
 from zasim import config
 from zasim.features import HAVE_MULTIDIM
 
@@ -85,4 +87,18 @@ class TestConfig:
         assert not (crr == 0).any()
         assert (crr == 1).any()
         assert (crr == 2).any()
+
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    def test_export_import_conf_ascii(self):
+        from zasim.cagen import ElementarySimulator
+        from zasim.display.console import TwoDimConsolePainter
+        from tempfile import NamedTemporaryFile
+        s = ElementarySimulator(size=(30, 50), rule=1111111)
+        d = TwoDimConsolePainter(s)
+        s.step()
+
+        with NamedTemporaryFile(prefix="zasim_test_") as tmpfile:
+            d.export(tmpfile.name)
+            nconf_imp = config.AsciiInitialConfiguration(tmpfile.name)
+            assert_arrays_equal(nconf_imp.generate(), s.get_config())
 
