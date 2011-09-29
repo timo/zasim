@@ -89,3 +89,23 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
                            if randoms[pos] < perc)
 
         return arr
+
+class AsciiInitialConfiguration(BaseInitialConfiguration):
+    def __init__(self, filename, palette=None):
+        self.filename = filename
+        if palette:
+            from zasim.display.console import BaseConsolePainter
+            palette = dict(enumerate(BaseConsolePainter.PALETTE))
+        self.palette = palette
+
+    def generate(self, size_hint=None, dtype=np.dtype("i")):
+        lines = []
+        with open(self.filename, "r") as config:
+            for line in config:
+                lines.append(np.array(list(line.strip("\n"))))
+        whole_conf = np.array(lines)
+        result = np.empty((len(lines), len(lines[0])), dtype=dtype)
+        for value, entry in self.palette.iteritems():
+            result[whole_conf == entry] = value
+        return result
+
