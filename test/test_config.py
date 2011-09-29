@@ -93,7 +93,7 @@ class TestConfig:
         from zasim.cagen import ElementarySimulator
         from zasim.display.console import TwoDimConsolePainter
         from tempfile import NamedTemporaryFile
-        s = ElementarySimulator(size=(30, 50), rule=1111111)
+        s = ElementarySimulator(size=(30, 50), rule=111)
         d = TwoDimConsolePainter(s)
         s.step()
 
@@ -102,3 +102,21 @@ class TestConfig:
             nconf_imp = config.AsciiInitialConfiguration(tmpfile.name)
             assert_arrays_equal(nconf_imp.generate(), s.get_config())
 
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    def test_export_import_conf_png(self, scale):
+        from zasim.cagen import ElementarySimulator
+        from zasim.display.qt import TwoDimQImagePainter
+        from tempfile import NamedTemporaryFile
+        s = ElementarySimulator(size=(100, 100))
+        disp = TwoDimQImagePainter(s, scale=scale)
+        s.step()
+
+        with NamedTemporaryFile(prefix="zasim_test_", suffix=".png", delete=False) as tmpfile:
+            disp.export(tmpfile.name)
+            nconf_imp = config.ImageInitialConfiguration(tmpfile.name, scale=scale)
+            assert_arrays_equal(nconf_imp.generate(), s.get_config())
+
+def pytest_generate_tests(metafunc):
+    if "scale" in metafunc.funcargnames:
+        for i in [1, 4, 10]:
+            metafunc.addcall(funcargs=dict(scale=i))

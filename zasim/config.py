@@ -103,8 +103,8 @@ class AsciiInitialConfiguration(BaseInitialConfiguration):
         self.filename = filename
         if not palette:
             from zasim.display.console import BaseConsolePainter
-            palette = dict(enumerate(BaseConsolePainter.PALETTE))
-        elif isinstance(palette, list):
+            palette = dict(BaseConsolePainter.PALETTE)
+        if isinstance(palette, list):
             palette = dict(enumerate(palette))
         self.palette = palette
 
@@ -117,5 +117,36 @@ class AsciiInitialConfiguration(BaseInitialConfiguration):
         result = np.empty((len(lines), len(lines[0])), dtype=dtype)
         for value, entry in self.palette.iteritems():
             result[whole_conf == entry] = value
+        return result
+
+class ImageInitialConfiguration(BaseInitialConfiguration):
+    """Import an image file as a configuration."""
+
+    def __init__(self, filename, scale=1, palette=None):
+        self.filename = filename
+
+        if palette is None:
+            from zasim.display.qt import PALETTE_444
+            palette = PALETTE_444
+        if isinstance(palette, list):
+            palette = dict(enumerate(palette))
+        self.palette = palette
+        self.scale = scale
+
+    def generate(self, size_hint=None, dtype=np.dtype("i")):
+        from .external.qt import QImage
+        image = QImage()
+        assert image.load(self.filename)
+        image = image.convertToFormat(QImage.Format_RGB444)
+        if self.scale != 1:
+            image = image.scaled(image.width() / self.scale,
+                                 image.height() / self.scale)
+        nparr = np.frombuffer(image.bits(), dtype=np.uint16)
+        nparr = nparr.reshape((image.width(), image.height()))
+        result = np.ones((image.width(), image.height()), dtype=dtype)
+
+        for value, color in self.palette.iteritems():
+            result[nparr == color] = value
+
         return result
 
