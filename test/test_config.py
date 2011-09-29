@@ -120,3 +120,4 @@ def pytest_generate_tests(metafunc):
     if "scale" in metafunc.funcargnames:
         for i in [1, 4, 10]:
             metafunc.addcall(funcargs=dict(scale=i))
+

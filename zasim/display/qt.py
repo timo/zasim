@@ -253,8 +253,12 @@ class TwoDimQImagePainter(BaseQImagePainter):
             for num, value in enumerate(self.palette):
                 nconf[conf == num+2] = value
 
-            self._image = QImage(nconf.data, w, h, QImage.Format_RGB444).scaled(
-                    w * self._scale, h * self._scale)
+            image = QImage(nconf.data, w, h, QImage.Format_RGB444)
+            if self._scale != 1:
+                image = image.scaled(w * self._scale, h * self._scale)
+            else:
+                image = image.copy()
+            self._image = image
             if update_step:
                 self._odd = not self._odd
         except Queue.Empty:
