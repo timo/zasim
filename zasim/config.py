@@ -103,7 +103,7 @@ class AsciiInitialConfiguration(BaseInitialConfiguration):
         self.filename = filename
         if not palette:
             from zasim.display.console import BaseConsolePainter
-            palette = dict(BaseConsolePainter.PALETTE)
+            palette = BaseConsolePainter.PALETTE
         if isinstance(palette, list):
             palette = dict(enumerate(palette))
         self.palette = palette
