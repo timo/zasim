@@ -48,10 +48,17 @@ class ExternalEditWindow(QDialog):
 
         self.lay.addWidget(self.btn_box_u)
 
+        self.lay.addStretch()
+
+        disp_lay = QHBoxLayout()
         self.conf_disp = DisplayWidget(self._sim)
         self.conf_disp.set_scale(1)
+        disp_lay.addStretch()
+        disp_lay.addWidget(self.conf_disp)
+        disp_lay.addStretch()
+        self.lay.addLayout(disp_lay)
 
-        self.lay.addWidget(self.conf_disp)
+        self.lay.addStretch()
 
         self.btn_box_l = QDialogButtonBox(QDialogButtonBox.Ok |
                                         QDialogButtonBox.Cancel,
