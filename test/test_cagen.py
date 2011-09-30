@@ -492,6 +492,9 @@ class TestCAGen:
         main.main("--beta 30 --histogram --steps 10 --print-rule".split(" "))
         main.main("--nondet 50 --activity --steps 10".split(" "))
         main.main("--nondet 40 --histogram --pure --steps 10".split(" "))
+        main.main("--beta 30 --life --steps 10 --width 30".split(" "))
+        main.main("--nondet 50 --life --activity --steps 10".split(" "))
+        main.main("--nondet 40 --histogram --pure --steps 10".split(" "))
 
 def pytest_generate_tests(metafunc):
     if "rule_num" in metafunc.funcargnames:

@@ -19,6 +19,8 @@ def test(width=75, height=None, life=False, copy_borders=True, rule=None, histog
         rule = int(rule)
 
     if life:
+        if height is None:
+            height = 40
         sim_obj = GameOfLife((width, height), nondet, histogram, activity, None, beta, copy_borders)
     else:
         size = (width,) if height is None else (width, height)
