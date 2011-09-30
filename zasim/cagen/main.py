@@ -2,11 +2,13 @@ from .. import external
 
 external.WANT_GUI = False
 
-from .simulators import BinRule
-from ..display.console import LinearConsolePainter
+from .simulators import BinRule, GameOfLife
+from ..display.console import LinearConsolePainter, TwoDimConsolePainter
 from ..features import HAVE_WEAVE
 
-def test(width=75, copy_borders=True, rule=None, histogram=True, activity=False, pure=False, print_rule=True, nondet=100, beta=100, steps=100, base=2):
+def test(width=75, height=None, life=False, copy_borders=True, rule=None, histogram=True, 
+         activity=False, pure=False, print_rule=True,
+         nondet=100, beta=100, steps=100, base=2):
 
     beta = beta / 100.
     nondet = nondet / 100.
@@ -16,32 +18,43 @@ def test(width=75, copy_borders=True, rule=None, histogram=True, activity=False,
             rule = int(rule, 16)
         rule = int(rule)
 
-    bin_rule = BinRule((width,), rule=rule,
-            histogram=histogram, activity=activity,
-            nondet=nondet, beta=beta, copy_borders=copy_borders, base=base)
+    if life:
+        sim_obj = GameOfLife((width, height), nondet, histogram, activity, None, beta, copy_borders)
+    else:
+        size = (width,) if height is None else (width, height)
 
-    display = LinearConsolePainter(bin_rule, 1)
+        sim_obj = BinRule(size, rule=rule,
+                histogram=histogram, activity=activity,
+                nondet=nondet, beta=beta, copy_borders=copy_borders, base=base)
+
+    if height is None:
+        display = LinearConsolePainter(sim_obj, 1)
+    else:
+        display = TwoDimConsolePainter(sim_obj)
+        def extra_newline():
+            print
+        sim_obj.updated.connect(extra_newline)
 
     if print_rule:
-        print bin_rule.pretty_print()
-        print bin_rule.rule_number, "==", hex(bin_rule.rule_number)
+        print sim_obj.pretty_print()
+        print sim_obj.rule_number, "==", hex(sim_obj.rule_number)
 
     if HAVE_WEAVE and not pure:
         print "weave"
         for i in range(steps):
-            bin_rule.step_inline()
+            sim_obj.step_inline()
             if histogram:
-                print bin_rule.t.histogram
+                print sim_obj.t.histogram
             if activity:
-                print bin_rule.t.activity
+                print sim_obj.t.activity
     else:
         print "pure"
         for i in range(steps):
-            bin_rule.step_pure_py()
+            sim_obj.step_pure_py()
             if histogram:
-                print bin_rule.t.histogram
+                print sim_obj.t.histogram
             if activity:
-                print bin_rule.t.activity
+                print sim_obj.t.activity
 
 def main(args=None):
     import argparse
@@ -49,8 +62,10 @@ def main(args=None):
     argp = argparse.ArgumentParser(
         description="Run a generated BinRule simulator and display its results "
                     "on the console")
-    argp.add_argument("-w", "--width", default=70, type=int,
+    argp.add_argument("-x", "--width", default=70, type=int,
             help="set the width of the configuration to calculate")
+    argp.add_argument("-y", "--height", default=None, type=int,
+            help="set the height of the configuration to calculate")
     argp.add_argument("-b", "--dont-copy-borders", default=True, dest="copy_borders", action="store_false",
             help="copy borders around. Otherwise, zeros will be read from "
                     "the borders")
