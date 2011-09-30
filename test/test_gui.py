@@ -51,7 +51,7 @@ def teardown_module():
 
 @pytest.mark.skipif("not HAVE_QT")
 class TestGui:
-    def SKIP_start_stop_binrule(self, size, base, scale, histogram):
+    def test_start_stop_binrule(self, size, base, scale, histogram):
         print size, base, scale, histogram
         sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base, histogram=histogram)
 
@@ -122,7 +122,7 @@ class TestGui:
                     return widget
             app.processEvents()
 
-    def SKIP_elementary_gui(self, base):
+    def test_elementary_gui(self, base):
         sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=base)
 
         display = ZasimDisplay(sim_obj)
@@ -167,7 +167,7 @@ class TestGui:
         #popup = self.find_message_box()
         #popup.close()
 
-    def SKIP_stepfunc_comp(self):
+    def test_stepfunc_comp(self):
         sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=2)
 
         display = ZasimDisplay(sim_obj)
@@ -208,7 +208,7 @@ class TestGui:
 
         app.closeAllWindows()
 
-    def SKIP_animation(self):
+    def test_animation(self):
         anim = WaitAnimationWindow()
 
         for execution in seconds(1):

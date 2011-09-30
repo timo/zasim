@@ -290,8 +290,8 @@ class HistogramPainter(BaseQImagePainter):
         try:
             while True:
                 update_step, values = self._queue.get_nowait()
-                if not self._invert_odd or self._odd:
-                    values = (values[1], values[0]) + values[1:]
+                if self._invert_odd and self._odd:
+                    values = (values[1], values[0]) + tuple(values[1:])
                 maximum = sum(values)
                 scale = self._height * 1.0 / maximum
                 absolute = 0.0
@@ -313,7 +313,6 @@ class HistogramPainter(BaseQImagePainter):
         except Queue.Empty:
             pass
 
-        print linepos
         self._linepos = linepos
 
     def after_step(self, update_step=True):
@@ -323,7 +322,6 @@ class HistogramPainter(BaseQImagePainter):
         self.draw_conf()
         urect = QRect(QPoint((self._linepos - 1) % self._width, 0),
                                QSize(1, self._height))
-        print urect
         self.update.emit(urect)
 
 def display_table(images, columns=1, captions=None):
