@@ -58,6 +58,8 @@ class DisplayWidget(QWidget):
         self._width = width
         self._height = height
 
+        self._scale_scroll = 0
+
         self.display.setObjectName("display")
         self.display.update.connect(self.update)
 
@@ -92,6 +94,29 @@ class DisplayWidget(QWidget):
         else:
             if self.last_draw_pos != new_draw_pos:
                 self._sim.set_config_value(new_draw_pos)
+
+    def wheelEvent(self, event):
+        num_degrees = event.delta() / 8.
+        num_steps = num_degrees / 15
+
+        if event.orientation() == Qt.Horizontal:
+            event.ignore()
+        else:
+            self._scale_scroll += num_steps
+
+        if self._scale_scroll > 1:
+            self._scale += 1
+            self._scale_scroll = 0
+        elif self._scale_scroll < 1:
+            self._scale -= 1
+            self._scale_scroll = 0
+
+        if self._scale < 1:
+            self._scale = 1
+        elif self._scale > 50:
+            self._scale = 50
+
+        self.set_scale(self._scale)
 
     def export(self, filename):
         return self.display.export(filename)
