@@ -258,6 +258,7 @@ class TwoDimQImagePainter(BaseQImagePainter):
             if self._scale != 1:
                 image = image.scaled(w * self._scale, h * self._scale)
             else:
+                # XXX why does pyside want me to do this?
                 image = image.copy()
             self._image = image
             if update_step:
