@@ -46,8 +46,6 @@ def my_abort_hook():
     print
     _aborts.append(True)
 
-signal.signal(signal.SIGABRT, my_abort_hook)
-
 def fail_on_exceptions():
     exc = _exceptions[:]
     [_exceptions.remove(a) for a in exc]
@@ -60,9 +58,11 @@ def fail_on_exceptions():
 
 def setup_module():
     sys.excepthook = my_except_hook
+    signal.signal(signal.SIGABRT, my_abort_hook)
 
 def teardown_module():
     sys.excepthook = sys.__excepthook__
+    signal.signal(signal.SIGABRT, signal.SIG_DFL)
 
 @pytest.mark.skipif("not HAVE_QT")
 class TestGui:
