@@ -49,9 +49,9 @@ def main(width=200, height=200, scale=2,
         else:
             sim_obj = cagen.ElementarySimulator(size, nondet, histogram, activity, rule, config, beta, copy_borders, base=base)
 
-        if not life:
-            print sim_obj.pretty_print()
-            print sim_obj.t.rule, hex(sim_obj.rule_number)
+    if not life:
+        print sim_obj.pretty_print()
+        print sim_obj.t.rule, hex(sim_obj.rule_number)
 
     display = ZasimDisplay(sim_obj)
     display.set_scale(scale)
