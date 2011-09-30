@@ -17,6 +17,7 @@ documentation.
     gui/control
     gui/displaywidgets
     gui/histogram
+    gui/externaledit
     gui/stepfunc
     gui/elementary
     gui/animation
