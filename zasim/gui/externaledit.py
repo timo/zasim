@@ -9,7 +9,7 @@ cause a reload of the config to the simulator and any display updates. An
 from .displaywidgets import DisplayWidget
 
 from ..external.qt import (QDialog, QHBoxLayout, QVBoxLayout,
-        QInputDialog, QLabel, QPushButton, Qt,
+        QInputDialog, QLabel, Qt,
         QDialogButtonBox,
         QFileSystemWatcher)
 
