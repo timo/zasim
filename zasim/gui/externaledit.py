@@ -1,6 +1,10 @@
 """This module implements a window that allows editing configurations
-in external programs. Currently, only editing the configs as images with
-The GIMP is supported."""
+in external programs. Instantiate one ExternalEditWindow per session (or keep
+it) and call `external_png` or `external_txt` to display the Dialog.
+
+The file will be created as a temporary file, changes to it will automatically
+cause a reload of the config to the simulator and any display updates. An 
+"import" button is also provided in case the filesystem watcher fails."""
 
 from .displaywidgets import DisplayWidget
 
@@ -66,7 +70,6 @@ class ExternalEditWindow(QDialog):
         self.process = None
         del self.watcher
         self.watcher = None
-
 
     def external_png(self, prefix="zasim", suffix=".png"):
         self.exporter = self.conf_disp
