@@ -79,6 +79,8 @@ def main(args=None):
             help="use pure python stepfunc even if weave is available")
     argp.add_argument("--print-rule", default=False, action="store_true",
             help="pretty-print the rule")
+    argp.add_argument("--life", default=False, action="store_true",
+            help="calculate a game of life.")
     argp.add_argument("-s", "--steps", metavar="STEPS", default=100, type=int,
             help="run the simulator for STEPS steps.")
     argp.add_argument("--nondet", default=100, type=int,
