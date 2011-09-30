@@ -48,51 +48,47 @@ class ExternalEditWindow(QDialog):
 
         self.lay.addWidget(self.conf_disp)
 
-    def external_png(self, prefix="zasim", suffix=".png"):
+    def __external_edit(self, prefix, suffix, importer_class, program):
         assert self.tmpfile is None
         assert self.process is None
         with NamedTemporaryFile(prefix=prefix, suffix=suffix) as self.tmpfile:
             self.fname_disp.setText(self.tmpfile.name)
-            self.exporter = self.conf_disp
             self.exporter.export(self.tmpfile.name)
-            self.importer = ImageInitialConfiguration(self.tmpfile.name)
+            self.importer = importer_class(self.tmpfile.name)
             self.watcher = QFileSystemWatcher([self.tmpfile.name])
             self.watcher.fileChanged.connect(self.import_)
 
-            self.process = Popen(["gimp", self.tmpfile.name])
-            self.mode = "png"
+            self.process = Popen(program + [self.tmpfile.name])
 
             self.exec_()
+
+        self.tmpfile = None
+        self.process = None
+        del self.watcher
+        self.watcher = None
+
+
+    def external_png(self, prefix="zasim", suffix=".png"):
+        self.exporter = self.conf_disp
+        self.__external_edit(prefix, suffix, ImageInitialConfiguration, ["gimp"])
 
     def external_txt(self, prefix="zasim", suffix=".txt"):
-        assert self.tmpfile is None
-        assert self.process is None
-        with NamedTemporaryFile(prefix=prefix, suffix=suffix) as self.tmpfile:
-            self.fname_disp.setText(self.tmpfile.name)
-            self.exporter = TwoDimConsolePainter(self._sim)
-            self.exporter.export(self.tmpfile.name)
-            self.importer = AsciiInitialConfiguration(self.tmpfile.name)
-            self.watcher = QFileSystemWatcher([self.tmpfile.name])
-            self.watcher.fileChanged.connect(self.import_)
+        editor = None
+        envvars = ["ZASIM_EDITOR", "EDITOR"]
+        for envvar in envvars:
+            if envvar in environ:
+                editor = environ[envvar]
+                break
 
-            editor = None
-            envvars = ["ZASIM_EDITOR", "EDITOR"]
-            for envvar in envvars:
-                if envvar in environ:
-                    editor = environ[envvar]
-                    break
-
+        if editor is None:
+            editor = QInputDialog.getText(self, "Please specify the editor commandline", "Zasim looks at the environment variables %s to figure out what editor to use. Please consider setting it. Until then, specify the editor to use:", "gvim")
             if editor is None:
-                editor = QInputDialog.getText(self, "Please specify the editor commandline", "Zasim looks at the environment variables %s to figure out what editor to use. Please consider setting it. Until then, specify the editor to use:", "gvim")
-                if editor is None:
-                    return False
+                return False
 
-            editor = shlex.split(editor)
+        editor = shlex.split(editor)
 
-            self.process = Popen(editor + [self.tmpfile.name])
-            self.mode = "png"
-
-            self.exec_()
+        self.exporter = TwoDimConsolePainter(self._sim)
+        self.__external_edit(prefix, suffix, AsciiInitialConfiguration, editor)
 
     def import_(self):
         self._sim.set_config(self.importer.generate())
