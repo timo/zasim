@@ -87,6 +87,10 @@ class ZasimMainWindow(QMainWindow):
         ext_img_a.setObjectName("external_image")
         ext_img_a.activated.connect(self.open_external_img)
 
+        ext_img_a = simulator_menu.addAction("Edit ascii-art")
+        ext_img_a.setObjectName("external_text")
+        ext_img_a.activated.connect(self.open_external_txt)
+
         quit_a = simulator_menu.addAction("&Quit")
         quit_a.setObjectName("quit")
         quit_a.activated.connect(self.close)
@@ -94,6 +98,10 @@ class ZasimMainWindow(QMainWindow):
     def open_external_img(self):
         editwin = ExternalEditWindow(self.simulator)
         editwin.external_png()
+
+    def open_external_txt(self):
+        editwin = ExternalEditWindow(self.simulator)
+        editwin.external_txt()
 
     def open_elementary_tool(self):
         if self.elementary_tool and not self.elementary_tool.isVisible():
