@@ -1,6 +1,7 @@
 from ..external.qt import *
 from .stepfunc import StepFuncCompositionDialog
 from .elementary import ElementaryRuleWindow
+from .externaledit import ExternalEditWindow
 
 class ZasimMainWindow(QMainWindow):
     """This is a window that manages one simulator. It holds one
@@ -73,15 +74,26 @@ class ZasimMainWindow(QMainWindow):
     def setup_menu(self):
         simulator_menu = self.menuBar().addMenu("Simulator")
         simulator_menu.setObjectName("simulator_menu")
+
         new_a = simulator_menu.addAction("&New...")
         new_a.setObjectName("new")
         new_a.activated.connect(self.show_new_sim_dlg)
+
         stepf_a = simulator_menu.addAction("Open &Stepfunc Table")
         stepf_a.setObjectName("stepfunc_table")
         stepf_a.activated.connect(self.open_elementary_tool)
+
+        ext_img_a = simulator_menu.addAction("Edit image")
+        ext_img_a.setObjectName("external_image")
+        ext_img_a.activated.connect(self.open_external_img)
+
         quit_a = simulator_menu.addAction("&Quit")
         quit_a.setObjectName("quit")
         quit_a.activated.connect(self.close)
+
+    def open_external_img(self):
+        editwin = ExternalEditWindow(self.simulator)
+        editwin.external_png()
 
     def open_elementary_tool(self):
         if self.elementary_tool and not self.elementary_tool.isVisible():

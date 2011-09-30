@@ -123,6 +123,7 @@ class BaseQImagePainter(QObject):
     def connect_simulator(self):
         self._sim.changed.connect(self.conf_changed)
         self._sim.updated.connect(self.after_step)
+        self.conf_changed()
 
     def conf_changed(self):
         """React to a change in the configuration that was not caused by a step
@@ -233,9 +234,9 @@ class TwoDimQImagePainter(BaseQImagePainter):
         """
         self._sim = simulator
         w, h = simulator.shape
-        super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
 
         self.palette = PALETTE_444[2:len(self._sim.t.possible_values)]
+        super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
 
     def draw_conf(self):
         try:

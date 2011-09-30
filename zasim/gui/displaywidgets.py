@@ -93,3 +93,5 @@ class DisplayWidget(QWidget):
             if self.last_draw_pos != new_draw_pos:
                 self._sim.set_config_value(new_draw_pos)
 
+    def export(self, filename):
+        return self.display.export(filename)
