@@ -71,9 +71,11 @@ def rule_nr_to_rule_arr(number, digits, base=2):
     """
     entries = base ** digits
     result = [0 for index in range(entries)]
+    blubb = base ** entries
     for e in range(entries - 1, -1, -1):
-        d = int(number // (base ** e))
-        number -= d * (base ** e)
+        blubb /= base
+        d = int(number // (blubb))
+        number -= d * (blubb)
         result[e] = d
 
     return result

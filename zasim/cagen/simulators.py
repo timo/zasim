@@ -135,13 +135,14 @@ class ElementarySimulator(ElementaryCagenSimulator):
 
         self.computer = computer
 
-        if len(size) > 1:
-            if rule is None or rule < 2 ** 32:
-                neighbourhood = VonNeumannNeighbourhood
+        if neighbourhood is None:
+            if len(size) > 1:
+                if rule is None or rule < base ** (base ** 5):
+                    neighbourhood = VonNeumannNeighbourhood
+                else:
+                    neighbourhood = MooreNeighbourhood
             else:
-                neighbourhood = MooreNeighbourhood
-        else:
-            neighbourhood = ElementaryFlatNeighbourhood
+                neighbourhood = ElementaryFlatNeighbourhood
 
         stepfunc = automatic_stepfunc(size=size, config=config, computation=computer,
                 nondet=nondet, beta=beta,
