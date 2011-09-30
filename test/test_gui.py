@@ -25,6 +25,7 @@ def seconds(num):
         yield 1
 
 import sys
+import signal
 import traceback
 
 _exceptions = []
@@ -37,11 +38,25 @@ def my_except_hook(cls, instance, traceback):
     traceback.print_exception(cls, instance, traceback)
     _exceptions.append((cls, instance, traceback))
 
+_aborts = []
+def my_abort_hook():
+    print "oh god, sigabort!"
+    print
+    print traceback.print_stack()
+    print
+    _aborts.append(True)
+
+signal.signal(signal.SIGABRT, my_abort_hook)
+
 def fail_on_exceptions():
     exc = _exceptions[:]
     [_exceptions.remove(a) for a in exc]
+    aborts = _aborts[:]
+    [_aborts.remove(a) for a in aborts]
     if exc:
         pytest.fail("There were exceptions in the base.\n%s" % (exc[0]))
+    if aborts:
+        pytest.fail("There were abort signals in the tests.")
 
 def setup_module():
     sys.excepthook = my_except_hook
