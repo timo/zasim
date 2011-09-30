@@ -127,13 +127,9 @@ class ZasimMainWindow(QMainWindow):
 
         Those displays are updated whenever a step occurs."""
         self.extra_displays.append(display)
-        self.simulator.updated.connect(display.after_step)
-        self.simulator.changed.connect(display.conf_changed)
         #self.display_attached.emit(display)
 
     def detach_display(self, display):
         """Detach an extra attached display from the control."""
         self.extra_displays.remove(display)
-        self.simulator.updated.disconnect(display.after_step)
-        self.simulator.changed.disconnect(display.conf_changed)
         #self.display_detached.emit(display)

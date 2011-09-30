@@ -1,5 +1,4 @@
-from ..external.qt import QWidget, QImage, QDockWidget, QScrollArea, QSize, QEvent, Qt
-import Queue
+from ..external.qt import QWidget, QImage, QDockWidget, QScrollArea, QSize, QEvent, QPainter, Qt
 
 class BaseExtraDisplay(QDockWidget):
     """The base class for a dockable/undockable/tabbable extra display widget
@@ -29,9 +28,14 @@ class BaseExtraDisplay(QDockWidget):
     def eventFilter(self, widget, event):
         if widget == self.display_widget:
             if event.type() == QEvent.Type.Paint:
-                self.paint_display_widget(event)
+                self.child_paintEvent(event)
                 return True
         return False
+
+    def child_paintEvent(self, event):
+        copier = QPainter(self.display_widget)
+        copier.drawImage(event.rect(), self.display._image, event.rect())
+        del copier
 
     def create_image_surf(self):
         """Create the image surface to use."""

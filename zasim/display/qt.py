@@ -8,7 +8,7 @@ configurations in-line."""
 from __future__ import absolute_import
 
 from ..external.qt import (QObject, QImage, QPainter, QPoint, QSize, QRect,
-                           QColor, QBuffer, QIODevice, Signal, Qt)
+                           QLine, QColor, QBuffer, QIODevice, Signal, Qt)
 
 import numpy as np
 import Queue
@@ -48,8 +48,6 @@ def make_gray_palette(number):
     return pal_444, pal_qc
 
 PALETTE_QC = make_palette_qc(PALETTE_444)
-
-del make_palette_qc
 
 def qimage_to_pngstr(image):
     buf = QBuffer()
@@ -275,6 +273,58 @@ class TwoDimQImagePainter(BaseQImagePainter):
 
 # TODO make a painter that continuously moves up the old configurations for saner
 #      display in ipython rich consoles and such.
+
+class HistogramPainter(BaseQImagePainter):
+    def __init__(self, simulator, attribute, width, height, queue_size=1, connect=True, **kwargs):
+        self._sim = simulator
+        self._attribute = attribute
+        self._linepos = 0
+        self.palette = PALETTE_444[:len(self._sim.t.possible_values)]
+        self.colors = make_palette_qc(self.palette)
+
+        super(HistogramPainter, self).__init__(width, height, queue_size, connect=connect, **kwargs)
+
+    def draw_conf(self):
+        painter = QPainter(self._image)
+        linepos = self._linepos
+        try:
+            while True:
+                update_step, values = self._queue.get_nowait()
+                if not self._invert_odd or self._odd:
+                    values = (values[1], values[0]) + values[1:]
+                maximum = sum(values)
+                scale = self._height * 1.0 / maximum
+                absolute = 0.0
+                for value, color in zip(values, self.colors):
+                    value = value * scale
+                    painter.setPen(color)
+                    painter.drawLine(QLine(linepos, absolute,
+                                     linepos, absolute + value))
+                    absolute += value
+
+                if update_step:
+                    linepos += 1
+                    if linepos >= self._width:
+                        linepos = 0
+                        # don't jump across the border, just draw
+                        # two lines the next time.
+                        break
+
+        except Queue.Empty:
+            pass
+
+        print linepos
+        self._linepos = linepos
+
+    def after_step(self, update_step=True):
+        values = getattr(self._sim.t, self._attribute).copy()
+        self._queue.put((update_step, values))
+
+        self.draw_conf()
+        urect = QRect(QPoint((self._linepos - 1) % self._width, 0),
+                               QSize(1, self._height))
+        print urect
+        self.update.emit(urect)
 
 def display_table(images, columns=1, captions=None):
     col_widths = [0 for col in range(columns)]
