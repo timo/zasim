@@ -142,11 +142,11 @@ class ImageInitialConfiguration(BaseInitialConfiguration):
             image = image.scaled(image.width() / self.scale,
                                  image.height() / self.scale)
         nparr = np.frombuffer(image.bits(), dtype=np.uint32)
-        nparr = nparr.reshape((image.width(), image.height()))
-        result = np.ones((image.width(), image.height()), dtype=dtype)
+        nparr = nparr.reshape((image.height(), image.width()))
+        result = np.ones((image.height(), image.width()), dtype=dtype)
 
         for value, color in self.palette.iteritems():
             result[nparr == color] = value
 
-        return result
+        return result.transpose()
 
