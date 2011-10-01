@@ -7,6 +7,7 @@ from zasim.display.console import *
 from .testutil import *
 
 import pytest
+import tempfile
 
 class TestCAGen:
     @pytest.mark.skipif("not HAVE_MULTIDIM")
@@ -24,9 +25,11 @@ class TestCAGen:
      
 """
 
-        display.export("temp.txt")
-        with open("temp.txt", "r") as datafile:
-            assert datafile.read() == """\
+        with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
+            name = tmpfile.name
+            display.export(tmpfile.name)
+
+        assert open(name).read() == """\
  #   
   #  
 ###  
@@ -42,7 +45,9 @@ class TestCAGen:
         out, err = capsys.readouterr()
         assert out == """# ## \n"""
 
-        display.export("temp.txt")
-        with open("temp.txt", "r") as datafile:
-            assert datafile.read() == "# ## \n"
+        with tempfile.NamedTemporaryFile(delete=False) as tmpfile:
+            name = tmpfile.name
+            display.export(tmpfile.name)
+
+        assert open(name).read() == "# ## \n"
 
