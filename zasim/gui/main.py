@@ -58,6 +58,9 @@ def main(width=200, height=200, scale=2,
 
     display.control.start()
 
+    if black is not None:
+        display.control.zero_percentage.setValue(int(black * 100))
+
     if histogram:
         extra_hist = HistogramExtraDisplay(sim_obj, parent=display, height=200, maximum= w * h)
         extra_hist.show()
