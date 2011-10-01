@@ -29,7 +29,7 @@ class BaseConsolePainter(QObject):
     def connect_simulator(self):
         self._sim.changed.connect(self.conf_changed)
         self._sim.updated.connect(self.after_step)
-        self._sim.snapshot_restored.connect(self.after_step)
+        self._sim.snapshot_restored.connect(self.conf_replaced)
 
     def after_step(self, update_step=True):
         self._last_conf = self._sim.get_config().copy()
@@ -39,6 +39,9 @@ class BaseConsolePainter(QObject):
 
     def conf_changed(self):
         self.after_step(False)
+
+    def conf_replaced(self):
+        self.conf_changed()
 
     def __str__(self):
         return "\n".join(self._data + [""])
@@ -83,6 +86,8 @@ class LinearConsolePainter(BaseConsolePainter):
         with open(filename, "w") as out:
             out.write("\n".join(self._data + [""]))
 
+    def conf_replaced(self):
+        self._data = [self.NO_DATA * self._sim.shape[0]]
 
 class TwoDimConsolePainter(BaseConsolePainter):
     """This painter always draws the most current config."""
