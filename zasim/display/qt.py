@@ -15,16 +15,16 @@ import time
 import Queue
 
 
-PALETTE_444 = [0x0, 0xfff, 0xf00, 0x00f, 0x0f0, 0xff0, 0x0ff, 0xf0f]
+PALETTE_32 = [0xff000000, 0xffffffff, 0xffff0000, 0xff0000ff, 0xff00ff00, 0xffffff00, 0xff00ffff, 0xffff00ff]
 
 def make_palette_qc(pal):
     result = []
     for color in pal:
-        b = (color & 0xf) << 4 | (color & 0xf)
-        color = color >> 4
-        g = (color & 0xf) << 4 | (color & 0xf)
-        color = color >> 4
-        r = (color & 0xf) << 4 | (color & 0xf)
+        b = color & 0xff
+        color = color >> 8
+        g = color & 0xff
+        color = color >> 8
+        r = color & 0xff
 
         result.append(QColor.fromRgb(r, g, b))
 
@@ -33,22 +33,22 @@ def make_palette_qc(pal):
 def make_gray_palette(number):
     """Generates a grayscale with `number` entries.
 
-    :returns: the RGB_444 palette and the QColor palette
+    :returns: the RGB_32 palette and the QColor palette
     """
-    if number - 1 > 0xf:
-        raise ValueError("cannot make 4bit grayscale with %d numbers" % number)
+    if number - 1 > 0xff:
+        raise ValueError("cannot make 8bit grayscale with %d numbers" % number)
 
-    pal_444 = []
+    pal_32 = []
     pal_qc = []
     for i in range(number):
         perc = 1.0 * i / (number - 1)
-        of_444 = int(0xf * perc)
-        pal_444.append(of_444 + (of_444 << 4) + (of_444 << 8))
+        of_32 = int(0xff * perc)
+        pal_32.append(of_32 + (of_32 << 8) + (of_32 << 16))
         pal_qc.append(QColor.fromRgbF(perc, perc, perc))
 
-    return pal_444, pal_qc
+    return pal_32, pal_qc
 
-PALETTE_QC = make_palette_qc(PALETTE_444)
+PALETTE_QC = make_palette_qc(PALETTE_32)
 
 def qimage_to_pngstr(image):
     buf = QBuffer()
@@ -168,7 +168,7 @@ class LinearQImagePainter(BaseQImagePainter):
             lines = simulator.shape[0]
         self._last_step = 0
 
-        self.palette = PALETTE_444[:len(self._sim.t.possible_values)]
+        self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
 
         super(LinearQImagePainter, self).__init__(
                 simulator.shape[0], lines, lines,
@@ -182,7 +182,7 @@ class LinearQImagePainter(BaseQImagePainter):
         peek = None
 
         confs_to_render = min(100, self._height - y, self._queued_steps)
-        whole_conf = np.empty((confs_to_render, w), np.uint16, "C")
+        whole_conf = np.empty((confs_to_render, w), np.uint32, "C")
 
         try:
             while rendered < confs_to_render:
@@ -222,7 +222,7 @@ class LinearQImagePainter(BaseQImagePainter):
             pass
 
         self._queued_steps -= rendered
-        _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB444).scaled(w * self._scale, rendered * self._scale)
+        _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB32).scaled(w * self._scale, rendered * self._scale)
         _image.save("/tmp/zasim_render_batch_%d.png" % y)
 
         painter = QPainter(self._image)
@@ -262,7 +262,7 @@ class TwoDimQImagePainter(BaseQImagePainter):
         self._sim = simulator
         w, h = simulator.shape
 
-        self.palette = PALETTE_444[2:len(self._sim.t.possible_values)]
+        self.palette = PALETTE_32[2:len(self._sim.t.possible_values)]
         super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
 
     def draw_conf(self):
@@ -270,19 +270,19 @@ class TwoDimQImagePainter(BaseQImagePainter):
             update_step, conf = self._queue.get_nowait()
             conf = conf.transpose()
             w, h = self._width, self._height
-            nconf = np.empty((h, w), np.uint16, "C")
+            nconf = np.empty((h, w), np.uint32, "C")
 
             if not self._invert_odd or self._odd:
                 nconf[conf==0] = 0
-                nconf[conf==1] = 0xfff
+                nconf[conf==1] = 0xffffffff
             else:
                 nconf[conf==1] = 0
-                nconf[conf==0] = 0xfff
+                nconf[conf==0] = 0xffffffff
 
             for num, value in enumerate(self.palette):
                 nconf[conf == num+2] = value
 
-            image = QImage(nconf.data, w, h, QImage.Format_RGB444)
+            image = QImage(nconf.data, w, h, QImage.Format_RGB32)
             if self._scale != 1:
                 image = image.scaled(w * self._scale, h * self._scale)
             else:
@@ -311,7 +311,7 @@ class HistogramPainter(BaseQImagePainter):
         self._sim = simulator
         self._attribute = attribute
         self._linepos = 0
-        self.palette = PALETTE_444[:len(self._sim.t.possible_values)]
+        self.palette = PALETTE_32[2:len(self._sim.t.possible_values)]
         self.colors = make_palette_qc(self.palette)
 
         super(HistogramPainter, self).__init__(width, height, queue_size, connect=connect, **kwargs)
@@ -371,8 +371,8 @@ def display_table(images, columns=1, captions=None):
 
     image = QImage(sum(col_widths) + 20 * (columns - 1),
                    sum(row_heights) + 60 * (len(images) / columns),
-                   QImage.Format_RGB444)
-    image.fill(0xfff)
+                   QImage.Format_RGB32)
+    image.fill(0xffffffff)
 
     if captions is None:
         captions = map(str, range(1, len(images) + 1))
