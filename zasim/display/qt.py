@@ -204,9 +204,9 @@ class LinearQImagePainter(BaseQImagePainter):
 
                 if not self._invert_odd or self._odd:
                     nconf[conf==0] = 0
-                    nconf[conf==1] = 0xfff
+                    nconf[conf==1] = 0xffffff
                 else:
-                    nconf[conf==0] = 0xfff
+                    nconf[conf==0] = 0xffffff
                     nconf[conf==1] = 0
 
                 for num, value in enumerate(self.palette):
