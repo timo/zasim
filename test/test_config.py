@@ -113,12 +113,14 @@ class TestConfig:
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_export_import_conf_png(self, scale):
-        from zasim.cagen import ElementarySimulator
+        from zasim.cagen import GameOfLife
         from zasim.display.qt import TwoDimQImagePainter
         from tempfile import NamedTemporaryFile
-        s = ElementarySimulator(size=(30, 40))
-        disp = TwoDimQImagePainter(s, scale=scale)
-        s.step()
+        s = GameOfLife(size=(30, 40))
+        disp = TwoDimQImagePainter(s, scale=scale, frame_duration=0)
+        for i in range(20):
+            s.step()
+
 
         with NamedTemporaryFile(prefix="zasim_test_", suffix=".png", delete=False) as tmpfile:
             disp.export(tmpfile.name)
