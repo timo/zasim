@@ -188,7 +188,7 @@ class LinearQImagePainter(BaseQImagePainter):
         w = self._width
         peek = None
 
-        confs_to_render = min(100, self._height - y, self._queued_steps)
+        confs_to_render = min(self._height - y, self._queued_steps)
         whole_conf = np.empty((confs_to_render, w), np.uint32, "C")
 
         try:
