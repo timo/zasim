@@ -102,7 +102,7 @@ class TestConfig:
         from zasim.cagen import ElementarySimulator
         from zasim.display.console import TwoDimConsolePainter
         from tempfile import NamedTemporaryFile
-        s = ElementarySimulator(size=(30, 50), rule=111)
+        s = ElementarySimulator(size=(20, 30), rule=111)
         d = TwoDimConsolePainter(s)
         s.step()
 
@@ -116,7 +116,7 @@ class TestConfig:
         from zasim.cagen import ElementarySimulator
         from zasim.display.qt import TwoDimQImagePainter
         from tempfile import NamedTemporaryFile
-        s = ElementarySimulator(size=(100, 100))
+        s = ElementarySimulator(size=(30, 40))
         disp = TwoDimQImagePainter(s, scale=scale)
         s.step()
 
