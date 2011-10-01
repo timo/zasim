@@ -126,8 +126,8 @@ class ImageInitialConfiguration(BaseInitialConfiguration):
         self.filename = filename
 
         if palette is None:
-            from zasim.display.qt import PALETTE_444
-            palette = PALETTE_444
+            from zasim.display.qt import PALETTE_32
+            palette = PALETTE_32
         if isinstance(palette, list):
             palette = dict(enumerate(palette))
         self.palette = palette
