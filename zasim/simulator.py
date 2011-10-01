@@ -64,7 +64,8 @@ class BaseSimulator(QObject):
     """Is emitted when a snapshot has been taken."""
 
     snapshot_restored = Signal()
-    """Is emitted when a snapshot is restored."""
+    """Is emitted when a snapshot is restored or a completely new configuration
+    has been set."""
 
     target_attrs = []
     """The extra-attributes the target has to offer, such as histogram."""
@@ -78,7 +79,9 @@ class BaseSimulator(QObject):
         include any borders."""
 
     def set_config(self, config):
-        """Sets a new config for the simulator."""
+        """Sets a new config for the simulator.
+
+        Emits snapshot_restored"""
 
     def set_config_value(self, pos, value=None):
         """Set the config value at pos to value.
@@ -147,7 +150,7 @@ class CagenSimulator(BaseSimulator):
 
     def set_config(self, config):
         self._step_func.set_config(config)
-        self.updated.emit()
+        self.snapshot_restored.emit()
 
     def set_config_value(self, pos, value=None):
         self._step_func.set_config_value(pos[::-1], value)

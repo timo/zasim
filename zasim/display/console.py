@@ -29,6 +29,7 @@ class BaseConsolePainter(QObject):
     def connect_simulator(self):
         self._sim.changed.connect(self.conf_changed)
         self._sim.updated.connect(self.after_step)
+        self._sim.snapshot_restored.connect(self.after_step)
 
     def after_step(self, update_step=True):
         self._last_conf = self._sim.get_config().copy()

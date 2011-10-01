@@ -124,6 +124,7 @@ class BaseQImagePainter(QObject):
 
     def connect_simulator(self):
         self._sim.changed.connect(self.conf_changed)
+        self._sim.snapshot_restored.connect(self.conf_replaced)
         self._sim.updated.connect(self.after_step)
         self.conf_changed()
 
@@ -131,6 +132,12 @@ class BaseQImagePainter(QObject):
         """React to a change in the configuration that was not caused by a step
         of the cellular automaton - by a user interaction for instance."""
         self.after_step(False)
+
+    def conf_replaced(self):
+        """React to snapshot_restored.
+
+        This implementation just calls conf_changed."""
+        self.conf_changed()
 
     def export(self, filename):
         if not self._image.save(filename):
@@ -238,7 +245,7 @@ class LinearQImagePainter(BaseQImagePainter):
         except Queue.Full:
             pass
 
-        if not self.skip_frame() or conf is not None:
+        if not self.skip_frame() or conf is not None or not update_step:
 
             self.draw_conf()
             self.update.emit(QRect(
@@ -249,6 +256,18 @@ class LinearQImagePainter(BaseQImagePainter):
             self._queue.put((update_step, conf))
             self._queued_steps += 1
             conf = None
+
+    def conf_replaced(self):
+        # empty the queue
+        while not self._queue.empty():
+            self._queue.get()
+
+        self._queued_steps = 0
+
+        # set the position back to 0
+        self._last_step = 0
+
+        self.after_step(False)
 
 class TwoDimQImagePainter(BaseQImagePainter):
     """This class offers rendering a two-dimensional simulator config to
@@ -353,6 +372,13 @@ class HistogramPainter(BaseQImagePainter):
         urect = QRect(QPoint((self._linepos - 1) % self._width, 0),
                                QSize(1, self._height))
         self.update.emit(urect)
+
+    def conf_replaced(self):
+        while not self._queue.empty():
+            self._queue.get()
+        self._linepos = 0
+
+        self.after_step(False)
 
 def display_table(images, columns=1, captions=None):
     col_widths = [0 for col in range(columns)]
