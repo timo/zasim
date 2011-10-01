@@ -94,7 +94,7 @@ class ControlWidget(QWidget):
 
     def change_delay(self, delay):
         """Change the timer delay of the simulator steps."""
-        if delay.endswith("ms"):
+        if isinstance(delay, basestring) and delay.endswith("ms"):
             delay = delay[:-2]
         self.timer_delay = int(delay)
         self.start()

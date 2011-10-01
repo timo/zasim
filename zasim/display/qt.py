@@ -168,7 +168,7 @@ class LinearQImagePainter(BaseQImagePainter):
             lines = simulator.shape[0]
         self._last_step = 0
 
-        self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
+        self.palette = PALETTE_32[2:len(self._sim.t.possible_values)]
 
         super(LinearQImagePainter, self).__init__(
                 simulator.shape[0], lines, lines,
@@ -283,12 +283,10 @@ class TwoDimQImagePainter(BaseQImagePainter):
                 nconf[conf == num+2] = value
 
             image = QImage(nconf.data, w, h, QImage.Format_RGB32)
+            image = QPixmap.fromImage(image)
             if self._scale != 1:
                 image = image.scaled(w * self._scale, h * self._scale)
-            else:
-                # XXX why does qt make me do this?
-                image = image.copy()
-            self._image = QPixmap.fromImage(image)
+            self._image = image
             if update_step:
                 self._odd = not self._odd
         except Queue.Empty:
@@ -311,7 +309,7 @@ class HistogramPainter(BaseQImagePainter):
         self._sim = simulator
         self._attribute = attribute
         self._linepos = 0
-        self.palette = PALETTE_32[2:len(self._sim.t.possible_values)]
+        self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
         self.colors = make_palette_qc(self.palette)
 
         super(HistogramPainter, self).__init__(width, height, queue_size, connect=connect, **kwargs)
