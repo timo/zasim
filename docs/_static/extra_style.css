@@ -3,3 +3,9 @@
 div.document {
     background-image: url(sidebar_bg.png)
 }
+
+div.body {
+    background-image: url(body_bg.png);
+    background-position: left;
+    background-repeat: repeat-y;
+}
