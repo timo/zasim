@@ -17,6 +17,7 @@ class DisplayWidget(QWidget):
         super(DisplayWidget, self).__init__(**kwargs)
 
         self.setAttribute(Qt.WA_OpaquePaintEvent)
+        self.setAttribute(Qt.WA_NoSystemBackground)
 
         self._sim = simulator
 

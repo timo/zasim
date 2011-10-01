@@ -19,6 +19,7 @@ class BaseExtraDisplay(QDockWidget):
         self.display_widget.installEventFilter(self)
 
         self.display_widget.setAttribute(Qt.WA_OpaquePaintEvent)
+        self.display_widget.setAttribute(Qt.WA_NoSystemBackground)
 
         self.sim = sim
         self.img_width, self.img_height = width, height
