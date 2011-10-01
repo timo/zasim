@@ -479,6 +479,8 @@ class TestCAGen:
     def test_beta_asynchronism_pure(self):
         self.body_beta_asynchronism(False)
 
+    @pytest.mark.skipif("not HAVE_WEAVE")
+    @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_cagen_main(self):
         from zasim.cagen import main
 
