@@ -1,4 +1,4 @@
-from ..external.qt import QWidget, QImage, QDockWidget, QScrollArea, QSize, QEvent, QPainter, Qt
+from ..external.qt import QWidget, QPixmap, QDockWidget, QScrollArea, QSize, QEvent, QPainter, Qt
 
 class BaseExtraDisplay(QDockWidget):
     """The base class for a dockable/undockable/tabbable extra display widget
@@ -34,13 +34,12 @@ class BaseExtraDisplay(QDockWidget):
 
     def child_paintEvent(self, event):
         copier = QPainter(self.display_widget)
-        copier.drawImage(event.rect(), self.display._image, event.rect())
+        copier.drawPixmap(event.rect(), self.display._image, event.rect())
         del copier
 
     def create_image_surf(self):
         """Create the image surface to use."""
-        self.image = QImage(self.img_width, self.img_height,
-                            QImage.Format_RGB444)
+        self.image = QPixmap(self.img_width, self.img_height)
         self.image.fill(0)
 
     def paint_display_widget(self, event):

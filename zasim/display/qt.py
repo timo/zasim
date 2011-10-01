@@ -7,10 +7,11 @@ configurations in-line."""
 
 from __future__ import absolute_import
 
-from ..external.qt import (QObject, QImage, QPainter, QPoint, QSize, QRect,
+from ..external.qt import (QObject, QPixmap, QImage, QPainter, QPoint, QSize, QRect,
                            QLine, QColor, QBuffer, QIODevice, Signal, Qt)
 
 import numpy as np
+import time
 import Queue
 
 
@@ -66,7 +67,8 @@ class BaseQImagePainter(QObject):
 
     Its first argument is the area of change as a QRect."""
 
-    def __init__(self, width, height, queue_size=1, scale=1, connect=True, **kwargs):
+    def __init__(self, width, height, queue_size=1, scale=1,
+                 connect=True, frame_duration=1.0/50, **kwargs):
         """Initialize the BaseQImagePainter.
 
         :param width: The width of the image to build.
@@ -89,14 +91,16 @@ class BaseQImagePainter(QObject):
         self._invert_odd = False
         self._odd = False
 
+        self.desired_frame_duration = frame_duration
+        self.next_frame = 0
+
         if connect:
             self.connect_simulator()
 
     def create_image_surf(self):
         """Create the image surface when the display is created."""
-        self._image = QImage(self._width * self._scale,
-                             self._height * self._scale,
-                             QImage.Format_RGB444)
+        self._image = QPixmap(self._width * self._scale,
+                             self._height * self._scale)
         self._image.fill(0)
 
     def set_scale(self, scale):
@@ -137,6 +141,15 @@ class BaseQImagePainter(QObject):
         """For IPython, display the image as an embedded image."""
         return qimage_to_pngstr(self._image)
 
+    def skip_frame(self):
+        """Returns True, if the frame is supposed to be skipped to reach the
+        desired framerate."""
+        now = time.time()
+        if now > self.next_frame:
+            self.next_frame = now + self.desired_frame_duration
+            return False
+        return True
+
 class LinearQImagePainter(BaseQImagePainter):
     """This class offers drawing for one-dimensional cellular automata, which
     will fill up the display with a line that moves downwards and wraps at the
@@ -155,7 +168,7 @@ class LinearQImagePainter(BaseQImagePainter):
             lines = simulator.shape[0]
         self._last_step = 0
 
-        self.palette = PALETTE_444[2:len(self._sim.t.possible_values)]
+        self.palette = PALETTE_444[:len(self._sim.t.possible_values)]
 
         super(LinearQImagePainter, self).__init__(
                 simulator.shape[0], lines, lines,
@@ -166,11 +179,13 @@ class LinearQImagePainter(BaseQImagePainter):
         rendered = 0
         y = self._last_step % self._height
         w = self._width
-        scale = self._scale
         peek = None
+
+        confs_to_render = min(100, self._height - y, self._queued_steps)
+        whole_conf = np.empty((confs_to_render, w), np.uint16, "C")
+
         try:
-            painter = QPainter(self._image)
-            while rendered < min(100, self._height):
+            while rendered < confs_to_render:
                 update_step, conf = peek or self._queue.get_nowait()
 
                 if not update_step:
@@ -182,44 +197,58 @@ class LinearQImagePainter(BaseQImagePainter):
                                 peek = (update_next_step, next_conf)
                                 break
                     except Queue.Empty:
-                        pass
+                        if peek is None:
+                            raise
 
-                nconf = np.empty((w, 1), np.uint16, "C")
+                nconf = whole_conf[rendered, ...]
 
                 if not self._invert_odd or self._odd:
                     nconf[conf==0] = 0
                     nconf[conf==1] = 0xfff
                 else:
-                    nconf[conf==1] = 0
                     nconf[conf==0] = 0xfff
+                    nconf[conf==1] = 0
 
                 for num, value in enumerate(self.palette):
                     nconf[conf == num+2] = value
 
-                _image = QImage(nconf.data, w, 1, QImage.Format_RGB444).scaled(w * scale, scale)
-                painter.drawImage(QPoint(0, y * scale), _image)
-
-                self._queued_steps -= 1
                 rendered += 1
+
                 if update_step:
                     self._last_step += 1
-                    y = self._last_step % self._height
                     self._odd = not self._odd
+
         except Queue.Empty:
             pass
 
+        self._queued_steps -= rendered
+        _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB444).scaled(w * self._scale, rendered * self._scale)
+        _image.save("/tmp/zasim_render_batch_%d.png" % y)
+
+        painter = QPainter(self._image)
+        painter.drawImage(QPoint(0, y * self._scale), _image)
+
+
     def after_step(self, update_step=True):
         conf = self._sim.get_config().copy()
-        if self._queue.full():
-            self._queue.get()
-        self._queue.put((update_step, conf))
+        try:
+            self._queue.put_nowait((update_step, conf))
+            self._queued_steps += 1
+            conf = None
+        except Queue.Full:
+            pass
 
-        self._queued_steps += 1
+        if not self.skip_frame() or conf is not None:
 
-        self.draw_conf()
-        self.update.emit(QRect(
-            QPoint(0, ((self._last_step + self._queued_steps - 1) % self._height) * self._scale),
-            QSize(self._width * self._scale, self._scale)))
+            self.draw_conf()
+            self.update.emit(QRect(
+                QPoint(0, ((self._last_step + self._queued_steps - 1) % self._height) * self._scale),
+                QSize(self._width * self._scale, self._scale)))
+
+        if conf is not None:
+            self._queue.put((update_step, conf))
+            self._queued_steps += 1
+            conf = None
 
 class TwoDimQImagePainter(BaseQImagePainter):
     """This class offers rendering a two-dimensional simulator config to
@@ -239,8 +268,9 @@ class TwoDimQImagePainter(BaseQImagePainter):
     def draw_conf(self):
         try:
             update_step, conf = self._queue.get_nowait()
+            conf = conf.transpose()
             w, h = self._width, self._height
-            nconf = np.empty((w, h), np.uint16, "C")
+            nconf = np.empty((h, w), np.uint16, "C")
 
             if not self._invert_odd or self._odd:
                 nconf[conf==0] = 0
@@ -256,15 +286,17 @@ class TwoDimQImagePainter(BaseQImagePainter):
             if self._scale != 1:
                 image = image.scaled(w * self._scale, h * self._scale)
             else:
-                # XXX why does pyside want me to do this?
+                # XXX why does qt make me do this?
                 image = image.copy()
-            self._image = image
+            self._image = QPixmap.fromImage(image)
             if update_step:
                 self._odd = not self._odd
         except Queue.Empty:
             pass
 
     def after_step(self, update_step=True):
+        if update_step and self.skip_frame():
+            return
         conf = self._sim.get_config().copy()
         self._queue.put((update_step, conf))
 

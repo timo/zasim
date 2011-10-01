@@ -73,7 +73,7 @@ class DisplayWidget(QWidget):
 
     def paintEvent(self, event):
         copier = QPainter(self)
-        copier.drawImage(event.rect(), self.display._image, event.rect())
+        copier.drawPixmap(event.rect(), self.display._image, event.rect())
         del copier
 
     def mousePressEvent(self, event):
