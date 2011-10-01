@@ -221,6 +221,7 @@ class StepFunc(object):
         self.codefile = tempfile.NamedTemporaryFile(prefix="zasim_cagen_", suffix=".py", delete=True)
         with self.codefile.file:
             self.codefile.write(code_text)
+            self.codefile.file.flush()
 
         myglob = globals()
         myloc = locals()
@@ -304,3 +305,6 @@ class StepFunc(object):
             return " ".join(name_parts)
         except:
             return repr(self)
+
+    def __del__(self):
+        self.codefile.file.close()
