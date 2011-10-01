@@ -137,11 +137,11 @@ class ImageInitialConfiguration(BaseInitialConfiguration):
         from .external.qt import QImage
         image = QImage()
         assert image.load(self.filename)
-        image = image.convertToFormat(QImage.Format_RGB444)
+        image = image.convertToFormat(QImage.Format_RGB32)
         if self.scale != 1:
             image = image.scaled(image.width() / self.scale,
                                  image.height() / self.scale)
-        nparr = np.frombuffer(image.bits(), dtype=np.uint16)
+        nparr = np.frombuffer(image.bits(), dtype=np.uint32)
         nparr = nparr.reshape((image.width(), image.height()))
         result = np.ones((image.width(), image.height()), dtype=dtype)
 
