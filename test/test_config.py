@@ -25,6 +25,10 @@ class TestConfig:
         assert any(brr == 1)
         assert any(brr == 2)
 
+        c = config.RandomInitialConfiguration(3)
+        crr = c.generate((None,))
+        assert len(crr.shape) == 1
+
     def test_random_1d_probabilities(self):
         a = config.RandomInitialConfiguration(2, 0)
         arr = a.generate((1000,))
@@ -69,6 +73,11 @@ class TestConfig:
         assert (brr == 0).any()
         assert (brr == 1).any()
         assert (brr == 2).any()
+
+        c = config.RandomInitialConfiguration(3)
+        crr = c.generate((None, 100))
+        assert len(crr.shape) == 2
+        assert crr.shape[1] == 100
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_random_2d_probabilities(self):
