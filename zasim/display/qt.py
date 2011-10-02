@@ -410,7 +410,7 @@ def display_table(images, columns=1, captions=None):
             if col == 0:
                 x = 0
 
-            painter.drawImage(QPoint(x, y), img)
+            painter.drawPixmap(QPoint(x, y), img)
             rect = QRect(QPoint(x, y + row_heights[row]),
                          QSize(col_widths[col], 50))
             painter.drawText(rect, Qt.AlignCenter, unicode(captions[num]))
