@@ -380,7 +380,7 @@ class HistogramPainter(BaseQImagePainter):
 
         self.after_step(False)
 
-def display_table(images, columns=1, captions=None):
+def display_table(images, columns=1, captions=None, transparent=True):
     col_widths = [0 for col in range(columns)]
     row_heights = [0 for row in range(len(images) / columns + 1)]
 
@@ -395,8 +395,12 @@ def display_table(images, columns=1, captions=None):
 
     image = QImage(sum(col_widths) + 20 * (columns - 1),
                    sum(row_heights) + 60 * (len(images) / columns),
-                   QImage.Format_RGB32)
-    image.fill(0xffffffff)
+                   QImage.Format_RGB32 if not transparent
+                   else QImage.Format_ARGB32)
+    if transparent:
+        image.fill(0x00ffffff)
+    else:
+        image.fill(0xff000000)
 
     if captions is None:
         captions = map(str, range(1, len(images) + 1))
