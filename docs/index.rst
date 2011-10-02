@@ -11,8 +11,9 @@ When in a more finished state, its main features will be:
   - Displaying one-dimensional and two-dimensional cellular automatons.
   - Show different types of histograms.
   - Compare different runs of cellular automatons.
-  - Manipulate cellular space through UI or code.
-  - It runs fast, but developing new cellular automatons is simple.
+  - Manipulate cellular space through external programs, the UI or code.
+
+Zasim runs fast, but developing new cellular automatons is simple.
 
 Getting the code
 ================
