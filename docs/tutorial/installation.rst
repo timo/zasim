@@ -16,7 +16,8 @@ for Python. PyQt is, in theory, api-compatible, but the code is currently
 only tested with PySide and is not guaranteed to work with PyQt.
 
 .. [1] The same subset of zasim you get if you have neither SciPy nor
-       PySide is also usable with pypy 1.6 or newer.
+       PySide is also usable with pypy 1.6 or newer, but currently you won't
+       be able to run 2d cellular automata.
 
 .. _NumPy: http://numpy.org
 .. _SciPy: http://scipy.org
