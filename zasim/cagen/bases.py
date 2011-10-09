@@ -18,7 +18,7 @@ class StepFuncVisitor(object):
         """Bind the visitor to a StepFunc.
 
         .. note::
-            Once bonded, the visitor object will refuse to be rebound."""
+            Once bound, the visitor object will refuse to be rebound."""
         assert self.code is None, "%r is already bound to %r" % (self, self.code)
         self.code = code
     def visit(self):

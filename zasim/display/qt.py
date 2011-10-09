@@ -36,7 +36,7 @@ def make_gray_palette(number):
     :returns: the RGB_32 palette and the QColor palette
     """
     if number - 1 > 0xff:
-        raise ValueError("cannot make 8bit grayscale with %d numbers" % number)
+        raise ValueError("cannot make 16bit grayscale with %d numbers" % number)
 
     pal_32 = []
     pal_qc = []
