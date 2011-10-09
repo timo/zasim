@@ -348,16 +348,16 @@ Here you see a few snapshots from the SillyComputation in action.
     sim = SillySim(config=config, base=8)
     disp = TwoDimQImagePainter(sim, scale=3)
     disp.after_step(False) # force rendering of the first config
-    images = [disp._image]
+    images = [disp._image.copy()]
     captions = [sim.step_number]
     for i in range(2):
         sim.step()
-        images.append(disp._image)
+        images.append(disp._image.copy())
         captions.append(sim.step_number)
     for i in range(9):
         for j in range(1 + 2 * i):
             sim.step()
-        images.append(disp._image)
+        images.append(disp._image.copy())
         captions.append(sim.step_number)
     image_data = qimage_to_pngstr(display_table(images, 4, captions))
     alt = "a few pictures from the SillyComputation"
