@@ -72,7 +72,7 @@ Now we can feed that into a StepFunc and see what happens.
         base=7)
     a = SimpleStateAccessor()
     b = BorderSizeEnsurer()
-    l = LinearCellLoop()
+    l = OneDimCellLoop()
     n = ElementaryFlatNeighbourhood()
 
     # use our silly computation from above
@@ -146,9 +146,9 @@ As you can see, the code was successfully inserted. Let's see what it does!
 .. doctest:: a
 
     >>> from zasim.simulator import CagenSimulator
-    >>> from zasim.display.console import LinearConsolePainter
+    >>> from zasim.display.console import OneDimConsolePainter
     >>> sim = CagenSimulator(sf, t)
-    >>> disp = LinearConsolePainter(sim, lines=1)
+    >>> disp = OneDimConsolePainter(sim, lines=1)
     ;-^ #;,+^#-,,;;
     >>> sim.step_pure_py()
     -;-##;,^^--,,;;

@@ -31,12 +31,12 @@ package. In order to create our own starting configuration, we also need
 .. doctest:: a
 
     >>> from zasim import cagen
-    >>> from zasim.display.console import LinearConsolePainter
+    >>> from zasim.display.console import OneDimConsolePainter
     >>> import numpy as np
 
 The most interesting classes for now are
 `zasim.cagen.simulators.ElementarySimulator` and
-`zasim.display.console.LinearConsolePainter`. The first one is simply a
+`zasim.display.console.OneDimConsolePainter`. The first one is simply a
 class for one- or twodimensional elementary cellular automata - in this
 case this just refers to cellular automata that are identified by the
 used neighbourhood and a rule number - and the second one is a class that
@@ -46,7 +46,7 @@ In order to set up a simulator, all we need is to instantiate an
 `ElementarySimulator` object. It will take at least the rule number and
 either a size to be used for a random configuration or the configuration as
 a numpy array. In this case we will create a known configuration. In order
-to display it, too, we can create a `LinearConsolePainter` and pass the
+to display it, too, we can create a `OneDimConsolePainter` and pass the
 simulator as the first argument. It will then, by default, automatically
 print out every step that happens in the simulator on the console.
 
@@ -57,7 +57,7 @@ of zeros. The code looks like this:
 .. testsetup:: a
 
     from zasim import cagen
-    from zasim.display.console import LinearConsolePainter
+    from zasim.display.console import OneDimConsolePainter
     import numpy as np
 
 .. doctest:: a
@@ -65,7 +65,7 @@ of zeros. The code looks like this:
 
     >>> config = np.array([0] * 30 + [1] + [0] * 30)
     >>> sim = cagen.ElementarySimulator(config=config, rule=126)
-    >>> disp = LinearConsolePainter(sim, lines=1)
+    >>> disp = OneDimConsolePainter(sim, lines=1)
                                   #
     >>> sim.step()
                                  ###
@@ -115,18 +115,18 @@ the rule number to use to 126.
 
 ::
 
-    >>> disp = LinearConsolePainter(sim, lines=1)
+    >>> disp = OneDimConsolePainter(sim, lines=1)
 
-The `~zasim.display.console.LinearConsolePainter` takes as first argument
+The `~zasim.display.console.OneDimConsolePainter` takes as first argument
 the simulator to take configurations from and the `lines` keyword argument
 controls how many lines are to be stored in the display. For interactive
 console use, 1 is a good value, because otherwise, after each step, the
-`LinearConsolePainter` would print out its complete data.
+`OneDimConsolePainter` would print out its complete data.
 
 Each call to sim.step will afterwards run the step function on
 the configuration and signal all connected displays - in this
 case just the `display`. Since we supplied the default value for
-`LinearConsolePainter` while constructing it, it has `connect` and
+`OneDimConsolePainter` while constructing it, it has `connect` and
 `auto_output` set to true. The `connect` parameter tells the display
 to directly connect to the `~zasim.simulator.Simulator.changed` and
 `~zasim.simulator.Simulator.updated` signals of the simulator. The other
@@ -141,7 +141,7 @@ also display configurations in-line, right inside the applications, as
 images or HTML. This is how that works:
 
 For a html-based display, you can just set `auto_output` for the
-`LinearConsolePainter` to false and display the configuration like this::
+`OneDimConsolePainter` to false and display the configuration like this::
 
     >>> disp
     [the configuration would be displayed here]
@@ -156,11 +156,11 @@ display function from IPython directtly::
     [the configuration would be displayed here]
 
 If you want to show the config as a picture, rather than an HTML table,
-you can use the LinearQImagePainter instead, which works much like the
-LinearConsolePainter::
+you can use the OneDimQImagePainter instead, which works much like the
+OneDimConsolePainter::
 
-    >>> from zasim.display.qt import LinearQImagePainter
-    >>> disp = LinearQImagePainter(sim, lines=50, scale=4)
+    >>> from zasim.display.qt import OneDimQImagePainter
+    >>> disp = OneDimQImagePainter(sim, lines=50, scale=4)
     >>> disp
     [the configuration would be displayed here]
 

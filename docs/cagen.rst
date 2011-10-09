@@ -69,8 +69,8 @@ This package is split into multiple modules:
 
     The cagen package imports all classes from all submodules, so rather than writing
 
-        >>> from zasim.cagen.loops import LinearCellLoop
+        >>> from zasim.cagen.loops import OneDimCellLoop
 
     you can also write
 
-        >>> from zasim.cagen import LinearCellLoop
+        >>> from zasim.cagen import OneDimCellLoop

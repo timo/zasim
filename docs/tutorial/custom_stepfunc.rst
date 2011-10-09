@@ -29,10 +29,10 @@ interface. Those slots are:
    what order. Here are some examples of `CellLoop` classes that are already
    there:
 
-   - `~zasim.cagen.loops.LinearCellLoop` and `~zasim.cagen.loops.TwoDimCellLoop`
+   - `~zasim.cagen.loops.OneDimCellLoop` and `~zasim.cagen.loops.TwoDimCellLoop`
      loop over all cells in the configuration.
 
-   - `~zasim.cagen.nondeterministic.LinearNondeterministicCellLoop`
+   - `~zasim.cagen.nondeterministic.OneDimNondeterministicCellLoop`
      and the `two-dimensional version
      <zasim.cagen.nondeterministic.TwoDimNondeterministicCellLoop>`
      have a parameter that defines with what probability each of the cells will
@@ -287,7 +287,7 @@ for the generated C++ code:
     >>> # Calculate the normal elementary cellular automaton number 99
     >>> c = ElementaryCellularAutomatonBase(rule=99)
     >>> # loop over a one-dimensional space
-    >>> l = LinearCellLoop()
+    >>> l = OneDimCellLoop()
     >>> # Take the first neighbour from the right and left
     >>> n = ElementaryFlatNeighbourhood()
     >>> # finally, compose the parts into a whole
@@ -340,7 +340,7 @@ Using a wrong combination of StepFuncVisitors will result in such an exception:
     >>> a = SimpleStateAccessor()
     >>> # we carelessly forgot to use the correct loop for the two-dimensional
     >>> # config
-    >>> l = LinearCellLoop()
+    >>> l = OneDimCellLoop()
     >>> n = ElementaryFlatNeighbourhood()
     >>> sf = StepFunc(loop=l, accessor=a, neighbourhood=n, target=t)
     Traceback (most recent call last):
@@ -351,8 +351,8 @@ Using a wrong combination of StepFuncVisitors will result in such an exception:
         feature conflicts:
     <BLANKLINE>
         missing features:
-          (<zasim.cagen.loops.LinearCellLoop object at 0x31eca90>, ['one_dimension'])
+          (<zasim.cagen.loops.OneDimCellLoop object at 0x31eca90>, ['one_dimension'])
       >
 
-This exception shows, that the LinearCellLoop misses the feature `one_dimension`.
+This exception shows, that the OneDimCellLoop misses the feature `one_dimension`.
 
