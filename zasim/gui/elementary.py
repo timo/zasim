@@ -127,21 +127,21 @@ class BaseNeighbourhoodDisplay(QWidget):
         self.bbox = self.neighbourhood.bounding_box()
         self.base = base
 
-        if values is None:
-            values = dict((offs, 0) for offs in self.offsets)
-        if values.keys()[0] not in self.offsets:
-            values = dict((self.offsets[self.names.index(name)],
-                           value) for name, value in values.iteritems())
-        self.values = values.copy()
-
         dims = len(self.bbox)
         assert dims in (1, 2), "Only 1d or 2d neighbourhoods are supported"
 
         if dims == 1:
             # for making the code easier, we will only handle 2d neighbourhoods
             # by trivially turning a 1d neighbourhood into a 2d neighbourhood.
-            self.offsets = tuple((x, 0) for x in self.offsets)
-            self.bbox = self.bbox[0], (0, 1)
+            self.offsets = tuple((0, x[0]) for x in self.offsets)
+            self.bbox = self.bbox[0], (0, 0)
+
+        if values is None:
+            values = dict((offs, 0) for offs in self.offsets)
+        if values.keys()[0] not in self.offsets:
+            values = dict((self.offsets[self.names.index(name)],
+                           value) for name, value in values.iteritems())
+        self.values = values.copy()
 
         self.subwidgets = {}
 
@@ -153,10 +153,11 @@ class BaseNeighbourhoodDisplay(QWidget):
 
         widths  = [[] for _ in range(grid_h)]
         heights = [[] for _ in range(grid_w)]
-        positions = product(range(grid_w),
-                            range(grid_h))
+        positions = product(range(grid_h),
+                            range(grid_w))
         for (row, col) in positions:
-            offset = (row + offs_x, col + offs_y)
+            offset = (col + offs_x, row + offs_y)
+            print offset, self.values
             subwidget = self.create_subwidget(offset, self.values.get(offset, GAP))
             subwidget.setObjectName("cell_%d_%d" % offset)
             self.subwidgets[offset] = subwidget
