@@ -62,12 +62,12 @@ class BaseConsolePainter(QObject):
 
         return value % content
 
-class LinearConsolePainter(BaseConsolePainter):
+class OneDimConsolePainter(BaseConsolePainter):
     """This painter draws the configs as they happen, newer configs pushing
     older configs out through the top."""
 
     def __init__(self, simulator, lines, **kwargs):
-        super(LinearConsolePainter, self).__init__(simulator, **kwargs)
+        super(OneDimConsolePainter, self).__init__(simulator, **kwargs)
 
         self._lines = lines
         self._data = [self.NO_DATA * self._sim.shape[0]]

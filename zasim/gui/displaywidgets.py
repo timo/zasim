@@ -1,5 +1,5 @@
 from ..external.qt import QWidget, QPainter, Qt
-from ..display.qt import LinearQImagePainter, TwoDimQImagePainter
+from ..display.qt import OneDimQImagePainter, TwoDimQImagePainter
 
 class DisplayWidget(QWidget):
     """A Display widget for one- and twodimensional configs.
@@ -33,7 +33,7 @@ class DisplayWidget(QWidget):
             if height is None:
                 height = width
 
-            self.display = LinearQImagePainter(simulator, height, scale=scale)
+            self.display = OneDimQImagePainter(simulator, height, scale=scale)
 
         elif len(shape) == 2:
             if width is None:

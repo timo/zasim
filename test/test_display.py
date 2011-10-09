@@ -40,7 +40,7 @@ class TestCAGen:
     def test_pretty_print_config_1d(self, capsys):
         conf = np.array([1,0,1,1,0])
         br = cagen.BinRule(config=conf, rule=204)
-        display = LinearConsolePainter(br, 1)
+        display = OneDimConsolePainter(br, 1)
 
         out, err = capsys.readouterr()
         assert out == """# ## \n"""

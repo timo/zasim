@@ -1,8 +1,8 @@
 from .bases import CellLoop
 from .compatibility import one_dimension, two_dimensions
 
-class LinearCellLoop(CellLoop):
-    """The LinearCellLoop iterates over all cells in order from 0 to sizeX."""
+class OneDimCellLoop(CellLoop):
+    """The OneDimCellLoop iterates over all cells in order from 0 to sizeX."""
 
     requires_features = [one_dimension]
 
@@ -10,7 +10,7 @@ class LinearCellLoop(CellLoop):
         return "i"
 
     def visit(self):
-        super(LinearCellLoop, self).visit()
+        super(OneDimCellLoop, self).visit()
         self.code.add_code("loop_begin",
                 """for(int i=0; i < sizeX; i++) {""")
         self.code.add_code("loop_end",

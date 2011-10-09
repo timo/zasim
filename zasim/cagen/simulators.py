@@ -2,8 +2,8 @@ from .target import TestTarget
 from .computations import ElementaryCellularAutomatonBase, LifeCellularAutomatonBase
 from .beta_async import BetaAsynchronousAccessor, BetaAsynchronousNeighbourhood
 from .accessors import SimpleStateAccessor
-from .nondeterministic import LinearNondeterministicCellLoop, TwoDimNondeterministicCellLoop
-from .loops import LinearCellLoop, TwoDimCellLoop
+from .nondeterministic import OneDimNondeterministicCellLoop, TwoDimNondeterministicCellLoop
+from .loops import OneDimCellLoop, TwoDimCellLoop
 from .border import SimpleBorderCopier, TwoDimSlicingBorderCopier, BorderSizeEnsurer
 from .stats import SimpleHistogram, ActivityRecord
 from .neighbourhoods import ElementaryFlatNeighbourhood, VonNeumannNeighbourhood, MooreNeighbourhood
@@ -56,9 +56,9 @@ def automatic_stepfunc(size=None, config=None, computation=None,
 
     if len(size) == 1:
         if nondet == 1.0:
-            loop = LinearCellLoop()
+            loop = OneDimCellLoop()
         else:
-            loop = LinearNondeterministicCellLoop(probab=nondet)
+            loop = OneDimNondeterministicCellLoop(probab=nondet)
     elif len(size) == 2:
         if nondet == 1.0:
             loop = TwoDimCellLoop()

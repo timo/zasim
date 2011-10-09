@@ -3,7 +3,7 @@ from .. import external
 external.WANT_GUI = False
 
 from .simulators import BinRule, GameOfLife
-from ..display.console import LinearConsolePainter, TwoDimConsolePainter
+from ..display.console import OneDimConsolePainter, TwoDimConsolePainter
 from ..features import HAVE_WEAVE
 
 def test(width=75, height=None, life=False, copy_borders=True, rule=None, histogram=True, 
@@ -30,7 +30,7 @@ def test(width=75, height=None, life=False, copy_borders=True, rule=None, histog
                 nondet=nondet, beta=beta, copy_borders=copy_borders, base=base)
 
     if height is None:
-        display = LinearConsolePainter(sim_obj, 1)
+        display = OneDimConsolePainter(sim_obj, 1)
     else:
         display = TwoDimConsolePainter(sim_obj)
         def extra_newline():

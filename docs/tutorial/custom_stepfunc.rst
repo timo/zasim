@@ -16,7 +16,7 @@ what happens.
 Holding it all together: `~zasim.cagen.stepfunc.StepFunc`
 ---------------------------------------------------------
 
-The job of the `StepFunc` object is to make sure the single `StepFuncVisitor`
+The job of the `StepFunc` object is to make sure the individual `StepFuncVisitor`
 objects you decide to throw into the blender all play nice together or, if they
 won't, report incompatibilities.
 

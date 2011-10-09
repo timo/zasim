@@ -214,7 +214,7 @@ class TestCAGen:
         computer = cagen.ElementaryCellularAutomatonBase(0)
 
         stepfunc = cagen.StepFunc(
-                loop=cagen.LinearNondeterministicCellLoop(random_generator=rand),
+                loop=cagen.OneDimNondeterministicCellLoop(random_generator=rand),
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.ElementaryFlatNeighbourhood(),
                 extra_code=[cagen.SimpleBorderCopier(),

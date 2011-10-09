@@ -1,5 +1,5 @@
 """This module offers the `BaseQImageRenderer` base class and its two
-subclasses `LinearQImageRenderer` for rendering one-dimensional configs and
+subclasses `OneDimQImageRenderer` for rendering one-dimensional configs and
 `TwoDimQImageRenderer` for rendering two-dimensional configs to QImages.
 
 These classes also offer a _repr_png_ method, that is used by IPython to display
@@ -157,13 +157,13 @@ class BaseQImagePainter(QObject):
             return False
         return True
 
-class LinearQImagePainter(BaseQImagePainter):
+class OneDimQImagePainter(BaseQImagePainter):
     """This class offers drawing for one-dimensional cellular automata, which
     will fill up the display with a line that moves downwards and wraps at the
     bottom."""
 
     def __init__(self, simulator, lines=None, connect=True, **kwargs):
-        """Initialise the LinearQImagePainter.
+        """Initialise the OneDimQImagePainter.
 
         :param simulator: The simulator to use.
         :param lines: The number of lines to display at once.
@@ -177,7 +177,7 @@ class LinearQImagePainter(BaseQImagePainter):
 
         self.palette = PALETTE_32[2:len(self._sim.t.possible_values)]
 
-        super(LinearQImagePainter, self).__init__(
+        super(OneDimQImagePainter, self).__init__(
                 simulator.shape[0], lines, lines,
                 **kwargs)
 

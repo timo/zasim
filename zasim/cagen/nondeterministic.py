@@ -20,11 +20,11 @@ Implementation details
 
 This implementation offers the `NondeterministicCellLoopMixin`, which you can add as
 a first base class next to any kind of `CellLoop`. For your convenience, the classes
-`LinearNondeterministicCellLoop` and `TwoDimNondeterministicCellLoop` are already
+`OneDimNondeterministicCellLoop` and `TwoDimNondeterministicCellLoop` are already
 composed for you.
 """
 from .bases import StepFuncVisitor
-from .loops import LinearCellLoop, TwoDimCellLoop
+from .loops import OneDimCellLoop, TwoDimCellLoop
 
 from random import Random
 import numpy as np
@@ -100,7 +100,7 @@ class NondeterministicCellLoopMixin(StepFuncVisitor):
         super(NondeterministicCellLoopMixin, self).build_name(parts)
         parts.insert(0, "nondeterministic (%s)" % (self.probab))
 
-class LinearNondeterministicCellLoop(NondeterministicCellLoopMixin,LinearCellLoop):
+class OneDimNondeterministicCellLoop(NondeterministicCellLoopMixin,OneDimCellLoop):
     """This Nondeterministic Cell Loop loops over one dimension, skipping cells
     with a probability of probab."""
     pass
