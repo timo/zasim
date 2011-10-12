@@ -52,6 +52,9 @@ class StepFunc(object):
     Do not set this yourself. This is set from the constructor and taken from
     the `target` object!"""
 
+    sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
+    pysections = "init pre_compute compute post_compute after_step finalize".split()
+
     def __init__(self, loop, accessor, neighbourhood, extra_code=[],
                  target=None, size=None, **kwargs):
         """The Constructor creates a weave-based step function from the
@@ -73,13 +76,11 @@ class StepFunc(object):
 
         super(StepFunc, self).__init__(**kwargs)
 
-        # those are for generated c code
-        self.sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
+        # prepare the sections for C code
         self.code = dict((s, []) for s in self.sections)
         self.code_text = ""
 
-        # those are for composed python functions
-        self.pysections = "init pre_compute compute post_compute after_step finalize".split()
+        # prepare the sections for python code
         self.pycode = dict((s, []) for s in self.pysections)
         self.pycode_indent = dict((s, 4) for s in self.pysections)
         for section in "pre_compute compute post_compute".split():
