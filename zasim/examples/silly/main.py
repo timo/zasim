@@ -71,7 +71,7 @@ class SillySim(cagen.simulators.CagenSimulator):
             size = config.shape
 
         computer = SillyComputation()
-        neighbourhood = cagen.neighbourhood.VonNeumannNeighbourhood
+        neighbourhood = cagen.neighbourhoods.VonNeumannNeighbourhood
 
         stepfunc = cagen.simulators.automatic_stepfunc(size=size, config=config, computation=computer,
                 nondet=nondet, beta=beta,
