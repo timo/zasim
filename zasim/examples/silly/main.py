@@ -65,7 +65,7 @@ class SillyComputation(cagen.bases.Computation):
         self.code.add_code("compute",
            """result = second_sup;""")
 
-class SillySim(cagen.simulator.CagenSimulator):
+class SillySim(cagen.simulators.CagenSimulator):
     def __init__(self, size=None, config=None, base=5, nondet=1, beta=1, copy_borders=True, histogram=True, activity=False):
         if size is None:
             size = config.shape

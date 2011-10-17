@@ -299,3 +299,4 @@ Since the picture above is re-generated each time the documentation changes,
 I cannot describe what exactly happens in the picture above, but you may also
 notice, that chessboard like local configurations will become semi-stable,
 switching its colors every step.
+
