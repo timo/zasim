@@ -248,6 +248,8 @@ The generated C code for a simple example looks like this:
                     }
     /* from section after_step */
 
+**
+
 The fruit of our efforts
 ------------------------
 
@@ -257,17 +259,18 @@ Here you see a few snapshots from the SillyComputation in action.
 
     from zasim.cagen import *
     from zasim.simulator import CagenSimulator
-    from zasim.examples.silly.main import SillyComputation, SillySim
+    from zasim.examples.silly.main import SillySim
     import numpy as np
 
     from zasim.display.qt import TwoDimQImagePainter, qimage_to_pngstr, display_table
     from zasim.external.qt import QApplication
 
     base = 8
-    size = (50, 50)
+    w, h = 50, 50
+    size = w, h
     black = 0.85
 
-    rands = np.random.rand(*size)
+    rands = np.random.rand(w, h)
     config = np.random.randint(0, base, size)
     config[rands < black] = 0
 
