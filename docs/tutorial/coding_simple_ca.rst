@@ -214,12 +214,17 @@ And now we can put the configuration into the simulator, like this:
 
     >>> sim = cagen.GameOfLife(config=config)
     >>> disp = TwoDimConsolePainter(sim)
+    <BLANKLINE>
       #
-       #
-     ###
-             #
-             #
-             #
+    # #
+     ##
+    <BLANKLINE>
+    <BLANKLINE>
+    <BLANKLINE>
+    <BLANKLINE>
+    <BLANKLINE>
+       ###
+    <BLANKLINE>
 
 Stepping a few times will show the typical glider movement, until it
 collides with the blocks at the end. This specific configuration will
