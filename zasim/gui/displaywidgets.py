@@ -94,7 +94,7 @@ class DisplayWidget(QWidget):
                 self._sim.set_config_value(new_draw_pos[0])
         else:
             if self.last_draw_pos != new_draw_pos:
-                self._sim.set_config_value(new_draw_pos[::-1])
+                self._sim.set_config_value(new_draw_pos)
 
     def wheelEvent(self, event):
         num_degrees = event.delta() / 8.
