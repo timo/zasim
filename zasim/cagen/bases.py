@@ -21,6 +21,7 @@ class StepFuncVisitor(object):
             Once bound, the visitor object will refuse to be rebound."""
         assert self.code is None, "%r is already bound to %r" % (self, self.code)
         self.code = code
+
     def visit(self):
         """Adds code to the bound step func.
 

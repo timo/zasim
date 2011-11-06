@@ -48,8 +48,7 @@ class BaseSimulator(QObject):
     #"""Is emitted when only a list of cells have changed."""
 
     updated = Signal()
-    """Is emitted when the shape of changed cells is unknown or not
-    interesting."""
+    """Is emitted when the conf has changed as result of a step."""
 
     changed = Signal()
     """Is emitted when the configuration has changed, but there was no step."""
