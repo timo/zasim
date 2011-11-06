@@ -37,9 +37,6 @@ class CompatibilityException(Exception):
   >""" % ("\n      ".join(map(str, self.conflicts)),
           "\n      ".join(map(str, self.missing)))
 
-class CompatibilityFeature(object):
-    pass
-
 one_dimension = "one_dimension"
 """The configuration has one dimension."""
 
@@ -54,3 +51,10 @@ histogram = "histogram"
 
 activity = "activity"
 """This StepFunc calculates the Activity."""
+
+no_python_code = "no_python_code"
+"""This StepFunc doesn't generate pure python code."""
+
+no_weave_code = "no_weave_code"
+"""This StepFunc doesn't generate weave code."""
+
