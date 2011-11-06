@@ -329,7 +329,7 @@ class StepFunc(object):
 
     def __del__(self):
         try:
-            self.codefile.file.close()
+            self.codefile.close()
         except AttributeError:
             pass # the file was never opened, no need to close it.
 
