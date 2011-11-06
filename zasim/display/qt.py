@@ -287,9 +287,8 @@ class TwoDimQImagePainter(BaseQImagePainter):
     def draw_conf(self):
         try:
             update_step, conf = self._queue.get_nowait()
-            conf = conf.transpose()
             w, h = self._width, self._height
-            nconf = np.empty((h, w), np.uint32, "C")
+            nconf = np.empty((w, h), np.uint32, "F")
 
             if not self._invert_odd or self._odd:
                 nconf[conf==0] = 0

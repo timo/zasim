@@ -95,14 +95,14 @@ class TwoDimConsolePainter(BaseConsolePainter):
     def __init__(self, simulator, **kwargs):
         super(TwoDimConsolePainter, self).__init__(simulator, **kwargs)
 
-        self._data = [[self.NO_DATA * self._sim.shape[0]]
-                      for i in range(self._sim.shape[1])]
+        self._data = [[self.NO_DATA * self._sim.shape[1]]
+                      for i in range(self._sim.shape[0])]
 
         self.after_step()
 
     def draw_conf(self, update_step=True):
         self._data = []
-        for line in self._last_conf:
+        for line in self._last_conf.transpose():
             newline = "".join(self.PALETTE[value] for value in line)
             self._data.append(newline)
 
