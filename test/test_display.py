@@ -9,7 +9,7 @@ from .testutil import *
 import pytest
 import tempfile
 
-class TestCAGen:
+class TestDisplay:
     @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pretty_print_config_2d(self, capsys):
         gconf = GLIDER[0]
@@ -18,9 +18,9 @@ class TestCAGen:
 
         out, err = capsys.readouterr()
         assert out == """\
- #   
   #  
-###  
+# #  
+ ##  
      
      
 """
@@ -30,9 +30,9 @@ class TestCAGen:
             display.export(tmpfile.name)
 
         assert open(name).read() == """\
- #   
   #  
-###  
+# #  
+ ##  
      
      
 """
