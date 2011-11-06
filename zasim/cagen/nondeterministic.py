@@ -91,10 +91,10 @@ class NondeterministicCellLoopMixin(StepFuncVisitor):
         # FIXME how do i get the randseed out without using np.array?
         target.randseed = np.array([self.random.random()])
 
-    def bind(self, stepfunc):
-        super(NondeterministicCellLoopMixin, self).bind(stepfunc)
-        stepfunc.random = self.random
-        stepfunc.consts["NONDET_PROBAB"] = self.probab
+    def bind(self, code):
+        super(NondeterministicCellLoopMixin, self).bind(code)
+        code.random = self.random
+        code.consts["NONDET_PROBAB"] = self.probab
 
     def build_name(self, parts):
         super(NondeterministicCellLoopMixin, self).build_name(parts)

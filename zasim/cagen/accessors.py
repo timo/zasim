@@ -49,10 +49,10 @@ class SimpleStateAccessor(StateAccessor):
             self.code.consts[sizename] = size
         self.code.attrs.extend(["nconf", "cconf"])
 
-    def bind(self, target):
+    def bind(self, code):
         """Get the bounding box from the neighbourhood object,
         set consts for borders."""
-        super(SimpleStateAccessor, self).bind(target)
+        super(SimpleStateAccessor, self).bind(code)
         bb = self.code.neigh.bounding_box()
         mins = [abs(a[0]) for a in bb]
         maxs = [abs(a[1]) for a in bb]
