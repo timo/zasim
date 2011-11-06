@@ -37,6 +37,10 @@ class CompatibilityException(Exception):
   >""" % ("\n      ".join(map(str, self.conflicts)),
           "\n      ".join(map(str, self.missing)))
 
+class NoCodeGeneratedException(Exception):
+    """When both the no_python_code and the no_weave_code feature are present,
+    no valid code has actually been generated."""
+
 one_dimension = "one_dimension"
 """The configuration has one dimension."""
 

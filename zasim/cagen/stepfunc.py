@@ -3,14 +3,15 @@
 from __future__ import print_function
 import new
 
-from .utils import dedent_python_code, offset_pos
-from .compatibility import CompatibilityException, one_dimension, two_dimensions
+from .utils import dedent_python_code
+from .compatibility import NoCodeGeneratedException, CompatibilityException, one_dimension, two_dimensions, no_python_code, no_weave_code
 
 from ..features import HAVE_WEAVE, HAVE_TUPLE_ARRAY_INDEX, tuple_array_index_fixup
 
 # TODO how do i get functions for pure-py-code in there without making it ugly?
 from itertools import product
 from collections import defaultdict
+from .utils import offset_pos
 
 import sys
 import tempfile
@@ -148,6 +149,9 @@ class StepFunc(object):
                 if incompatibility in self.features:
                     conflicts.append((visitor, incompatibility, providers[incompatibility]))
 
+        if no_weave_code in self.features and no_python_code in self.features:
+            raise NoCodeGeneratedException()
+
         return conflicts, missing
 
     def add_code(self, hook, code):
@@ -184,56 +188,72 @@ class StepFunc(object):
 
         .. note::
             Once this function is run, no more visitors can be added."""
-        # freeze visitors and code bits
-        self.visitors = tuple(self.visitors)
-        for hook in self.code.keys():
-            self.code[hook] = tuple(self.code[hook])
 
-        code_bits = []
-        for section in self.sections:
-            code_bits.append("/* from section %s */" % section)
-            code_bits.extend(self.code[section])
-        self.code_text = "\n".join(code_bits)
+        if no_weave_code not in self.features:
+            # freeze visitors and code bits
+            self.visitors = tuple(self.visitors)
+            for hook in self.code.keys():
+                self.code[hook] = tuple(self.code[hook])
 
-        # TODO run the code once with dummy data, that will still cause the
-        #      types to match - the only way to compile a function with weave
-        #      without running it, too, would be to copy most of the code from
-        #      weave.inline_tools.attempt_function_call.
+            code_bits = []
+            for section in self.sections:
+                code_bits.append("/* from section %s */" % section)
+                code_bits.extend(self.code[section])
+            self.code_text = "\n".join(code_bits)
 
-        # freeze python code bits
-        for hook in self.pycode.keys():
-            self.pycode[hook] = tuple(self.pycode[hook])
+            # TODO run the code once with dummy data, that will still cause the
+            #      types to match - the only way to compile a function with weave
+            #      without running it, too, would be to copy most of the code from
+            #      weave.inline_tools.attempt_function_call.
+        else:
+            def error_weave_inline(self):
+                raise NotImplementedError("Parts of this stepfunc didn't generate"
+                        " valid weave code.")
+            self.step_inline = new.instancemethod(error_weave_inline, self, self.__class__)
 
-        code_bits = ["""def step_pure_py(self):"""]
-        def append_code(section):
-            code_bits.append("# from hook %s" % section)
-            code_bits.append("\n".join(self.pycode[section]))
+        if no_python_code not in self.features:
+            # freeze python code bits
+            for hook in self.pycode.keys():
+                self.pycode[hook] = tuple(self.pycode[hook])
 
-        append_code("init")
-        code_bits.append("    for pos in self.loop.get_iter():")
-        append_code("pre_compute")
-        append_code("compute")
-        append_code("post_compute")
-        append_code("after_step")
-        append_code("finalize")
-        code_bits.append("")
-        code_text = "\n".join(code_bits)
+            code_bits = ["""def step_pure_py(self):"""]
+            def append_code(section):
+                code_bits.append("# from hook %s" % section)
+                code_bits.append("\n".join(self.pycode[section]))
 
-        self.codefile = tempfile.NamedTemporaryFile(prefix="zasim_cagen_", suffix=".py", delete=True)
-        with self.codefile.file:
-            self.codefile.write(code_text)
-            self.codefile.file.flush()
+            append_code("init")
+            code_bits.append("    for pos in self.loop.get_iter():")
+            append_code("pre_compute")
+            append_code("compute")
+            append_code("post_compute")
+            append_code("after_step")
+            append_code("finalize")
+            code_bits.append("")
+            code_text = "\n".join(code_bits)
 
-        myglob = globals()
-        myloc = locals()
-        myglob.update(self.consts)
-        execfile(self.codefile.name, myglob, myloc)
-        self.pure_py_code_text = code_text
-        self.step_pure_py = new.instancemethod(myloc["step_pure_py"], self, self.__class__)
+            self.codefile = tempfile.NamedTemporaryFile(prefix="zasim_cagen_", suffix=".py", delete=True)
+            with self.codefile.file:
+                self.codefile.write(code_text)
+                self.codefile.file.flush()
+
+            myglob = globals()
+            myloc = locals()
+            myglob.update(self.consts)
+            execfile(self.codefile.name, myglob, myloc)
+            self.pure_py_code_text = code_text
+            self.step_pure_py = new.instancemethod(myloc["step_pure_py"], self, self.__class__)
+        else:
+            def error_python(self):
+                raise NotImplementedError("Parts of this stepfunc didn't generate"
+                        " valid python code.")
+            self.step_pure_py = new.instancemethod(error_python, self, self.__class__)
 
     def step_inline(self):
         """Run a step of the simulator using weave.inline and the generated
-        C code."""
+        C code.
+
+        If no C code was generated (cf. no_weave_code), this method will be
+        replaced with a function that just raises an Exception."""
         local_dict=dict((k, getattr(self.target, k)) for k in self.attrs)
         local_dict.update(self.consts)
         attrs = self.attrs + self.consts.keys()
