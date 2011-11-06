@@ -117,7 +117,7 @@ class AsciiInitialConfiguration(BaseInitialConfiguration):
         result = np.empty((len(lines), len(lines[0])), dtype=dtype)
         for value, entry in self.palette.iteritems():
             result[whole_conf == entry] = value
-        return result
+        return result.transpose()
 
 class ImageInitialConfiguration(BaseInitialConfiguration):
     """Import an image file as a configuration."""
@@ -142,11 +142,11 @@ class ImageInitialConfiguration(BaseInitialConfiguration):
             image = image.scaled(image.width() / self.scale,
                                  image.height() / self.scale)
         nparr = np.frombuffer(image.bits(), dtype=np.uint32)
-        nparr = nparr.reshape((image.height(), image.width()))
-        result = np.ones((image.height(), image.width()), dtype=dtype)
+        nparr = nparr.reshape((image.width(), image.height()), order="F")
+        result = np.ones((image.width(), image.height()), dtype=dtype)
 
         for value, color in self.palette.iteritems():
             result[nparr == color] = value
 
-        return result.transpose()
+        return result
 
