@@ -1,3 +1,4 @@
+import numpy as np
 
 
 ## The cellular automaton proposed by John von Neumann
@@ -21,7 +22,7 @@
 #                               |----------------------------------> special
 #
 # \endverbatim
-class vonNeumann ( CA ):
+class vonNeumann ( object ):
     palette = []
     ## The constructor
     def __init__( self, sizeX, sizeY, confFile ):
@@ -136,181 +137,80 @@ class vonNeumann ( CA ):
                 self.cList[self.cCounter] = i
                 self.cCounter += 1
 
-    def click_on_cell( self, x, y, mousekey, mods ):
-        EPS = 128
-        SPECIAL = 1024
-        CSTATE = 2048
-        SSTATE = 4096
-        TSTATE = 6144
+    #def click_on_cell( self, x, y, mousekey, mods ):
+        #EPS = 128
+        #SPECIAL = 1024
+        #CSTATE = 2048
+        #SSTATE = 4096
+        #TSTATE = 6144
 
-        if x <= 0 or x >= self.sizeX-1 or y <= 0 or y >= self.sizeY-1:
-            return
-        state = self.states[self.displayConf[x][y]]
-        s = 0
+        #if x <= 0 or x >= self.sizeX-1 or y <= 0 or y >= self.sizeY-1:
+            #return
+        #state = self.states[self.displayConf[x][y]]
+        #s = 0
 
-        if e.button == 1:
-            # T-states
-            s = TSTATE
-            if mods & pygame.KMOD_LCTRL:
-                # eps
-                if state & EPS == 0 and (state & TSTATE == TSTATE):
-                    # to just insert a new eps without changing anything
-                    self.currConf[x][y] = state+EPS
-                    self.nextConf[x][y] = state+EPS
-                    self.enlist(x,y)
-                    return
-                s += EPS
-            if mods & pygame.KMOD_LSHIFT:
-                # u
-                s += SPECIAL
-            if state == 0:
-                for nbs in ( self.states[self.displayConf[x+1][y]],
-                             self.states[self.displayConf[x][y-1]],
-                             self.states[self.displayConf[x-1][y]],
-                             self.states[self.displayConf[x][y+1]] ):
-                    if ( nbs & TSTATE == TSTATE ) \
-                            and ( ( mods & pygame.KMOD_LSHIFT == state & SPECIAL ) \
-                                      and ( mods & pygame.KMOD_LCTRL == state & EPS ) ):
-                        s += nbs & 768
-                        self.currConf[x][y] = s
-                        self.nextConf[x][y] = s
-                        self.enlist(x,y)
-                        return
-            s += (((state&768)+256) & 768)
-            self.currConf[x][y] = s
-            self.nextConf[x][y] = s
-            self.enlist(x,y)
-        if e.button == 3:
-            if mods & pygame.KMOD_LCTRL:
-                # C-states
-                s = CSTATE
-                s += (((state&3)+1) & 3)
-            elif mods & pygame.KMOD_LSHIFT:
-                # S-states
-                if state == 0 or (state & SSTATE) != SSTATE:
-                    s = SSTATE
-                    self.currConf[x][y] = s
-                    self.nextConf[x][y] = s
-                    self.enlist(x,y)
-                    return
-                sIdx = ( ( self.displayableStateDict[state] - 5 + 1 ) % 8 ) + 5
-                s = self.states[sIdx]
-            else:
-                # U-state
-                s = 0
-            self.currConf[x][y] = s
-            self.nextConf[x][y] = s
-            self.enlist(x,y)
+        #if e.button == 1:
+            ## T-states
+            #s = TSTATE
+            #if mods & pygame.KMOD_LCTRL:
+                ## eps
+                #if state & EPS == 0 and (state & TSTATE == TSTATE):
+                    ## to just insert a new eps without changing anything
+                    #self.currConf[x][y] = state+EPS
+                    #self.nextConf[x][y] = state+EPS
+                    #self.enlist(x,y)
+                    #return
+                #s += EPS
+            #if mods & pygame.KMOD_LSHIFT:
+                ## u
+                #s += SPECIAL
+            #if state == 0:
+                #for nbs in ( self.states[self.displayConf[x+1][y]],
+                             #self.states[self.displayConf[x][y-1]],
+                             #self.states[self.displayConf[x-1][y]],
+                             #self.states[self.displayConf[x][y+1]] ):
+                    #if ( nbs & TSTATE == TSTATE ) \
+                            #and ( ( mods & pygame.KMOD_LSHIFT == state & SPECIAL ) \
+                                      #and ( mods & pygame.KMOD_LCTRL == state & EPS ) ):
+                        #s += nbs & 768
+                        #self.currConf[x][y] = s
+                        #self.nextConf[x][y] = s
+                        #self.enlist(x,y)
+                        #return
+            #s += (((state&768)+256) & 768)
+            #self.currConf[x][y] = s
+            #self.nextConf[x][y] = s
+            #self.enlist(x,y)
+        #if e.button == 3:
+            #if mods & pygame.KMOD_LCTRL:
+                ## C-states
+                #s = CSTATE
+                #s += (((state&3)+1) & 3)
+            #elif mods & pygame.KMOD_LSHIFT:
+                ## S-states
+                #if state == 0 or (state & SSTATE) != SSTATE:
+                    #s = SSTATE
+                    #self.currConf[x][y] = s
+                    #self.nextConf[x][y] = s
+                    #self.enlist(x,y)
+                    #return
+                #sIdx = ( ( self.displayableStateDict[state] - 5 + 1 ) % 8 ) + 5
+                #s = self.states[sIdx]
+            #else:
+                ## U-state
+                #s = 0
+            #self.currConf[x][y] = s
+            #self.nextConf[x][y] = s
+            #self.enlist(x,y)
 
-    def getConf( self ):
-        for i in range( 1, self.sizeX-1 ):
-            for j in range( 1, self.sizeY-1 ):
-                if self.displayableStateDict.has_key( self.currConf[i][j] ):
-                    self.displayConf[i][j] = self.displayableStateDict[self.currConf[i][j]]
-                else:
-                    print "Unkown state in cell", i, j, ":", self.currConf[i][j]
-        return self.displayConf
-
-    def importConf( self, filename ):
-        with open( filename, 'r' ) as f:
-            line = f.readline()
-            while line[0:1] == "#":
-                line = f.readline()
-            if line[0:4] != "x = ":
-                # fall back to familiar CASimulator/Xasim fileformat
-                CA.importConf( self, filename )
-            else:
-
-                line = line[4:]
-                sizeX = 0
-                sizeX = int(line[0:line.find(",")])+2
-                line = line[line.find("y = ")+4:]
-                sizeY = 0
-                sizeY = int(line[0:line.find(",")])+2
-                line = line[line.find("rule = ")+7:]
-                rule = line[:-1]
-
-                if sizeX != self.sizeX or sizeY != self.sizeY:
-                    self.resize( sizeX, sizeY )
-
-                rleStateDict = { ".": "U",
-                                 "A": "S",     "B": "S0",    "C": "S1",    "D": "S00",
-                                 "E": "S01",   "F": "S10",   "G": "S11",   "H": "S000",
-                                 "I": "T000",  "J": "T010",  "K": "T020",  "L": "T030",
-                                 "M": "T001",  "N": "T011",  "O": "T021",  "P": "T031",
-                                 "Q": "T100",  "R": "T110",  "S": "T120",  "T": "T130",
-                                 "U": "T101",  "V": "T111",  "W": "T121",  "X": "T131",
-                                 "pA": "C00",  "pB": "C01",  "pC": "C10",  "pD": "C11" }
-
-# 63.8ILILILILIL$63.J.J.pA.pA.IJIJIJIJL$63.J.J.J.J9.IL$57.IL4IpAIpAIpAI
-# pAIpAIpAIpAIpA.LK$57.JIJ3.L.L.2LKLKLKLKLK.IL$57.J5.L.L.LILILILILIL.LK
-# .IL$57.J5.L.L.L.L.L.L.pA.pA.L2.JL$57.J5.16IL2.JL$57.J15.L6K2.JL$52.IL
-# IL.J5.10ILILILILILJL$52.JLJL.J5.J.J.pA.pA.pA.IJIJLJLJLJL$52.JLJL.J.IL
-# 2.J.J.J.J.J5.IJIJIJL$52.JLJL.J.J3IpAIpAIpAIpAIpAIpAIpA.L6K$52.JLJL.J.
-# J3.L.L.L.L.L.2LK.IL$52.JLJL.J.J3.L.L.L.L.L.LIL.JL$52.JLJL.J.J3.L.L.L.
-# L.L.2LK.JL$52.JLJL.J.J3.L.L.L.L.L.LIL.JLIL$52.JLJL.J.J3.L.L.L.pA.pA.p
-# .L.JLJL$52.JLJL.J.J3.14IJIJ5IL$52.JLJLIpAIpA25IL$52.JIJI2J.J25.L$52.J
-
-
-                # since RLE-configuration files don't imply ghostcells, they are added here!
-                x = 1
-                y = 1
-                mx = 0
-                importRegexp = re.compile( "((\d*)(\.|(p*)[A-X]))|(\$)|(\!)" )
-                for line in f:
-                    content = importRegexp.findall( line[0:-2] )
-                    for c in content:
-                        if c[0] != "":
-                            if c[1] != "":
-                                r = int(c[1])
-                            else:
-                                r = 1
-                            for s in range(r):
-                                self.currConf[x][y] = self.nameStateDict[rleStateDict[c[2]]]
-                                x += 1
-                        elif c[4] != "":
-                            if x > mx:
-                                mx = x
-                            x = 1
-                            y += 1
-                        elif c[5] != "":
-                            break
-
-                self.nextConf = self.currConf.copy()
-                f.close()
-
-        # now, get all active cells:
-        for x in range(1,self.sizeX-1):
-            for y in range(1,self.sizeY-1):
-                if self.currConf[x,y] in ( 2049, 2050, 2051, 4096, 4128, 4144, 4160,
-                                           4168, 4176, 4184, 4192, 6272, 6528, 6784,
-                                           7040, 7296, 7552, 7808, 8064 ):
-                    self.enlist(x,y)
-
-
-    def loopFunc( self ):
-        self.step()
-
-    def resize( self, sizeX, sizeY = None ):
-        CA.resize( self, sizeX, sizeY )
-        self.displayConf = np.zeros( self.size, int )
-        self.cActArr = np.zeros( self.sizeX*self.sizeY, bool )
-        self.nActArr = np.zeros( self.sizeX*self.sizeY, bool )
-        self.cList = np.zeros( (self.sizeX*self.sizeY), int )
-        self.nList = np.zeros( (self.sizeX*self.sizeY), int )
-
-    def setConf( self, conf ):
-        if conf.shape != self.currConf.shape:
-            self.resize( conf[0].size, conf[1].size )
-        for i in range( 1, self.sizeX-1 ):
-            for j in range( 1, self.sizeY-1 ):
-                self.currConf[i][j] = self.states[conf[i][j]]
-                self.nextConf[i][j] = self.states[conf[i][j]]
-
-    ## Calls the actual function that is used to calculate the next configuration
-    def step( self ):
-        self.updateAllCellsWeaveInlineFewStates()
-#        self.updateAllCellsWeaveInline()
+    #def getConf( self ):
+        #for i in range( 1, self.sizeX-1 ):
+            #for j in range( 1, self.sizeY-1 ):
+                #if self.displayableStateDict.has_key( self.currConf[i][j] ):
+                    #self.displayConf[i][j] = self.displayableStateDict[self.currConf[i][j]]
+                #else:
+                    #print "Unkown state in cell", i, j, ":", self.currConf[i][j]
+        #return self.displayConf
 
     ## Updates all cells using scipy.weave.inline
     def updateAllCellsWeaveInline( self ):
@@ -522,15 +422,6 @@ class vonNeumann ( CA ):
     }
   }
 """
-
-        cconf = self.currConf
-        nconf = self.nextConf
-        sizeX = self.sizeX
-        sizeY = self.sizeY
-        weave.inline( vonNeumannCode, [ 'cconf', 'nconf', 'sizeX', 'sizeY' ],
-                      type_converters = converters.blitz,
-                      compiler = 'gcc' )
-        self.currConf = self.nextConf.copy()
 
 
     ## Update cells, but only those that changed or are in the neighbourhood of one of those.
@@ -783,22 +674,3 @@ for ( i = 0; i < cCounter; i++ ) {
 }
 return_val = nCounter;
 """
-        cconf = self.currConf
-        nconf = self.nextConf
-        sizeX = self.sizeX
-        sizeY = self.sizeY
-        cCounter = self.cCounter
-        cList = self.cList
-        nList = self.nList
-        cActArr = self.cActArr
-        nActArr = self.nActArr
-        print "IN PY-1: cCounter", cCounter
-
-        self.cCounter = weave.inline( vonNeumannCodeFewStates, [ 'cconf', 'nconf', 'sizeX', 'sizeY',
-                                                                 'cList', 'nList', 'cCounter',
-                                                                 'cActArr', 'nActArr' ],
-                                      type_converters = converters.blitz,
-                                      compiler = 'gcc' )
-        self.currConf = self.nextConf.copy()
-        self.cActArr, self.nActArr = self.nActArr.copy(), self.cActArr.copy()
-        self.cList = self.nList
