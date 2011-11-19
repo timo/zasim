@@ -54,7 +54,7 @@ class StepFunc(object):
     the `target` object!"""
 
     sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
-    pysections = "init pre_compute compute post_compute after_step finalize".split()
+    pysections = "init pre_compute compute post_compute loop_end after_step finalize".split()
 
     def __init__(self, loop, accessor, neighbourhood, extra_code=[],
                  target=None, size=None, **kwargs):
@@ -84,7 +84,7 @@ class StepFunc(object):
         # prepare the sections for python code
         self.pycode = dict((s, []) for s in self.pysections)
         self.pycode_indent = dict((s, 4) for s in self.pysections)
-        for section in "pre_compute compute post_compute".split():
+        for section in "pre_compute compute post_compute loop_end".split():
             self.pycode_indent[section] = 8
 
         self.attrs = []
