@@ -1,5 +1,6 @@
 from .bases import CellLoop
 from .compatibility import one_dimension, two_dimensions
+from .utils import offset_pos
 
 import numpy as np
 
@@ -62,7 +63,12 @@ class SparseCellLoopBase(CellLoop):
 
     This is based on a list of positions called `sparse_list` as well as a mask
     of booleans called `sparse_mask`, that only internally gets used to make
-    sure, that no fields are enlisted more than once."""
+    sure, that no fields are enlisted more than once.
+
+    The `sparse_list` is duplicated into the property `prev_sparse_list`, from
+    which reads are performed.
+
+    For the pure-py version, a normal python set is used."""
 
     def set_target(self, target):
         """Adds the activity mask and position list to the target attributes."""
@@ -71,6 +77,7 @@ class SparseCellLoopBase(CellLoop):
         size = self.calculate_size()
         target.sparse_mask = np.zeros(size, dtype=np.bool)
         target.sparse_list = np.zeros(size, dtype=np.int)
+        target.sparse_set = set()
 
     def calculate_size(self):
         """Calculate how big the mask and list have to be.
@@ -78,4 +85,9 @@ class SparseCellLoopBase(CellLoop):
         The current strategy is to just allocate one field for each field of the
         configuration."""
         return reduce(lambda a, b: a * b, self.target.size)
+
+    def mark_cell_py(self, pos):
+        self.sparse_set.update([offset_pos(pos, offs) for offs in
+                                self.code.neigh.affected_cells()])
+
 
