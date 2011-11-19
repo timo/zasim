@@ -1,6 +1,8 @@
 from .bases import CellLoop
 from .compatibility import one_dimension, two_dimensions
 
+import numpy as np
+
 class OneDimCellLoop(CellLoop):
     """The OneDimCellLoop iterates over all cells in order from 0 to sizeX."""
 
@@ -53,4 +55,27 @@ class TwoDimCellLoop(CellLoop):
 
     def build_name(self, parts):
         parts.insert(0, "2d")
+
+class SparseCellLoopBase(CellLoop):
+    """The SparseCellLoopBase offers common code for loops that only calculate
+    those fields, where the neighbours have changed in the last step.
+
+    This is based on a list of positions called `sparse_list` as well as a mask
+    of booleans called `sparse_mask`, that only internally gets used to make
+    sure, that no fields are enlisted more than once."""
+
+    def set_target(self, target):
+        """Adds the activity mask and position list to the target attributes."""
+        super(SparseCellLoopBase, self).set_target(target)
+
+        size = self.calculate_size()
+        target.sparse_mask = np.zeros(size, dtype=np.bool)
+        target.sparse_list = np.zeros(size, dtype=np.int)
+
+    def calculate_size(self):
+        """Calculate how big the mask and list have to be.
+
+        The current strategy is to just allocate one field for each field of the
+        configuration."""
+        return reduce(lambda a, b: a * b, self.target.size)
 

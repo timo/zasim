@@ -100,6 +100,11 @@ class SimpleNeighbourhood(Neighbourhood):
         if self.neighbourhood_name:
             parts.append("with %s" % (self.neighbourhood_name))
 
+    def affected_cells(self):
+        """Get all positions of cells that have the cell at (0, 0) in their
+        neighbourhood."""
+        return [map(lambda x:-x, offs) for offs in self.offsets]
+
 def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the neighbourhood used by the elementary cellular automatons.
 
