@@ -1,5 +1,5 @@
 from .bases import CellLoop
-from .compatibility import one_dimension, two_dimensions
+from .compatibility import one_dimension, two_dimensions, activity
 from .utils import offset_pos
 
 import numpy as np
@@ -66,9 +66,13 @@ class SparseCellLoopBase(CellLoop):
     sure, that no fields are enlisted more than once.
 
     The `sparse_list` is duplicated into the property `prev_sparse_list`, from
-    which reads are performed.
+    which reads are performed. Additionally, the number of active cells is
+    taken from an "activity" stats before the loop to see how many valid
+    entries exist in the array.
 
     For the pure-py version, a normal python set is used."""
+
+    requires_features = [activity]
 
     def set_target(self, target):
         """Adds the activity mask and position list to the target attributes."""
@@ -90,4 +94,17 @@ class SparseCellLoopBase(CellLoop):
         self.sparse_set.update([offset_pos(pos, offs) for offs in
                                 self.code.neigh.affected_cells()])
 
+    def get_iter(self):
+        return iter(self.target.sparse_set)
 
+    def visit(self):
+        super(SparseCellLoopBase, self).visit()
+        self.code.add_py_hook("loop_end",
+            """if was_active: self.loop.mark_cell_py(pos)""")
+        #self.code.add_code("loop_begin",
+            #"""int valid_positions = activity(1);
+               #for(int i=0; i < %s; i++) {
+                  #)
+        #self.code.add_code("loop_end",
+                #"""}
+                #}""")

@@ -63,7 +63,9 @@ class ActivityRecord(ExtraStats):
     array with the value of how many fields have changed their state in the last
     step and how many did not.
 
-    A value of -1 stands for "no data"."""
+    A value of -1 stands for "no data".
+
+    Additionally, the local variable `was_active` is available after post_compute."""
 
     provides_features = [activity]
 
@@ -74,14 +76,15 @@ class ActivityRecord(ExtraStats):
         else:
             center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
         self.code.add_code("localvars",
-                """activity(0) = 0; activity(1) = 0;""")
+                """activity(0) = 0; activity(1) = 0; bool was_active;""")
         self.code.add_code("post_compute",
-                """activity(result != %(center)s) += 1;""" % dict(center=center_name))
+                """was_active = result != %(center)s; activity(was_active) += 1;""" % dict(center=center_name))
         self.code.add_py_hook("init",
                 """self.target.activity[0] = 0; self.target.activity[1] = 0""")
         self.code.add_py_hook("post_compute", """
             # count up the activity
-            self.target.activity[int(result != %(center)s)] += 1"""
+            was_active = result != %(center)s
+            self.target.activity[int(was_active)] += 1"""
                 % dict(center=center_name))
 
     def new_config(self):
