@@ -57,7 +57,7 @@ class TwoDimCellLoop(CellLoop):
     def build_name(self, parts):
         parts.insert(0, "2d")
 
-class SparseCellLoopBase(CellLoop):
+class SparseCellLoop(CellLoop):
     """The SparseCellLoopBase offers common code for loops that only calculate
     those fields, where the neighbours have changed in the last step.
 
@@ -76,7 +76,15 @@ class SparseCellLoopBase(CellLoop):
 
     def set_target(self, target):
         """Adds the activity mask and position list to the target attributes."""
-        super(SparseCellLoopBase, self).set_target(target)
+        super(SparseCellLoop, self).set_target(target)
+
+        if len(target.size) == 1:
+            self.requires_features.append(one_dimension)
+        elif len(target.size) == 2:
+            self.requires_features.append(two_dimensions)
+        else:
+            raise NotImplementedError("SparseCellLoop has not been modified to"
+                    " work with more than 2 dimensions.")
 
         size = self.calculate_size()
         target.sparse_mask = np.zeros(size, dtype=np.bool)
@@ -98,7 +106,7 @@ class SparseCellLoopBase(CellLoop):
         return iter(self.target.sparse_set)
 
     def visit(self):
-        super(SparseCellLoopBase, self).visit()
+        super(SparseCellLoop, self).visit()
         self.code.add_py_hook("loop_end",
             """if was_active: self.loop.mark_cell_py(pos)""")
         #self.code.add_code("loop_begin",
