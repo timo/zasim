@@ -184,7 +184,10 @@ class StepFunc(object):
                 indent = len(line) - len(line.lstrip(" "))
                 words = line.strip().split(" ")
                 if len(words) > 1 and words[1] == "=":
-                    newfunc.append(" " * (self.pycode_indent[hook] + indent) + "print " + words[0])
+                    indent = " " * (self.pycode_indent[hook] + indent)
+                    newfunc.append("%(indent)sprint ('%(indent)s%(var)s = ' + str(%(var)s))"
+                                   % dict(indent=indent,
+                                          var=words[0]))
 
         self.pycode[hook].append("\n".join(newfunc))
 
@@ -228,6 +231,8 @@ class StepFunc(object):
 
             append_code("init")
             code_bits.append("    for pos in self.loop.get_iter():")
+            if EXTREME_PURE_PY_DEBUG:
+                code_bits.append("        print ('        pos = ' + str(pos))")
             append_code("pre_compute")
             append_code("compute")
             append_code("post_compute")
