@@ -19,6 +19,7 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                        histogram=False, activity=False,
                        copy_borders=True, neighbourhood=None,
                        base=2, extra_code=None,
+                       sparse_loop=False,
                        target_class=TestTarget, **kwargs):
     """From the given parameters, assemble a StepFunc with the given
     computation and extra_code objects. Returns the stepfunc."""
@@ -56,20 +57,20 @@ def automatic_stepfunc(size=None, config=None, computation=None,
 
     if len(size) == 1:
         if nondet == 1.0:
-            loop = OneDimCellLoop()
+            if sparse_loop:
+                loop = OneDimSparseCellLoop()
+            else:
+                loop = OneDimCellLoop()
         else:
             loop = OneDimNondeterministicCellLoop(probab=nondet)
     elif len(size) == 2:
         if nondet == 1.0:
-            loop = TwoDimCellLoop()
+            if sparse_loop:
+                loop = TwoDimSparseCellLoop()
+            else:
+                loop = TwoDimCellLoop()
         else:
             loop = TwoDimNondeterministicCellLoop(probab=nondet)
-
-    # XXX nope.
-    if len(size) == 1:
-        loop = OneDimSparseCellLoop()
-    elif len(size) == 2:
-        loop = TwoDimSparseCellLoop()
 
     if copy_borders:
         if len(size) == 1:
