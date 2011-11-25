@@ -33,6 +33,15 @@ class BorderSizeEnsurer(BorderHandler):
                      borders[up]:-borders[down]] = self.target.cconf
         self.target.cconf = new_conf
 
+    def is_position_valid(self, pos):
+        for axis, size in enumerate(self.target.size):
+            if not (0 <= pos[axis] < size):
+                return False
+        return True
+
+    def correct_position(self, pos):
+        return None
+
 class BaseBorderCopier(BorderSizeEnsurer):
     """This base class for border copiers executes a retargetted version of the
     pure-py code,that was generated for ensuring the borders are neat after a
@@ -71,6 +80,11 @@ class BaseBorderCopier(BorderSizeEnsurer):
         code piece that gets retargetted and run in :meth:`new_config`."""
         self.code.add_py_hook("after_step", code)
         self.copy_py_code.append(dedent_python_code(code))
+
+    def correct_position(self, pos):
+        return tuple([pos[dim] % size
+            for dim, size in enumerate(self.target.size)])
+
 
 class SimpleBorderCopier(BaseBorderCopier):
     """Copy over cell values, so that reading from a cell at the border over
@@ -127,18 +141,6 @@ class SimpleBorderCopier(BaseBorderCopier):
         # these lists together, so they form one long iterator.
         slices = chain(*slices)
 
-        if not HAVE_TUPLE_ARRAY_INDEX:
-            # more pypy compatibility
-            def is_beyond_border(pos):
-                dimension, size = pos, self.dimension_sizes[0]
-                return (dimension < 0 or dimension >= size)
-        else:
-            def is_beyond_border(pos):
-                for dimension, size in zip(pos, self.dimension_sizes):
-                    if dimension < 0 or dimension >= size:
-                        return True
-                return False
-
         over_border= {}
 
         # FIXME Even though sizeX and friends are now variables in the code,
@@ -156,8 +158,8 @@ class SimpleBorderCopier(BaseBorderCopier):
                 target = offset_pos(pos, neighbour)
                 if isinstance(target, int): # pack this into a tuple for pypy
                     target = (target,)
-                if is_beyond_border(target):
-                    over_border[tuple(target)] = self.wrap_around_border(target)
+                if not self.is_position_valid(target):
+                    over_border[tuple(target)] = self.correct_position(target)
 
         copy_code = []
 
@@ -173,7 +175,7 @@ class SimpleBorderCopier(BaseBorderCopier):
         self.code.add_code("after_step",
                 "\n".join(copy_code))
 
-    def wrap_around_border(self, pos):
+    def corect_position_code(self, pos):
         """Create a piece of py/c code, that calculates the source for a read
         that would set the right value at position pos, which is beyond the
         border."""
@@ -187,6 +189,7 @@ class SimpleBorderCopier(BaseBorderCopier):
             else:
                 newpos.append("%s" % (val,))
         return tuple(newpos)
+
 
 class TwoDimSlicingBorderCopier(BaseBorderCopier):
     """This class copies, with only little code, each side to the opposite
@@ -259,6 +262,11 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
 
     def build_name(self, parts):
         parts.append("(copy borders)")
+
+    def correct_position(self, pos):
+        return (pos[0] % (self.target.size[0]),
+                pos[1] % (self.target.size[1]))
+
 
 class TwoDimZeroReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when

@@ -183,6 +183,12 @@ class BorderHandler(StepFuncVisitor):
 
     category = "borderhandler"
 
+    def is_position_valid(self, pos):
+        """Returns whether a position is inside the valid region."""
+
+    def correct_position(self, pos):
+        """Returns a wrapped position that is inside the valid region, if possible."""
+
 class Computation(StepFuncVisitor):
     """The Computation is responsible for calculating the result from the data
     gathered from the neighbourhood."""
