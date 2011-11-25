@@ -80,7 +80,8 @@ def automatic_stepfunc(size=None, config=None, computation=None,
             loop=loop,
             accessor=acc,
             neighbourhood=neighbourhood,
-            extra_code=[border, computation] +
+            border=border,
+            extra_code=[computation] +
             ([SimpleHistogram()] if histogram else []) +
             ([ActivityRecord()] if activity else []) +
             extra_code, target=target)
