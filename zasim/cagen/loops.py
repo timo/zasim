@@ -2,6 +2,7 @@ from .bases import CellLoop
 from .compatibility import one_dimension, two_dimensions, activity
 from .utils import offset_pos
 
+from itertools import product
 import numpy as np
 
 class OneDimCellLoop(CellLoop):
@@ -91,6 +92,9 @@ class SparseCellLoop(CellLoop):
         target.sparse_list = np.zeros(size, dtype=np.int)
         target.sparse_set = set()
 
+    def get_pos(self):
+        return self.position_names
+
     def calculate_size(self):
         """Calculate how big the mask and list have to be.
 
@@ -99,13 +103,30 @@ class SparseCellLoop(CellLoop):
         return reduce(lambda a, b: a * b, self.target.size)
 
     def mark_cell_py(self, pos):
-        self.sparse_set.update([offset_pos(pos, offs) for offs in
-                                self.code.neigh.affected_cells()])
+        positions = [offset_pos(pos, offs) for offs in
+                     self.code.neigh.affected_cells()]
+        positions = [pos
+                         if self.code.border.is_position_valid(pos)
+                         else self.code.border.correct_position(pos)
+                     for pos in positions]
+        self.target.sparse_set.update(positions)
+
+    def new_config(self):
+        size = self.calculate_size()
+        self.target.sparse_mask = np.ones(size, dtype=np.bool)
+        self.target.sparse_list = np.array(range(size), dtype=np.int)
+        self.target.prev_sparse_list = self.target.sparse_list.copy()
+        self.target.sparse_set = set(product(*[range(siz) for siz in self.target.size]))
 
     def get_iter(self):
-        return iter(self.target.sparse_set)
+        # iterate over a copy of the set, so that it can be modified while running
+        print len(self.target.sparse_set)
+        the_list = list(self.target.sparse_set)
+        self.target.sparse_set.clear()
+        return iter(the_list)
 
     def visit(self):
+        print "the sparse cell loop is being visited"
         super(SparseCellLoop, self).visit()
         self.code.add_py_hook("loop_end",
             """if was_active: self.loop.mark_cell_py(pos)""")
@@ -115,4 +136,12 @@ class SparseCellLoop(CellLoop):
                   #)
         #self.code.add_code("loop_end",
                 #"""}
-                #}""")
+                #}""") 
+
+class OneDimSparseCellLoop(SparseCellLoop):
+    def __init__(self):
+        self.position_names = "i"
+
+class TwoDimSparseCellLoop(SparseCellLoop):
+    def __init__(self):
+        self.position_names = "i", "j"
