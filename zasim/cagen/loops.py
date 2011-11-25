@@ -191,7 +191,9 @@ class SparseCellLoop(CellLoop):
                                        size_x=self.code.acc.size_names[0])
                                for offs in self.code.neigh.offsets])))
         self.code.add_code("loop_end",
-                """}""")
+                """
+                }
+                sparse_mask = sparse_mask*0;""")
 
 class OneDimSparseCellLoop(SparseCellLoop):
     def __init__(self):
