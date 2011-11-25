@@ -113,9 +113,11 @@ class SparseCellLoop(CellLoop):
 
     def new_config(self):
         size = self.calculate_size()
+        print size
         self.target.sparse_mask = np.ones(size, dtype=np.bool)
         self.target.sparse_list = np.array(range(size), dtype=np.int)
         self.target.prev_sparse_list = self.target.sparse_list.copy()
+        print self.target.prev_sparse_list
         self.target.sparse_set = set(product(*[range(siz) for siz in self.target.size]))
 
     def get_iter(self):
@@ -126,17 +128,70 @@ class SparseCellLoop(CellLoop):
         return iter(the_list)
 
     def visit(self):
-        print "the sparse cell loop is being visited"
         super(SparseCellLoop, self).visit()
+
+        self.code.attrs.append("sparse_mask")
+        self.code.attrs.append("sparse_list")
+        self.code.attrs.append("prev_sparse_list")
+
         self.code.add_py_hook("loop_end",
             """if was_active: self.loop.mark_cell_py(pos)""")
-        #self.code.add_code("loop_begin",
-            #"""int valid_positions = activity(1);
-               #for(int i=0; i < %s; i++) {
-                  #)
-        #self.code.add_code("loop_end",
-                #"""}
-                #}""") 
+
+        self.code.add_code("localvars",
+            """int valid_positions = activity(0);
+               if(valid_positions == -1) {
+                   valid_positions = %(size_a)s * %(size_b)s;
+               }
+               int sparse_cell_write_idx = 0;""" %
+                   dict(size_a=self.code.acc.size_names[0],
+                        size_b=self.code.acc.size_names[1] if len(self.code.acc.size_names) == 2 else "1"))
+        self.code.add_code("loop_begin",
+            """for(int cell_idx=0; cell_idx < valid_positions; cell_idx++) {""")
+        if len(self.position_names) == 1:
+            self.code.add_code("loop_begin",
+                """    int %s = prev_sparse_list(cell_idx);""" % self.position_names)
+        elif len(self.position_names) == 2:
+            self.code.add_code("loop_begin",
+                """    int %(pos_a)s = prev_sparse_list(cell_idx) %% %(size_a)s;
+                       int %(pos_b)s = prev_sparse_list(cell_idx) / %(size_b)s;""" %
+                           dict(pos_a = self.position_names[0],
+                                pos_b = self.position_names[1],
+                                size_a = self.code.acc.size_names[0],
+                                size_b = self.code.acc.size_names[1]))
+
+        # FIXME use procer position names here
+        # FIXME wrap positions around the borders
+        if len(self.position_names) == 1:
+            self.code.add_code("loop_end",
+                    """if(was_active) {
+                               %s
+                       }""" % ("\n".join([
+                           """
+                           {int idx = i + %(offs_x)s;
+                           if(!sparse_mask(idx)) {
+                               sparse_list(sparse_cell_write_idx) = idx;
+                               sparse_mask(idx) = true;
+                               sparse_cell_write_idx++;
+                           }}""" % dict(offs_x=offs[0])
+                               for offs in self.code.neigh.offsets])))
+        elif len(self.position_names) == 2:
+            self.code.add_code("loop_end",
+                    """if(was_active) {
+                               %s
+                       }""" % ("\n".join([
+                           """
+                           {int px = i + %(offs_x)s;
+                           int py = j + %(offs_y)s;
+                           int idx = px * %(size_x)s + py;
+                           if(!sparse_mask(idx)) {
+                               sparse_list(sparse_cell_write_idx) = idx;
+                               sparse_mask(idx) = true;
+                               sparse_cell_write_idx++;
+                           }}""" % dict(offs_x=offs[0], offs_y=offs[1],
+                                       size_x=self.code.acc.size_names[0])
+                               for offs in self.code.neigh.offsets])))
+        self.code.add_code("loop_end",
+                """}""")
 
 class OneDimSparseCellLoop(SparseCellLoop):
     def __init__(self):
