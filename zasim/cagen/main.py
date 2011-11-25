@@ -48,7 +48,7 @@ def test(width=75, height=None, life=False, copy_borders=True, rule=None, histog
             if histogram:
                 print sim_obj.t.histogram
             if activity:
-                print sim_obj.t.activity
+                print sim_obj.t.activity, sum(sim_obj.t.activity)
     else:
         print "pure"
         for i in range(steps):
@@ -56,7 +56,7 @@ def test(width=75, height=None, life=False, copy_borders=True, rule=None, histog
             if histogram:
                 print sim_obj.t.histogram
             if activity:
-                print sim_obj.t.activity
+                print sim_obj.t.activity, sum(sim_obj.t.activity)
 
 def main(args=None):
     import argparse
