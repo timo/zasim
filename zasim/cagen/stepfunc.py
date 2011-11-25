@@ -226,6 +226,7 @@ class StepFunc(object):
             append_code("pre_compute")
             append_code("compute")
             append_code("post_compute")
+            append_code("loop_end")
             append_code("after_step")
             append_code("finalize")
             code_bits.append("")
