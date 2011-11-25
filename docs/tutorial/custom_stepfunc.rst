@@ -65,11 +65,17 @@ interface. Those slots are:
    a list of names for the neighbourhood cells and their positional offsets and
    just reads them at the beginning of the loop.
 
- * A `~zasim.cagen.bases.BorderHandler` instance (in the `extra_code` list),
-   that does things like copying the borders from the sides and at the same
-   time ensuring the size of the configuration storage is big enough to keep
-   those extra cells. It could also do things like set the border cells to
-   changing values or anything you could think of.
+ * A `~zasim.cagen.bases.BorderHandler` instance (as the `border` keyword
+   argument), that does things like copying the borders from the sides and at
+   the same time ensuring the size of the configuration storage is big enough
+   to keep those extra cells. It could also do things like set the border cells
+   to changing values or anything you could think of.
+
+   They also offer functions `~zasim.cagen.bases.BorderHandler.is_position_valid`
+   and `~zasim.cagen.bases.BorderHandler.correct_position` for other components
+   to figure out if positions are valid and if they are invalid, what to do
+   with them. The `~zasim.cagen.loops.SparseCellLoop` uses these functions to
+   correctly mark neighbourhood cells as active if there was a change.
 
  * A `~zasim.cagen.bases.ExtraStats` instance (in the `extra_code` list, as
    well), which gathers some additional statistics about the step function
