@@ -34,7 +34,8 @@ class BorderSizeEnsurer(BorderHandler):
         self.target.cconf = new_conf
 
     def is_position_valid(self, pos):
-        for axis, size in enumerate(self.target.size):
+        # FIXME this should really use get_size_of instead of reading from size.
+        for axis, size in enumerate(self.code.acc.size):
             if not (0 <= pos[axis] < size):
                 return False
         return True
