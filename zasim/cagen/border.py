@@ -171,7 +171,7 @@ class SimpleBorderCopier(BaseBorderCopier):
 
             self.tee_copy_hook("""
                 self.acc.write_to(%s,
-                    value=self.acc.read_from_next((%s,)))""" % (write, ", ".join(read)))
+                    value=self.acc.read_from_next((%s,)))""" % (write, ", ".join(map(str, read))))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
