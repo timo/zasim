@@ -261,6 +261,9 @@ class OneDimQImagePainter(BaseQImagePainter):
         except Queue.Empty:
             pass
 
+        if not rendered:
+            return
+
         self._queued_steps -= rendered
         _image = render_state_array(whole_conf, self.palette, False, (0, 0, w, rendered))
         _image = _image.scaled(w * self._scale, rendered * self._scale)
