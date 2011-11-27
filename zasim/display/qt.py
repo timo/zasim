@@ -57,6 +57,28 @@ def qimage_to_pngstr(image):
     buf.close()
     return str(buf.data())
 
+def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
+    if region:
+        x, y, w, h = region
+        conf = states[x:x+w, y:y+h]
+    else:
+        x, y = 0
+        w, h = states.shape
+        conf = states
+    nconf = np.empty((w - x, h - y), np.uint32, "F")
+
+    if not invert:
+        nconf[conf==0] = palette[0]
+        nconf[conf==1] = palette[1]
+    else:
+        nconf[conf==1] = palette[0]
+        nconf[conf==0] = palette[1]
+
+    for num, value in enumerate(palette[2:]):
+        nconf[conf == num+2] = value
+
+    image = QImage(nconf.data, w - x, h - y, QImage.Format_RGB32)
+    return image
 
 class BaseQImagePainter(QObject):
     """This is a base class for implementing renderers for configs based on
@@ -178,7 +200,7 @@ class OneDimQImagePainter(BaseQImagePainter):
             lines = simulator.shape[0]
         self._last_step = 0
 
-        self.palette = PALETTE_32[2:len(self._sim.t.possible_values)]
+        self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
 
         super(OneDimQImagePainter, self).__init__(
                 simulator.shape[0], lines, lines,
@@ -193,7 +215,8 @@ class OneDimQImagePainter(BaseQImagePainter):
 
         confs_to_render = min(self._height - y, self._queued_steps)
 
-        whole_conf = np.empty((confs_to_render, w), np.uint32, "C")
+        # create whole_conf lazily, so that we can derive the dtype from the confs
+        whole_conf = None
 
         try:
             while rendered < confs_to_render:
@@ -211,17 +234,16 @@ class OneDimQImagePainter(BaseQImagePainter):
                         if peek is None:
                             raise
 
-                nconf = whole_conf[rendered, ...]
+                if not whole_conf:
+                    whole_conf = np.zeros((w, confs_to_render), dtype=conf.dtype)
 
-                if not self._invert_odd or self._odd:
-                    nconf[conf==0] = 0
-                    nconf[conf==1] = 0xffffff
-                else:
-                    nconf[conf==0] = 0xffffff
-                    nconf[conf==1] = 0
+                if (self._invert_odd and self._odd):
+                    new_zeros = conf == 1
+                    new_ones = conf == 0
+                    conf[new_zeros] = 0
+                    conf[new_ones] = 1
 
-                for num, value in enumerate(self.palette):
-                    nconf[conf == num+2] = value
+                whole_conf[rendered,...] = conf
 
                 rendered += 1
 
@@ -232,16 +254,17 @@ class OneDimQImagePainter(BaseQImagePainter):
         except Queue.Empty:
             pass
 
+        self._queued_steps -= rendered
+        _image = render_state_array(whole_conf, self.palette, False, (0, 0, w, rendered))
+        _image = _image.scaled(w * self._scale, rendered * self._scale)
+
+        painter = QPainter(self._image)
+        painter.drawImage(QPoint(0, y * self._scale), _image)
+
         if self._last_step % self._height == 0 and rendered:
             self.image_wrapped.emit()
 
         self._queued_steps -= rendered
-        if rendered:
-            _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB32).copy()
-
-            painter = QPainter(self._image)
-            painter.scale(self._scale, self._scale)
-            painter.drawImage(QPoint(0, y), _image)
 
     def after_step(self, update_step=True):
         conf = self._sim.get_config().copy()
@@ -288,26 +311,15 @@ class TwoDimQImagePainter(BaseQImagePainter):
         self._sim = simulator
         w, h = simulator.shape
 
-        self.palette = PALETTE_32[2:len(self._sim.t.possible_values)]
+        self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
         super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
 
     def draw_conf(self):
         try:
             update_step, conf = self._queue.get_nowait()
             w, h = self._width, self._height
-            nconf = np.empty((w, h), np.uint32, "F")
 
-            if not self._invert_odd or self._odd:
-                nconf[conf==0] = 0
-                nconf[conf==1] = 0xffffffff
-            else:
-                nconf[conf==1] = 0
-                nconf[conf==0] = 0xffffffff
-
-            for num, value in enumerate(self.palette):
-                nconf[conf == num+2] = value
-
-            image = QImage(nconf.data, w, h, QImage.Format_RGB32).copy()
+            image = render_state_array(conf, self.palette, self._invert_odd and self._odd, (0, 0, w, h))
             image = QPixmap.fromImage(image)
             if self._scale != 1:
                 image = image.scaled(w * self._scale, h * self._scale)
