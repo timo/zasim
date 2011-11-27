@@ -57,7 +57,9 @@ def qimage_to_pngstr(image):
     buf.close()
     return str(buf.data())
 
+_last_rendered_state_conf = None
 def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
+    global _last_rendered_state_conf
     if region:
         x, y, w, h = region
         conf = states[x:x+w, y:y+h]
@@ -78,6 +80,11 @@ def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
         nconf[conf == num+2] = value
 
     image = QImage(nconf.data, w - x, h - y, QImage.Format_RGB32)
+
+    # without this cheap trick, the data from the array is imemdiately freed and
+    # subsequently re-used, leading to the first pixels in the top left corner
+    # getting pretty colors and zasim eventually crashing.
+    _last_rendered_state_conf = nconf
     return image
 
 class BaseQImagePainter(QObject):
