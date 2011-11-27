@@ -84,7 +84,7 @@ class BaseBorderCopier(BorderSizeEnsurer):
 
     def correct_position(self, pos):
         return tuple([pos[dim] % size
-            for dim, size in enumerate(self.target.size)])
+            for dim, size in enumerate(self.code.acc.size)])
 
 
 class SimpleBorderCopier(BaseBorderCopier):
