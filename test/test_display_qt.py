@@ -63,7 +63,7 @@ class TestDisplayQt:
         test_conf = RandomInitialConfigurationFromPalette(jvn.states)
         conf = test_conf.generate((10, 10))
 
-        img = render_state_array_tiled(conf)
+        img = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT)
 
-        img2 = render_state_array_tiled(conf,region=(2, 2, 6, 6))
-        img3 = render_state_array_tiled(conf,region=(2, 2, 6, 6), tilesize=32)
+        img2 = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT,region=(2, 2, 6, 6))
+        img3 = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT,region=(2, 2, 6, 6), tilesize=32)

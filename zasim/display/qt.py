@@ -8,16 +8,61 @@ configurations in-line."""
 from __future__ import absolute_import
 
 from ..external.qt import (QObject, QPixmap, QImage, QPainter, QPoint, QSize, QRect,
-                           QLine, QColor, QBuffer, QIODevice, Signal, Qt)
-
-from zasim.cagen.jvn import PALETTE_JVN_RECT, PALETTE_JVN_IMAGE
+                           QPen, QLine, QColor, QBuffer, QIODevice, Signal, Qt)
 
 import numpy as np
 import time
+import math
 import Queue
 
 from itertools import product
 
+def generate_tile_atlas(filename_map):
+    """From a mapping to state value to filename, create a texture atlas
+    from the given filenames. Those should all be as big as the first one.
+
+    :returns: The tile atlas as a QPixmap and a mapping from value to a
+              QRect into the image.
+    """
+    # use the size of the first tile for every tile.
+    size = QImage(filename_map.values()[0]).rect()
+    one_w, one_h = size.width(), size.height()
+
+    # try to make the image as near to a square image a spossible
+    columns = int(math.ceil(math.sqrt(len(filename_map))))
+    rows = len(filename_map) / columns
+
+    new_image = QPixmap(QSize(columns * one_w, rows * one_h))
+    palette_rect = {}
+
+    ptr = QPainter(new_image)
+    for num, (value, name) in enumerate(filename_map.iteritems()):
+        img = QImage(name)
+
+        if img.isNull():
+            print "warning:", name, "not found."
+
+            # draw a bright error image with a bit of text
+            img = QImage(one_w, one_h, QImage.Format_RGB32)
+            img.fill(0xffff00ff)
+            errptr = QPainter(img)
+            errptr.setPen(QPen("white"))
+            fnt = errptr.font()
+            fnt.setPixelSize(42)
+            errptr.setFont(fnt)
+            errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR\nnot found:\n%s\n:(" % (name))
+            errptr.end()
+
+        position_rect = QRect(one_w * (num / rows), one_h * (num % rows), one_w, one_h)
+        ptr.drawImage(position_rect, img, img.rect())
+        #palette_pf[nameStateDict[name]] = lambda x, y: QPainter.PixmapFragment.create(
+                #QPointF(x, y),
+                #position_rect)
+        palette_rect[value] = position_rect
+
+    ptr.end()
+
+    return new_image, palette_rect
 
 PALETTE_32 = [0xff000000, 0xffffffff, 0xffff0000, 0xff0000ff, 0xff00ff00, 0xffffff00, 0xff00ffff, 0xffff00ff]
 
@@ -91,7 +136,7 @@ def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
     _last_rendered_state_conf = nconf
     return image
 
-def render_state_array_tiled(states, palette=PALETTE_JVN_IMAGE, rects=PALETTE_JVN_RECT, region=None, tilesize=None):
+def render_state_array_tiled(states, palette, rects, region=None, tilesize=None):
     """Using a texture atlas and a dictionary of pixmap fragment "factories",
     draw a configuration using graphical tiles.
 
