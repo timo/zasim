@@ -92,19 +92,19 @@ def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
     return image
 
 def render_state_array_tiled(states, palette=PALETTE_JVN_IMAGE, pixfrags=PALETTE_JVN_PF, region=None, tilesize=None):
-    """Using a texture atlas and a dictionary of pixmap fragment "factories", draw a configuration
-    using graphical tiles"""
+    """Using a texture atlas and a dictionary of pixmap fragment "factories",
+    draw a configuration using graphical tiles"""
 
     if region:
         x, y, w, h = region
         conf = states[x:x+w, y:y+h]
     else:
         x, y = 0, 0
-        w, h = conf.shape
+        w, h = states.shape
         conf = states
 
     if not tilesize:
-        tilesize = pixfrags.values()[0].height()
+        tilesize = pixfrags.values()[0](0, 0).height()
 
     result = QPixmap(QSize(w * tilesize, h * tilesize))
     with QPainter(result) as ptr:
