@@ -10,7 +10,7 @@ from __future__ import absolute_import
 from ..external.qt import (QObject, QPixmap, QImage, QPainter, QPoint, QSize, QRect,
                            QLine, QColor, QBuffer, QIODevice, Signal, Qt)
 
-from zasim.cagen.jvn import PALETTE_JVN_PF, PALETTE_JVN_IMAGE
+from zasim.cagen.jvn import PALETTE_JVN_RECT, PALETTE_JVN_IMAGE
 
 import numpy as np
 import time
@@ -91,7 +91,7 @@ def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
     _last_rendered_state_conf = nconf
     return image
 
-def render_state_array_tiled(states, palette=PALETTE_JVN_IMAGE, pixfrags=PALETTE_JVN_PF, region=None, tilesize=None):
+def render_state_array_tiled(states, palette=PALETTE_JVN_IMAGE, rects=PALETTE_JVN_RECT, region=None, tilesize=None):
     """Using a texture atlas and a dictionary of pixmap fragment "factories",
     draw a configuration using graphical tiles"""
 
@@ -104,14 +104,18 @@ def render_state_array_tiled(states, palette=PALETTE_JVN_IMAGE, pixfrags=PALETTE
         conf = states
 
     if not tilesize:
-        tilesize = pixfrags.values()[0](0, 0).height()
+        tilesize = rects.values()[0].height()
 
     result = QPixmap(QSize(w * tilesize, h * tilesize))
-    with QPainter(result) as ptr:
-        positions = product(xrange(w), xrange(h))
-        values = [(pos, conf[pos]) for pos in positions]
-        fragments = [pixfrags[value](*pos) for pos, value in values]
-        ptr.drawPixmapFragments(fragments, palette)
+    ptr =  QPainter(result)
+
+    positions = list(product(xrange(w), xrange(h)))
+
+    values = [(pos, conf[pos]) for pos in positions]
+    fragments = [(rects[value].translated(pos[0] * tilesize, pos[1] * tilesize), rects[value]) for pos, value in values]
+
+    for dest, src in fragments:
+        ptr.drawPixmap(dest, palette, src)
 
     return result
 
