@@ -93,7 +93,13 @@ def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
 
 def render_state_array_tiled(states, palette=PALETTE_JVN_IMAGE, rects=PALETTE_JVN_RECT, region=None, tilesize=None):
     """Using a texture atlas and a dictionary of pixmap fragment "factories",
-    draw a configuration using graphical tiles"""
+    draw a configuration using graphical tiles.
+
+    :param states: The array of states to render.
+    :param palette: The image to use.
+    :param rects: A dictionary from state value to rect in the image.
+    :param region: What part of the config to render (x, y, w, h).
+    :param tilesize: The size of individual tiles in the final image."""
 
     if region:
         x, y, w, h = region
