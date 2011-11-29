@@ -84,6 +84,9 @@ try:
             img.fill(0xffff00ff)
             errptr = QPainter(img)
             errptr.setPen(QPen("white"))
+            fnt = errptr.font()
+            fnt.setPixelSize(42)
+            errptr.setFont(fnt)
             errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR\n%s not found\n:(" % (name))
             errptr.end()
 
