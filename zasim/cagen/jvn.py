@@ -84,9 +84,8 @@ try:
             img.fill(0xffff00ff)
             errptr = QPainter(img)
             errptr.setPen(QPen("white"))
-            errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR")
+            errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR\n%s not found\n:(" % (name))
             errptr.end()
-            img.save("/tmp/error_img.jpg")
 
         position_rect = QRect(one_w * num, 0, one_w, one_h)
         ptr.drawImage(position_rect, img, img.rect())
