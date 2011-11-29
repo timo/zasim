@@ -51,11 +51,30 @@ states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168,
            6912, 7040, 7168, 7296, 7424, 7552, 7680, 7808, 7936, 8064 ]
 
 try:
-    from ..external.qt import QImage
+    from ..external.qt import (QImage, QPainter, QRect, QPixmapFragment, QPointF,
+            QPixmap)
+
     import path
 
-    PALETTE_JVN = {number: QImage(path.join("images/vonNeumann", name + '.jpg'))
-                   for name, number in nameStateDict.iteritems()}
+    # compose a texture atlas from the images
+    # additionally, create a dictionary of "factories" for QPixmapFragment objects
+
+    # just get the size of the tiles
+    size = QImage("images/vonNeumann/U.jpg").rect()
+    one_w, one_h = size.width(), size.height()
+
+    new_image = QImage((one_w * len(states), one_h))
+    PALETTE_JVN_PF = {}
+    with QPainter(new_image) as ptr:
+        for num, name in enumerate([nameStateDict.find(num) for num in states]):
+            img = QImage(path.join("images/vonNeumann", name + ".jpg"))
+            position_rect = QRect(one_w * num, 0, one_w, one_h)
+            ptr.drawImage(position_rect, img, img.rect())
+            PALETTE_JVN_PF[nameStateDict[name]] = lambda x, y: QPixmapFragment.create(
+                    QPointF(x, y),
+                    position_rect)
+
+    PALETTE_JVN_IMAGE = QPixmap(new_image)
 
 except ImportError:
     print "could not import qt for JVN CA palette"
