@@ -63,6 +63,7 @@ try:
     from ..external.qt import QImage, QPainter, QRect, QPixmap, QSize, QPen, Qt #, QPointF
 
     from os import path
+    import math
 
     # compose a texture atlas from the images
     # additionally, create a dictionary of "factories" for QPixmapFragment objects
@@ -71,7 +72,10 @@ try:
     size = QImage("images/vonNeumann/U.jpg").rect()
     one_w, one_h = size.width(), size.height()
 
-    new_image = QPixmap(QSize(one_w * len(states), one_h))
+    columns = int(math.ceil(math.sqrt(len(states))))
+    rows = len(states) / columns
+
+    new_image = QPixmap(QSize(columns * one_w, rows * one_h))
     PALETTE_JVN_PF = {}
     PALETTE_JVN_RECT = {}
 
@@ -90,7 +94,7 @@ try:
             errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR\n%s not found\n:(" % (name))
             errptr.end()
 
-        position_rect = QRect(one_w * num, 0, one_w, one_h)
+        position_rect = QRect(one_w * (num / rows), one_h * (num % rows), one_w, one_h)
         ptr.drawImage(position_rect, img, img.rect())
         #PALETTE_JVN_PF[nameStateDict[name]] = lambda x, y: QPainter.PixmapFragment.create(
                 #QPointF(x, y),
