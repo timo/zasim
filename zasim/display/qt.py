@@ -109,10 +109,10 @@ def render_state_array_tiled(states, palette=PALETTE_JVN_IMAGE, rects=PALETTE_JV
     result = QPixmap(QSize(w * tilesize, h * tilesize))
     ptr =  QPainter(result)
 
-    positions = list(product(xrange(w), xrange(h)))
+    positions = product(xrange(w), xrange(h))
 
     values = [(pos, conf[pos]) for pos in positions]
-    fragments = [(rects[value].translated(pos[0] * tilesize, pos[1] * tilesize), rects[value]) for pos, value in values]
+    fragments = [(QPoint(pos[0] * tilesize, pos[1] * tilesize), rects[value]) for pos, value in values]
 
     for dest, src in fragments:
         ptr.drawPixmap(dest, palette, src)
