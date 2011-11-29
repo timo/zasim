@@ -52,7 +52,7 @@ states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168,
            6912, 7040, 7168, 7296, 7424, 7552, 7680, 7808, 7936, 8064 ]
 
 try:
-    from ..external.qt import QImage, QPainter, QRect, QPixmap, QSize #, QPointF
+    from ..external.qt import QImage, QPainter, QRect, QPixmap, QSize, QPen, Qt #, QPointF
 
     from os import path
 
@@ -66,10 +66,20 @@ try:
     new_image = QPixmap(QSize(one_w * len(states), one_h))
     PALETTE_JVN_PF = {}
     PALETTE_JVN_RECT = {}
-    ptr = QPainter(new_image)
 
+    ptr = QPainter(new_image)
     for num, name in enumerate([stateNameDict[num] for num in states]):
         img = QImage(path.join("images/vonNeumann", name + ".jpg"))
+        if img.isNull():
+            print "warning:", name, "not found."
+            img = QImage(one_w, one_h, QImage.Format_RGB32)
+            img.fill(0xffff00ff)
+            errptr = QPainter(img)
+            errptr.setPen(QPen("white"))
+            errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR")
+            errptr.end()
+            img.save("/tmp/error_img.jpg")
+
         position_rect = QRect(one_w * num, 0, one_w, one_h)
         ptr.drawImage(position_rect, img, img.rect())
         #PALETTE_JVN_PF[nameStateDict[name]] = lambda x, y: QPainter.PixmapFragment.create(
