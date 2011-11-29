@@ -65,45 +65,56 @@ try:
     from os import path
     import math
 
-    # compose a texture atlas from the images
-    # additionally, create a dictionary of "factories" for QPixmapFragment objects
+    def generate_tile_atlas(filename_map):
+        """From a mapping to state value to filename, create a texture atlas
+        from the given filenames. Those should all be as big as the first one.
 
-    # just get the size of the tiles
-    size = QImage("images/vonNeumann/U.jpg").rect()
-    one_w, one_h = size.width(), size.height()
+        :returns: The tile atlas as a QPixmap and a mapping from value to a
+                  QRect into the image.
+        """
+        # use the size of the first tile for every tile.
+        size = QImage(filename_map.values()[0]).rect()
+        one_w, one_h = size.width(), size.height()
 
-    columns = int(math.ceil(math.sqrt(len(states))))
-    rows = len(states) / columns
+        # try to make the image as near to a square image a spossible
+        columns = int(math.ceil(math.sqrt(len(filename_map))))
+        rows = len(filename_map) / columns
 
-    new_image = QPixmap(QSize(columns * one_w, rows * one_h))
-    PALETTE_JVN_PF = {}
-    PALETTE_JVN_RECT = {}
+        new_image = QPixmap(QSize(columns * one_w, rows * one_h))
+        palette_rect = {}
 
-    ptr = QPainter(new_image)
-    for num, name in enumerate([stateNameDict[num] for num in states]):
-        img = QImage(path.join("images/vonNeumann", name + ".jpg"))
-        if img.isNull():
-            print "warning:", name, "not found."
-            img = QImage(one_w, one_h, QImage.Format_RGB32)
-            img.fill(0xffff00ff)
-            errptr = QPainter(img)
-            errptr.setPen(QPen("white"))
-            fnt = errptr.font()
-            fnt.setPixelSize(42)
-            errptr.setFont(fnt)
-            errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR\n%s not found\n:(" % (name))
-            errptr.end()
+        ptr = QPainter(new_image)
+        for num, (value, name) in enumerate(filename_map.iteritems()):
+            img = QImage(name)
 
-        position_rect = QRect(one_w * (num / rows), one_h * (num % rows), one_w, one_h)
-        ptr.drawImage(position_rect, img, img.rect())
-        #PALETTE_JVN_PF[nameStateDict[name]] = lambda x, y: QPainter.PixmapFragment.create(
-                #QPointF(x, y),
-                #position_rect)
-        PALETTE_JVN_RECT[nameStateDict[name]] = position_rect
+            if img.isNull():
+                print "warning:", name, "not found."
 
-    ptr.end()
+                # draw a bright error image with a bit of text
+                img = QImage(one_w, one_h, QImage.Format_RGB32)
+                img.fill(0xffff00ff)
+                errptr = QPainter(img)
+                errptr.setPen(QPen("white"))
+                fnt = errptr.font()
+                fnt.setPixelSize(42)
+                errptr.setFont(fnt)
+                errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR\nnot found:\n%s\n:(" % (name))
+                errptr.end()
 
-    PALETTE_JVN_IMAGE = new_image
+            position_rect = QRect(one_w * (num / rows), one_h * (num % rows), one_w, one_h)
+            ptr.drawImage(position_rect, img, img.rect())
+            #palette_pf[nameStateDict[name]] = lambda x, y: QPainter.PixmapFragment.create(
+                    #QPointF(x, y),
+                    #position_rect)
+            palette_rect[value] = position_rect
+
+        ptr.end()
+
+        return new_image, palette_rect
+
+    # XXX get the absolute path if possible.
+    filename_map = {num:path.join("images/vonNeumann", stateNameDict[num]) for num in states}
+    PALETTE_JVN_IMAGE, PALETTE_JVN_RECT = generate_tile_atlas(filename_map)
 
 except ImportError:
     print "could not import qt for JVN CA palette"
