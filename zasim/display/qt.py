@@ -64,7 +64,7 @@ def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
         x, y, w, h = region
         conf = states[x:x+w, y:y+h]
     else:
-        x, y = 0
+        x, y = 0, 0
         w, h = states.shape
         conf = states
     nconf = np.empty((w - x, h - y), np.uint32, "F")
