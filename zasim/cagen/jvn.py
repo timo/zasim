@@ -1,5 +1,64 @@
 import numpy as np
 
+## A map from states according to the bitmask to
+# pygame blittable states ( between 0 and 28 )
+displayableStateDict = {
+    0: 0,     # U
+    2048: 1,  #C00   2048
+    2049: 2,  #C10   2048+1
+    2050: 3,  #C01   2048+2
+    2051: 4,  #C11   2048+3
+    4192: 5,  #S000  4096+96
+    4160: 6,  #S00   4096+64
+    4168: 7,  #S01   4096+64+8
+    4128: 8,  #S0    4096+32
+    4176: 9,  #S10   4096+64+16
+    4184: 10, #S11   4096+64+16+8
+    4144: 11, #S1    4096+32+16
+    4096: 12, #S     4096
+    6144: 13, #T000  6144
+    6272: 14, #T001  6144+128
+    6400: 15, #T010  6144+256
+    6528: 16, #T011  6144+128+256
+    6656: 17, #T020  6144+512
+    6784: 18, #T021  6144+128+512
+    6912: 19, #T030  6144+256+512
+    7040: 20, #T031  6144+128+256+512
+    7168: 21, #T100  6144+1024
+    7296: 22, #T101  6144+128+1024
+    7424: 23, #T110  6144+256+1024
+    7552: 24, #T111  6144+128+256+1024
+    7680: 25, #T120  6144+512+1024
+    7808: 26, #T121  6144+128+512+1024
+    7936: 27, #T130  6144+256+512+1024
+    8064: 28, #T131  6144+128+256+1024+512
+    }
+
+## A map from human readable vonNeumann states ( such as 'U', 'T020' and 'C11' )
+# actual states calculated via bitmask
+nameStateDict = { "U": 0,
+                  "C00" : 2048, "C10" : 2049, "C01" : 2050, "C11" : 2051,
+                  "S"   : 4096, "S0"  : 4128, "S1"  : 4144, "S00" : 4160,
+                  "S01" : 4168, "S10" : 4176, "S11" : 4184, "S000": 4192,
+                  "T000": 6144, "T001": 6272, "T010": 6400, "T011": 6528,
+                  "T020": 6656, "T032": 6784, "T030": 6912, "T031": 7040,
+                  "T100": 7168, "T101": 7296, "T110": 7424, "T111": 7552,
+                  "T120": 7680, "T121": 7808, "T130": 7936, "T131": 8064 }
+
+## An array containing all correct states (see vonNeumann)
+states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168,
+           4176, 4184, 4192, 6144, 6272, 6400, 6528, 6656, 6784,
+           6912, 7040, 7168, 7296, 7424, 7552, 7680, 7808, 7936, 8064 ]
+
+try:
+    from ..external.qt import QImage
+    import path
+
+    PALETTE_JVN = {number: QImage(path.join("images/vonNeumann", name + '.jpg'))
+                   for name, number in nameStateDict.iteritems()}
+
+except ImportError:
+    print "could not import qt for JVN CA palette"
 
 ## The cellular automaton proposed by John von Neumann
 # \verbatim
@@ -32,55 +91,6 @@ class vonNeumann ( object ):
         self.dim = 2
         self.size = self.sizeX, self.sizeY = sizeX, sizeY
 
-        ## A map from states according to the bitmask to
-        # pygame blittable states ( between 0 and 28 )
-        self.displayableStateDict = {
-            0: 0,     # U
-            2048: 1,  #C00   2048
-            2049: 2,  #C10   2048+1
-            2050: 3,  #C01   2048+2
-            2051: 4,  #C11   2048+3
-            4192: 5,  #S000  4096+96
-            4160: 6,  #S00   4096+64
-            4168: 7,  #S01   4096+64+8
-            4128: 8,  #S0    4096+32
-            4176: 9,  #S10   4096+64+16
-            4184: 10, #S11   4096+64+16+8
-            4144: 11, #S1    4096+32+16
-            4096: 12, #S     4096
-            6144: 13, #T000  6144
-            6272: 14, #T001  6144+128
-            6400: 15, #T010  6144+256
-            6528: 16, #T011  6144+128+256
-            6656: 17, #T020  6144+512
-            6784: 18, #T021  6144+128+512
-            6912: 19, #T030  6144+256+512
-            7040: 20, #T031  6144+128+256+512
-            7168: 21, #T100  6144+1024
-            7296: 22, #T101  6144+128+1024
-            7424: 23, #T110  6144+256+1024
-            7552: 24, #T111  6144+128+256+1024
-            7680: 25, #T120  6144+512+1024
-            7808: 26, #T121  6144+128+512+1024
-            7936: 27, #T130  6144+256+512+1024
-            8064: 28, #T131  6144+128+256+1024+512
-            }
-
-        ## A map from human readable vonNeumann states ( such as 'U', 'T020' and 'C11' )
-        # actual states calculated via bitmask
-        self.nameStateDict = { "U": 0,
-                               "C00" : 2048, "C10" : 2049, "C01" : 2050, "C11" : 2051,
-                               "S"   : 4096, "S0"  : 4128, "S1"  : 4144, "S00" : 4160,
-                               "S01" : 4168, "S10" : 4176, "S11" : 4184, "S000": 4192,
-                               "T000": 6144, "T001": 6272, "T010": 6400, "T011": 6528,
-                               "T020": 6656, "T032": 6784, "T030": 6912, "T031": 7040,
-                               "T100": 7168, "T101": 7296, "T110": 7424, "T111": 7552,
-                               "T120": 7680, "T121": 7808, "T130": 7936, "T131": 8064 }
-
-        ## An array containing all correct states (see vonNeumann)
-        self.states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168,
-                        4176, 4184, 4192, 6144, 6272, 6400, 6528, 6656, 6784,
-                        6912, 7040, 7168, 7296, 7424, 7552, 7680, 7808, 7936, 8064 ]
 
         ## The current configuration is held here
         # as usual, these two arrays contain the real configuration, that is used
@@ -103,27 +113,7 @@ class vonNeumann ( object ):
         # between 0 and ~2^13, so we need a dict (see vonNeumann::displayableStateDict)
         # to map the states to 0..28, so the Display-module can display states
         # without knowing the difference
-        self.displayConf = np.zeros( self.size, int)
-
-
-        for imgFile in ( "images/vonNeumann/U.jpg",    "images/vonNeumann/C00.jpg",
-                         "images/vonNeumann/C01.jpg",  "images/vonNeumann/C10.jpg",
-                         "images/vonNeumann/C11.jpg",  "images/vonNeumann/S000.jpg",
-                         "images/vonNeumann/S00.jpg",  "images/vonNeumann/S01.jpg",
-                         "images/vonNeumann/S0.jpg",   "images/vonNeumann/S10.jpg",
-                         "images/vonNeumann/S11.jpg",  "images/vonNeumann/S1.jpg",
-                         "images/vonNeumann/S.jpg",    "images/vonNeumann/T000.jpg",
-                         "images/vonNeumann/T001.jpg", "images/vonNeumann/T010.jpg",
-                         "images/vonNeumann/T011.jpg", "images/vonNeumann/T020.jpg",
-                         "images/vonNeumann/T021.jpg", "images/vonNeumann/T030.jpg",
-                         "images/vonNeumann/T031.jpg", "images/vonNeumann/T100.jpg",
-                         "images/vonNeumann/T101.jpg", "images/vonNeumann/T110.jpg",
-                         "images/vonNeumann/T111.jpg", "images/vonNeumann/T120.jpg",
-                         "images/vonNeumann/T121.jpg", "images/vonNeumann/T130.jpg",
-                         "images/vonNeumann/T131.jpg" ):
-            img = None #pygame.image.load( imgFile ).convert()
-            self.palette.append( img )
-
+        self.displayConf = np.zeros( self.size, int )
 
     ## Used to append cells to the list of cells to handle in the next step
     def enlist( self, x, y ):
