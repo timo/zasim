@@ -44,6 +44,7 @@ nameStateDict = { "U": 0,
                   "T020": 6656, "T032": 6784, "T030": 6912, "T031": 7040,
                   "T100": 7168, "T101": 7296, "T110": 7424, "T111": 7552,
                   "T120": 7680, "T121": 7808, "T130": 7936, "T131": 8064 }
+stateNameDict = {a:b for b,a in nameStateDict.iteritems()}
 
 ## An array containing all correct states (see vonNeumann)
 states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168,
@@ -51,10 +52,9 @@ states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168,
            6912, 7040, 7168, 7296, 7424, 7552, 7680, 7808, 7936, 8064 ]
 
 try:
-    from ..external.qt import (QImage, QPainter, QRect, QPixmapFragment, QPointF,
-            QPixmap)
+    from ..external.qt import QImage, QPainter, QRect, QPointF, QPixmap, QSize
 
-    import path
+    from os import path
 
     # compose a texture atlas from the images
     # additionally, create a dictionary of "factories" for QPixmapFragment objects
@@ -63,21 +63,25 @@ try:
     size = QImage("images/vonNeumann/U.jpg").rect()
     one_w, one_h = size.width(), size.height()
 
-    new_image = QImage((one_w * len(states), one_h))
+    new_image = QPixmap(QSize(one_w * len(states), one_h))
     PALETTE_JVN_PF = {}
-    with QPainter(new_image) as ptr:
-        for num, name in enumerate([nameStateDict.find(num) for num in states]):
-            img = QImage(path.join("images/vonNeumann", name + ".jpg"))
-            position_rect = QRect(one_w * num, 0, one_w, one_h)
-            ptr.drawImage(position_rect, img, img.rect())
-            PALETTE_JVN_PF[nameStateDict[name]] = lambda x, y: QPixmapFragment.create(
-                    QPointF(x, y),
-                    position_rect)
+    ptr = QPainter(new_image)
 
-    PALETTE_JVN_IMAGE = QPixmap(new_image)
+    for num, name in enumerate([stateNameDict[num] for num in states]):
+        img = QImage(path.join("images/vonNeumann", name + ".jpg"))
+        position_rect = QRect(one_w * num, 0, one_w, one_h)
+        ptr.drawImage(position_rect, img, img.rect())
+        PALETTE_JVN_PF[nameStateDict[name]] = lambda x, y: QPainter.PixmapFragment.create(
+                QPointF(x, y),
+                position_rect)
+
+    ptr.end()
+
+    PALETTE_JVN_IMAGE = new_image
 
 except ImportError:
     print "could not import qt for JVN CA palette"
+    raise
 
 ## The cellular automaton proposed by John von Neumann
 # \verbatim
