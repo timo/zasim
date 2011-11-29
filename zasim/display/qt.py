@@ -10,9 +10,13 @@ from __future__ import absolute_import
 from ..external.qt import (QObject, QPixmap, QImage, QPainter, QPoint, QSize, QRect,
                            QLine, QColor, QBuffer, QIODevice, Signal, Qt)
 
+from zasim.cagen.jvn import PALETTE_JVN_PF, PALETTE_JVN_IMAGE
+
 import numpy as np
 import time
 import Queue
+
+from itertools import product
 
 
 PALETTE_32 = [0xff000000, 0xffffffff, 0xffff0000, 0xff0000ff, 0xff00ff00, 0xffffff00, 0xff00ffff, 0xffff00ff]
@@ -86,6 +90,30 @@ def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
     # getting pretty colors and zasim eventually crashing.
     _last_rendered_state_conf = nconf
     return image
+
+def render_state_array_tiled(states, palette=PALETTE_JVN_IMAGE, pixfrags=PALETTE_JVN_PF, region=None, tilesize=None):
+    """Using a texture atlas and a dictionary of pixmap fragment "factories", draw a configuration
+    using graphical tiles"""
+
+    if region:
+        x, y, w, h = region
+        conf = states[x:x+w, y:y+h]
+    else:
+        x, y = 0, 0
+        w, h = conf.shape
+        conf = states
+
+    if not tilesize:
+        tilesize = pixfrags.values()[0].height()
+
+    result = QPixmap(QSize(w * tilesize, h * tilesize))
+    with QPainter(result) as ptr:
+        positions = product(xrange(w), xrange(h))
+        values = [(pos, conf[pos]) for pos in positions]
+        fragments = [pixfrags[value](*pos) for pos, value in values]
+        ptr.drawPixmapFragments(fragments, palette)
+
+    return result
 
 class BaseQImagePainter(QObject):
     """This is a base class for implementing renderers for configs based on
