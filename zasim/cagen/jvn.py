@@ -60,7 +60,7 @@ from os import path
 from zasim.display.qt import generate_tile_atlas
 
 # XXX get the absolute path if possible.
-filename_map = {num:path.join("images/vonNeumann", stateNameDict[num]) for num in states}
+filename_map = {num:path.join("images/vonNeumann", stateNameDict[num]) + ".png" for num in states}
 PALETTE_JVN_IMAGE, PALETTE_JVN_RECT = generate_tile_atlas(filename_map, "images/vonNeumann")
 
 ## The cellular automaton proposed by John von Neumann
