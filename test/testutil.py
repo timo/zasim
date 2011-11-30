@@ -1,4 +1,5 @@
 import numpy as np
+from itertools import repeat, chain, product
 
 def compare_ndim_arrays(arr1, arr2):
     print "arr1:"
@@ -80,6 +81,18 @@ def pretty_print_binrule(rule_arr):
         l2.append(str(int(rule_arr[i])))
     print " ".join(l1)
     print " " + "   ".join(l2)
+
+class EvilRandom(object):
+    def __init__(self, iterator):
+        self.iterator = iter(iterator)
+
+    def random(self):
+        return self.iterator.next()
+
+class ZerosThenOnesRandom(EvilRandom):
+    def __init__(self, zeros):
+        super(ZerosThenOnesRandom, self).__init__(
+            chain(repeat(0.0, zeros), repeat(1.0)))
 
 INTERESTING_BINRULES = [
         26, 30, 122, 184, # triangles of different sorts
