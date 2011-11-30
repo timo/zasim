@@ -5,7 +5,7 @@ from zasim.display.console import MultilineOneDimConsolePainter
 from zasim.simulator import BaseSimulator, TargetProxy
 from zasim.config import RandomInitialConfiguration
 
-palette = [["a ", "a ", "a ", "a ", "b ", "b ", "b ", "b ", "c ", "c ", "c ", "c "],
+palette = [[" a", " a", " a", " a", " b", " b", " b", " b", " c", " c", " c", " c"],
            ["<a", "<b", "<c", "  ", "<a", "<b", "<c", "  ", "<a", "<b", "<c", "  "]]
 values  =  [ 0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    10,   11]
 probabs =  [0.1,   0,    0,   0.23,  0,  0.1,    0,   0.23,  0,    0,    0.1, 0.24]
@@ -15,16 +15,18 @@ palette = MultilineOneDimConsolePainter.convert_palette(palette, values)
 class TuringTapeSimulator(BaseSimulator):
     def __init__(self):
         super(TuringTapeSimulator, self).__init__()
+
+        self.shape = (25,)
         self.cconf = RandomInitialConfiguration(12, *probabs).generate((25,))
         # do not send stuff from the right border.
         self.cconf[-1] = self.cconf[-1] | 3
-        self.shape = (25,)
 
         self.possible_values = values
 
         self.target_attrs = ["cconf", "possible_values"]
 
         self.t = TargetProxy(self, self.target_attrs)
+
 
     def get_config(self):
         return self.cconf
