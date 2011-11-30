@@ -137,7 +137,11 @@ class ElementaryCellularAutomatonBase(Computation):
                 "with neighbourhoods of more than two dimensions"]
 
     def build_name(self, parts):
-        parts.append("calculating rule %s" % (hex(self.rule)))
+        if self.rule <= 255:
+            mingle = str
+        else:
+            mingle = hex
+        parts.append("calculating rule %s" % (mingle(self.rule)))
 
 class CountBasedComputationBase(Computation):
     """This base class counts the amount of nonzero neighbours excluding the

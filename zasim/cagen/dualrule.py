@@ -193,4 +193,9 @@ else:
                 "with neighbourhoods of more than two dimensions"]
 
     def build_name(self, parts):
-        parts.append("calculating rule %s (%s%%) / %s" % (hex(self.rule_a), self.rule_alpha, hex(self.rule_b)))
+        if self.rule_a <= 255 and self.rule_b <= 255:
+            mingle = str
+        else:
+            mingle = hex
+        parts.append("calculating rule %s (%s%%) / %s" % (mingle(self.rule_a), self.alpha * 100, mingle(self.rule_b)))
+
