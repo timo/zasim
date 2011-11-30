@@ -42,7 +42,7 @@ class TestDualRule:
             simu.step_pure_py()
             br.step_pure_py()
 
-            assert_ndim_arrays_equal(simu.get_config(), br.get_config())
+            assert_arrays_equal(simu.get_config(), br.get_config())
 
     @pytest.mark.skipif("not HAVE_WEAVE")
     def test_compare_nondeterministic_weave(self):
@@ -57,7 +57,7 @@ class TestDualRule:
             simu.step_inline()
             br.step_inline()
 
-            assert_ndim_arrays_equal(simu.get_config(), br.get_config())
+            assert_arrays_equal(simu.get_config(), br.get_config())
 
     def test_compare_evil_random_pure(self):
         rando = ZerosThenOnesRandom(1000)
@@ -72,7 +72,7 @@ class TestDualRule:
             simu.step_pure_py()
             br.step_pure_py()
 
-            assert_ndim_arrays_equal(simu.get_config(), br.get_config())
+            assert_arrays_equal(simu.get_config(), br.get_config())
 
         br2 = cagen.BinRule(rule=184, config=simu.get_config())
 
@@ -80,5 +80,5 @@ class TestDualRule:
             simu.step_pure_py()
             br2.step_pure_py()
 
-            assert_ndim_arrays_equal(simu.get_config(), br2.get_config())
+            assert_arrays_equal(simu.get_config(), br2.get_config())
 
