@@ -35,6 +35,9 @@ transmitting are like this::
     | ?|<Y|       |<X|
     +==+==+       +==+
 
+Implementation
+--------------
+
 A clever way to number the states is this one::
 
     +==+==+==+==+==+==+==+==+==+==+==+==+
@@ -88,7 +91,76 @@ The full step function is then simply this::
             self.cconf[index] = result
 
         # notify any listeners, that the simulator has been stepped.
+        self.step_number += 1
         self.updated.emit()
 
 In addition to changing the configuration array, we need to emit the `updated`
 signal to comply with the `zasim.simulator.BaseSimulator` interface.
+
+Building the Palette
+--------------------
+
+In order for the simulator to correctly be displayed, we need to create a palette,
+too. `zasim.display.console.MultilineOneDimConsolePainter` can render images to
+ascii just like shown above with the right palette. Not creating a custom palette
+will give us output like this::
+
+    +==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+
+    |11|3 |3 |7 |5 |11|7 |5 |7 |7 |7 |0 |3 |11|3 |7 |5 |3 |11|10|11|11|5 |3 |3 |
+    +==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+==+
+
+The code to get such an output is quite simple::
+
+    tape = TuringTapeSimulator()
+    painter = MultilineOneDimConsolePainter(tape)
+
+A palette is created for us based on the `possible_values` attribute of the
+`target object`. However, a much better palette can easily be created with the
+following code::
+
+    palette = [[" a", " a", " a", " a", " b", " b", " b", " b", " c", " c", " c", " c"],
+               ["<a", "<b", "<c", "  ", "<a", "<b", "<c", "  ", "<a", "<b", "<c", "  "]]
+    # optional: numerical values for each cell
+    values  =  [ 0,    1,    2,    3,    4,    5,    6,    7,    8,    9,    10,   11]
+    # probabilities for each cell to be in the starting configuration
+    probabs =  [0.1,   0,    0,   0.23,  0,  0.1,    0,   0.23,  0,    0,    0.1, 0.24]
+
+    # create ascii art boxes around each palette entry
+    palette = MultilineOneDimConsolePainter.box_art_palette(palette)
+    # convert the palette into the internal format used by the Painter.
+    palette = MultilineOneDimConsolePainter.convert_palette(palette, values)
+
+Creating the Simulator class
+----------------------------
+
+Deriving from `~zasim.simulator.BaseSimulator`, a `TuringTapeSimulator` can easily
+be created. The first thing to note is, that a few properties are required to exist
+in the class, since otherwise other parts of zasim can and will complain.
+
+The most important thing is a `target object`. There is no requirement for the
+target object to be a different object, so we can just set it up to be a
+`~zasim.simulator.TargetProxy`. We set `cconf` and `possible_values` to be its
+`target_attrs`, which are the attributes, that the `TargetProxy` will make
+available. This requires a `cconf` to actually exist, so we use the probabilities
+list for a `~zasim.config.RandomInitialConfiguration`::
+
+    class TuringTapeSimulator(BaseSimulator):
+        def __init__(self):
+            super(TuringTapeSimulator, self).__init__()
+
+            self.shape = (25,)
+            self.cconf = RandomInitialConfiguration(12, *probabs).generate((self.shape))
+            # do not send stuff from the right border.
+            self.cconf[-1] = self.cconf[-1] | 3
+
+            self.possible_values = values
+
+            self.target_attrs = ["cconf", "possible_values"]
+
+            self.t = TargetProxy(self, self.target_attrs)
+
+        def get_config(self):
+            # this is required for Painters to work.
+            return self.cconf
+
+
