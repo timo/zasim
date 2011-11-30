@@ -125,8 +125,10 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
 
         super(MultilineOneDimConsolePainter, self).__init__(simulator, **kwargs)
 
-        if not palette:
+        if palette is None:
             palette = self.convert_palette(self.box_art_palette([simulator.possible_values]))
+            if compact_boxes is None:
+                compact_boxes = True
 
         self.palette = palette
         self.palette_height = len(palette.values()[0])
