@@ -318,6 +318,8 @@ for the generated C++ code:
             result = self.target.rule[int(result)]
     # from hook post_compute
             self.acc.write_to(pos, result)
+    # from hook loop_end
+    <BLANKLINE>
     # from hook after_step
     <BLANKLINE>
     # from hook finalize

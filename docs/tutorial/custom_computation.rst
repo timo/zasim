@@ -136,6 +136,8 @@ And this is the generated python code::
             result = second_sup
     # from hook post_compute
             self.acc.write_to(pos, result)
+    # from hook loop_end
+
     # from hook after_step
 
     # from hook finalize

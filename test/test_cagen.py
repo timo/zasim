@@ -6,24 +6,12 @@ from zasim.features import *
 from .testutil import *
 
 from random import randrange
-from itertools import repeat, chain, product
+from itertools import product
 
 import numpy as np
 import pytest
 
 MIN_SIZE, MAX_SIZE = 5, 25
-
-class EvilRandom(object):
-    def __init__(self, iterator):
-        self.iterator = iter(iterator)
-
-    def random(self):
-        return self.iterator.next()
-
-class ZerosThenOnesRandom(EvilRandom):
-    def __init__(self, zeros):
-        super(ZerosThenOnesRandom, self).__init__(
-            chain(repeat(0.0, zeros), repeat(1.0)))
 
 class TestCAGen:
     @pytest.mark.skipif("not HAVE_WEAVE")

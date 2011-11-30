@@ -3,20 +3,19 @@ from .. import external
 external.WANT_GUI = False
 
 from .simulators import BinRule, GameOfLife
+from ..simulator import CagenSimulator
 from ..display.console import OneDimConsolePainter, TwoDimConsolePainter
 from ..features import HAVE_WEAVE
+from . import DualRuleCellularAutomaton, automatic_stepfunc
 
-def test(width=75, height=None, life=False, copy_borders=True, rule=None, histogram=True, 
-         activity=False, pure=False, print_rule=True,
+def test(width=75, height=None, life=False, copy_borders=True,
+         rule=None, alt_rule=None,
+         histogram=True, activity=False,
+         pure=False, print_rule=True,
          nondet=100, beta=100, steps=100, base=2):
 
     beta = beta / 100.
     nondet = nondet / 100.
-
-    if rule is not None:
-        if rule.startswith("0x"):
-            rule = int(rule, 16)
-        rule = int(rule)
 
     if life:
         if height is None:
@@ -25,9 +24,17 @@ def test(width=75, height=None, life=False, copy_borders=True, rule=None, histog
     else:
         size = (width,) if height is None else (width, height)
 
-        sim_obj = BinRule(size, rule=rule,
-                histogram=histogram, activity=activity,
-                nondet=nondet, beta=beta, copy_borders=copy_borders, base=base)
+        if alt_rule is None:
+            sim_obj = BinRule(size, rule=rule,
+                    histogram=histogram, activity=activity,
+                    nondet=nondet, beta=beta, copy_borders=copy_borders, base=base)
+        else:
+            compu = DualRuleCellularAutomaton(rule, alt_rule, nondet)
+            sf_obj = automatic_stepfunc(size,
+                    computation=compu, histogram=histogram, activity=activity,
+                    copy_borders=copy_borders, base=base)
+            sf_obj.gen_code()
+            sim_obj = CagenSimulator(sf_obj, sf_obj.target)
 
     if height is None:
         display = OneDimConsolePainter(sim_obj, 1)
@@ -71,8 +78,10 @@ def main(args=None):
     argp.add_argument("-b", "--dont-copy-borders", default=True, dest="copy_borders", action="store_false",
             help="copy borders around. Otherwise, zeros will be read from "
                     "the borders")
-    argp.add_argument("-r", "--rule", default=None,
+    argp.add_argument("-r", "--rule", default=None, type=str,
             help="select the rule number to calculate")
+    argp.add_argument("-R", "--alt-rule", default=None, type=str,
+            help="the alternative rule to use. Supplying this will turn nondet into dual-rule mode")
     argp.add_argument("--histogram", default=False, action="store_true",
             help="calculate a histogram")
     argp.add_argument("--activity", default=False, action="store_true",
@@ -94,6 +103,17 @@ def main(args=None):
             help="The base of cell values. Base 2 gives you 0 and 1, for example.")
 
     args = argp.parse_args(args)
+
+    if args.rule:
+        if args.rule.startswith("0x"):
+            args.rule = int(args.rule, 16)
+        else:
+            args.rule = int(args.rule)
+    if args.alt_rule:
+        if args.alt_rule.startswith("0x"):
+            args.alt_rule = int(args.alt_rule, 16)
+        else:
+            args.alt_rule = int(args.alt_rule)
 
     test(**vars(args))
 
