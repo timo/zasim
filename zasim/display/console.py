@@ -161,15 +161,16 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
 
         num_rows = len(palette)
         num_entries = len(palette[0])
-        cell_widths = {}
+        cell_width = min_boxwidth
+
+        for index in range(num_entries):
+            cell_width = min(
+                             max(len(palette[row][index]) for row in range(num_rows)),
+                             cell_width)
 
         upper_lower_rows = []
         separator_rows = []
         for index in range(num_entries):
-            cell_width = min(
-                             max(len(palette[row][index]) for row in range(num_rows)),
-                             min_boxwidth)
-            cell_widths[index] = cell_width
             upper_lower_rows.append("+" + "=" * cell_width + "+")
             separator_rows.append("+" + "-" * cell_width + "+")
 
@@ -177,7 +178,7 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
         for row_number, row in enumerate(palette):
             line = []
             for entry_number, entry in enumerate(row):
-                line.append("|%s|" % (entry.center(cell_widths[entry_number])))
+                line.append("|%s|" % (entry.center(cell_width)))
             new_palette.append(line)
             if separate_lines and row_number < len(palette) - 1:
                 new_palette.append(separator_rows)
