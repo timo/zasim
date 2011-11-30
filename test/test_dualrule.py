@@ -82,3 +82,12 @@ class TestDualRule:
 
             assert_arrays_equal(simu.get_config(), br2.get_config())
 
+    def test_dualrail_prettyprint(self):
+        compu = cagen.DualRuleCellularAutomaton(184, 232, 0.2)
+        sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True)
+        pretty_result = compu.pretty_print()
+        print pretty_result
+        assert pretty_result == '''000  100  010  110  001  101  011  111  
+                                        
+ 0    0    0    1   1/0   1   0/1   1   
+probability: 0.2 / 0.8'''

@@ -159,7 +159,7 @@ else:
                     lines[y].append(" ")
             lines[y] = "".join(lines[y]) + "  "
 
-        lines[-1] = ("X".center(w) + "  ").replace("X", "%(result_value)d")
+        lines[-1] = "%(result_value)s"
 
         template = [line[:] for line in lines]
 
@@ -169,15 +169,17 @@ else:
         for thedict in self.digits_and_values:
             a, b = thedict["result_value"]
             if a != b:
-                thedict["result_value"] = "%s/%s" % (a, b)
+                thedict["result_value"] = ("%s/%s" % (a, b)).center(w + 1) + " "
             else:
-                thedict["result_value"] = a
+                thedict["result_value"] = str(a).center(w + 1) + " "
 
         def pretty_printer(self):
             lines = [line[:] for line in protolines]
             for thedict in self.digits_and_values:
                 for line, tmpl_line in zip(lines, template):
                     line.append(tmpl_line % thedict)
+
+            lines.append("probability: %s / %s" % (self.alpha, 1 - self.alpha))
 
             return "\n".join(["".join(line) for line in lines])
 
