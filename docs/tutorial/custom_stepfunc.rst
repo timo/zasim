@@ -201,7 +201,7 @@ In fact, the simulators from `zasim.cagen.simulators` are all derived from
 either the `ElementaryCagenSimulator` or the `CagenSimulator`.
 
 The `CagenSimulator` and the `ElementaryCagenSimulator` are both constructed
-from a `StepFunc` and a `TestTarget`
+from a `StepFunc` and a `TestTarget`.
 
 The Simulator grants access to the extra attributes of the target via the `t`
 property. It is a `~zasim.simulator.TargetProxy` object, that will allow

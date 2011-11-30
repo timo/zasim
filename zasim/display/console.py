@@ -113,4 +113,96 @@ class TwoDimConsolePainter(BaseConsolePainter):
         with open(filename, "w") as out:
             out.write("\n".join(self._data + [""]))
 
+class MultilineOneDimConsolePainter(BaseConsolePainter):
+    def __init__(self, simulator, palette=None, compact_boxes=None, **kwargs):
+        """A painter for multiline palettes (as described in `convert_palette`).
+
+        :param simulator: The simulator to get configs from.
+        :param palette: The palette to use. If none is supplied, a simple
+                        palette with boxes will be created.
+        :param compact_boxes: If this parameter is True, boxart palettes will
+                              share borders for a more compact display."""
+
+        super(MultilineOneDimConsolePainter, self).__init__(simulator, **kwargs)
+
+        if palette is None:
+            box_contents = map(str, simulator.t.possible_values)
+            palette = self.convert_palette(self.box_art_palette([box_contents]))
+            if compact_boxes is None:
+                compact_boxes = True
+
+        self.palette = palette
+        self.palette_height = len(palette.values()[0])
+
+        self.compact_boxes = compact_boxes
+
+    def draw_conf(self, update_step=True):
+        self._data = [[] for _ in range(self.palette_height)]
+
+        for cell in self._last_conf:
+            aa_image = self.palette[cell]
+            for line, data in enumerate(aa_image):
+                try:
+                    # if the last char of the previous bit matches up with the
+                    # first char of the nex bit, remove one.
+                    if self.compact_boxes and self._data[line][-1][-1] == data[0]:
+                        data = data[1:]
+                except IndexError:
+                    pass
+                self._data[line].append(data)
+
+        # compose the bits inside each line to a full line, append a newline.
+        self._data = ["".join(parts) for parts in self._data]
+
+    @staticmethod
+    def convert_palette(palette, values=None):
+        """Convert a palette from the more easy to write format, where all first,
+        second, third, ... lines share the same entry in an outer list, into the
+        internal format, where each value is mapped to a list of lines that
+        is used internally."""
+
+        result = {}
+
+        num_rows = len(palette)
+        num_entries = len(palette[0])
+        if values is None:
+            values = range(num_entries)
+
+        for index, value in enumerate(values):
+            result[value] = [palette[row_number][index] for row_number in range(num_rows)]
+
+        return result
+
+    @staticmethod
+    def box_art_palette(palette, separate_lines=True, min_boxwidth=2):
+        """Create boxes around each entry in the palette. If separate_lines is set,
+        divide boxes vertically into separate parts.
+        If min_boxwidth is set, boxes have a minimum width."""
+
+        num_rows = len(palette)
+        num_entries = len(palette[0])
+        cell_width = min_boxwidth
+
+        for index in range(num_entries):
+            cell_width = max(
+                             max(len(palette[row][index]) for row in range(num_rows)),
+                             cell_width)
+
+        upper_lower_rows = []
+        separator_rows = []
+        for index in range(num_entries):
+            upper_lower_rows.append("+" + "=" * cell_width + "+")
+            separator_rows.append("+" + "-" * cell_width + "+")
+
+        new_palette = []
+        for row_number, row in enumerate(palette):
+            line = []
+            for entry_number, entry in enumerate(row):
+                line.append("|%s|" % (entry.center(cell_width)))
+            new_palette.append(line)
+            if separate_lines and row_number < len(palette) - 1:
+                new_palette.append(separator_rows)
+
+        return [upper_lower_rows] + new_palette + [upper_lower_rows]
+
 # TODO write mixins that add border copying to the configs prior to drawing
