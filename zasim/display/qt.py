@@ -17,7 +17,7 @@ import Queue
 
 from itertools import product
 
-def generate_tile_atlas(filename_map):
+def generate_tile_atlas(filename_map, common_prefix=""):
     """From a mapping to state value to filename, create a texture atlas
     from the given filenames. Those should all be as big as the first one.
 
@@ -51,6 +51,7 @@ def generate_tile_atlas(filename_map):
             fnt = errptr.font()
             fnt.setPixelSize(30)
             errptr.setFont(fnt)
+            name = name[len(common_prefix):] if name.startswith(common_prefix) else name
             errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR\nnot found:\n%s\n:(" % (name))
             errptr.end()
 
