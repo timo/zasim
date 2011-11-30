@@ -114,8 +114,25 @@ class TwoDimConsolePainter(BaseConsolePainter):
             out.write("\n".join(self._data + [""]))
 
 class MultilineOneDimConsolePainter(BaseConsolePainter):
-    def __init__(self, simulator, **kwargs):
+    def __init__(self, simulator, palette=None, **kwargs):
         super(MultilineOneDimConsolePainter, self).__init__(simulator, **kwargs)
+
+        if not palette:
+            palette = self.convert_palette(self.box_art_palette([simulator.possible_values]))
+
+        self.palette = palette
+        self.palette_height = len(palette.values()[0])
+
+    def draw_conf(self, update_step=True):
+        self._data = [[] for _ in range(self.palette_height)]
+
+        for cell in self._last_conf:
+            aa_image = self.palette[cell]
+            for line, data in enumerate(aa_image):
+                self._data[line].append(data)
+
+        # compose the bits inside each line to a full line, append a newline.
+        self._data = ["".join(parts) for parts in self._data]
 
     @staticmethod
     def convert_palette(palette, values=None):

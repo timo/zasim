@@ -2,6 +2,8 @@
 the tape of a turing machine."""
 
 from zasim.display.console import MultilineOneDimConsolePainter
+from zasim.simulator import BaseSimulator
+from zasim.config import RandomInitialConfiguration
 
 palette = [["a ", "a ", "a ", "a ", "b ", "b ", "b ", "b ", "c ", "c ", "c ", "c "],
            ["  ", "<a", "<b", "<c", "  ", "<a", "<b", "<c", "  ", "<a", "<b", "<c"]]
@@ -10,3 +12,15 @@ palette = MultilineOneDimConsolePainter.box_art_palette(palette)
 palette = MultilineOneDimConsolePainter.convert_palette(palette, values)
 
 print palette
+
+class TuringTapeSimulator(BaseSimulator):
+    def __init__(self):
+        self.conf = RandomInitialConfiguration(12).generate((25,))
+
+    def get_config(self):
+        return self.conf
+
+painter = MultilineOneDimConsolePainter(TuringTapeSimulator(), palette, connect=False)
+
+painter.after_step()
+
