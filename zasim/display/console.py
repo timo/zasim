@@ -113,4 +113,58 @@ class TwoDimConsolePainter(BaseConsolePainter):
         with open(filename, "w") as out:
             out.write("\n".join(self._data + [""]))
 
+class MultilineOneDimConsolePainter(BaseConsolePainter):
+    def __init__(self, simulator, **kwargs):
+        super(MultilineOneDimConsolePainter, self).__init__(simulator, **kwargs)
+
+    @staticmethod
+    def convert_palette(palette, values=None):
+        """Convert a palette from the more easy to write format, where all first,
+        second, third, ... lines share the same entry in an outer list, into the
+        internal format, where each value is mapped to a list of lines that
+        is used internally."""
+
+        result = {}
+
+        num_rows = len(palette)
+        num_entries = len(palette[0])
+        if values is None:
+            values = range(num_entries)
+
+        for index, value in enumerate(values):
+            result[value] = [palette[row_number][index] for row_number in range(num_rows)]
+
+        return result
+
+    @staticmethod
+    def box_art_palette(palette, separate_lines=True, min_boxwidth=3):
+        """Create boxes around each entry in the palette. If separate_lines is set,
+        divide boxes vertically into separate parts.
+        If min_boxwidth is set, boxes have a minimum width."""
+
+        num_rows = len(palette)
+        num_entries = len(palette[0])
+        cell_widths = {}
+
+        upper_lower_rows = []
+        separator_rows = []
+        for index in range(num_entries):
+            cell_width = min(
+                             max(len(palette[row][index]) for row in range(num_rows)),
+                             min_boxwidth)
+            cell_widths[index] = cell_width
+            upper_lower_rows.append("+" + "=" * cell_width + "+")
+            separator_rows.append("+" + "-" * cell_width + "+")
+
+        new_palette = []
+        for row_number, row in enumerate(palette):
+            line = []
+            for entry_number, entry in enumerate(row):
+                line.append("|%s|" % (entry.center(cell_widths[entry_number])))
+            new_palette.append(line)
+            if separate_lines and row_number < len(palette) - 1:
+                new_palette.append(separator_rows)
+
+        return [upper_lower_rows] + new_palette + [upper_lower_rows]
+
 # TODO write mixins that add border copying to the configs prior to drawing
