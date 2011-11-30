@@ -20,7 +20,12 @@ class TargetProxy(object):
             raise AttributeError("%s not in target attrs" % attr)
 
 class BaseSimulator(QObject):
-    """This class serves as the base for simulator objects."""
+    """This class serves as the base for simulator objects.
+
+    .. note::
+        If you ever derive from this class and you get an error like
+        "PySide.QtCore.Signal object has no attribute 'emit'", then you
+        have most likely forgotten to call super's __init__."""
 
     shape = ()
     """The shape of the cellular space of this automaton.
