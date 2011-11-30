@@ -62,7 +62,7 @@ into a tuple and enumerate adds an index to the front. The elements returned loo
 like (5, (0, 3)) if the 5th cell is an "a <a" and the 6th cell is an "a".
 
 The first operation we need to do is to move the upper symbol down and moving the
-lower symbol up. This can be done with the bit masks `~3` (all but the lower 2 bits)
+lower symbol up. This can be done with the bit masks `~~3` (all but the lower 2 bits)
 and `3` (only the lower two bits). Turning the upper symbol into a lower symbol
 is then just a bit-shift operation away, as is turning the lower symbol into an
 upper symbol::
