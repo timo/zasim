@@ -114,7 +114,15 @@ class TwoDimConsolePainter(BaseConsolePainter):
             out.write("\n".join(self._data + [""]))
 
 class MultilineOneDimConsolePainter(BaseConsolePainter):
-    def __init__(self, simulator, palette=None, **kwargs):
+    def __init__(self, simulator, palette=None, compact_boxes=None, **kwargs):
+        """A painter for multiline palettes (as described in `convert_palette`).
+
+        :param simulator: The simulator to get configs from.
+        :param palette: The palette to use. If none is supplied, a simple
+                        palette with boxes will be created.
+        :param compact_boxes: If this parameter is True, boxart palettes will
+                              share borders for a more compact display."""
+
         super(MultilineOneDimConsolePainter, self).__init__(simulator, **kwargs)
 
         if not palette:
@@ -123,12 +131,21 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
         self.palette = palette
         self.palette_height = len(palette.values()[0])
 
+        self.compact_boxes = compact_boxes
+
     def draw_conf(self, update_step=True):
         self._data = [[] for _ in range(self.palette_height)]
 
         for cell in self._last_conf:
             aa_image = self.palette[cell]
             for line, data in enumerate(aa_image):
+                try:
+                    # if the last char of the previous bit matches up with the
+                    # first char of the nex bit, remove one.
+                    if self.compact_boxes and self._data[line][-1][-1] == data[0]:
+                        data = data[1:]
+                except IndexError:
+                    pass
                 self._data[line].append(data)
 
         # compose the bits inside each line to a full line, append a newline.
