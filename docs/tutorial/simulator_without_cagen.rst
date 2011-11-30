@@ -163,4 +163,23 @@ list for a `~zasim.config.RandomInitialConfiguration`::
             # this is required for Painters to work.
             return self.cconf
 
+Letting a simulation run
+------------------------
+
+When the `TuringTapeSimulator` class is done, with its step function from above, it
+can be used quite simply::
+
+    tape = TuringTapeSimulator()
+    painter = MultilineOneDimConsolePainter(tape, palette, compact_boxes=True)
+
+    painter.after_step()
+    print
+
+    for i in range(10):
+        tape.step()
+        print
+
+Running that code gives us output like this:
+
+.. command-output:: python -m zasim.examples.turing.main
 

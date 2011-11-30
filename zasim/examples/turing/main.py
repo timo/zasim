@@ -49,7 +49,7 @@ class TuringTapeSimulator(BaseSimulator):
         self.updated.emit()
 
 tape = TuringTapeSimulator()
-painter = MultilineOneDimConsolePainter(tape, None, compact_boxes=True)
+painter = MultilineOneDimConsolePainter(tape, palette, compact_boxes=True)
 
 painter.after_step()
 print
