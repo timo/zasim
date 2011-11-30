@@ -16,6 +16,8 @@ class TuringTapeSimulator(BaseSimulator):
     def __init__(self):
         super(TuringTapeSimulator, self).__init__()
         self.cconf = RandomInitialConfiguration(12, *probabs).generate((25,))
+        # do not send stuff from the right border.
+        self.cconf[-1] = self.cconf[-1] | 3
         self.shape = (25,)
         self.target_attrs = ["cconf"]
         self.t = TargetProxy(self, self.target_attrs)
@@ -40,9 +42,11 @@ class TuringTapeSimulator(BaseSimulator):
         self.updated.emit()
 
 tape = TuringTapeSimulator()
-painter = MultilineOneDimConsolePainter(tape, palette)
+painter = MultilineOneDimConsolePainter(tape, palette, compact_boxes=True)
 
 painter.after_step()
+print
+
 for i in range(10):
     tape.step()
     print
