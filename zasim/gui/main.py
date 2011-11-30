@@ -3,6 +3,7 @@ from .histogram import HistogramExtraDisplay
 
 from ..external.qt import Qt, app
 from .. import cagen
+from ..simulator import CagenSimulator
 
 import numpy as np
 import sys
@@ -10,7 +11,7 @@ import sys
 def main(width=200, height=200, scale=2,
         onedim=False,
         beta=100, nondet=100,
-        life=False, rule=None,
+        life=False, rule=None, alt_rule=None,
         copy_borders=True, black=None,
         histogram=True, activity=True,
         base=2):
@@ -39,17 +40,33 @@ def main(width=200, height=200, scale=2,
     print size, config
 
     if onedim and not life:
-        # get a random beautiful CA
-        sim_obj = cagen.BinRule(rule=rule, size=size, config=config, nondet=nondet, beta=beta, activity=activity,
-                histogram=histogram, copy_borders=copy_borders, base=base)
+        if alt_rule is None:
+            # get a random beautiful CA
+            sim_obj = cagen.BinRule(rule=rule, size=size, config=config, nondet=nondet, beta=beta, activity=activity,
+                    histogram=histogram, copy_borders=copy_borders, base=base)
+        else:
+            compu = cagen.DualRuleCellularAutomaton(rule, alt_rule, nondet)
+            sf_obj = cagen.automatic_stepfunc(size,
+                    computation=compu, histogram=histogram, activity=activity,
+                    copy_borders=copy_borders, base=base)
+            sf_obj.gen_code()
+            sim_obj = CagenSimulator(sf_obj, sf_obj.target)
 
     else:
         if life:
             sim_obj = cagen.GameOfLife(size, nondet, histogram, activity, config, beta, copy_borders)
         else:
-            sim_obj = cagen.ElementarySimulator(size, nondet, histogram, activity, rule, config, beta, copy_borders, base=base)
+            if alt_rule is None:
+                sim_obj = cagen.ElementarySimulator(size, nondet, histogram, activity, rule, config, beta, copy_borders, base=base)
+            else:
+                compu = cagen.DualRuleCellularAutomaton(rule, alt_rule, nondet)
+                sf_obj = cagen.automatic_stepfunc(size,
+                        computation=compu, histogram=histogram, activity=activity,
+                        copy_borders=copy_borders, base=base)
+                sf_obj.gen_code()
+                sim_obj = CagenSimulator(sf_obj, sf_obj.target)
 
-    if not life:
+    if not life and not alt_rule:
         print sim_obj.pretty_print()
         print sim_obj.t.rule, hex(sim_obj.rule_number)
 
@@ -96,6 +113,8 @@ if __name__ == "__main__":
             help="the size of each cell of the configuration")
     argp.add_argument("-r", "--rule", default=None, type=str,
             help="the elementary cellular automaton rule number to use")
+    argp.add_argument("-R", "--alt-rule", default=None, type=str,
+            help="the alternative rule to use. Supplying this will turn nondet into dual-rule mode")
     argp.add_argument("-c", "--dont-copy-borders", default=True, action="store_false", dest="copy_borders",
             help="copy borders or just read zeros?")
     argp.add_argument("--black", default=None, type=int,
@@ -121,5 +140,10 @@ if __name__ == "__main__":
             args.rule = int(args.rule, 16)
         else:
             args.rule = int(args.rule)
+    if args.alt_rule:
+        if args.alt_rule.startswith("0x"):
+            args.alt_rule = int(args.alt_rule, 16)
+        else:
+            args.alt_rule = int(args.alt_rule)
 
     main(**vars(args))
