@@ -12,8 +12,6 @@ probabs =  [0.1,   0,    0,   0.23,  0,  0.1,    0,   0.23,  0,    0,    0.1, 0.
 palette = MultilineOneDimConsolePainter.box_art_palette(palette)
 palette = MultilineOneDimConsolePainter.convert_palette(palette, values)
 
-print palette
-
 class TuringTapeSimulator(BaseSimulator):
     def __init__(self):
         super(TuringTapeSimulator, self).__init__()
@@ -48,3 +46,4 @@ painter.after_step()
 for i in range(10):
     tape.step()
     print
+
