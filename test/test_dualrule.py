@@ -58,3 +58,27 @@ class TestDualRule:
             br.step_inline()
 
             assert_ndim_arrays_equal(simu.get_config(), br.get_config())
+
+    def test_compare_evil_random_pure(self):
+        rando = ZerosThenOnesRandom(1000)
+        compu = cagen.DualRuleCellularAutomaton(184, 232, 0.5, rando)
+        sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True)
+        sf.gen_code()
+        simu = CagenSimulator(sf, sf.target)
+
+        br = cagen.BinRule(rule=232, config=simu.get_config())
+
+        for i in range(10):
+            simu.step_pure_py()
+            br.step_pure_py()
+
+            assert_ndim_arrays_equal(simu.get_config(), br.get_config())
+
+        br2 = cagen.BinRule(rule=184, config=simu.get_config())
+
+        for i in range(20):
+            simu.step_pure_py()
+            br2.step_pure_py()
+
+            assert_ndim_arrays_equal(simu.get_config(), br2.get_config())
+
