@@ -148,10 +148,22 @@ def render_state_array_tiled(states, palette, rects, region=None, tilesize=None)
 
     if region:
         x, y, w, h = region
-        conf = states[x:x+w, y:y+h]
+        try:
+            conf = states[x:x+w, y:y+h]
+        except IndexError:
+            # this is 1d :(
+            assert h == 1
+            states = states.reshape((states.shape[0], h))
+            conf = states[x:x+w, y:y+h]
     else:
         x, y = 0, 0
-        w, h = states.shape
+        try:
+            w, h = states.shape
+        except ValueError:
+            # the shape is 1d only
+            w, = states.shape
+            h = 1
+            states = states.reshape((w,h))
         conf = states
 
     if not tilesize:
