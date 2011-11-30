@@ -90,7 +90,7 @@ class DualRuleCellularAutomaton(Computation):
             compute_py.append(code)
 
         compute_code.append("""
-        if(rand() >= RAND_MAX * RULE_ALPHA) {
+        if(rand() < RAND_MAX * RULE_ALPHA) {
             result = rule_a(result);
         } else {
             result = rule_b(result);
@@ -98,7 +98,7 @@ class DualRuleCellularAutomaton(Computation):
 
         compute_py.append("""
 # choose which rule to apply
-if self.random.random() >= RULE_ALPHA:
+if self.random.random() < RULE_ALPHA:
     result = self.target.rule_a[int(result)]
 else:
     result = self.target.rule_b[int(result)]""")
