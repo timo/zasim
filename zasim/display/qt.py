@@ -341,6 +341,9 @@ class HistogramPainter(BaseQImagePainter):
                 if self._invert_odd and self._odd:
                     values = (values[1], values[0]) + tuple(values[1:])
                 maximum = sum(values)
+                if not maximum:
+                    values = [1] + (len(values) - 1) * [0]
+                    maximum = 1
                 scale = self._height * 1.0 / maximum
                 absolute = 0.0
                 for value, color in zip(values, self.colors):
