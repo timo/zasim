@@ -126,7 +126,8 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
         super(MultilineOneDimConsolePainter, self).__init__(simulator, **kwargs)
 
         if palette is None:
-            palette = self.convert_palette(self.box_art_palette([simulator.possible_values]))
+            box_contents = map(str, simulator.t.possible_values)
+            palette = self.convert_palette(self.box_art_palette([box_contents]))
             if compact_boxes is None:
                 compact_boxes = True
 
@@ -173,7 +174,7 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
         return result
 
     @staticmethod
-    def box_art_palette(palette, separate_lines=True, min_boxwidth=3):
+    def box_art_palette(palette, separate_lines=True, min_boxwidth=2):
         """Create boxes around each entry in the palette. If separate_lines is set,
         divide boxes vertically into separate parts.
         If min_boxwidth is set, boxes have a minimum width."""
@@ -183,7 +184,7 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
         cell_width = min_boxwidth
 
         for index in range(num_entries):
-            cell_width = min(
+            cell_width = max(
                              max(len(palette[row][index]) for row in range(num_rows)),
                              cell_width)
 

@@ -19,7 +19,11 @@ class TuringTapeSimulator(BaseSimulator):
         # do not send stuff from the right border.
         self.cconf[-1] = self.cconf[-1] | 3
         self.shape = (25,)
-        self.target_attrs = ["cconf"]
+
+        self.possible_values = values
+
+        self.target_attrs = ["cconf", "possible_values"]
+
         self.t = TargetProxy(self, self.target_attrs)
 
     def get_config(self):
