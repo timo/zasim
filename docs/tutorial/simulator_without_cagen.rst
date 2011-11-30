@@ -146,8 +146,10 @@ list for a `~zasim.config.RandomInitialConfiguration`::
 
     class TuringTapeSimulator(BaseSimulator):
         def __init__(self):
+            # call parents init so that Qt Signals can work
             super(TuringTapeSimulator, self).__init__()
 
+            # set the size of the tape, as per the Simulator interface.
             self.shape = (25,)
             self.cconf = RandomInitialConfiguration(12, *probabs).generate((self.shape))
             # do not send stuff from the right border.
