@@ -404,9 +404,23 @@ class OneDimQImagePainter(BaseQImagePainter):
 
         self.after_step(False)
 
-class TwoDimQImagePainter(BaseQImagePainter):
+class TwoDimQImagePainterBase(BaseQImagePainter):
     """This class offers rendering a two-dimensional simulator config to
     a QImage"""
+
+    def after_step(self, update_step=True):
+        if update_step and self.skip_frame():
+            return
+        conf = self._sim.get_config().copy()
+        self._queue.put((update_step, conf))
+
+        self.draw_conf()
+        self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
+
+    def create_image_surf(self):
+        pass
+
+class TwoDimQImagePainter(TwoDimQImagePainterBase):
     def __init__(self, simulator, connect=True, **kwargs):
         """Initialise the TwoDimQImagePainter.
 
@@ -434,14 +448,32 @@ class TwoDimQImagePainter(BaseQImagePainter):
         except Queue.Empty:
             pass
 
-    def after_step(self, update_step=True):
-        if update_step and self.skip_frame():
-            return
-        conf = self._sim.get_config().copy()
-        self._queue.put((update_step, conf))
+class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
+    def __init__(self, simulator, palette, rects, scale=1, **kwargs):
+        self.palette = palette
+        self.rects = rects
+        self.tile_size = rects.values()[0].height()
+        assert rects.values()[0].width() == self.tile_size
+        self._sim = simulator
 
-        self.draw_conf()
-        self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
+        w, h = simulator.shape
+        w = w * self.tile_size
+        h = h * self.tile_size
+
+        super(TwoDimQImagePalettePainter, self).__init__(w, h, **kwargs)
+
+    def draw_conf(self):
+        try:
+            update_step, conf = self._queue.get_nowait()
+            tilesize = self.tile_size * self._scale
+            w, h = self._width / tilesize, self._height / tilesize
+
+            print self._width, self._height, tilesize
+            print w, h
+
+            self._image = render_state_array_tiled(conf, self.palette, self.rects)
+        except Queue.Empty:
+            pass
 
 # TODO make a painter that continuously moves up the old configurations for saner
 #      display in ipython rich consoles and such.
