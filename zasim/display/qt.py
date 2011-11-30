@@ -8,7 +8,7 @@ configurations in-line."""
 from __future__ import absolute_import
 
 from ..external.qt import (QObject, QPixmap, QImage, QPainter, QPoint, QSize, QRect,
-                           QPen, QLine, QColor, QBuffer, QIODevice, Signal, Qt)
+                           QPen, QBrush, QLine, QColor, QBuffer, QIODevice, Signal, Qt)
 
 import numpy as np
 import time
@@ -30,12 +30,13 @@ def generate_tile_atlas(filename_map):
 
     # try to make the image as near to a square image a spossible
     columns = int(math.ceil(math.sqrt(len(filename_map))))
-    rows = len(filename_map) / columns
+    rows = len(filename_map) / columns + 1
 
     new_image = QPixmap(QSize(columns * one_w, rows * one_h))
     palette_rect = {}
 
     ptr = QPainter(new_image)
+    ptr.fillRect(new_image.rect(), QBrush("pink"))
     for num, (value, name) in enumerate(filename_map.iteritems()):
         img = QImage(name)
 
@@ -48,7 +49,7 @@ def generate_tile_atlas(filename_map):
             errptr = QPainter(img)
             errptr.setPen(QPen("white"))
             fnt = errptr.font()
-            fnt.setPixelSize(42)
+            fnt.setPixelSize(30)
             errptr.setFont(fnt)
             errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR\nnot found:\n%s\n:(" % (name))
             errptr.end()
