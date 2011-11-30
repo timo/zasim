@@ -37,7 +37,8 @@ displayableStateDict = {
 ## A map from human readable vonNeumann states ( such as 'U', 'T020' and 'C11' )
 # actual states calculated via bitmask
 nameStateDict = { "U": 0,
-                  "C00" : 2048, "C10" : 2049, "C01" : 2050, "C11" : 2051,
+                  #"C00" : 2048, "C10" : 2049, "C01" : 2050, "C11" : 2051,
+                  "C00" : 1, "C10" : 2, "C01" : 3, "C11" : 4,
                   "S"   : 4096, "S0"  : 4128, "S1"  : 4144, "S00" : 4160,
                   "S01" : 4168, "S10" : 4176, "S11" : 4184, "S000": 4192,
                   "T000": 6144, "T001": 6272, "T010": 6400, "T011": 6528,
@@ -45,18 +46,14 @@ nameStateDict = { "U": 0,
                   "T100": 7168, "T101": 7296, "T110": 7424, "T111": 7552,
                   "T120": 7680, "T121": 7808, "T130": 7936, "T131": 8064 }
 stateNameDict = {a:b for b,a in nameStateDict.iteritems()}
-
-## An array containing all correct states (see vonNeumann)
-states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168,
-           4176, 4184, 4192, 6144, 6272, 6400, 6528, 6656, 6784,
-           6912, 7040, 7168, 7296, 7424, 7552, 7680, 7808, 7936, 8064 ]
+states = sorted(nameStateDict.values())
 
 from os import path
 from zasim.display.qt import generate_tile_atlas
 
 # XXX get the absolute path if possible.
 filename_map = {num:path.join("images/vonNeumann", stateNameDict[num]) for num in states}
-PALETTE_JVN_IMAGE, PALETTE_JVN_RECT = generate_tile_atlas(filename_map)
+PALETTE_JVN_IMAGE, PALETTE_JVN_RECT = generate_tile_atlas(filename_map, "images/vonNeumann")
 
 ## The cellular automaton proposed by John von Neumann
 # \verbatim

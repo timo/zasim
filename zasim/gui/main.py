@@ -80,7 +80,7 @@ def main(width=200, height=200, scale=2,
         print sim_obj.t.rule, hex(sim_obj.rule_number)
 
     display = ZasimDisplay(sim_obj)
-    display.set_scale(scale)
+    display.set_scale(scale * 10)
 
     display.control.start()
 
