@@ -58,6 +58,7 @@ This package is split into multiple modules:
     cagen/neighbourhoods
     cagen/border
     cagen/computations
+    cagen/dualrule
     cagen/stats
     cagen/nondeterministic
     cagen/beta_async
