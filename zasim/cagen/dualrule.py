@@ -65,8 +65,7 @@ class DualRuleCellularAutomaton(Computation):
             self.rule_a = randrange(0, self.base ** (self.base ** self.digits))
 
         if self.rule_b is None:
-            while self.rule_a != self.rule_b:
-                self.rule_b = randrange(0, self.base ** (self.base ** self.digits))
+            self.rule_b = randrange(0, self.base ** (self.base ** self.digits))
 
         if self.rule_a >= self.base ** (self.base ** self.digits):
             self.rule_a = self.rule_a % (self.base ** (self.base ** self.digits))
