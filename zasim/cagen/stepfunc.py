@@ -14,13 +14,23 @@ from collections import defaultdict
 from .utils import offset_pos
 
 import sys
+import os
 import tempfile
 
 if HAVE_WEAVE:
     from scipy import weave
     from scipy.weave import converters
 
-EXTREME_PURE_PY_DEBUG = False
+ZASIM_PY_DEBUG = bool(os.environ.get("ZASIM_PY_DEBUG", False))
+ZASIM_EXTREME_PY_DEBUG = bool(os.environ.get("ZASIM_PY_DEBUG") == "extreme")
+ZASIM_WEAVE_DEBUG = bool(os.environ.get("ZASIM_WEAVE_DEBUG", False))
+
+if ZASIM_WEAVE_DEBUG:
+    print("running weave in debug mode", file=sys.stderr)
+if ZASIM_PY_DEBUG:
+    print("running pure-py code in debug mode", file=sys.stderr)
+    if ZASIM_EXTREME_PY_DEBUG:
+        print("extreme pure-py debugging enabled", file=sys.stderr)
 
 class StepFunc(object):
     """The StepFunc composes different parts into a functioning
@@ -180,7 +190,7 @@ class StepFunc(object):
             if not HAVE_TUPLE_ARRAY_INDEX:
                 line = tuple_array_index_fixup(line)
             newfunc.append(" " * self.pycode_indent[hook] + line)
-            if EXTREME_PURE_PY_DEBUG:
+            if ZASIM_PY_DEBUG:
                 indent = len(line) - len(line.lstrip(" "))
                 words = line.strip().split(" ")
                 if len(words) > 1 and words[1] == "=":
@@ -209,6 +219,12 @@ class StepFunc(object):
                 code_bits.extend(self.code[section])
             self.code_text = "\n".join(code_bits)
 
+            if ZASIM_WEAVE_DEBUG:
+                print("/* Generated C code:", file=sys.stderr)
+                print("---8<---8<---8<--- */", file=sys.stderr)
+                print(self.code_text, file=sys.stderr)
+                print("/*\n--->8--->8--->8--- */", file=sys.stderr)
+
             # TODO run the code once with dummy data, that will still cause the
             #      types to match - the only way to compile a function with weave
             #      without running it, too, would be to copy most of the code from
@@ -231,7 +247,7 @@ class StepFunc(object):
 
             append_code("init")
             code_bits.append("    for pos in self.loop.get_iter():")
-            if EXTREME_PURE_PY_DEBUG:
+            if ZASIM_EXTREME_PY_DEBUG:
                 code_bits.append("        print ('        pos = ' + str(pos))")
             append_code("pre_compute")
             append_code("compute")
@@ -246,6 +262,13 @@ class StepFunc(object):
             with self.codefile.file:
                 self.codefile.write(code_text)
                 self.codefile.file.flush()
+
+            if ZASIM_PY_DEBUG:
+                print("# Generated python code:", file=sys.stderr)
+                print("# filename: %s" % (self.codefile.name), file=sys.stderr)
+                print("# ---8<---8<---8<---", file=sys.stderr)
+                print(self.code_text, file=sys.stderr)
+                print("# --->8--->8--->8---", file=sys.stderr)
 
             myglob = globals()
             myloc = locals()
@@ -269,7 +292,8 @@ class StepFunc(object):
         local_dict.update(self.consts)
         attrs = self.attrs + self.consts.keys()
         weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
-                      type_converters = converters.blitz)
+                      type_converters = converters.blitz,
+                      extra_compile_args=["-O0"] if ZASIM_WEAVE_DEBUG else [])
         self.acc.swap_configs()
         self.prepared = True
 
