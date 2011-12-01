@@ -46,11 +46,14 @@ def main(width=200, height=200, scale=2,
             sim_obj = cagen.BinRule(rule=rule, size=size, config=config, nondet=nondet, beta=beta, activity=activity,
                     histogram=histogram, copy_borders=copy_borders, base=base)
         else:
+            alt_rule = None if alt_rule == -1 else alt_rule
             compu = cagen.DualRuleCellularAutomaton(rule, alt_rule, nondet)
             sf_obj = cagen.automatic_stepfunc(size=size, config=config,
                     computation=compu, histogram=histogram, activity=activity,
                     copy_borders=copy_borders, base=base)
             sf_obj.gen_code()
+            print compu.pretty_print()
+            print compu.rule_a, compu.rule_b
             sim_obj = CagenSimulator(sf_obj, sf_obj.target)
 
     else:
@@ -60,14 +63,17 @@ def main(width=200, height=200, scale=2,
             if alt_rule is None:
                 sim_obj = cagen.ElementarySimulator(size, nondet, histogram, activity, rule, config, beta, copy_borders, base=base)
             else:
+                alt_rule = None if alt_rule == -1 else alt_rule
                 compu = cagen.DualRuleCellularAutomaton(rule, alt_rule, nondet)
                 sf_obj = cagen.automatic_stepfunc(size=size, config=config,
                         computation=compu, histogram=histogram, activity=activity,
                         copy_borders=copy_borders, base=base)
                 sf_obj.gen_code()
+                print compu.pretty_print()
+                print compu.rule_a, compu.rule_b
                 sim_obj = CagenSimulator(sf_obj, sf_obj.target)
 
-    if not life and not alt_rule:
+    if "rule" in sim_obj.target_attrs:
         print sim_obj.pretty_print()
         print sim_obj.t.rule, hex(sim_obj.rule_number)
 
