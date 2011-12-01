@@ -48,11 +48,13 @@ class ControlWidget(QWidget):
         reset_button.setObjectName("reset")
         l.addWidget(reset_button)
 
-        self.zero_percentage = QSpinBox(self)
-        self.zero_percentage.setMaximum(99)
-        self.zero_percentage.setMinimum(1)
-        self.zero_percentage.setValue(50)
-        self.zero_percentage.setSuffix("% black")
+        self.zero_percentage = QDoubleSpinBox(self)
+        self.zero_percentage.setMaximum(1)
+        self.zero_percentage.setMinimum(0)
+        self.zero_percentage.setValue(0.5)
+        self.zero_percentage.setSingleStep(0.01)
+        self.zero_percentage.setDecimals(4)
+        self.zero_percentage.setSuffix(" black")
         self.zero_percentage.setObjectName("zero_percentage")
         l.addWidget(self.zero_percentage)
 
@@ -103,7 +105,7 @@ class ControlWidget(QWidget):
         if conf is None:
             conf = np.zeros(self.sim.get_config().shape, self.sim.get_config().dtype)
             positions = product(*[range(size) for size in conf.shape])
-            zero_perc = self.zero_percentage.value() / 100.
+            zero_perc = self.zero_percentage.value()
             for pos in positions:
                 if random.random() > zero_perc:
                     conf[pos] = random.choice(self.sim.t.possible_values[1:])
