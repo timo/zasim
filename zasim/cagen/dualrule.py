@@ -29,7 +29,7 @@ class DualRuleCellularAutomaton(Computation):
     def __init__(self, rule_a=None, rule_b=None, alpha=0.5, random_generator=None, **kwargs):
         """Create the computation.
 
-        Supply None as the rule to get a random one."""
+        Supply None as either rule to get a random one."""
         super(DualRuleCellularAutomaton, self).__init__(**kwargs)
         self.rule_a = rule_a
         self.rule_b = rule_b
