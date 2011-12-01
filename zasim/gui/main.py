@@ -18,8 +18,10 @@ def main(width=200, height=200, scale=2,
     if black > 1:
         black = black / 100.
 
-    beta = beta / 100.
-    nondet = nondet / 100.
+    if beta > 1:
+        beta = beta / 100.
+    if nondet > 1:
+        nondet = nondet / 100.
 
     w, h = width, height
     if onedim:
@@ -120,11 +122,11 @@ if __name__ == "__main__":
     argp.add_argument("--black", default=None, type=int,
             help="what percentage of the cells to make black at the beginning.")
 
-    argp.add_argument("--nondet", default=100, type=int,
-            help="with what percentage should cells be executed?")
-    argp.add_argument("--beta", default=100, type=int,
+    argp.add_argument("--nondet", default=100, type=float,
+            help="with what percentage should cells be executed? (either between 2 and 100 or 0.0 and 1.0)")
+    argp.add_argument("--beta", default=100, type=float,
             help="with what probability should a cell succeed in exposing its "\
-                 "state to its neighbours?")
+                 "state to its neighbours? (either between 2 and 100 or 0.0 and 1.0)")
 
     argp.add_argument("--no-histogram", default=True, action="store_false", dest="histogram",
             help="don't display a histogram")
