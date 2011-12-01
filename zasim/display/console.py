@@ -114,10 +114,9 @@ class TwoDimConsolePainter(BaseConsolePainter):
             out.write("\n".join(self._data + [""]))
 
 class MultilineOneDimConsolePainter(BaseConsolePainter):
+    """A painter for multiline palettes (as described in `convert_palette`)."""
     def __init__(self, simulator, palette=None, compact_boxes=None, **kwargs):
-        """A painter for multiline palettes (as described in `convert_palette`).
-
-        :param simulator: The simulator to get configs from.
+        """:param simulator: The simulator to get configs from.
         :param palette: The palette to use. If none is supplied, a simple
                         palette with boxes will be created.
         :param compact_boxes: If this parameter is True, boxart palettes will
@@ -158,8 +157,7 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
     def convert_palette(palette, values=None):
         """Convert a palette from the more easy to write format, where all first,
         second, third, ... lines share the same entry in an outer list, into the
-        internal format, where each value is mapped to a list of lines that
-        is used internally."""
+        internal format, where each value is mapped to a list of lines."""
 
         result = {}
 
@@ -175,9 +173,9 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
 
     @staticmethod
     def box_art_palette(palette, separate_lines=True, min_boxwidth=2):
-        """Create boxes around each entry in the palette. If separate_lines is set,
-        divide boxes vertically into separate parts.
-        If min_boxwidth is set, boxes have a minimum width."""
+        """Create boxes around each entry in the palette. If `separate_lines`
+        is set, divide boxes vertically into separate parts.
+        If `min_boxwidth` is set, boxes have a minimum width."""
 
         num_rows = len(palette)
         num_entries = len(palette[0])
