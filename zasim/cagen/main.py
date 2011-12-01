@@ -14,8 +14,10 @@ def test(width=75, height=None, life=False, copy_borders=True,
          pure=False, print_rule=True,
          nondet=100, beta=100, steps=100, base=2):
 
-    beta = beta / 100.
-    nondet = nondet / 100.
+    if beta > 1.0:
+        beta = beta / 100.
+    if nondet > 1.0:
+        nondet = nondet / 100.
 
     if life:
         if height is None:
@@ -94,11 +96,11 @@ def main(args=None):
             help="calculate a game of life.")
     argp.add_argument("-s", "--steps", metavar="STEPS", default=100, type=int,
             help="run the simulator for STEPS steps.")
-    argp.add_argument("--nondet", default=100, type=int,
-            help="with what percentage should cells be executed?")
-    argp.add_argument("--beta", default=100, type=int,
+    argp.add_argument("--nondet", default=100, type=float,
+            help="with what percentage should cells be executed? (either between 2 and 100 or between 0.0 and 1.0)")
+    argp.add_argument("--beta", default=100, type=float,
             help="with what probability should a cell succeed in exposing its "\
-                 "state to its neighbours?")
+                 "state to its neighbours? (either between 2 and 100 or between 0.0 and 1.0)")
     argp.add_argument("--base", default=2, type=int,
             help="The base of cell values. Base 2 gives you 0 and 1, for example.")
 
