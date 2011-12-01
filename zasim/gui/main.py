@@ -47,7 +47,7 @@ def main(width=200, height=200, scale=2,
                     histogram=histogram, copy_borders=copy_borders, base=base)
         else:
             compu = cagen.DualRuleCellularAutomaton(rule, alt_rule, nondet)
-            sf_obj = cagen.automatic_stepfunc(size,
+            sf_obj = cagen.automatic_stepfunc(size=size, config=config,
                     computation=compu, histogram=histogram, activity=activity,
                     copy_borders=copy_borders, base=base)
             sf_obj.gen_code()
@@ -61,7 +61,7 @@ def main(width=200, height=200, scale=2,
                 sim_obj = cagen.ElementarySimulator(size, nondet, histogram, activity, rule, config, beta, copy_borders, base=base)
             else:
                 compu = cagen.DualRuleCellularAutomaton(rule, alt_rule, nondet)
-                sf_obj = cagen.automatic_stepfunc(size,
+                sf_obj = cagen.automatic_stepfunc(size=size, config=config,
                         computation=compu, histogram=histogram, activity=activity,
                         copy_borders=copy_borders, base=base)
                 sf_obj.gen_code()
