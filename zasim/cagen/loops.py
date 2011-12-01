@@ -2,7 +2,7 @@ from .bases import CellLoop
 from .compatibility import one_dimension, two_dimensions, activity
 from .utils import offset_pos
 
-from itertools import product
+from itertools import product, izip
 import numpy as np
 
 class OneDimCellLoop(CellLoop):
@@ -21,10 +21,7 @@ class OneDimCellLoop(CellLoop):
                 """}""")
 
     def get_iter(self):
-        def generator():
-            for i in range(0, self.code.acc.get_size_of()):
-                yield (i,)
-        return iter(generator())
+        return iter(izip(xrange(0, self.code.acc.get_size_of())))
 
     def build_name(self, parts):
         parts.insert(0, "1d")
@@ -49,11 +46,8 @@ class TwoDimCellLoop(CellLoop):
                 }""")
 
     def get_iter(self):
-        def iterator():
-            for i in range(0, self.code.acc.get_size_of(0)):
-                for j in range(0, self.code.acc.get_size_of(1)):
-                    yield (i, j)
-        return iter(iterator())
+        return iter(product(xrange(0, self.code.acc.get_size_of(0)),
+                            xrange(0, self.code.acc.get_size_of(1))))
 
     def build_name(self, parts):
         parts.insert(0, "2d")
