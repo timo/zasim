@@ -47,9 +47,10 @@ There are two more interesting switches for this module: *--beta* and *--nondet*
 Both of them cause the calculation to behave nondeterministically. The
 simpler one to explain is *--nondet*:
 
-When supplying a percentage (that is, a value between 0 and 100) to
-*--nondet*, each cell will only executed with a probability given as the
-percentage. If it doesn't execute, its new value is simply the old value.
+When supplying a percentage (that is, a value between 2 and 100 or a floating
+point value between 0.0 and 1.0) to *--nondet*, each cell will only executed
+with a probability given as the percentage. If it doesn't execute, its new value
+is simply the old value.
 
 Take, for instance, the rule 0, which sets every cell to 0 in every step,
 no matter what the previous value was.
@@ -67,7 +68,7 @@ Here is one example of a beta-asynchronous version of rule 146, which would
 normally make lots and lots of triangles. With 70% beta-async, it breaks
 the triangle structures quite noticably.
 
-.. command-output:: python -m zasim.cagen.main --rule 146 --width 90 --print-rule --pure --beta 70
+.. command-output:: python -m zasim.cagen.main --rule 146 --width 90 --print-rule --pure --beta 0.7
     :ellipsis: 40
 
  
