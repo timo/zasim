@@ -23,8 +23,11 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                        target_class=TestTarget, **kwargs):
     """From the given parameters, assemble a StepFunc with the given
     computation and extra_code objects. Returns the stepfunc."""
-    if size is None and isinstance(config, np.ndarray):
-        size = config.shape
+    if size is None:
+        # pypy compat: np.array is a type in pypy, whereas it's a function in numpy
+        if ("ndarray" in dir(np) and isinstance(config, np.ndarray)) \
+                or isinstance(config, np.array):
+            size = config.shape
 
     target = target_class(size, config, base=base)
     size = target.size
