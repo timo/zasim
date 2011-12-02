@@ -1,6 +1,8 @@
 from .bases import ExtraStats
 from .compatibility import histogram, activity
 
+from ..features import HAVE_BINCOUNT
+
 import numpy as np
 
 class SimpleHistogram(ExtraStats):
@@ -40,8 +42,14 @@ class SimpleHistogram(ExtraStats):
             conf = np.ravel(conf)
         else:
             raise NotImplementedError("Can only handle 1d or 2d arrays")
+        # XXX this probably breaks down with paletted histograms?
         self.target.histogram = np.zeros(len(self.target.possible_values))
-        histogram = np.bincount(conf)
+        if HAVE_BINCOUNT:
+            histogram = np.bincount(conf)
+        else:
+            histogram = self.target.histogram
+            for cell in conf:
+                histogram[cell] += 1
         self.target.histogram[:len(histogram)] = histogram
 
     def new_config(self):
