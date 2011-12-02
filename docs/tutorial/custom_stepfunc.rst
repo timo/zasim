@@ -164,6 +164,7 @@ objects that are part of the StepFunc. A name could be, for instance::
     1d with ElementaryFlatNeighbourhood calculating rule 0xa5
     2d with MooreNeighbourhood calculating game of life (activity)
 
+.. _tutorial_stepfunc_target:
 
 Keeping the data together: the `Target`
 ---------------------------------------
@@ -183,6 +184,7 @@ of the step function, set by
 `~zasim.cagen.nondeterministic.NondeterministicCellLoopMixin`, `activity`, or
 `histogram`, set by the `stats classes <zasim.cagen.stats>` or anything else.
 
+.. _tutorial_stepfunc_simulator:
 
 A common interface: the `Simulator`
 -----------------------------------
