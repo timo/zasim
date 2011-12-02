@@ -108,7 +108,7 @@ class TestGui:
         reset_button = display.control.findChild(QWidget, u"reset")
         assert reset_button is not None
 
-        display.control.zero_percentage.setValue(33)
+        display.control.zero_percentage.setValue(0.33)
         QTest.mouseClick(reset_button, Qt.LeftButton)
 
         config = sim_obj.get_config()
@@ -117,7 +117,7 @@ class TestGui:
         other = sum(histogram[1:])
         assert abs((1.0 * zeros / (zeros + other)) - 0.33) < 0.2
 
-        display.control.zero_percentage.setValue(99)
+        display.control.zero_percentage.setValue(0.99)
         QTest.mouseClick(reset_button, Qt.LeftButton)
 
         config = sim_obj.get_config()
