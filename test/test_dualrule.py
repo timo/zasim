@@ -36,7 +36,7 @@ class TestDualRule:
         sf.gen_code()
         simu = CagenSimulator(sf, sf.target)
 
-        br = cagen.BinRule(rule=184, config=simu.get_config())
+        br = cagen.BinRule(rule=232, config=simu.get_config())
 
         for i in range(20):
             simu.step_pure_py()
@@ -51,7 +51,7 @@ class TestDualRule:
         sf.gen_code()
         simu = CagenSimulator(sf, sf.target)
 
-        br = cagen.BinRule(rule=232, config=simu.get_config())
+        br = cagen.BinRule(rule=184, config=simu.get_config())
 
         for i in range(50):
             simu.step_inline()
@@ -66,7 +66,7 @@ class TestDualRule:
         sf.gen_code()
         simu = CagenSimulator(sf, sf.target)
 
-        br = cagen.BinRule(rule=232, config=simu.get_config())
+        br = cagen.BinRule(rule=184, config=simu.get_config())
 
         for i in range(10):
             simu.step_pure_py()
@@ -74,7 +74,7 @@ class TestDualRule:
 
             assert_arrays_equal(simu.get_config(), br.get_config())
 
-        br2 = cagen.BinRule(rule=184, config=simu.get_config())
+        br2 = cagen.BinRule(rule=232, config=simu.get_config())
 
         for i in range(20):
             simu.step_pure_py()
