@@ -133,7 +133,7 @@ class BaseNeighbourhoodDisplay(QWidget):
         if dims == 1:
             # for making the code easier, we will only handle 2d neighbourhoods
             # by trivially turning a 1d neighbourhood into a 2d neighbourhood.
-            self.offsets = tuple((0, x[0]) for x in self.offsets)
+            self.offsets = tuple((x[0], 0) for x in self.offsets)
             self.bbox = self.bbox[0], (0, 0)
 
         if values is None:
@@ -153,11 +153,10 @@ class BaseNeighbourhoodDisplay(QWidget):
 
         widths  = [[] for _ in range(grid_h)]
         heights = [[] for _ in range(grid_w)]
-        positions = product(range(grid_h),
-                            range(grid_w))
-        for (row, col) in positions:
+        positions = product(range(grid_w),
+                            range(grid_h))
+        for (col, row) in positions:
             offset = (col + offs_x, row + offs_y)
-            print offset, self.values
             subwidget = self.create_subwidget(offset, self.values.get(offset, GAP))
             subwidget.setObjectName("cell_%d_%d" % offset)
             self.subwidgets[offset] = subwidget
@@ -178,9 +177,9 @@ class BaseNeighbourhoodDisplay(QWidget):
         Subclass this, if you want more gaps around the edges.
 
         Return a tuple of width, height and a tuple of x-offset and y-offset."""
-        return ((self.bbox[1][1] - self.bbox[1][0] + 1,
-                self.bbox[0][1] - self.bbox[0][0] + 1),
-               (self.bbox[0][0], self.bbox[1][0]))
+        return ((self.bbox[0][1] - self.bbox[0][0] + 1,
+                 self.bbox[1][1] - self.bbox[1][0] + 1),
+                (self.bbox[0][0],  self.bbox[1][0]))
 
     def create_subwidget(self, offset, value):
         """Create a widget for a cell in the neighbourhood.
