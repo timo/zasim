@@ -10,4 +10,9 @@ setup(
       keywords = '',
       url = '',
       packages = find_packages(),
+      entry_points="""
+          [console_scripts]
+          zasim_cli = zasim.cagen.main:main
+          zasim_gui = zasim.gui.main:cli_main
+      """
     )

@@ -99,7 +99,7 @@ def main(width=200, height=200, scale=2,
 
     sys.exit(app.exec_())
 
-if __name__ == "__main__":
+def cli_main():
     import argparse
 
     argp = argparse.ArgumentParser(
@@ -154,3 +154,6 @@ if __name__ == "__main__":
             args.alt_rule = int(args.alt_rule)
 
     main(**vars(args))
+
+if __name__ == "__main__":
+    cli_main()
