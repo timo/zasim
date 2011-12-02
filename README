@@ -1,15 +1,17 @@
 This is zasim, a python package for simulating and experimenting with
 cellular automata.
 
-For a quickstart, run
+After installing, run
 
-    python -m zasim.cagen.main --help
+    zasim_cli --help
 
 or
 
-    python -m zasim.gui.main --help
+    zasim_gui --help
 
-Look at docs/tutorial/installation.rst for installation instructions or
+for a quick overview of what zasim has to offer.
+
+Look at docs/tutorial/installation.rst for help on installation or read
 docs/tutorial/invocation.rst for info on how to use zasim.
 
 Get an overview from docs/index.rst, generate a html documentation using

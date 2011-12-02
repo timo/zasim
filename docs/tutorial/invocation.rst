@@ -4,19 +4,24 @@ Invoking zasim from the commandline
 ===================================
 
 The easiest, simplest way to start with zasim is to try out its
-commandline-based ascii-art drawing module, `zasim.cagen.main`.
-
-Calling the main module with the argument *--help* outputs this nice and
-helpful summary of options:
+commandline-based ascii-art drawing module, `zasim.cagen.main`. It can either
+be called directly like this
 
 .. command-output:: python -m zasim.cagen.main --help
+  :shell:
+  :ellipsis: 3
+
+or using the script `zasim_cli`, that setuptools installs in your system when
+installing the zasim package:
+
+.. command-output:: zasim_cli --help
   :shell:
 
 Let's start with a simple example, displaying a run of a `elementary
 cellular automaton`_ - I personally like rule number 126, which generates
 triangles.
 
-.. command-output:: python -m zasim.cagen.main --rule 126 --pure
+.. command-output:: zasim_cli --rule 126 --pure
     :ellipsis: 15
 
 Don't concern yourself with the *--pure* option yet. It will be explained later.
@@ -25,7 +30,7 @@ The option *--print-rule* will cause the program to print out the rule
 table that it uses to do each step as well as the rule number in decimal
 and hexadecimal:
 
-.. command-output:: python -m zasim.cagen.main --rule 126 --pure --print-rule
+.. command-output:: zasim_cli --rule 126 --pure --print-rule
     :ellipsis: 10
 
 ..
@@ -55,7 +60,7 @@ is simply the old value.
 Take, for instance, the rule 0, which sets every cell to 0 in every step,
 no matter what the previous value was.
 
-.. command-output:: python -m zasim.cagen.main --rule 0 --print-rule --pure --nondet 5
+.. command-output:: zasim_cli --rule 0 --print-rule --pure --nondet 5
     :ellipsis: 30
 
 With a nondet value of 5, only 5% of all cells get set to 0 in each step
@@ -68,7 +73,7 @@ Here is one example of a beta-asynchronous version of rule 146, which would
 normally make lots and lots of triangles. With 70% beta-async, it breaks
 the triangle structures quite noticably.
 
-.. command-output:: python -m zasim.cagen.main --rule 146 --width 90 --print-rule --pure --beta 0.7
+.. command-output:: zasim_cli --rule 146 --width 90 --print-rule --pure --beta 0.7
     :ellipsis: 40
 
  
