@@ -26,7 +26,7 @@ def automatic_stepfunc(size=None, config=None, computation=None,
     if size is None:
         # pypy compat: np.array is a type in pypy, whereas it's a function in numpy
         if ("ndarray" in dir(np) and isinstance(config, np.ndarray)) \
-                or isinstance(config, np.array):
+                or ("ndarray" not in dir(np) and isinstance(config, np.array)):
             size = config.shape
 
     target = target_class(size, config, base=base)
