@@ -27,7 +27,11 @@ Running zasim
 Until using zasim in an interactive interpreter gets more convenient,
 you can use the gui or cagen packages from the commandline. Both offer a
 commandline argument interface with many different options. You can get a
-usage summary with the following commands:
+usage summary with the following commands::
+
+    zasim_cli --help
+
+    zasim_gui --help
 
 You can find :doc:`info on how to start the gui from the commandline <gui/main>`
 and :doc:`how to start the commandline version <cagen/main>` with complete usage
