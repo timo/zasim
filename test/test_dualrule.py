@@ -13,7 +13,7 @@ class TestDualRule:
     def test_run_nondeterministic_pure(self):
         # implement nazim fatès density classifier
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0.1)
-        sf = cagen.automatic_stepfunc(computation=compu, histogram=True)
+        sf = cagen.automatic_stepfunc(computation=compu, histogram=True, needs_random_generator=True)
         sf.gen_code()
         simu = CagenSimulator(sf, sf.target)
 
@@ -24,7 +24,7 @@ class TestDualRule:
     def test_run_nondeterministic_weave(self):
         # implement nazim fatès density classifier
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0.1)
-        sf = cagen.automatic_stepfunc(computation=compu, histogram=True)
+        sf = cagen.automatic_stepfunc(computation=compu, histogram=True, needs_random_generator=True)
         simu = CagenSimulator(sf, sf.target)
 
         for i in range(50):
@@ -32,7 +32,7 @@ class TestDualRule:
 
     def test_compare_nondeterministic_pure(self):
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0)
-        sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True)
+        sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True, needs_random_generator=True)
         sf.gen_code()
         simu = CagenSimulator(sf, sf.target)
 
@@ -47,7 +47,7 @@ class TestDualRule:
     @pytest.mark.skipif("not HAVE_WEAVE")
     def test_compare_nondeterministic_weave(self):
         compu = cagen.DualRuleCellularAutomaton(184, 232, 1)
-        sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True)
+        sf = cagen.automatic_stepfunc(size=(100,), computation=compu, needs_random_generator=True, histogram=True)
         sf.gen_code()
         simu = CagenSimulator(sf, sf.target)
 
@@ -61,8 +61,10 @@ class TestDualRule:
 
     def test_compare_evil_random_pure(self):
         rando = ZerosThenOnesRandom(1000)
-        compu = cagen.DualRuleCellularAutomaton(184, 232, 0.5, rando)
-        sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True)
+        compu = cagen.DualRuleCellularAutomaton(184, 232, 0.5)
+        sf = cagen.automatic_stepfunc(size=(100,), computation=compu,
+                                      needs_random_generator=True,
+                                      random_generator=rando, histogram=True)
         sf.gen_code()
         simu = CagenSimulator(sf, sf.target)
 
@@ -84,7 +86,7 @@ class TestDualRule:
 
     def test_dualrail_prettyprint(self):
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0.2)
-        sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True)
+        sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True, needs_random_generator=True)
         pretty_result = compu.pretty_print()
         print pretty_result
         assert pretty_result == '''000  100  010  110  001  101  011  111  

@@ -1,9 +1,9 @@
 # -*- coding: utf8 -*-
 from .bases import Computation
 from .utils import elementary_digits_and_values, rule_nr_to_rule_arr
+from .compatibility import random_generator
 
 import numpy as np
-from random import randrange, Random
 import new
 
 class DualRuleCellularAutomaton(Computation):
@@ -26,7 +26,9 @@ class DualRuleCellularAutomaton(Computation):
     The result_value field is a tuple of what value to use with alpha and what
     value to use with 1-alpha probability."""
 
-    def __init__(self, rule_a=None, rule_b=None, alpha=0.5, random_generator=None, **kwargs):
+    requires_features = [random_generator]
+
+    def __init__(self, rule_a=None, rule_b=None, alpha=0.5, **kwargs):
         """Create the computation.
 
         Supply None as either rule to get a random one."""
@@ -34,11 +36,6 @@ class DualRuleCellularAutomaton(Computation):
         self.rule_a = rule_a
         self.rule_b = rule_b
         self.alpha  = alpha
-
-        if random_generator is None:
-            self.random = Random()
-        else:
-            self.random = random_generator
 
     def visit(self):
         """Get the rule'th cellular automaton for the given neighbourhood.
@@ -76,12 +73,6 @@ class DualRuleCellularAutomaton(Computation):
         compute_py = ["result = 0"]
         self.code.attrs.append("rule_a")
         self.code.attrs.append("rule_b")
-        self.code.attrs.append("randseed")
-
-        self.code.add_code("localvars",
-                """srand(randseed(0));""")
-        self.code.add_code("after_step",
-                """randseed(0) = rand();""")
 
         for digit_num, (offset, name) in zip(range(len(self.neigh) - 1, -1, -1), self.neigh):
             code = "result += %s * %d" % (name, self.base ** digit_num)
@@ -105,15 +96,8 @@ else:
         self.code.add_code("compute", "\n".join(compute_code))
         self.code.add_py_hook("compute", "\n".join(compute_py))
 
-    def set_target(self, target):
-        """Adds the randseed attribute to the target."""
-        super(DualRuleCellularAutomaton, self).set_target(target)
-        # FIXME how do i get the randseed out without using np.array?
-        target.randseed = np.array([self.random.random()])
-
     def bind(self, code):
         super(DualRuleCellularAutomaton, self).bind(code)
-        code.random = self.random
         code.consts["RULE_ALPHA"] = self.alpha
 
     def init_once(self):

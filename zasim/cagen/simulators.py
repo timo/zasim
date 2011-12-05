@@ -20,7 +20,8 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                        copy_borders=True, neighbourhood=None,
                        base=2, extra_code=None,
                        sparse_loop=False,
-                       target_class=TestTarget, **kwargs):
+                       target_class=TestTarget,
+                       needs_random_generator=False, random_generator=None, **kwargs):
     """From the given parameters, assemble a StepFunc with the given
     computation and extra_code objects. Returns the stepfunc."""
     if size is None:
@@ -31,8 +32,6 @@ def automatic_stepfunc(size=None, config=None, computation=None,
 
     target = target_class(size, config, base=base)
     size = target.size
-
-    needs_random_generator = False
 
     if neighbourhood is None:
         if len(size) == 1:
@@ -92,7 +91,7 @@ def automatic_stepfunc(size=None, config=None, computation=None,
         extra_code = []
 
     if needs_random_generator:
-        extra_code.append(RandomGenerator())
+        extra_code.append(RandomGenerator(random_generator=random_generator))
 
     stepfunc = StepFunc(
             loop=loop,
