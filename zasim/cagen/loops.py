@@ -11,12 +11,12 @@ class OneDimCellLoop(CellLoop):
     requires_features = [one_dimension]
 
     def get_pos(self):
-        return "i"
+        return "loop_x"
 
     def visit(self):
         super(OneDimCellLoop, self).visit()
         self.code.add_code("loop_begin",
-                """for(int i=0; i < sizeX; i++) {""")
+                """for(int loop_x=0; loop_x < sizeX; loop_x++) {""")
         self.code.add_code("loop_end",
                 """}""")
 
@@ -33,14 +33,14 @@ class TwoDimCellLoop(CellLoop):
     requires_features = [two_dimensions]
 
     def get_pos(self):
-        return "i", "j"
+        return "loop_x", "loop_y"
 
     def visit(self):
         super(TwoDimCellLoop, self).visit()
         size_names = self.code.acc.size_names
         self.code.add_code("loop_begin",
-            """for(int i=0; i < %s; i++) {
-                for(int j=0; j < %s; j++) {""" % (size_names))
+            """for(int loop_x=0; loop_x < %s; loop_x++) {
+                for(int loop_y=0; loop_y < %s; loop_y++) {""" % (size_names))
         self.code.add_code("loop_end",
                 """}
                 }""")
@@ -191,8 +191,8 @@ class SparseCellLoop(CellLoop):
 
 class OneDimSparseCellLoop(SparseCellLoop):
     def __init__(self):
-        self.position_names = "i"
+        self.position_names = "loop_x"
 
 class TwoDimSparseCellLoop(SparseCellLoop):
     def __init__(self):
-        self.position_names = "i", "j"
+        self.position_names = "loop_x", "loop_y"
