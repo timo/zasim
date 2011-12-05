@@ -62,6 +62,8 @@ class RandomGenerator(StepFuncVisitor):
 
     def visit(self):
         """Add code to C and python """
+        super(RandomGenerator, self).visit()
+
         self.code.add_code("localvars",
                 """srand(randseed(0));""")
         self.code.add_code("after_step",
