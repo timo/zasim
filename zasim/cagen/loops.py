@@ -11,7 +11,7 @@ class OneDimCellLoop(CellLoop):
     requires_features = [one_dimension]
 
     def get_pos(self):
-        return "loop_x"
+        return "loop_x",
 
     def visit(self):
         super(OneDimCellLoop, self).visit()
@@ -191,7 +191,7 @@ class SparseCellLoop(CellLoop):
 
 class OneDimSparseCellLoop(SparseCellLoop):
     def __init__(self):
-        self.position_names = "loop_x"
+        self.position_names = "loop_x",
 
 class TwoDimSparseCellLoop(SparseCellLoop):
     def __init__(self):
