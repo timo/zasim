@@ -21,7 +21,7 @@ class OneDimCellLoop(CellLoop):
                 """}""")
 
     def get_iter(self):
-        return iter(izip(xrange(0, self.code.acc.get_size_of())))
+        return iter(izip(xrange(0, self.code.acc.get_size_of(0))))
 
     def build_name(self, parts):
         parts.insert(0, "1d")
