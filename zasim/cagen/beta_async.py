@@ -149,7 +149,7 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
 
         self.code.add_py_hook("post_compute", """
             self.acc.write_to_inner(pos, result)
-            if self.target.random.random() < beta_probab:
+            if self.random.random() < beta_probab:
                 self.acc.write_to(pos, result)
             else:
                 result = self.acc.read_from(pos)
