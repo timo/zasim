@@ -150,7 +150,9 @@ class TestCAGen:
                     accessor=cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
                     extra_code=[cagen.SimpleBorderCopier(),
-                        computer], target=target)
+                        computer] +
+                           [] if deterministic else [cagen.RandomGenerator()],
+                    target=target)
             sf.gen_code()
             return sf
 
@@ -206,7 +208,7 @@ class TestCAGen:
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.ElementaryFlatNeighbourhood(),
                 extra_code=[cagen.SimpleBorderCopier(),
-                    RandomGenerator(random_generator=rand),
+                    cagen.RandomGenerator(random_generator=rand),
                     computer], target=t)
 
         stepfunc.gen_code()
@@ -233,7 +235,7 @@ class TestCAGen:
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.VonNeumannNeighbourhood(),
                 extra_code=[cagen.SimpleBorderCopier(),
-                    RandomGenerator(random_generator=rand),
+                    cagen.RandomGenerator(random_generator=rand),
                     computer], target=t)
 
         stepfunc.gen_code()
@@ -393,7 +395,7 @@ class TestCAGen:
         extra_code = [copier, compute, histogram]
 
         if not deterministic:
-            extra_code.append(RandomGenerator())
+            extra_code.append(cagen.RandomGenerator())
 
         sf = cagen.StepFunc(loop=l, accessor=acc, neighbourhood=neigh,
                         extra_code=extra_code, target=t)
