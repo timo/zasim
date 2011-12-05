@@ -151,7 +151,7 @@ class TestCAGen:
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
                     extra_code=[cagen.SimpleBorderCopier(),
                         computer] +
-                           [] if deterministic else [cagen.RandomGenerator()],
+                           ([] if deterministic else [cagen.RandomGenerator()]),
                     target=target)
             sf.gen_code()
             return sf
