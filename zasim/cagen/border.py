@@ -227,36 +227,36 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
         # and now for the fun part ...
 
         copy_code = []
-        copy_code.append("int x, y;")
+        copy_code.append("int copy_x, copy_y;")
 
         # upper part to lower border
-        copy_code.append("""for(x = 0; x < sizeX; x++) {
-            for(y = 0; y < LOWER_BORDER; y++) {
+        copy_code.append("""for(copy_x = 0; copy_x < sizeX; copy_x++) {
+            for(copy_y = 0; copy_y < LOWER_BORDER; copy_y++) {
                 %s = %s;
-            } }""" % (self.code.acc.write_access(("x", "sizeY + y")),
-                      self.code.acc.write_access(("x", "y")) ))
+            } }""" % (self.code.acc.write_access(("copy_x", "sizeY + copy_y")),
+                      self.code.acc.write_access(("copy_x", "copy_y")) ))
 
         # lower part to upper border
-        copy_code.append("""for(x = 0; x < sizeX; x++) {
-            for(y = 0; y < UPPER_BORDER; y++) {
+        copy_code.append("""for(copy_x = 0; copy_x < sizeX; copy_x++) {
+            for(copy_y = 0; copy_y < UPPER_BORDER; copy_y++) {
                 %s = %s;
-            } }""" % (self.code.acc.write_access(("x", "-y - 1")),
-                      self.code.acc.write_access(("x", "sizeY - y - 1"))))
+            } }""" % (self.code.acc.write_access(("copy_x", "-copy_y - 1")),
+                      self.code.acc.write_access(("copy_x", "sizeY - copy_y - 1"))))
 
 
         # left part to right border including upper and lower edges
-        copy_code.append("""for(x = 0; x < RIGHT_BORDER; x++) {
-            for(y = -UPPER_BORDER; y < sizeY + LOWER_BORDER; y++) {
+        copy_code.append("""for(copy_x = 0; copy_x < RIGHT_BORDER; copy_x++) {
+            for(copy_y = -UPPER_BORDER; copy_y < sizeY + LOWER_BORDER; copy_y++) {
                 %s = %s;
-            } }""" % (self.code.acc.write_access(("sizeX + x", "y")),
-                      self.code.acc.write_access(("x", "y")) ))
+            } }""" % (self.code.acc.write_access(("sizeX + copy_x", "copy_y")),
+                      self.code.acc.write_access(("copy_x", "copy_y")) ))
 
         # right part to left border including upper and lower edges
-        copy_code.append("""for(x = 0; x < LEFT_BORDER; x++) {
-            for(y = -UPPER_BORDER; y < sizeY + LOWER_BORDER; y++) {
+        copy_code.append("""for(copy_x = 0; copy_x < LEFT_BORDER; copy_x++) {
+            for(copy_y = -UPPER_BORDER; copy_y < sizeY + LOWER_BORDER; copy_y++) {
                 %s = %s;
-            } }""" % (self.code.acc.write_access(("-x - 1", "y")),
-                  self.code.acc.write_access(("sizeX - x - 1", "y"))))
+            } }""" % (self.code.acc.write_access(("-copy_x - 1", "copy_y")),
+                  self.code.acc.write_access(("sizeX - copy_x - 1", "copy_y"))))
 
         self.code.add_code("after_step",
                 "\n".join(copy_code))
