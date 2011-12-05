@@ -41,11 +41,9 @@ outer value of the current cell.
 from .neighbourhoods import SimpleNeighbourhood
 from .accessors import SimpleStateAccessor
 from .utils import gen_offset_pos
-from .compatibility import beta_async_neighbourhood, beta_async_accessor
+from .compatibility import beta_async_neighbourhood, beta_async_accessor, random_generator
 
 from random import Random
-
-import numpy as np
 
 class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
     requires_features = [beta_async_accessor]
@@ -95,7 +93,7 @@ class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
                 "\n".join(assignments))
 
 class BetaAsynchronousAccessor(SimpleStateAccessor):
-    requires_features = [beta_async_neighbourhood]
+    requires_features = [beta_async_neighbourhood, random_generator]
     provides_features = [beta_async_accessor]
 
     def __init__(self, probab=0.5, **kwargs):
@@ -105,7 +103,7 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
 
     def init_once(self):
         super(BetaAsynchronousAccessor, self).init_once()
-        self.code.attrs.extend(["inner", "beta_randseed"])
+        self.code.attrs.extend(["inner"])
         self.code.consts["beta_probab"] = self.probab
 
     def new_config(self):
@@ -128,8 +126,7 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
 
     def visit(self):
         self.code.add_code("localvars",
-         """int result;
-            srand(beta_randseed(0));""")
+         """int result;""")
         self.code.add_code("post_compute",
                 self.inner_write_access(self.code.loop.get_pos()) + " = result;")
         self.code.add_code("post_compute",
@@ -144,9 +141,6 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
              read=self.code.acc.read_access(self.code.loop.get_pos()),
              center=self.code.neigh.center_name))
 
-        self.code.add_code("after_step",
-                """beta_randseed(0) = rand();""")
-
         self.code.add_py_hook("init",
                 """result = None""")
         for sizename, value in zip(self.size_names, self.size):
@@ -155,7 +149,7 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
 
         self.code.add_py_hook("post_compute", """
             self.acc.write_to_inner(pos, result)
-            if self.target.beta_random.random() < beta_probab:
+            if self.target.random.random() < beta_probab:
                 self.acc.write_to(pos, result)
             else:
                 result = self.acc.read_from(pos)
@@ -167,8 +161,6 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
 
     def set_target(self, target):
         super(BetaAsynchronousAccessor, self).set_target(target)
-        target.beta_randseed = np.array([self.random.random()])
-        target.beta_random = self.random
 
     def build_name(self, parts):
         parts.insert(0, "Beta-Asynchronous (%s)" % (self.probab))

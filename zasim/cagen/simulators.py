@@ -2,7 +2,7 @@ from .target import TestTarget
 from .computations import ElementaryCellularAutomatonBase, LifeCellularAutomatonBase
 from .beta_async import BetaAsynchronousAccessor, BetaAsynchronousNeighbourhood
 from .accessors import SimpleStateAccessor
-from .nondeterministic import OneDimNondeterministicCellLoop, TwoDimNondeterministicCellLoop
+from .nondeterministic import OneDimNondeterministicCellLoop, TwoDimNondeterministicCellLoop, RandomGenerator
 from .loops import OneDimCellLoop, TwoDimCellLoop, OneDimSparseCellLoop, TwoDimSparseCellLoop
 from .border import SimpleBorderCopier, TwoDimSlicingBorderCopier, BorderSizeEnsurer
 from .stats import SimpleHistogram, ActivityRecord
@@ -32,6 +32,8 @@ def automatic_stepfunc(size=None, config=None, computation=None,
     target = target_class(size, config, base=base)
     size = target.size
 
+    needs_random_generator = False
+
     if neighbourhood is None:
         if len(size) == 1:
             neighbourhood_class = ElementaryFlatNeighbourhood
@@ -40,6 +42,7 @@ def automatic_stepfunc(size=None, config=None, computation=None,
 
     if beta != 1 and nondet == 1:
         acc = BetaAsynchronousAccessor(beta)
+        needs_random_generator = True
         if neighbourhood is None:
             neighbourhood = neighbourhood_class(Base=BetaAsynchronousNeighbourhood)
         elif inspect.isfunction(neighbourhood):
@@ -66,6 +69,7 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                 loop = OneDimCellLoop()
         else:
             loop = OneDimNondeterministicCellLoop(probab=nondet)
+            needs_random_generator = True
     elif len(size) == 2:
         if nondet == 1.0:
             if sparse_loop:
@@ -74,6 +78,7 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                 loop = TwoDimCellLoop()
         else:
             loop = TwoDimNondeterministicCellLoop(probab=nondet)
+            needs_random_generator = True
 
     if copy_borders:
         if len(size) == 1:
@@ -85,6 +90,9 @@ def automatic_stepfunc(size=None, config=None, computation=None,
 
     if extra_code is None:
         extra_code = []
+
+    if needs_random_generator:
+        extra_code.append(RandomGenerator())
 
     stepfunc = StepFunc(
             loop=loop,

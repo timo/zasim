@@ -62,3 +62,4 @@ no_python_code = "no_python_code"
 no_weave_code = "no_weave_code"
 """This StepFunc doesn't generate weave code."""
 
+random_generator = "random_generator"

@@ -29,19 +29,11 @@ from .loops import OneDimCellLoop, TwoDimCellLoop
 from random import Random
 import numpy as np
 
-
-class NondeterministicCellLoopMixin(StepFuncVisitor):
-    """Deriving from a CellLoop and this Mixin will cause every cell to be
-    skipped with a given probability"""
-
-    probab = 0.5
-    """The probability with which to execute each cell."""
-
-    def __init__(self, probab=0.5, random_generator=None, **kwargs):
-        """:param probab: The probability of a cell to be computed.
-        :param random_generator: If supplied, use this Random object for
-                                 random values.
-
+class RandomGenerator(StepFuncVisitor):
+    """Add this StepFuncVisitor to your stepfunc, so that random generators
+    can be used by python and c code in a proper manner. Supply the
+    random_generator argument to define the seed, that is used at the
+    beginnig.
         .. note::
             The random generator will be used directly by the python code, but
             the C code is a bit more complex.
@@ -54,16 +46,57 @@ class NondeterministicCellLoopMixin(StepFuncVisitor):
 
         .. warning::
             If reproducible randomness sequences are desired, do NOT mix the
-            pure python and weave inline step functions!"""
-        super(NondeterministicCellLoopMixin, self).__init__(**kwargs)
+            pure python and weave inline step functions!
+    """
+
+    provides_features = ["random_generator"]
+
+    def __init__(self, random_generator=None, **kwargs):
+        super(RandomGenerator, self).__init__(**kwargs)
+
         if random_generator is None:
             self.random = Random()
         else:
             self.random = random_generator
+
+    def visit(self):
+        """Add code to C and python """
+        self.code.add_code("localvars",
+                """srand(randseed(0));""")
+        self.code.add_code("after_step",
+                """randseed(0) = rand();""")
+        self.code.attrs.append("randseed")
+
+    def set_target(self, target):
+        """Adds the randseed attribute to the target."""
+        super(RandomGenerator, self).set_target(target)
+        # FIXME how do i get the randseed out without using np.array?
+        target.randseed = np.array([self.random.random()])
+
+    def bind(self, code):
+        super(RandomGenerator, self).bind(code)
+        code.random = self.random
+
+class NondeterministicCellLoopMixin(StepFuncVisitor):
+    """Deriving from a CellLoop and this Mixin will cause every cell to be
+    skipped with a given probability"""
+
+    probab = 0.5
+    """The probability with which to execute each cell."""
+
+    requires_features = ["random_generator"]
+
+    def __init__(self, probab=0.5, **kwargs):
+        """:param probab: The probability of a cell to be computed.
+        :param random_generator: If supplied, use this Random object for
+                                 random values.
+        """
+
+        super(NondeterministicCellLoopMixin, self).__init__(**kwargs)
         self.probab = probab
 
     def visit(self):
-        """Adds C code for handling the randseed and skipping."""
+        """Adds C code for handling the skipping."""
         super(NondeterministicCellLoopMixin, self).visit()
         self.code.add_code("loop_begin",
                 """if(rand() >= RAND_MAX * NONDET_PROBAB) {
@@ -72,11 +105,6 @@ class NondeterministicCellLoopMixin(StepFuncVisitor):
                 };""" % dict(probab=self.probab,
                     copy_code=self.code.acc.gen_copy_code(),
                     ))
-        self.code.add_code("localvars",
-                """srand(randseed(0));""")
-        self.code.add_code("after_step",
-                """randseed(0) = rand();""")
-        self.code.attrs.append("randseed")
 
         self.code.add_py_hook("pre_compute", """
             # if the cell isn't executed, just copy instead.
@@ -85,15 +113,8 @@ class NondeterministicCellLoopMixin(StepFuncVisitor):
                 continue""" % dict(probab=self.probab,
                                    copy_code=self.code.acc.gen_copy_py_code()))
 
-    def set_target(self, target):
-        """Adds the randseed attribute to the target."""
-        super(NondeterministicCellLoopMixin, self).set_target(target)
-        # FIXME how do i get the randseed out without using np.array?
-        target.randseed = np.array([self.random.random()])
-
     def bind(self, code):
         super(NondeterministicCellLoopMixin, self).bind(code)
-        code.random = self.random
         code.consts["NONDET_PROBAB"] = self.probab
 
     def build_name(self, parts):
