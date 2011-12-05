@@ -202,10 +202,11 @@ class TestCAGen:
         computer = cagen.ElementaryCellularAutomatonBase(0)
 
         stepfunc = cagen.StepFunc(
-                loop=cagen.OneDimNondeterministicCellLoop(random_generator=rand),
+                loop=cagen.OneDimNondeterministicCellLoop(),
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.ElementaryFlatNeighbourhood(),
                 extra_code=[cagen.SimpleBorderCopier(),
+                    RandomGenerator(random_generator=rand),
                     computer], target=t)
 
         stepfunc.gen_code()
@@ -228,10 +229,11 @@ class TestCAGen:
         computer = cagen.ElementaryCellularAutomatonBase(0)
 
         stepfunc = cagen.StepFunc(
-                loop=cagen.TwoDimNondeterministicCellLoop(random_generator=rand),
+                loop=cagen.TwoDimNondeterministicCellLoop(),
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.VonNeumannNeighbourhood(),
                 extra_code=[cagen.SimpleBorderCopier(),
+                    RandomGenerator(random_generator=rand),
                     computer], target=t)
 
         stepfunc.gen_code()
@@ -388,8 +390,13 @@ class TestCAGen:
         neigh = cagen.MooreNeighbourhood()
         copier = cagen.SimpleBorderCopier()
         histogram = cagen.SimpleHistogram()
+        extra_code = [copier, compute, histogram]
+
+        if not deterministic:
+            extra_code.append(RandomGenerator())
+
         sf = cagen.StepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                        extra_code=[copier, compute, histogram], target=t)
+                        extra_code=extra_code, target=t)
 
         sf.gen_code()
         sim = cagen.CagenSimulator(sf, t)

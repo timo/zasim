@@ -25,6 +25,7 @@ composed for you.
 """
 from .bases import StepFuncVisitor
 from .loops import OneDimCellLoop, TwoDimCellLoop
+from .compatibility import random_generator
 
 from random import Random
 import numpy as np
@@ -49,7 +50,7 @@ class RandomGenerator(StepFuncVisitor):
             pure python and weave inline step functions!
     """
 
-    provides_features = ["random_generator"]
+    provides_features = [random_generator]
 
     def __init__(self, random_generator=None, **kwargs):
         super(RandomGenerator, self).__init__(**kwargs)
