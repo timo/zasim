@@ -50,7 +50,8 @@ def main(width=200, height=200, scale=2,
             compu = cagen.DualRuleCellularAutomaton(rule, alt_rule, nondet)
             sf_obj = cagen.automatic_stepfunc(size=size, config=config,
                     computation=compu, histogram=histogram, activity=activity,
-                    copy_borders=copy_borders, base=base)
+                    copy_borders=copy_borders, base=base,
+                    needs_random_generator=True)
             sf_obj.gen_code()
             print compu.pretty_print()
             print compu.rule_a, compu.rule_b
@@ -67,7 +68,8 @@ def main(width=200, height=200, scale=2,
                 compu = cagen.DualRuleCellularAutomaton(rule, alt_rule, nondet)
                 sf_obj = cagen.automatic_stepfunc(size=size, config=config,
                         computation=compu, histogram=histogram, activity=activity,
-                        copy_borders=copy_borders, base=base)
+                        copy_borders=copy_borders, base=base,
+                        needs_random_generator=True)
                 sf_obj.gen_code()
                 print compu.pretty_print()
                 print compu.rule_a, compu.rule_b
