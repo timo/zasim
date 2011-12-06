@@ -23,7 +23,7 @@ class DualRuleCellularAutomaton(Computation):
 
     digits_and_values = []
     """This list stores a list of dictionaries that for each combination of
-    values for the neighbourhood cells stores the 'result_value', too.
+    values for the neighbourhood cells stores the `result_value`, too.
 
     The result_value field is a tuple of what value to use with alpha and what
     value to use with 1-alpha probability."""
@@ -40,15 +40,11 @@ class DualRuleCellularAutomaton(Computation):
         self.alpha  = alpha
 
     def visit(self):
-        """Get the rule'th cellular automaton for the given neighbourhood.
+        """Get the rule_a'th and rule_b'th cellular automaton for the
+        given neighbourhood.
 
-        First, find out, how many possible combinations there are.
-        That's simply the nuber of cells in the neighbourhood as the exponent
-        of the number of `possible_values`.
-        Then, normalise the neighbourhood cells by sorting their positions
-        first by X, then by Y axis.
-        Finally, create code, that sums up all the values and looks up the
-        target value from the rule lookup array.
+        For a more detailled description of how this works, see
+        `ElementaryCellularAutomatonBase.visit`.
         """
         super(DualRuleCellularAutomaton, self).visit()
 
@@ -99,11 +95,12 @@ else:
         self.code.add_py_hook("compute", "\n".join(compute_py))
 
     def bind(self, code):
+        """Add the RULE_ALPHA constant to the stepfunc object."""
         super(DualRuleCellularAutomaton, self).bind(code)
         code.consts["RULE_ALPHA"] = self.alpha
 
     def init_once(self):
-        """Generate the rule lookup array and a pretty printer."""
+        """Generate the rule lookup arrays and a pretty printer."""
         super(DualRuleCellularAutomaton, self).init_once()
         entries = self.base ** self.digits
         self.target.rule_a = np.zeros(entries, np.dtype("i"))
