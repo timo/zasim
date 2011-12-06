@@ -48,13 +48,18 @@ class TuringTapeSimulator(BaseSimulator):
         self.step_number += 1
         self.updated.emit()
 
-tape = TuringTapeSimulator()
-painter = MultilineOneDimConsolePainter(tape, palette, compact_boxes=True)
 
-painter.after_step()
-print
+def main():
+    tape = TuringTapeSimulator()
+    painter = MultilineOneDimConsolePainter(tape, palette, compact_boxes=True)
 
-for i in range(10):
-    tape.step()
+    painter.after_step()
     print
+
+    for i in range(10):
+        tape.step()
+        print
+
+if __name__ == "__main__":
+    main()
 
