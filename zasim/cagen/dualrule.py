@@ -3,6 +3,8 @@ from .bases import Computation
 from .utils import elementary_digits_and_values, rule_nr_to_rule_arr
 from .compatibility import random_generator
 
+from random import randrange
+
 import numpy as np
 import new
 
