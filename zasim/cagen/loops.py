@@ -153,7 +153,7 @@ class SparseCellLoop(CellLoop):
                                %s
                        }""" % ("\n".join([
                            """
-                           {int idx = i + %(offs_x)s;
+                           {int idx = loop_x + %(offs_x)s;
                            if(!sparse_mask(idx)) {
                                sparse_list(sparse_cell_write_idx) = idx;
                                sparse_mask(idx) = true;
@@ -166,8 +166,8 @@ class SparseCellLoop(CellLoop):
                                %s
                        }""" % ("\n".join([
                            """
-                           {int px = i + %(offs_x)s;
-                           int py = j + %(offs_y)s;
+                           {int px = loop_x + %(offs_x)s;
+                           int py = loop_y + %(offs_y)s;
                            int idx = px * %(size_x)s + py;
                            if(!sparse_mask(idx)) {
                                sparse_list(sparse_cell_write_idx) = idx;
