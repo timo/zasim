@@ -67,6 +67,9 @@ def automatic_stepfunc(size=None, config=None, computation=None,
             else:
                 loop = OneDimCellLoop()
         else:
+            if sparse_loop:
+                raise NotImplementedError("Nondeterministic sparse loops are not"
+                        " yet implemented.")
             loop = OneDimNondeterministicCellLoop(probab=nondet)
             needs_random_generator = True
     elif len(size) == 2:
@@ -76,6 +79,9 @@ def automatic_stepfunc(size=None, config=None, computation=None,
             else:
                 loop = TwoDimCellLoop()
         else:
+            if sparse_loop:
+                raise NotImplementedError("Nondeterministic sparse loops are not"
+                        " yet implemented.")
             loop = TwoDimNondeterministicCellLoop(probab=nondet)
             needs_random_generator = True
 
