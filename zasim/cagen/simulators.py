@@ -130,6 +130,7 @@ class ElementarySimulator(ElementaryCagenSimulator):
                  beta=1, copy_borders=True,
                  neighbourhood=None,
                  base=2,
+                 sparse_loop=False,
                  **kwargs):
         """:param size: The size of the config to generate if no config
                         is supplied. Must be a tuple.
@@ -145,6 +146,7 @@ class ElementarySimulator(ElementaryCagenSimulator):
            :param copy_borders: Copy over data from the other side?
            :param neighbourhood: The neighbourhood to use.
            :param base: The base of possible values for the configuration.
+           :param sparse_loop: Should a sparse loop be used?
            """
         if size is None:
             size = config.shape
@@ -166,7 +168,8 @@ class ElementarySimulator(ElementaryCagenSimulator):
                 nondet=nondet, beta=beta,
                 histogram=histogram, activity=activity,
                 copy_borders=copy_borders, neighbourhood=neighbourhood,
-                base=base, extra_code=[])
+                base=base, extra_code=[],
+                sparse_loop=sparse_loop)
 
         target = stepfunc.target
         stepfunc.gen_code()
@@ -190,6 +193,7 @@ class GameOfLife(CagenSimulator):
                  config=None,
                  beta=1, copy_borders=True,
                  life_params={},
+                 sparse_loop=False,
                  **kwargs):
         """:param size: The size of the config to generate if no config is
                         supplied via the *config* parameter.
@@ -203,7 +207,8 @@ class GameOfLife(CagenSimulator):
                         This is incompatible with the nondet parameter.
            :param copy_borders: Copy over data from the other side?
            :param life_params: Those parameters are passed on to the constructor
-                               of `LifeCellularAutomatonBase`."""
+                               of `LifeCellularAutomatonBase`.
+           :param sparse_loop: Should a sparse loop be generated?"""
 
         computer = LifeCellularAutomatonBase(**life_params)
 
@@ -211,7 +216,8 @@ class GameOfLife(CagenSimulator):
                 nondet=nondet, beta=beta,
                 histogram=histogram, activity=activity,
                 copy_borders=copy_borders, neighbourhood=MooreNeighbourhood,
-                extra_code=[])
+                extra_code=[],
+                sparse_loop=sparse_loop)
 
         target = stepfunc.target
         stepfunc.gen_code()
