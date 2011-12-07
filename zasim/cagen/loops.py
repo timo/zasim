@@ -73,14 +73,6 @@ class SparseCellLoop(CellLoop):
         """Adds the activity mask and position list to the target attributes."""
         super(SparseCellLoop, self).set_target(target)
 
-        if len(target.size) == 1:
-            self.requires_features.append(one_dimension)
-        elif len(target.size) == 2:
-            self.requires_features.append(two_dimensions)
-        else:
-            raise NotImplementedError("SparseCellLoop has not been modified to"
-                    " work with more than 2 dimensions.")
-
         size = self.calculate_size()
         target.sparse_mask = np.zeros(size, dtype=np.bool)
         target.sparse_list = np.zeros(size, dtype=np.int)
@@ -190,9 +182,11 @@ class SparseCellLoop(CellLoop):
                 sparse_mask = sparse_mask*0;""")
 
 class OneDimSparseCellLoop(SparseCellLoop):
+    requires_features = [one_dimension]
     def __init__(self):
         self.position_names = "loop_x",
 
 class TwoDimSparseCellLoop(SparseCellLoop):
+    requires_features = [two_dimensions]
     def __init__(self):
         self.position_names = "loop_x", "loop_y"
