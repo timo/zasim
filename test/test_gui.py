@@ -29,14 +29,14 @@ import signal
 import traceback
 
 _exceptions = []
-def my_except_hook(cls, instance, traceback):
+def my_except_hook(cls, instance, traceback_o):
     print "oh god, an exception!"
     print cls
     print instance
-    print traceback
+    print traceback_o
     print
-    traceback.print_exception(cls, instance, traceback)
-    _exceptions.append((cls, instance, traceback))
+    traceback.print_exception(cls, instance, traceback_o)
+    _exceptions.append((cls, instance, traceback_o))
 
 _aborts = []
 def my_abort_hook():
