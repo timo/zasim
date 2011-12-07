@@ -86,6 +86,12 @@ class BaseBorderCopier(BorderSizeEnsurer):
         return tuple([pos[dim] % size
             for dim, size in enumerate(self.code.acc.size)])
 
+    def correct_position_c(self, pos):
+        """Create a bit of C code, that calculates the corrected position for
+        a position given as a tuple of variable names."""
+        # gah, C makes negative values.
+        return tuple("((((%(a)s) %% (%(b)s)) + (%(b)s)) %% (%(b)s))" %
+                         dict(zip("ab", tup)) for tup in zip(pos, self.code.acc.size_names))
 
 class SimpleBorderCopier(BaseBorderCopier):
     """Copy over cell values, so that reading from a cell at the border over
@@ -177,7 +183,7 @@ class SimpleBorderCopier(BaseBorderCopier):
                 "\n".join(copy_code))
 
     def corect_position_code(self, pos):
-        """Create a piece of py/c code, that calculates the source for a read
+        """Create a piece of py code, that calculates the source for a read
         that would set the right value at position pos, which is beyond the
         border."""
         newpos = []

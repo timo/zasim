@@ -146,19 +146,21 @@ class SparseCellLoop(CellLoop):
                                 size_b = self.code.acc.size_names[1]))
 
         # FIXME use procer position names here
-        # FIXME wrap positions around the borders
         if len(self.position_names) == 1:
             self.code.add_code("loop_end",
                     """if(was_active) {
                                %s
                        }""" % ("\n".join([
                            """
-                           {int idx = loop_x + %(offs_x)s;
+                           {int wrapped_x;
+                           wrapped_x = %(wrap_x)s;
+                           int idx = wrapped_x + %(offs_x)s;
                            if(!sparse_mask(idx)) {
                                sparse_list(sparse_cell_write_idx) = idx;
                                sparse_mask(idx) = true;
                                sparse_cell_write_idx++;
-                           }}""" % dict(offs_x=offs[0])
+                           }}""" % dict(offs_x=offs[0],
+                                        wrap_x=self.code.border.correct_position_c(("loop_x + %s" % (offs[0])))[0])
                                for offs in self.code.neigh.offsets])))
         elif len(self.position_names) == 2:
             self.code.add_code("loop_end",
@@ -168,17 +170,22 @@ class SparseCellLoop(CellLoop):
                            """
                            {int px = loop_x + %(offs_x)s;
                            int py = loop_y + %(offs_y)s;
+                           %(wrap)s;
                            int idx = px * %(size_x)s + py;
                            if(!sparse_mask(idx)) {
                                sparse_list(sparse_cell_write_idx) = idx;
                                sparse_mask(idx) = true;
                                sparse_cell_write_idx++;
                            }}""" % dict(offs_x=offs[0], offs_y=offs[1],
-                                       size_x=self.code.acc.size_names[0])
+                                        size_x=self.code.acc.size_names[0],
+                                        wrap="px = " + ("; py = ".join(self.code.border.correct_position_c(
+                                            ("px", "py")
+                                            ))))
                                for offs in self.code.neigh.offsets])))
         self.code.add_code("loop_end",
                 """
                 }
+                // null the sparse mask
                 sparse_mask = sparse_mask*0;""")
 
 class OneDimSparseCellLoop(SparseCellLoop):

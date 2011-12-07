@@ -23,13 +23,14 @@ class TestSparseLoop:
                 life_full.step_pure_py()
                 life_sparse.step_pure_py()
 
+            print life_sparse.t.sparse_list[:life_sparse.t.activity[1]]
+
             assert_arrays_equal(life_full.get_config(), life_sparse.get_config())
             assert life_full.t.activity[1] == life_sparse.t.activity[1]
             assert life_full.t.activity[0] >= life_sparse.t.activity[0]
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_compare_sparse_life_weave(self):
-        pytest.skip("sparse weave loops cause segfaults ATM")
         self.body_compare_sparse_life(True)
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
@@ -50,12 +51,13 @@ class TestSparseLoop:
                 elem_full.step_pure_py()
                 elem_sparse.step_pure_py()
 
+            print elem_sparse.t.sparse_list, elem_sparse.t.activity[1]
+
             assert_arrays_equal(elem_full.get_config(), elem_sparse.get_config())
             assert elem_full.t.activity[1] == elem_sparse.t.activity[1]
             assert elem_full.t.activity[0] >= elem_sparse.t.activity[0]
 
     def test_compare_sparse_elementary_weave(self, rule_num):
-        pytest.skip("sparse weave loops cause segfaults ATM")
         self.body_compare_sparse_elementary(rule_num, True)
 
     def test_compare_sparse_elementary_pure(self, rule_num):
