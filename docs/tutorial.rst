@@ -8,5 +8,6 @@ Tutorial section
     tutorial/coding_simple_ca
     tutorial/custom_stepfunc
     tutorial/custom_computation
+    tutorial/debug_cagen
     tutorial/simulator_without_cagen
 

@@ -308,7 +308,8 @@ class StepFunc(object):
         attrs = self.attrs + self.consts.keys()
         weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
                       type_converters = converters.blitz,
-                      extra_compile_args=["-O0"] if ZASIM_WEAVE_DEBUG else [])
+                      extra_compile_args=["-O0"] if ZASIM_WEAVE_DEBUG else [],
+                      verbose = 2 if ZASIM_WEAVE_DEBUG else 0)
         self.acc.swap_configs()
         self.prepared = True
 

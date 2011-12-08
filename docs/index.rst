@@ -38,6 +38,31 @@ and :doc:`how to start the commandline version <cagen/main>` with complete usage
 summaries. There is also a section in the tutorial :ref:`about how to run the
 commandline version <tutorial_invocation>`.
 
+Environment variables
+---------------------
+
+`zasim` honors a few different environment variables during runtime:
+
+`ZASIM_PY_DEBUG`
+    Set this to "yes" to write out generated pure-python code path and filename
+    when a StepFunc is generated, to "extreme" to create a print statement for
+    every assignment in the python code. You can also set it to "pdb" or "pudb"
+    to start a pdb or pudb when a StepFunc is stepped.
+
+`ZASIM_WEAVE_DEBUG`
+    Set this to "yes" to compile the C code with -O0 or to "gdb" to launch a gdb
+    in "x-terminal-emulator" and have a trap signal be emitted every time a step
+    is started.
+
+`ZASIM_QT`
+    Set this to "pyside" to use pyside, "pyqt" to try using pyqt (experimental) or
+    anything else to not use Qt at all.
+
+.. seealso::
+
+    :ref:`Debugging cagen stepfuncs <tutorial/debug_cagen>` goes deeper into how
+    to use these environment variables to debug step functions.
+
 Tutorial
 ========
 
