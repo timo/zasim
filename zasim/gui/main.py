@@ -14,7 +14,7 @@ def main(width=200, height=200, scale=2,
         life=False, rule=None, alt_rule=None,
         copy_borders=True, black=None,
         histogram=True, activity=True,
-        base=2):
+        base=2, sparse=False):
 
     if beta > 1:
         beta = beta / 100.
@@ -44,7 +44,7 @@ def main(width=200, height=200, scale=2,
         if alt_rule is None:
             # get a random beautiful CA
             sim_obj = cagen.BinRule(rule=rule, size=size, config=config, nondet=nondet, beta=beta, activity=activity,
-                    histogram=histogram, copy_borders=copy_borders, base=base)
+                    histogram=histogram, copy_borders=copy_borders, base=base, sparse_loop=sparse)
         else:
             alt_rule = None if alt_rule == -1 else alt_rule
             compu = cagen.DualRuleCellularAutomaton(rule, alt_rule, nondet)
@@ -59,17 +59,17 @@ def main(width=200, height=200, scale=2,
 
     else:
         if life:
-            sim_obj = cagen.GameOfLife(size, nondet, histogram, activity, config, beta, copy_borders)
+            sim_obj = cagen.GameOfLife(size, nondet, histogram, activity, config, beta, copy_borders, sparse_loop=sparse)
         else:
             if alt_rule is None:
-                sim_obj = cagen.ElementarySimulator(size, nondet, histogram, activity, rule, config, beta, copy_borders, base=base)
+                sim_obj = cagen.ElementarySimulator(size, nondet, histogram, activity, rule, config, beta, copy_borders, base=base, sparse_loop=sparse)
             else:
                 alt_rule = None if alt_rule == -1 else alt_rule
                 compu = cagen.DualRuleCellularAutomaton(rule, alt_rule, nondet)
                 sf_obj = cagen.automatic_stepfunc(size=size, config=config,
                         computation=compu, histogram=histogram, activity=activity,
                         copy_borders=copy_borders, base=base,
-                        needs_random_generator=True)
+                        needs_random_generator=True, sparse_loop=sparse)
                 sf_obj.gen_code()
                 print compu.pretty_print()
                 print compu.rule_a, compu.rule_b
@@ -141,6 +141,9 @@ def cli_main():
             help="don't display the activity")
     argp.add_argument("--base", default=2, type=int,
             help="The base of the cells.")
+
+    argp.add_argument("--sparse", default=False, action="store_true",
+            help="should a sparse loop be created?")
 
     args = argp.parse_args()
 

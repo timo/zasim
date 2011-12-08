@@ -167,7 +167,7 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
             values = range(num_entries)
 
         for index, value in enumerate(values):
-            result[value] = [palette[row_number][index] for row_number in range(num_rows)]
+            result[value] = [palette[row_number][index] for row_number in xrange(num_rows)]
 
         return result
 
@@ -183,12 +183,12 @@ class MultilineOneDimConsolePainter(BaseConsolePainter):
 
         for index in range(num_entries):
             cell_width = max(
-                             max(len(palette[row][index]) for row in range(num_rows)),
+                             max(len(palette[row][index]) for row in xrange(num_rows)),
                              cell_width)
 
         upper_lower_rows = []
         separator_rows = []
-        for index in range(num_entries):
+        for index in xrange(num_entries):
             upper_lower_rows.append("+" + "=" * cell_width + "+")
             separator_rows.append("+" + "-" * cell_width + "+")
 

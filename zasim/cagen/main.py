@@ -8,11 +8,16 @@ from ..display.console import OneDimConsolePainter, TwoDimConsolePainter
 from ..features import HAVE_WEAVE
 from . import DualRuleCellularAutomaton, automatic_stepfunc
 
+from ..debug import launch_debugger
+
+import os
+
 def test(width=75, height=None, life=False, copy_borders=True,
          rule=None, alt_rule=None,
          histogram=True, activity=False,
          pure=False, print_rule=True,
-         nondet=100, beta=100, steps=100, base=2):
+         nondet=100, beta=100, steps=100, base=2,
+         sparse=False):
 
     if beta > 1.0:
         beta = beta / 100.
@@ -22,19 +27,19 @@ def test(width=75, height=None, life=False, copy_borders=True,
     if life:
         if height is None:
             height = 40
-        sim_obj = GameOfLife((width, height), nondet, histogram, activity, None, beta, copy_borders)
+        sim_obj = GameOfLife((width, height), nondet, histogram, activity, None, beta, copy_borders, sparse_loop=sparse)
     else:
         size = (width,) if height is None else (width, height)
 
         if alt_rule is None:
-            sim_obj = BinRule(size, rule=rule,
+            sim_obj = BinRule(size=size, rule=rule,
                     histogram=histogram, activity=activity,
-                    nondet=nondet, beta=beta, copy_borders=copy_borders, base=base)
+                    nondet=nondet, beta=beta, copy_borders=copy_borders, base=base, sparse_loop=sparse)
         else:
             compu = DualRuleCellularAutomaton(rule, alt_rule, nondet)
             sf_obj = automatic_stepfunc(size,
                     computation=compu, histogram=histogram, activity=activity,
-                    copy_borders=copy_borders, base=base)
+                    copy_borders=copy_borders, base=base, sparse_loop=sparse)
             sf_obj.gen_code()
             sim_obj = CagenSimulator(sf_obj, sf_obj.target)
 
@@ -50,9 +55,12 @@ def test(width=75, height=None, life=False, copy_borders=True,
         print sim_obj.pretty_print()
         print sim_obj.rule_number, "==", hex(sim_obj.rule_number)
 
+    if os.environ.get("ZASIM_WEAVE_DEBUG", False) == "gdb":
+        launch_debugger()
+
     if HAVE_WEAVE and not pure:
         print "weave"
-        for i in range(steps):
+        for i in xrange(steps):
             sim_obj.step_inline()
             if histogram:
                 print sim_obj.t.histogram
@@ -60,7 +68,7 @@ def test(width=75, height=None, life=False, copy_borders=True,
                 print sim_obj.t.activity, sum(sim_obj.t.activity)
     else:
         print "pure"
-        for i in range(steps):
+        for i in xrange(steps):
             sim_obj.step_pure_py()
             if histogram:
                 print sim_obj.t.histogram
@@ -103,6 +111,9 @@ def main(args=None):
                  "state to its neighbours? (either between 2 and 100 or between 0.0 and 1.0)")
     argp.add_argument("--base", default=2, type=int,
             help="The base of cell values. Base 2 gives you 0 and 1, for example.")
+
+    argp.add_argument("--sparse", default=False, type=bool,
+            help="Should a sparse loop be generated?")
 
     args = argp.parse_args(args)
 
