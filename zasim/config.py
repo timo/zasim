@@ -78,13 +78,13 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
         if not HAVE_NUMPY_RANDOM and not HAVE_MULTIDIM:
             # pypy compatibility
             assert len(size) == 1
-            randoms = np.array([random.random() for i in range(size[0])])
+            randoms = np.array([random.random() for i in xrange(size[0])])
             arr = np.zeros(len(randoms), dtype=dtype)
         else:
             randoms = np.random.rand(*size)
             arr = np.zeros(randoms.shape, dtype=dtype)
 
-        for pos in product(*[range(siz) for siz in size]):
+        for pos in product(*[xrange(siz) for siz in size]):
             arr[pos] = min(idx for idx, perc in enumerate(self.cumulative_percentages)
                            if randoms[pos] < perc)
 

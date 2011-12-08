@@ -218,15 +218,15 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
 
         self.tee_copy_hook("""# copy the left portion
             # plus the upper and lower edges right of the right border
-            for pos in product(range(0, RIGHT_BORDER),
-                               range(-UPPER_BORDER, sizeY + LOWER_BORDER)):
+            for pos in product(xrange(0, RIGHT_BORDER),
+                               xrange(-UPPER_BORDER, sizeY + LOWER_BORDER)):
                 self.acc.write_to((sizeX + pos[0], pos[1]),
                         self.acc.read_from_next(pos))""")
 
         self.tee_copy_hook("""# copy the right portion
             # plus the upper and lower edges left of the left border
-            for pos in product(range(0, LEFT_BORDER),
-                               range(-UPPER_BORDER, sizeY + LOWER_BORDER)):
+            for pos in product(xrange(0, LEFT_BORDER),
+                               xrange(-UPPER_BORDER, sizeY + LOWER_BORDER)):
                 self.acc.write_to((-pos[0] - 1, pos[1]),
                         self.acc.read_from_next((sizeX - pos[0] - 1, pos[1])))""")
 

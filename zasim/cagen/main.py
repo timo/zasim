@@ -60,7 +60,7 @@ def test(width=75, height=None, life=False, copy_borders=True,
 
     if HAVE_WEAVE and not pure:
         print "weave"
-        for i in range(steps):
+        for i in xrange(steps):
             sim_obj.step_inline()
             if histogram:
                 print sim_obj.t.histogram
@@ -68,7 +68,7 @@ def test(width=75, height=None, life=False, copy_borders=True,
                 print sim_obj.t.activity, sum(sim_obj.t.activity)
     else:
         print "pure"
-        for i in range(steps):
+        for i in xrange(steps):
             sim_obj.step_pure_py()
             if histogram:
                 print sim_obj.t.histogram
