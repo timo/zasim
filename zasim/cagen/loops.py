@@ -1,5 +1,5 @@
 from .bases import CellLoop
-from .compatibility import one_dimension, two_dimensions, activity
+from .compatibility import one_dimension, two_dimensions
 from .utils import offset_pos
 
 from itertools import product, izip
@@ -61,9 +61,8 @@ class SparseCellLoop(CellLoop):
     sure, that no fields are enlisted more than once.
 
     The `sparse_list` is duplicated into the property `prev_sparse_list`, from
-    which reads are performed. Additionally, the number of active cells is
-    taken from an "activity" stats before the loop to see how many valid
-    entries exist in the array.
+    which reads are performed. All entries in the sparse_list arrays are valid
+    up to the first -1.
 
     For the pure-py version, a normal python set is used."""
 
@@ -99,16 +98,13 @@ class SparseCellLoop(CellLoop):
 
     def new_config(self):
         size = self.calculate_size()
-        print size
         self.target.sparse_mask = np.ones(size, dtype=np.bool)
-        self.target.sparse_list = np.array(range(size), dtype=np.int)
+        self.target.sparse_list = np.array(list(range(size)) + [-1] , dtype=np.int)
         self.target.prev_sparse_list = self.target.sparse_list.copy()
-        print self.target.prev_sparse_list
         self.target.sparse_set = set(product(*[range(siz) for siz in self.target.size]))
 
     def get_iter(self):
         # iterate over a copy of the set, so that it can be modified while running
-        print len(self.target.sparse_set)
         the_list = list(self.target.sparse_set)
         self.target.sparse_set.clear()
         return iter(the_list)
@@ -124,15 +120,14 @@ class SparseCellLoop(CellLoop):
             """if was_active: self.loop.mark_cell_py(pos)""")
 
         self.code.add_code("localvars",
-            """int valid_positions = activity(0);
-               if(valid_positions == -1) {
-                   valid_positions = %(size_a)s * %(size_b)s;
-               }
-               int sparse_cell_write_idx = 0;""" %
-                   dict(size_a=self.code.acc.size_names[0],
-                        size_b=self.code.acc.size_names[1] if len(self.code.acc.size_names) == 2 else "1"))
+            """int sparse_cell_write_idx = 0;""")
+
+        # copy all data over, because of the inactive cells.
+        self.code.add_code("localvars",
+            """nconf = cconf.copy();""")
+
         self.code.add_code("loop_begin",
-            """for(int cell_idx=0; cell_idx < valid_positions; cell_idx++) {""")
+            """for(int cell_idx=0; prev_sparse_list(cell_idx) != -1; cell_idx++) {""")
         if len(self.position_names) == 1:
             self.code.add_code("loop_begin",
                 """    int %s = prev_sparse_list(cell_idx);""" % self.position_names)
@@ -145,22 +140,20 @@ class SparseCellLoop(CellLoop):
                                 size_a = self.code.acc.size_names[0],
                                 size_b = self.code.acc.size_names[1]))
 
-        # FIXME use procer position names here
+        # FIXME use proper position names here
         if len(self.position_names) == 1:
             self.code.add_code("loop_end",
                     """if(was_active) {
                                %s
                        }""" % ("\n".join([
                            """
-                           {int wrapped_x;
-                           wrapped_x = %(wrap_x)s;
-                           int idx = wrapped_x + %(offs_x)s;
+                           {int idx = %(wrap_x)s;
                            if(!sparse_mask(idx)) {
                                sparse_list(sparse_cell_write_idx) = idx;
                                sparse_mask(idx) = true;
                                sparse_cell_write_idx++;
                            }}""" % dict(offs_x=offs[0],
-                                        wrap_x=self.code.border.correct_position_c(("loop_x + %s" % (offs[0])))[0])
+                                        wrap_x=self.code.border.correct_position_c(["loop_x + %s" % (offs[0])])[0])
                                for offs in self.code.neigh.offsets])))
         elif len(self.position_names) == 2:
             self.code.add_code("loop_end",
@@ -186,7 +179,9 @@ class SparseCellLoop(CellLoop):
                 """
                 }
                 // null the sparse mask
-                sparse_mask = sparse_mask*0;""")
+                sparse_mask = 0;
+                sparse_list(sparse_cell_write_idx) = -1;
+                """)
 
 class OneDimSparseCellLoop(SparseCellLoop):
     requires_features = [one_dimension]
