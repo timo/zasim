@@ -71,8 +71,8 @@ class SparseCellLoop(CellLoop):
         super(SparseCellLoop, self).set_target(target)
 
         size = self.calculate_size()
-        target.sparse_mask = np.zeros(size, dtype=np.bool)
-        target.sparse_list = np.zeros(size, dtype=np.int)
+        target.sparse_mask = np.zeros(size, dtype=bool)
+        target.sparse_list = np.zeros(size, dtype=int)
         target.sparse_set = set()
 
     def get_pos(self):
@@ -96,8 +96,8 @@ class SparseCellLoop(CellLoop):
 
     def new_config(self):
         size = self.calculate_size()
-        self.target.sparse_mask = np.ones(size, dtype=np.bool)
-        self.target.sparse_list = np.array(list(range(size)) + [-1] , dtype=np.int)
+        self.target.sparse_mask = np.ones(size, dtype=bool)
+        self.target.sparse_list = np.array(list(range(size)) + [-1] , dtype=int)
         self.target.prev_sparse_list = self.target.sparse_list.copy()
         self.target.sparse_set = set(product(*[range(siz) for siz in self.target.size]))
 
