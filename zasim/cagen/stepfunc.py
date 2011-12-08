@@ -23,7 +23,7 @@ if HAVE_WEAVE:
     from scipy import weave
     from scipy.weave import converters
 
-ZASIM_PY_DEBUG = bool(os.environ.get("ZASIM_PY_DEBUG", False))
+ZASIM_PY_DEBUG = os.environ.get("ZASIM_PY_DEBUG", False)
 ZASIM_EXTREME_PY_DEBUG = bool(os.environ.get("ZASIM_PY_DEBUG") == "extreme")
 ZASIM_WEAVE_DEBUG = os.environ.get("ZASIM_WEAVE_DEBUG", False)
 
@@ -31,6 +31,8 @@ if ZASIM_WEAVE_DEBUG:
     print("running weave in debug mode", file=sys.stderr)
 if ZASIM_PY_DEBUG:
     print("running pure-py code in debug mode", file=sys.stderr)
+    if ZASIM_PY_DEBUG in ("pdb", "pudb"):
+        print("Starting a %s for each step", file=sys.stderr)
     if ZASIM_EXTREME_PY_DEBUG:
         print("extreme pure-py debugging enabled", file=sys.stderr)
 
@@ -250,6 +252,10 @@ class StepFunc(object):
                 self.pycode[hook] = tuple(self.pycode[hook])
 
             code_bits = ["""def step_pure_py(self):"""]
+
+            if ZASIM_PY_DEBUG in ("pudb", "pdb"):
+                code_bits.append("    from %s import set_trace; set_trace()" % ZASIM_PY_DEBUG)
+
             def append_code(section):
                 code_bits.append("# from hook %s" % section)
                 code_bits.append("\n".join(self.pycode[section]))
