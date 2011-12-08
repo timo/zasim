@@ -1,5 +1,5 @@
 from .bases import CellLoop
-from .compatibility import one_dimension, two_dimensions
+from .compatibility import one_dimension, two_dimensions, activity
 from .utils import offset_pos
 
 from itertools import product, izip
@@ -64,7 +64,9 @@ class SparseCellLoop(CellLoop):
     which reads are performed. All entries in the sparse_list arrays are valid
     up to the first -1.
 
-    For the pure-py version, a normal python set is used."""
+    For the pure-py version, a normal python set is used.
+
+    It requires an ActivityRecord for the `was_active` flag."""
 
     def set_target(self, target):
         """Adds the activity mask and position list to the target attributes."""
@@ -182,11 +184,11 @@ class SparseCellLoop(CellLoop):
                 """)
 
 class OneDimSparseCellLoop(SparseCellLoop):
-    requires_features = [one_dimension]
+    requires_features = [one_dimension, activity]
     def __init__(self):
         self.position_names = "loop_x",
 
 class TwoDimSparseCellLoop(SparseCellLoop):
-    requires_features = [two_dimensions]
+    requires_features = [two_dimensions, activity]
     def __init__(self):
         self.position_names = "loop_x", "loop_y"
