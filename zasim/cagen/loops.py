@@ -66,8 +66,6 @@ class SparseCellLoop(CellLoop):
 
     For the pure-py version, a normal python set is used."""
 
-    requires_features = [activity]
-
     def set_target(self, target):
         """Adds the activity mask and position list to the target attributes."""
         super(SparseCellLoop, self).set_target(target)
