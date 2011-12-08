@@ -1,3 +1,5 @@
+.. _tutorial_debug_cagen:
+
 Debugging StepFuncs with cagen
 ==============================
 

@@ -60,7 +60,7 @@ Environment variables
 
 .. seealso::
 
-    :ref:`Debugging cagen stepfuncs <tutorial/debug_cagen>` goes deeper into how
+    :doc:`Debugging cagen stepfuncs <tutorial/debug_cagen>` goes deeper into how
     to use these environment variables to debug step functions.
 
 Tutorial
