@@ -30,6 +30,7 @@ class TestSparseLoop:
             assert life_full.t.activity[0] >= life_sparse.t.activity[0]
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_compare_sparse_life_weave(self):
         self.body_compare_sparse_life(True)
 
@@ -57,6 +58,7 @@ class TestSparseLoop:
             assert elem_full.t.activity[1] == elem_sparse.t.activity[1]
             assert elem_full.t.activity[0] >= elem_sparse.t.activity[0]
 
+    @pytest.mark.skipif("not HAVE_WEAVE")
     def test_compare_sparse_elementary_weave(self, rule_num):
         self.body_compare_sparse_elementary(rule_num, True)
 
