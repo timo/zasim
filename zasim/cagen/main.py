@@ -18,8 +18,6 @@ def test(width=75, height=None, life=False, copy_borders=True,
          pure=False, print_rule=True,
          nondet=100, beta=100, steps=100, base=2):
 
-    if os.environ.get("ZASIM_WEAVE_DEBUG", False) == "gdb":
-        launch_debugger()
 
     if beta > 1.0:
         beta = beta / 100.
@@ -56,6 +54,9 @@ def test(width=75, height=None, life=False, copy_borders=True,
     if print_rule:
         print sim_obj.pretty_print()
         print sim_obj.rule_number, "==", hex(sim_obj.rule_number)
+
+    if os.environ.get("ZASIM_WEAVE_DEBUG", False) == "gdb":
+        launch_debugger()
 
     if HAVE_WEAVE and not pure:
         print "weave"
