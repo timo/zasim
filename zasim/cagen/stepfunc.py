@@ -226,6 +226,8 @@ class StepFunc(object):
                 code_bits.extend(self.code[section])
             self.code_text = "\n".join(code_bits)
 
+            self.code_text = debug.indent_c_code(self.code_text)
+
             if ZASIM_WEAVE_DEBUG:
                 print("/* Generated C code:", file=sys.stderr)
                 print("---8<---8<---8<--- */", file=sys.stderr)
