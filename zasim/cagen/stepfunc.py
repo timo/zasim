@@ -13,6 +13,8 @@ from itertools import product
 from collections import defaultdict
 from .utils import offset_pos
 
+from zasim import debug
+
 import sys
 import os
 import tempfile
@@ -23,7 +25,7 @@ if HAVE_WEAVE:
 
 ZASIM_PY_DEBUG = bool(os.environ.get("ZASIM_PY_DEBUG", False))
 ZASIM_EXTREME_PY_DEBUG = bool(os.environ.get("ZASIM_PY_DEBUG") == "extreme")
-ZASIM_WEAVE_DEBUG = bool(os.environ.get("ZASIM_WEAVE_DEBUG", False))
+ZASIM_WEAVE_DEBUG = os.environ.get("ZASIM_WEAVE_DEBUG", False)
 
 if ZASIM_WEAVE_DEBUG:
     print("running weave in debug mode", file=sys.stderr)
@@ -214,6 +216,11 @@ class StepFunc(object):
                 self.code[hook] = tuple(self.code[hook])
 
             code_bits = []
+
+            if ZASIM_WEAVE_DEBUG == "gdb":
+                code_bits.append("/* from ZASIM_WEAVE_DEBUG == gdb */")
+                code_bits.append(debug.trap_code)
+
             for section in self.sections:
                 code_bits.append("/* from section %s */" % section)
                 code_bits.extend(self.code[section])

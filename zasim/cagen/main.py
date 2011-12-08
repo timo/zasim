@@ -8,11 +8,18 @@ from ..display.console import OneDimConsolePainter, TwoDimConsolePainter
 from ..features import HAVE_WEAVE
 from . import DualRuleCellularAutomaton, automatic_stepfunc
 
+from ..debug import launch_debugger
+
+import os
+
 def test(width=75, height=None, life=False, copy_borders=True,
          rule=None, alt_rule=None,
          histogram=True, activity=False,
          pure=False, print_rule=True,
          nondet=100, beta=100, steps=100, base=2):
+
+    if os.environ.get("ZASIM_WEAVE_DEBUG", False) == "gdb":
+        launch_debugger()
 
     if beta > 1.0:
         beta = beta / 100.
