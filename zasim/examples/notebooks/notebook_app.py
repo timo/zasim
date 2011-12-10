@@ -23,7 +23,7 @@ def create_overlay():
     """This method copies all files from the source to the target and then
     links all missing files from IPython itself to the target"""
 
-    def merge_dirs(base, overlay, target):
+    def merge_dirs(base, overlay, target, preserve_originals=False):
         def replace_prefix(prefix, path, new_prefix):
             assert path.startswith(prefix)
             if path.startswith("/"):
@@ -37,6 +37,7 @@ def create_overlay():
         from_over_dirs = []
         from_base_files = []
         from_over_files = []
+        preserved_originals = []
 
         for (base_t, over_t) in izip(base_w, overlay_w):
             (base_path, base_dirs, base_files) = base_t
@@ -53,6 +54,8 @@ def create_overlay():
                     from_over_dirs.append(os.path.join(base_path, subdir))
 
             for fn in set(base_files[:] + over_files[:]):
+                if fn in over_files and fn in base_files and preserve_originals:
+                    preserved_originals.append(os.path.join(base_path, fn))
                 if fn not in over_files:
                     from_base_files.append(os.path.join(base_path, fn))
                 else:
@@ -62,9 +65,16 @@ def create_overlay():
             for dir_link in dirlist:
                 os.symlink(dir_link, replace_prefix(source, dir_link, target))
 
-        for source, filelist in ((base, from_base_files), (overlay, from_over_files)):
+        for source, filelist in ((base, from_base_files),
+                                 (overlay, from_over_files),
+                                 (base, preserved_originals)):
             for file_link in filelist:
                 target_file = replace_prefix(source, file_link, target)
+
+                if filelist is preserved_originals:
+                    tfp, tfn = os.path.dirname(target_file), os.path.basename(target_file)
+                    target_file = os.path.join(tfp, "original_" + tfn)
+
                 parent_dir = os.path.dirname(target_file)
                 if not os.path.exists(parent_dir):
                     os.makedirs(parent_dir)
@@ -77,7 +87,7 @@ def create_overlay():
     os.mkdir(template_path)
     os.mkdir(static_path)
 
-    merge_dirs(NOTEBOOK_TEMPLATE_PATH, TEMPLATE_PATH, template_path)
+    merge_dirs(NOTEBOOK_TEMPLATE_PATH, TEMPLATE_PATH, template_path, True)
     merge_dirs(NOTEBOOK_STATIC_PATH, STATIC_PATH, static_path)
 
     return path, {'template_path': template_path, 'static_path': static_path}
