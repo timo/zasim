@@ -30,8 +30,8 @@ def create_overlay():
                 path = path[1:]
             return os.path.join(new_prefix, path[len(prefix):])
 
-        base_w = os.walk(base)
-        overlay_w = os.walk(overlay)
+        base_w = os.walk(base, followlinks=True)
+        overlay_w = os.walk(overlay, followlinks=True)
 
         from_base_dirs = []
         from_over_dirs = []
