@@ -1,0 +1,40 @@
+{% extends layout.html %}
+
+{% block title %}
+zasim tutorial (IPython Dashboard)
+{% end %}
+
+{% block stylesheet %}
+    <link rel="stylesheet" href="static/css/projectdashboard.css" type="text/css" />
+{% end %}
+
+{% block meta %}
+    <meta name="read_only" content="{{read_only}}"/>
+{% end %}
+
+{% block params %}
+data-project={{project}}
+data-base-project-url={{base_project_url}}
+data-base-kernel-url={{base_kernel_url}}
+{% end %}
+
+{% block left_panel %}
+    <h2>Welcome to the zasim interactive tutorial</h2>
+    <p>To begin, open the notebook "introduction" to the right, by clicking on its name</p>
+{% end %}
+
+{% block content_panel %}
+    <div id="content_toolbar">
+        <span id="notebooks_buttons">
+            <button id="new_notebook">New Notebook</button>
+        </span>
+    </div>
+    <div id="notebook_list">
+        <div id="project_name"><h2>{{project}}</h2></div>
+    </div>
+{% end %}
+
+{% block script %}
+    <script src="static/js/notebooklist.js" type="text/javascript" charset="utf-8"></script>
+    <script src="static/js/projectdashboardmain.js" type="text/javascript" charset="utf-8"></script>
+{% end %}
