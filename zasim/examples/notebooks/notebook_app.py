@@ -66,6 +66,8 @@ NOTEBOOK_BASE_PATH = os.path.dirname(notebookapp.__file__)
 NOTEBOOK_TEMPLATE_PATH = os.path.join(NOTEBOOK_BASE_PATH, "templates")
 NOTEBOOK_STATIC_PATH = os.path.join(NOTEBOOK_BASE_PATH, "static")
 
+notebook_extra_args = "--gui=qt"
+
 def create_overlay():
     """This method copies all files from the source to the target and then
     links all missing files from IPython itself to the target.
@@ -158,8 +160,9 @@ def launch_notebook_server():
     print "running notebook overlay from", base_path
     os.system('''ipython notebook '''
               '''--NotebookApp.webapp_settings="%s" '''
-              '''--notebook_dir="%s"''' % (
-                    settings, os.path.join(base_path, "notebooks")))
+              '''--notebook_dir="%s" ''' % (
+                    settings, os.path.join(base_path, "notebooks")) +
+              notebook_extra_args)
     shutil.rmtree(base_path)
 
 if __name__ == "__main__":
