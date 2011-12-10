@@ -1,3 +1,49 @@
+"""==============================
+Branded IPython Notebook Launcher
+=================================
+
+Executing this module will create an overlay over ipython notebooks own static
+files and templates and overrides static files and templates and copies over all
+example notebooks into a temporary folder and launches the ipython notebook server.
+
+You can use this to offer an interactive tutorial for your library/framework/...
+
+
+License
+-------
+
+Copyright (c) 2011, Timo Paulssen
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+    * Redistributions of source code must retain the above copyright
+      notice, this list of conditions and the following disclaimer.
+    * Redistributions in binary form must reproduce the above copyright
+      notice, this list of conditions and the following disclaimer in the
+      documentation and/or other materials provided with the distribution.
+    * The name of the author may not be used to endorse or promote products
+      derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+DISCLAIMED. IN NO EVENT SHALL TIMO PAULSSEN BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+Revision History
+----------------
+
+   1.0 2011-12-10
+        First release.
+"""
+
 import os
 import shutil
 import tempfile
@@ -14,6 +60,7 @@ except ImportError:
 BASE_PATH = os.path.dirname(__file__)
 TEMPLATE_PATH = os.path.join(BASE_PATH, "templates")
 STATIC_PATH = os.path.join(BASE_PATH, "static")
+EXAMPLES_PATH = os.path.join(BASE_PATH, "notebooks")
 
 NOTEBOOK_BASE_PATH = os.path.dirname(notebookapp.__file__)
 NOTEBOOK_TEMPLATE_PATH = os.path.join(NOTEBOOK_BASE_PATH, "templates")
@@ -102,11 +149,19 @@ def create_overlay():
 
     return path, {'template_path': template_path, 'static_path': static_path}
 
+def copy_example_notebooks(target_path):
+    shutil.copytree(EXAMPLES_PATH, target_path)
+
 def launch_notebook_server():
     base_path, settings = create_overlay()
+    copy_example_notebooks(base_path)
     print "running notebook overlay from", base_path
-    os.system('''ipython notebook --NotebookApp.webapp_settings="%s"''' % settings)
+    os.system('''ipython notebook '''
+              '''--NotebookApp.webapp_settings="%s" '''
+              '''--notebook_dir="%s"''' % (
+                    settings, os.path.join(base_path, "notebooks")))
     shutil.rmtree(base_path)
 
 if __name__ == "__main__":
     launch_notebook_server()
+
