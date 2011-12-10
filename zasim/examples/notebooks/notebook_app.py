@@ -21,7 +21,10 @@ NOTEBOOK_STATIC_PATH = os.path.join(NOTEBOOK_BASE_PATH, "static")
 
 def create_overlay():
     """This method copies all files from the source to the target and then
-    links all missing files from IPython itself to the target"""
+    links all missing files from IPython itself to the target.
+
+    Templates that are overrided will be linked to orig_{filename}, so that
+    changes to templates can just use tornadowebs own template extension scheme."""
 
     def merge_dirs(base, overlay, target, preserve_originals=False):
         def replace_prefix(prefix, path, new_prefix):
@@ -39,12 +42,14 @@ def create_overlay():
         from_over_files = []
         preserved_originals = []
 
+        # walk the base and overlay trees in parallel
         for (base_t, over_t) in izip(base_w, overlay_w):
             (base_path, base_dirs, base_files) = base_t
             (over_path, over_dirs, over_files) = over_t
 
-            # don't recurse into dirs that are only in base.
+            # don't recurse into dirs that are only in base or only in overlay.
             # instead, just symlink them.
+            # this keeps both walkers in sync.
             for subdir in set(base_dirs[:] + over_dirs[:]):
                 if subdir not in over_dirs:
                     base_dirs.remove(subdir)
@@ -61,16 +66,19 @@ def create_overlay():
                 else:
                     from_over_files.append(os.path.join(over_path, fn))
 
+        # link full directories over
         for source, dirlist in ((base, from_base_dirs), (overlay, from_over_dirs)):
             for dir_link in dirlist:
                 os.symlink(dir_link, replace_prefix(source, dir_link, target))
 
+        # link files over.
         for source, filelist in ((base, from_base_files),
                                  (overlay, from_over_files),
                                  (base, preserved_originals)):
             for file_link in filelist:
                 target_file = replace_prefix(source, file_link, target)
 
+                # preserved originals get an original_ prefix
                 if filelist is preserved_originals:
                     tfp, tfn = os.path.dirname(target_file), os.path.basename(target_file)
                     target_file = os.path.join(tfp, "original_" + tfn)
@@ -80,6 +88,8 @@ def create_overlay():
                     os.makedirs(parent_dir)
                 os.symlink(file_link, target_file)
 
+
+    # create the temporary folder where overlay and base are merged
     path = tempfile.mkdtemp(prefix="zasim_tutorial")
 
     template_path = os.path.join(path, "templates")
