@@ -6,22 +6,6 @@
  */
 
 
-body {
-    background: url(/static/body_bg.png);
-    /* This makes sure that the body covers the entire window and needs to
-       be in a different element than the display: box in wrapper below */
-    position: absolute;
-    left: 0px;
-    right: 0px;
-    top: 0px;
-    bottom: 0px;
-    overflow: auto;
-}
-
-#left_panel {
-    background: url(/static/sidebar_bg.png);
-}
-
 #drop_zone {
     height: 200px;
     width: 200px
