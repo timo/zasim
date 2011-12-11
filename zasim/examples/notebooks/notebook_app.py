@@ -152,15 +152,16 @@ def create_overlay():
     return path, {'template_path': template_path, 'static_path': static_path}
 
 def copy_example_notebooks(target_path):
-    shutil.copytree(EXAMPLES_PATH, target_path)
+    shutil.copytree(EXAMPLES_PATH, os.path.join(target_path, "notebooks"))
 
 def launch_notebook_server():
     base_path, settings = create_overlay()
     copy_example_notebooks(base_path)
     print "running notebook overlay from", base_path
+    print base_path, "notebooks"
     os.system('''ipython notebook '''
               '''--NotebookApp.webapp_settings="%s" '''
-              '''--notebook_dir="%s" ''' % (
+              '''--NotebookManager.notebook_dir="%s" ''' % (
                     settings, os.path.join(base_path, "notebooks")) +
               notebook_extra_args)
     shutil.rmtree(base_path)
