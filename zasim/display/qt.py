@@ -335,7 +335,7 @@ class OneDimQImagePainter(BaseQImagePainter):
                         if peek is None:
                             raise
 
-                if not whole_conf:
+                if whole_conf is None:
                     whole_conf = np.zeros((w, confs_to_render), dtype=conf.dtype)
 
                 if (self._invert_odd and self._odd):
@@ -344,7 +344,7 @@ class OneDimQImagePainter(BaseQImagePainter):
                     conf[new_zeros] = 0
                     conf[new_ones] = 1
 
-                whole_conf[rendered,...] = conf
+                whole_conf[...,rendered] = conf
 
                 rendered += 1
 
