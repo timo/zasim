@@ -1,5 +1,5 @@
 from ..external.qt import QWidget, QPainter, Qt
-from ..display.qt import OneDimQImagePainter, TwoDimQImagePainter, TwoDimQImagePalettePainter
+from ..display.qt import OneDimQImagePainter, TwoDimQImagePainter
 
 from zasim.cagen.jvn import PALETTE_JVN_IMAGE, PALETTE_JVN_RECT
 
@@ -52,7 +52,7 @@ class DisplayWidget(QWidget):
                     scale = height / shape[1]
                     assert shape[1] * scale == height, "Height not a whole multiple of config height"
 
-            self.display = TwoDimQImagePalettePainter(simulator, PALETTE_JVN_IMAGE, PALETTE_JVN_RECT, scale=scale)
+            self.display = TwoDimQImagePainter(simulator, scale=scale)
 
         else:
             raise ValueError("Simulators with %d dimensions are not supported for display" % len(shape))
