@@ -1,5 +1,5 @@
 from ..external.qt import QWidget, QPainter, Qt
-from ..display.qt import OneDimQImagePainter, TwoDimQImagePainter, TwoDimQImagePalettePainter
+from ..display.qt import OneDimQImagePainter, TwoDimQImagePainter
 
 from zasim.cagen.jvn import PALETTE_JVN_IMAGE, PALETTE_JVN_RECT
 
