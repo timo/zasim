@@ -106,12 +106,13 @@ class TestCAGen:
             sim.step_pure_py()
             assert_arrays_equal(glider_conf, sim.get_config())
 
-    def body_weave_nondeterministic_stepfunc_1d(self, inline=True):
+    def body_weave_nondeterministic_stepfunc_1d(self, inline=True, sparse=False):
         conf = np.ones(1000)
         # this rule would set all fields to 1 at every step.
         # since we use a nondeterministic step func, this will amount to about
         # half ones, half zeros
-        br = cagen.BinRule(nondet=0.5, config=conf, rule=0)
+        br = cagen.BinRule(nondet=0.5, config=conf, rule=0,
+                           sparse_loop=sparse, activity=sparse, needs_random_generator=sparse)
         if inline:
             br.step_inline()
         else:
@@ -122,7 +123,8 @@ class TestCAGen:
                               " nondeterministic step function"
 
         # and now a sanity check for rule 0
-        br2 = cagen.BinRule(size=(1000,), rule=0)
+        br2 = cagen.BinRule(size=(1000,), rule=0,
+                            sparse_loop=sparse, activity=sparse, needs_random_generator=sparse)
         assert not br2.get_config().all(), "why was the random config all ones?"
         assert br2.get_config().any(), "why was the random config all zeros?"
         if inline:
@@ -138,6 +140,13 @@ class TestCAGen:
 
     def test_pure_nondeterministic_stepfunc_id(self):
         self.body_weave_nondeterministic_stepfunc_1d(False)
+
+    @pytest.mark.skipif("not HAVE_WEAVE")
+    def test_weave_nondeterministic_sparse_stepfunc_id(self):
+        self.body_weave_nondeterministic_stepfunc_1d(True, True)
+
+    def test_pure_nondeterministic_sparse_stepfunc_id(self):
+        self.body_weave_nondeterministic_stepfunc_1d(False, True)
 
     def body_nondeterministic_stepfunc_2d(self, inline=True):
         conf = np.ones((100, 100))
