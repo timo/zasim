@@ -3,7 +3,8 @@ from .computations import ElementaryCellularAutomatonBase, LifeCellularAutomaton
 from .beta_async import BetaAsynchronousAccessor, BetaAsynchronousNeighbourhood
 from .accessors import SimpleStateAccessor
 from .nondeterministic import OneDimNondeterministicCellLoop, TwoDimNondeterministicCellLoop, RandomGenerator
-from .loops import OneDimCellLoop, TwoDimCellLoop, OneDimSparseCellLoop, TwoDimSparseCellLoop
+from .loops import (OneDimCellLoop, TwoDimCellLoop, OneDimSparseCellLoop, TwoDimSparseCellLoop,
+                    OneDimSparseNondetCellLoop, TwoDimSparseNondetCellLoop)
 from .border import SimpleBorderCopier, TwoDimSlicingBorderCopier, BorderSizeEnsurer
 from .stats import SimpleHistogram, ActivityRecord
 from .neighbourhoods import ElementaryFlatNeighbourhood, VonNeumannNeighbourhood, MooreNeighbourhood
@@ -68,9 +69,9 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                 loop = OneDimCellLoop()
         else:
             if sparse_loop:
-                raise NotImplementedError("Nondeterministic sparse loops are not"
-                        " yet implemented.")
-            loop = OneDimNondeterministicCellLoop(probab=nondet)
+                loop = OneDimSparseNondetCellLoop(probab=nondet)
+            else:
+                loop = OneDimNondeterministicCellLoop(probab=nondet)
             needs_random_generator = True
     elif len(size) == 2:
         if nondet == 1.0:
@@ -80,9 +81,9 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                 loop = TwoDimCellLoop()
         else:
             if sparse_loop:
-                raise NotImplementedError("Nondeterministic sparse loops are not"
-                        " yet implemented.")
-            loop = TwoDimNondeterministicCellLoop(probab=nondet)
+                loop = TwoDimSparseNondetCellLoop(probab=nondet)
+            else:
+                loop = TwoDimNondeterministicCellLoop(probab=nondet)
             needs_random_generator = True
 
     if copy_borders:
