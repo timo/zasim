@@ -87,7 +87,7 @@ class NondeterministicCellLoopMixin(StepFuncVisitor):
     probab = 0.5
     """The probability with which to execute each cell."""
 
-    requires_features = ["random_generator"]
+    requires_features = [random_generator]
 
     def __init__(self, probab=0.5, **kwargs):
         """:param probab: The probability of a cell to be computed.
