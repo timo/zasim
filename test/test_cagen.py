@@ -111,7 +111,8 @@ class TestCAGen:
         # this rule would set all fields to 1 at every step.
         # since we use a nondeterministic step func, this will amount to about
         # half ones, half zeros
-        br = cagen.BinRule(nondet=0.5, config=conf, rule=0, sparse_loop=sparse)
+        br = cagen.BinRule(nondet=0.5, config=conf, rule=0,
+                           sparse_loop=sparse, activity=sparse, needs_random_generator=sparse)
         if inline:
             br.step_inline()
         else:
@@ -122,7 +123,8 @@ class TestCAGen:
                               " nondeterministic step function"
 
         # and now a sanity check for rule 0
-        br2 = cagen.BinRule(size=(1000,), rule=0, sparse_loop=sparse)
+        br2 = cagen.BinRule(size=(1000,), rule=0,
+                            sparse_loop=sparse, activity=sparse, needs_random_generator=sparse)
         assert not br2.get_config().all(), "why was the random config all ones?"
         assert br2.get_config().any(), "why was the random config all zeros?"
         if inline:

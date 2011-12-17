@@ -118,7 +118,7 @@ class SparseCellLoop(CellLoop):
             # get a list of entries to go through
             sublist = []
             for pos in the_list:
-                if self.random.random() >= self.probab:
+                if self.code.random.random() >= self.probab:
                     sublist.append(pos)
                 else:
                     self.target.sparse_set.update([pos])
@@ -148,7 +148,7 @@ class SparseCellLoop(CellLoop):
         if self.probab is not None:
             self.code.add_code("loop_begin",
                 """if(rand() >= RAND_MAX * NONDET_PROBAB) {
-                    if(!sparse_mask(idx)) {
+                    if(!sparse_mask(cell_idx)) {
                         sparse_list(sparse_cell_write_idx) = cell_idx;
                         sparse_mask(cell_idx) = true;
                         sparse_cell_write_idx++;
