@@ -35,6 +35,13 @@ docstring of merge_dirs to find out how these folders are treated.
 If you put those folders anywhere else, change the variables in the
 Configuration section below.
 
+In your setup.py you can add the following to your entry_points:
+
+      [console_scripts]
+      my_framework_tutorial = framework.examples.notebooks.this_script
+
+and a binary will be created for the user's system that launches this script.
+
 License
 -------
 
