@@ -10,10 +10,14 @@ setup(
       keywords = '',
       url = '',
       packages = find_packages(),
+      package_data = {
+          'zasim.examples.notebooks':
+              ['notebooks/*', 'static/**/*', 'templates/*'],
+          },
       entry_points="""
           [console_scripts]
           zasim_cli = zasim.cagen.main:main
           zasim_gui = zasim.gui.main:cli_main
-          zasim_tutorial = zasim.examples.notebooks.notebook_app
+          zasim_tutorial = zasim.examples.notebooks.notebook_app:launch_notebook_server
       """
     )

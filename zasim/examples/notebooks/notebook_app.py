@@ -38,9 +38,18 @@ Configuration section below.
 In your setup.py you can add the following to your entry_points:
 
       [console_scripts]
-      my_framework_tutorial = framework.examples.notebooks.this_script
+      my_framework_tutorial = framework.examples.notebooks.this_script:launch_notebook_server
 
 and a binary will be created for the user's system that launches this script.
+
+Additionally, add these package_data entries, so that the static files
+get installed, too:
+
+      package_data = {
+          'framework.examples.notebooks':
+              ['notebooks/*', 'static/**/*', 'templates/*'],
+          }
+
 
 License
 -------
