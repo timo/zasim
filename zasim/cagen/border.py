@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from .bases import BorderHandler
 from .utils import dedent_python_code, offset_pos
 

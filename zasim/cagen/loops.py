@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from .bases import CellLoop
 from .compatibility import one_dimension, two_dimensions, activity, random_generator
 from .utils import offset_pos

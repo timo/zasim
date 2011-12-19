@@ -16,6 +16,9 @@ Each `StepFuncVisitor` has three attributes:
     - incompatible_features
 
       A list of features that are incompatible with this class.
+
+
+{LICENSE_TEXT}
 """
 
 class CompatibilityException(Exception):

@@ -1,5 +1,9 @@
 """This module offers a function to fork a gdb in a terminal and attach it to the
-running process, so that weave stepfuncs and other things may be debugged."""
+running process, so that weave stepfuncs and other things may be debugged.
+
+
+{LICENSE_TEXT}
+"""
 
 from __future__ import print_function
 

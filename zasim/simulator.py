@@ -1,5 +1,9 @@
 """A Simulator object holds together information about and functionality of
-cellular automaton simulators."""
+cellular automaton simulators.
+
+
+{LICENSE_TEXT}
+"""
 
 try:
     from .external.qt import QObject, Signal

@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from .bases import ExtraStats
 from .compatibility import histogram, activity
 

@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 import numpy as np
 
 

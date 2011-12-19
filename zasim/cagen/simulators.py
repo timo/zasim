@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from .target import TestTarget
 from .computations import ElementaryCellularAutomatonBase, LifeCellularAutomatonBase
 from .beta_async import BetaAsynchronousAccessor, BetaAsynchronousNeighbourhood

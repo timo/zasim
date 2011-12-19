@@ -22,6 +22,9 @@ This implementation offers the `NondeterministicCellLoopMixin`, which you can ad
 a first base class next to any kind of `CellLoop`. For your convenience, the classes
 `OneDimNondeterministicCellLoop` and `TwoDimNondeterministicCellLoop` are already
 composed for you.
+
+
+{LICENSE_TEXT}
 """
 from .bases import StepFuncVisitor
 from .loops import OneDimCellLoop, TwoDimCellLoop

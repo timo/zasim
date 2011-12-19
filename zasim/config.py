@@ -11,6 +11,8 @@ By letting the Target only supply a size_hint, the InitialConfiguration is
 allowed to dictate what size the configuration should have. This is important
 especially for loading configurations from files.
 
+
+{LICENSE_TEXT}
 """
 
 from features import HAVE_NUMPY_RANDOM, HAVE_MULTIDIM

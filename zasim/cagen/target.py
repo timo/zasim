@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from ..config import BaseInitialConfiguration, RandomInitialConfiguration
 
 class TestTarget(object):

@@ -1,4 +1,8 @@
-"""This module probes the system for different features."""
+"""This module probes the system for different features.
+
+
+{LICENSE_TEXT}
+"""
 
 HAVE_WEAVE = True
 """Is scipy.weave available?"""

@@ -1,5 +1,9 @@
 """For an in-depth description of how the StepFunc class works, see the
-:ref:`tutorial section about StepFunc <tutorial_stepfunc>`"""
+:ref:`tutorial section about StepFunc <tutorial_stepfunc>`
+
+
+{LICENSE_TEXT}
+"""
 from __future__ import print_function
 import new
 

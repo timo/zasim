@@ -36,6 +36,9 @@ The `BetaAsynchronousAccessor` takes care of updating the outer state with the i
 state at the end of the computation and ensures that, in case there's any stats
 object in place, at the end of the computation "foo" (as defined above) contains the
 outer value of the current cell.
+
+
+{LICENSE_TEXT}
 """
 
 from .neighbourhoods import SimpleNeighbourhood
