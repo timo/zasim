@@ -17,5 +17,4 @@ def indent_c_code(code):
         indent = sp.Popen(["indent", "-kr", "-", "-o", "-"], stdout=sp.PIPE, stdin=sp.PIPE)
         return indent.communicate(code)[0]
     except:
-        print("indent failed", file=sys.stderr)
         return code
