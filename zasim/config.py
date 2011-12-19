@@ -15,6 +15,9 @@ especially for loading configurations from files.
 {LICENSE_TEXT}
 """
 
+
+from __future__ import division
+
 from features import HAVE_NUMPY_RANDOM, HAVE_MULTIDIM
 
 import random
@@ -55,7 +58,7 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
         if self.percentages:
             self.cumulative_percentages = [sum(self.percentages[:index + 1]) for index in range(len(self.percentages))]
         else:
-            self.cumulative_percentages = [1.0 / self.base]
+            self.cumulative_percentages = [1 / self.base]
             rest -= 1
 
         if self.cumulative_percentages[-1] > 1.0:
@@ -69,13 +72,18 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
         if rest == 0 and self.cumulative_percentages[-1] != 1.0:
             raise ValueError("Probabilities must add up to 1.0")
 
-    def generate(self, size_hint=None, dtype=np.dtype("i")):
+    def size_hint_to_size(self, size_hint=None):
         if size_hint is None:
             size_hint = (random.randrange(1, 100),)
 
         size = []
         for entry in size_hint:
             size.append(random.randrange(1, 100) if entry is None else entry)
+
+        return tuple(size)
+
+    def generate(self, size_hint=None, dtype=np.dtype("i")):
+        size = self.size_hint_to_size(size_hint)
 
         if not HAVE_NUMPY_RANDOM and not HAVE_MULTIDIM:
             # pypy compatibility
@@ -141,8 +149,8 @@ class ImageInitialConfiguration(BaseInitialConfiguration):
         assert image.load(self.filename)
         image = image.convertToFormat(QImage.Format_RGB32)
         if self.scale != 1:
-            image = image.scaled(image.width() / self.scale,
-                                 image.height() / self.scale)
+            image = image.scaled(image.width() // self.scale,
+                                 image.height() // self.scale)
         nparr = np.frombuffer(image.bits(), dtype=np.uint32)
         nparr = nparr.reshape((image.width(), image.height()), order="F")
         result = np.ones((image.width(), image.height()), dtype=dtype)
@@ -152,3 +160,41 @@ class ImageInitialConfiguration(BaseInitialConfiguration):
 
         return result
 
+class DensityDistributedConfiguration(RandomInitialConfiguration):
+    """Create a distribution from a function giving the probability for each
+    field to have a given value"""
+
+    def __init__(self, prob_dist_fun):
+        self.prob_dist_fun = prob_dist_fun
+
+    def generate(self, size_hint=None, dtype=np.dtype("i")):
+        size = self.size_hint_to_size(size_hint)
+
+        # XXX remove duplicate code here?
+        result = np.zeros(size, dtype)
+        if not HAVE_NUMPY_RANDOM and not HAVE_MULTIDIM:
+            # pypy compatibility
+            assert len(size) == 1
+            randoms = np.array([random.random() for i in xrange(size[0])])
+        else:
+            randoms = np.random.rand(*size)
+
+
+        for pos in product(*[xrange(siz) for siz in size]):
+            relative_probabs = {}
+            for key, func in self.prob_dist_fun.iteritems():
+                relative_probabs[key] = self.prob_dist_fun[key](*(pos + size))
+
+            one = sum(relative_probabs.values())
+            cumulative_percentages = {}
+            cumulative = 0
+            for key, relative_perc in relative_probabs.iteritems():
+                part = relative_perc / one
+                cumulative_percentages[key] = cumulative + part
+                cumulative += part
+
+            # XXX remove duplicate code here?
+            result[pos] = min(idx for idx, perc in cumulative_percentages.iteritems()
+                           if randoms[pos] < perc)
+
+        return result
