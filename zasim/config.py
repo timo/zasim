@@ -198,7 +198,10 @@ class DensityDistributedConfiguration(RandomInitialConfiguration):
     For each position in the configuration, every function is called and the
     results added up to figure out, what value would be 100% for that cell,
     then the relative probabilities are divided and used for choosing a
-    value."""
+    value.
+
+    If a value is an integer, rather than a callable, then it will be
+    interpreted as a constant function instead."""
 
     def __init__(self, prob_dist_fun):
         self.prob_dist_fun = prob_dist_fun
@@ -219,7 +222,10 @@ class DensityDistributedConfiguration(RandomInitialConfiguration):
         for pos in product(*[xrange(siz) for siz in size]):
             relative_probabs = {}
             for key, func in self.prob_dist_fun.iteritems():
-                relative_probabs[key] = self.prob_dist_fun[key](*(pos + size))
+                if isinstance(func, int):
+                    relative_probabs[key] = func
+                else:
+                    relative_probabs[key] = self.prob_dist_fun[key](*(pos + size))
 
             one = sum(relative_probabs.values())
             cumulative_percentages = {}
