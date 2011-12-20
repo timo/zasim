@@ -78,21 +78,27 @@ class ArgparseWindow(QDialog):
     def build_action_group(self, ag):
         w = QGroupBox(ag.title)
 
-        layout = QVBoxLayout()
-
-        has_content = False
+        widgets = []
 
         for action in ag._actions:
             if action in self.action_widgets or action.dest in self.taken_dests:
                 continue
             widget = self.build_action_widget(action)
             if widget:
-                layout.addWidget(widget)
-                has_content = True
+                widgets.append(widget)
+
+        layout = QGridLayout()
+
+        for row, (left, right) in enumerate(zip(widgets[::2], widgets[1::2])):
+            layout.addWidget(left, row, 0)
+            layout.addWidget(right, row, 1)
+
+        if len(widgets) % 2 != 0:
+            layout.addWidget(widgets[-1], row + 1, 0)
 
         w.setLayout(layout)
 
-        if not has_content:
+        if not widgets:
             w.deleteLater()
             return None
         return w
