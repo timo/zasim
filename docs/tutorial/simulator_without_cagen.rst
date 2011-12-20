@@ -69,7 +69,8 @@ upper symbol::
 
     reversed = (value & 3) << 2 | (value & ~3) >> 2
 
-The other operation needed for the step function is to clear the lower two bits,
+The other operation needed for the step function is to clear the lower field by
+setting both lower bits (see the table: 3, 7 and 11 stand for an empty lower field),
 which is also easy::
 
     upper_only = value | 3

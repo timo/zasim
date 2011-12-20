@@ -35,7 +35,7 @@ class TuringTapeSimulator(BaseSimulator):
         for index, (cell, next_cell) in enumerate(zip(self.cconf[:-1], self.cconf[1:])):
             result = cell
             if next_cell & 3 == 3:
-                # if the lowest 2 bytes are 1, no information is transferred and
+                # if the lowest 2 bits are 1, no information is transferred and
                 # the transferal state is cleared
                 result = cell | 3
             else:
