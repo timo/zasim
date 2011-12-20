@@ -1,5 +1,5 @@
 from ..external.qt import (QDialog, QWidget,
-        QHBoxLayout, QVBoxLayout,
+        QHBoxLayout, QVBoxLayout, QGridLayout,
         QGroupBox, QLabel,
         QCheckBox, QLineEdit,
         QDialogButtonBox,
@@ -17,6 +17,8 @@ class ArgparseWindow(QDialog):
     1. either None or a QCheckBox, that can toggle the switch
     2. a QLineEdit or QCheckbox, that can set the value of the switch
     """
+
+    taken_dests = set()
 
     def __init__(self, argparser, **kwargs):
         super(ArgparseWindow, self).__init__(**kwargs)
@@ -46,7 +48,6 @@ class ArgparseWindow(QDialog):
 
         cont.setLayout(outer)
 
-
         return cont, box
 
     def build_action_widget(self, action):
@@ -71,6 +72,7 @@ class ArgparseWindow(QDialog):
 
 
         self.action_widgets[action] = (box, w)
+        self.taken_dests.update([action.dest])
         return cont
 
     def build_action_group(self, ag):
@@ -81,7 +83,7 @@ class ArgparseWindow(QDialog):
         has_content = False
 
         for action in ag._actions:
-            if action in self.action_widgets:
+            if action in self.action_widgets or action.dest in self.taken_dests:
                 continue
             widget = self.build_action_widget(action)
             if widget:
