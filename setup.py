@@ -28,6 +28,6 @@ setup(
           zasim_gui = zasim.gui.main:cli_main
           zasim_tutorial = zasim.examples.notebooks.notebook_app:launch_notebook_server [notebook]
       """,
-      extras_require = dict(notebook = ["tornado>=2.1.0", "zmq"]),
+      extras_require = dict(notebook = ["tornado>=2.1.0", "pyzmq"]),
     )
 
