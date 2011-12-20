@@ -82,9 +82,7 @@ class SimpleStateAccessor(StateAccessor):
 
         self.code.add_py_hook("init",
                 """result = None""")
-        for sizename, value in zip(self.size_names, self.size):
-            self.code.add_py_hook("init",
-                    """%s = %d""" % (sizename, value))
+
         self.code.add_py_hook("post_compute",
                 """self.acc.write_to(pos, result)""")
         self.code.add_py_hook("finalize",
