@@ -84,6 +84,9 @@ Revision History
 
    1.0 2011-12-19
         First release.
+
+   1.1 2011-12-20
+        Don't use os.system for starting the notebook.
 """
 
 import os
@@ -125,8 +128,8 @@ NOTEBOOK_STATIC_PATH = os.path.join(NOTEBOOK_BASE_PATH, "static")
 
 """These extra arguments go directly between the tornado arguments and the
 arguments passed to this script on the commandline:"""
-#notebook_extra_args = "--gui=qt" # for example
-notebook_extra_args = ""
+#notebook_extra_args = ["--gui=qt"] # for example
+notebook_extra_args = [""]
 
 
 """=========
@@ -241,16 +244,36 @@ def copy_example_notebooks(target_path):
 
 def launch_notebook_server():
     import sys
+    import atexit
+    import signal
     base_path, settings = create_overlay()
     copy_example_notebooks(base_path)
     print "running notebook overlay from", base_path
-    os.system('''ipython notebook '''
-              '''--NotebookApp.webapp_settings="%s" '''
-              '''--NotebookManager.notebook_dir="%s" ''' % (
-                    settings, os.path.join(base_path, "notebooks")) +
+
+    def cleanup_func():
+        print "cleaning up..."
+        try:
+            atexit.register(shutil.rmtree, base_path)
+        except:
+            print base_path, "could not be deleted."
+
+    print "registering thingie"
+    atexit.register(cleanup_func)
+
+    print "starting"
+    app = notebookapp.NotebookApp()
+    app.initialize(argv=[
+              '''--NotebookApp.webapp_settings=%s''' % (settings),
+              '''--NotebookManager.notebook_dir="%s"''' % (os.path.join(base_path, "notebooks"))] +
               notebook_extra_args +
-              " ".join(sys.argv[1:]))
-    shutil.rmtree(base_path)
+              sys.argv[1:])
+
+    # somewhere in initialize, the SIGINT handler gets set to be ignored.
+    # we have to undo that
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+
+    app.start()
+    print "the app returned"
 
 if __name__ == "__main__":
     launch_notebook_server()
