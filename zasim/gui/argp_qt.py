@@ -19,6 +19,10 @@ class ArgparseWindow(QDialog):
     """
 
     taken_dests = set()
+    """What "dest" values are already taken."""
+
+    arguments = []
+    """What the commandline looked like the last time it was updated."""
 
     def __init__(self, argparser, arguments=None, **kwargs):
         super(ArgparseWindow, self).__init__(**kwargs)
@@ -36,6 +40,7 @@ class ArgparseWindow(QDialog):
         box = QCheckBox(label_text, parent=self)
 
         box.toggled.connect(widget.setEnabled)
+        box.toggled.connect(self.update_cmdline)
 
         widget.setEnabled(False)
 
@@ -73,6 +78,7 @@ class ArgparseWindow(QDialog):
             if action.default:
                 w.setText(unicode(action.default))
             cont, box = self._widget_with_checkbox(w, action.dest, action.help)
+            w.textChanged.connect(self.update_cmdline)
 
         elif isinstance(action, ap._HelpAction):
             return None
@@ -117,6 +123,13 @@ class ArgparseWindow(QDialog):
 
     def setup_ui(self):
         layout = QVBoxLayout()
+
+        self.cmdline = QLineEdit()
+        # XXX this could 'easily' be set to false with appropriate calls to
+        #     self.argp.parse_args etc.
+        self.cmdline.setReadOnly(True)
+        layout.addWidget(self.cmdline)
+
         for group in self.argp._action_groups:
             group = self.build_action_group(group)
             if group:
@@ -130,7 +143,7 @@ class ArgparseWindow(QDialog):
 
         self.setLayout(layout)
 
-    def try_accept(self):
+    def update_cmdline(self):
         arguments = []
         for action, (box, widget) in self.action_widgets.iteritems():
             checked = box.isChecked()
@@ -140,17 +153,17 @@ class ArgparseWindow(QDialog):
                 active = checked
 
             if active:
-                print action
-                print widget
-                print
-
                 if isinstance(widget, QLineEdit):
                     arguments.extend([action.option_strings[-1], widget.text()])
                 else:
                     arguments.extend([action.option_strings[-1]])
 
-        print arguments
-        print self.argp.parse_args(arguments)
+        self.arguments = arguments
+        self.cmdline.setText(" ".join(
+            [arg if " " not in arg else arg.replace(" ", '" "') for arg in self.arguments]))
+
+    def try_accept(self):
+        self.argp.parse_args(self.arguments)
 
 if __name__ == "__main__":
     argp = ap.ArgumentParser(
