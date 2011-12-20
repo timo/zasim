@@ -1,6 +1,6 @@
 from ..external.qt import (QDialog, QWidget,
         QHBoxLayout, QVBoxLayout,
-        QGroupBox,
+        QGroupBox, QLabel,
         QCheckBox, QLineEdit,
         QDialogButtonBox,
         app)
@@ -33,10 +33,19 @@ class ArgparseWindow(QDialog):
 
         widget.setEnabled(False)
 
+        outer = QVBoxLayout()
+
         layout = QHBoxLayout()
         layout.addWidget(box)
         layout.addWidget(widget)
-        cont.setLayout(layout)
+
+        outer.addLayout(layout)
+        label = QLabel(help_text)
+        label.setWordWrap(True)
+        outer.addWidget(label)
+
+        cont.setLayout(outer)
+
 
         return cont, box
 
