@@ -64,12 +64,9 @@ class ArgparseWindow(QDialog):
             w = QWidget(parent=self)
             cont, box = self._widget_with_checkbox(w, action.dest, action.help)
             if action.dest in self.arguments:
-                if isinstance(action, ap._StoreTrueAction):
-                    box.setChecked(self.arguments[action.dest])
-                else:
-                    box.setChecked(not self.arguments[action.dest])
+                box.setChecked(self.arguments[action.dest])
             else:
-                    box.setChecked(action.default)
+                box.setChecked(action.default)
 
         elif isinstance(action, ap._StoreAction):
             w = QLineEdit()
