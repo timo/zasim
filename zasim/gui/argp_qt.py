@@ -20,10 +20,14 @@ class ArgparseWindow(QDialog):
 
     taken_dests = set()
 
-    def __init__(self, argparser, **kwargs):
+    def __init__(self, argparser, arguments=None, **kwargs):
         super(ArgparseWindow, self).__init__(**kwargs)
 
         self.argp = argparser
+        if arguments:
+            self.arguments = arguments
+        else:
+            self.arguments = {}
 
         self.setup_ui()
 
@@ -54,10 +58,18 @@ class ArgparseWindow(QDialog):
         if isinstance(action, (ap._StoreTrueAction, ap._StoreFalseAction)):
             w = QWidget(parent=self)
             cont, box = self._widget_with_checkbox(w, action.dest, action.help)
-            box.setChecked(action.default)
+            if action.dest in self.arguments:
+                if isinstance(action, ap._StoreTrueAction):
+                    box.setChecked(self.arguments[action.dest])
+                else:
+                    box.setChecked(not self.arguments[action.dest])
+            else:
+                    box.setChecked(action.default)
 
         elif isinstance(action, ap._StoreAction):
             w = QLineEdit()
+            if action.dest in self.arguments:
+                w.setText(unicode(self.arguments[action.dest]))
             if action.default:
                 w.setText(unicode(action.default))
             cont, box = self._widget_with_checkbox(w, action.dest, action.help)
@@ -182,7 +194,9 @@ if __name__ == "__main__":
     argp.add_argument("--sparse", default=False, action="store_true",
             help="should a sparse loop be created?")
 
-    win = ArgparseWindow(argp)
+    args = argp.parse_args()
+
+    win = ArgparseWindow(argp, vars(args))
     win.show()
 
     app.exec_()
