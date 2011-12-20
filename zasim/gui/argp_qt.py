@@ -53,9 +53,13 @@ class ArgparseWindow(QDialog):
             cont, box = self._widget_with_checkbox(w, action.dest, action.help)
 
         elif isinstance(action, ap._HelpAction):
+            return None
+
+        else:
             print "error"
             print "could not build a widget for ", action
             return None
+
 
         self.action_widgets[action] = (box, w)
         return cont
@@ -98,7 +102,25 @@ class ArgparseWindow(QDialog):
         self.setLayout(layout)
 
     def try_accept(self):
-        print "accept this."
+        arguments = []
+        for action, (box, widget) in self.action_widgets.iteritems():
+            checked = box.isChecked()
+            if isinstance(action, ap._StoreFalseAction):
+                active = not checked
+            else:
+                active = checked
+
+            if active:
+                print action
+                print widget
+                print
+
+                if isinstance(widget, QLineEdit):
+                    arguments.extend([action.option_strings[-1], widget.text()])
+                else:
+                    arguments.extend([action.option_strings[-1]])
+
+        print arguments
 
 if __name__ == "__main__":
     argp = ap.ArgumentParser(
