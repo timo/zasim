@@ -138,6 +138,7 @@ class ArgparseWindow(QDialog):
                     arguments.extend([action.option_strings[-1]])
 
         print arguments
+        print self.argp.parse_args(arguments)
 
 if __name__ == "__main__":
     argp = ap.ArgumentParser(
