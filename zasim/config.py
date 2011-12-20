@@ -188,8 +188,17 @@ def function_of_radius(function, max_dist="diagonal"):
     return wrapper
 
 class DensityDistributedConfiguration(RandomInitialConfiguration):
-    """Create a distribution from a function giving the probability for each
-    field to have a given value"""
+    """Create a distribution from functions giving the probability for each
+    field to have a given value.
+
+    For prob_dist_fun, supply a dictionary with one entry per value you
+    want to end up in the configuration as the key. The value is a lambda
+    from position and config size to relative probability at that position.
+
+    For each position in the configuration, every function is called and the
+    results added up to figure out, what value would be 100% for that cell,
+    then the relative probabilities are divided and used for choosing a
+    value."""
 
     def __init__(self, prob_dist_fun):
         self.prob_dist_fun = prob_dist_fun
