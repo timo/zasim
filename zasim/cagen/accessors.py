@@ -27,9 +27,13 @@ class SimpleStateAccessor(StateAccessor):
     size = None
     """The size of the target configuration."""
 
+    cell_count = 0
+    """The number of cells in the target configuration."""
+
     def set_size(self, size):
         super(SimpleStateAccessor, self).set_size(size)
         self.size = size
+        self.cell_count = reduce(lambda a, b: a * b, self.size)
         if len(self.size) == 1:
             self.size_names = ("sizeX",)
             self.border_names = (("LEFT_BORDER",), ("RIGHT_BORDER",))
@@ -51,6 +55,7 @@ class SimpleStateAccessor(StateAccessor):
         super(SimpleStateAccessor, self).init_once()
         for sizename, size in zip(self.size_names, self.size):
             self.code.consts[sizename] = size
+        self.code.consts["cell_count"] = self.cell_count
         self.code.attrs.extend(["nconf", "cconf"])
 
     def bind(self, code):
