@@ -244,23 +244,16 @@ def copy_example_notebooks(target_path):
 
 def launch_notebook_server():
     import sys
-    import atexit
     import signal
     base_path, settings = create_overlay()
     copy_example_notebooks(base_path)
+
+    print
     print "running notebook overlay from", base_path
+    print
+    print "hit ctrl-c to exit the tutorial"
+    print
 
-    def cleanup_func():
-        print "cleaning up..."
-        try:
-            atexit.register(shutil.rmtree, base_path)
-        except:
-            print base_path, "could not be deleted."
-
-    print "registering thingie"
-    atexit.register(cleanup_func)
-
-    print "starting"
     app = notebookapp.NotebookApp()
     app.initialize(argv=[
               '''--NotebookApp.webapp_settings=%s''' % (settings),
@@ -272,8 +265,16 @@ def launch_notebook_server():
     # we have to undo that
     signal.signal(signal.SIGINT, signal.default_int_handler)
 
-    app.start()
-    print "the app returned"
+    try:
+        app.start()
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print
+        print "deleting", base_path
+        shutil.rmtree(base_path)
+
+    print "goodbye"
 
 if __name__ == "__main__":
     launch_notebook_server()
