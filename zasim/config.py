@@ -21,6 +21,7 @@ from __future__ import division
 from features import HAVE_NUMPY_RANDOM, HAVE_MULTIDIM
 
 import random
+import math
 import numpy as np
 from itertools import product
 
@@ -160,6 +161,32 @@ class ImageInitialConfiguration(BaseInitialConfiguration):
 
         return result
 
+
+def function_of_radius(function, max_dist="diagonal"):
+    if max_dist == "shortest":
+        calc_max_dist = lambda size: min(size)
+    elif max_dist == "longest":
+        calc_max_dist = lambda size: max(size)
+    elif max_dist == "diagonal":
+        def calc_max_dist(size):
+            halves = [num / 2 for num in size]
+            squares = [num ** 2 for num in halves]
+            return math.sqrt(sum(squares))
+
+    def wrapper(*args):
+        dists = []
+        half = len(args) // 2
+        for num in range(half):
+            center = args[num + half] / 2
+            dists.append(abs(center - args[num]))
+
+        squares = [num ** 2 for num in dists]
+        dist = math.sqrt(sum(squares))
+
+        return function(dist, calc_max_dist(args[half:]))
+
+    return wrapper
+
 class DensityDistributedConfiguration(RandomInitialConfiguration):
     """Create a distribution from a function giving the probability for each
     field to have a given value"""
@@ -198,3 +225,4 @@ class DensityDistributedConfiguration(RandomInitialConfiguration):
                            if randoms[pos] < perc)
 
         return result
+
