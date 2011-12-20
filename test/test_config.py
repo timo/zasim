@@ -127,6 +127,18 @@ class TestConfig:
             nconf_imp = config.ImageInitialConfiguration(tmpfile.name, scale=scale)
             assert_arrays_equal(nconf_imp.generate(), s.get_config())
 
+
+    def test_probability_distribution_1d(self):
+        zero_fun = 1
+        one_fun = lambda x, w: 0 if x <= w/2 else 5
+
+        gen = config.DensityDistributedConfiguration({0:zero_fun, 1:one_fun})
+        for i in range(10):
+            conf = gen.generate((100,))
+            assert not conf[0:49].any()
+            assert conf[50:].any()
+            assert not conf[50:].all()
+
 def pytest_generate_tests(metafunc):
     if "scale" in metafunc.funcargnames:
         for i in [1, 4, 10]:
