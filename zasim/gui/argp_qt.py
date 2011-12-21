@@ -24,6 +24,8 @@ class ArgparseWindow(QDialog):
     arguments = []
     """What the commandline looked like the last time it was updated."""
 
+    _last_changed_obj = None
+
     def __init__(self, argparser, arguments=None, **kwargs):
         super(ArgparseWindow, self).__init__(**kwargs)
 
@@ -35,10 +37,17 @@ class ArgparseWindow(QDialog):
 
         self.setup_ui()
 
-    def _widget_with_checkbox(self, widget, label_text, help_text):
+    def _widget_with_checkbox(self, widget, action):
         cont = QWidget(parent=self)
-        box = QCheckBox(label_text, parent=self)
+        box = QCheckBox(action.dest, parent=self)
 
+        box.setObjectName("%s_active" % action.dest)
+        widget.setObjectName("%s_widget" % action.dest)
+
+        def set_last_changed_obj(*a):
+            self._last_changed_obj = box
+
+        box.toggled.connect(set_last_changed_obj)
         box.toggled.connect(widget.setEnabled)
         box.toggled.connect(self.update_cmdline)
 
@@ -51,7 +60,7 @@ class ArgparseWindow(QDialog):
         layout.addWidget(widget)
 
         outer.addLayout(layout)
-        label = QLabel(help_text)
+        label = QLabel(action.help)
         label.setWordWrap(True)
         outer.addWidget(label)
 
@@ -62,7 +71,7 @@ class ArgparseWindow(QDialog):
     def build_action_widget(self, action):
         if isinstance(action, (ap._StoreTrueAction, ap._StoreFalseAction)):
             w = QWidget(parent=self)
-            cont, box = self._widget_with_checkbox(w, action.dest, action.help)
+            cont, box = self._widget_with_checkbox(w, action)
             if action.dest in self.arguments:
                 box.setChecked(self.arguments[action.dest])
             else:
@@ -70,11 +79,16 @@ class ArgparseWindow(QDialog):
 
         elif isinstance(action, ap._StoreAction):
             w = QLineEdit()
+
+            def set_last_changed_obj(*a):
+                self._last_changed_obj = w
+
             if action.dest in self.arguments:
                 w.setText(unicode(self.arguments[action.dest]))
             if action.default:
                 w.setText(unicode(action.default))
-            cont, box = self._widget_with_checkbox(w, action.dest, action.help)
+            cont, box = self._widget_with_checkbox(w, action)
+            w.textChanged.connect(set_last_changed_obj)
             w.textChanged.connect(self.update_cmdline)
 
         elif isinstance(action, ap._HelpAction):
@@ -158,6 +172,18 @@ class ArgparseWindow(QDialog):
         self.arguments = arguments
         self.cmdline.setText(" ".join(
             [arg if " " not in arg else arg.replace(" ", '" "') for arg in self.arguments]))
+
+        # XXX wow, this is terrible.
+        import sys
+        pse = sys.exit
+        errors = []
+        sys.exit = lambda *a: errors.append(True)
+        self.argp.parse_known_args(self.arguments)
+        sys.exit = pse
+
+        if errors:
+            self._last_changed_obj.setVisible(False)
+
 
     def try_accept(self):
         self.argp.parse_args(self.arguments)
