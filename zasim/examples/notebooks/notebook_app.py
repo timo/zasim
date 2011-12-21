@@ -87,6 +87,7 @@ Revision History
 
    1.1 2011-12-20
         Don't use os.system for starting the notebook.
+        Cleaner clean-up.
 """
 
 import os
@@ -124,6 +125,10 @@ taken. You should not have to change this. It will usually be correct."""
 NOTEBOOK_BASE_PATH = os.path.dirname(notebookapp.__file__)
 NOTEBOOK_TEMPLATE_PATH = os.path.join(NOTEBOOK_BASE_PATH, "templates")
 NOTEBOOK_STATIC_PATH = os.path.join(NOTEBOOK_BASE_PATH, "static")
+
+"""This name will be the prefix for the temporary folder"""
+PROJECT_NAME = "my_pretty_framework"
+
 
 
 """These extra arguments go directly between the tornado arguments and the
@@ -227,7 +232,7 @@ def create_overlay():
     templates and static files."""
 
     # create the temporary folder where overlay and base are merged
-    path = tempfile.mkdtemp(prefix="zasim_tutorial")
+    path = tempfile.mkdtemp(prefix=PROJECT_NAME + "_tutorial")
 
     template_path = os.path.join(path, "templates")
     static_path = os.path.join(path, "static")
