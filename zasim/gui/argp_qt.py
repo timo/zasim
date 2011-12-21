@@ -192,7 +192,7 @@ class ArgparseWindow(QDialog):
         pse = sys.exit
         errors = []
         sys.exit = lambda *a: errors.append(True)
-        self.argp.parse_known_args(self.arguments)
+        self.argp.parse_args(self.arguments)
         sys.exit = pse
 
         if errors:
@@ -200,9 +200,17 @@ class ArgparseWindow(QDialog):
 
 
     def try_accept(self):
-        self.argp.parse_args(self.arguments)
+        self.update_cmdline() # be extra sure, that this is up to date
 
-if __name__ == "__main__":
+        self.accept()
+
+class NewZasimWindow(ArgparseWindow):
+    def __init__(self):
+        ap = make_argument_parser()
+        arguments = vars(ap.parse_args())
+        super(NewZasimWindow, self).__init__(ap, arguments)
+
+def make_argument_parser():
     argp = ap.ArgumentParser(
         description="Run a 1d BinRule, a 2d Game of Life, or a 2d elementary "
                     "cellular automaton")
@@ -243,6 +251,11 @@ if __name__ == "__main__":
 
     argp.add_argument("--sparse", default=False, action="store_true",
             help="should a sparse loop be created?")
+
+    return argp
+
+if __name__ == "__main__":
+    argp = make_argument_parser()
 
     args = argp.parse_args()
 

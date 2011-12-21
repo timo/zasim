@@ -1,5 +1,6 @@
 from .display import ZasimDisplay
 from .histogram import HistogramExtraDisplay
+from .argp_qt import make_argument_parser
 
 from ..external.qt import Qt, app
 from .. import cagen
@@ -102,48 +103,7 @@ def main(width=200, height=200, scale=2,
     sys.exit(app.exec_())
 
 def cli_main():
-    import argparse
-
-    argp = argparse.ArgumentParser(
-        description="Run a 1d BinRule, a 2d Game of Life, or a 2d elementary "
-                    "cellular automaton")
-    argp.add_argument("--onedim", default=False, action="store_true",
-            help="generate a one-dimensional cellular automaton")
-    argp.add_argument("--twodim", default=True, action="store_false", dest="onedim",
-            help="generate a two-dimensional cellular automaton")
-    argp.add_argument("--life", default=False, action="store_true",
-            help="generate a conway's game of life - implies --twodim")
-
-    argp.add_argument("-x", "--width", default=200, dest="width", type=int,
-            help="the width of the image surface")
-    argp.add_argument("-y", "--height", default=200, dest="height", type=int,
-            help="the height of the image surface")
-    argp.add_argument("-z", "--scale", default=3, dest="scale", type=int,
-            help="the size of each cell of the configuration")
-    argp.add_argument("-r", "--rule", default=None, type=str,
-            help="the elementary cellular automaton rule number to use")
-    argp.add_argument("-R", "--alt-rule", default=None, type=str,
-            help="the alternative rule to use. Supplying this will turn nondet into dual-rule mode")
-    argp.add_argument("-c", "--dont-copy-borders", default=True, action="store_false", dest="copy_borders",
-            help="copy borders or just read zeros?")
-    argp.add_argument("--black", default=None, type=float,
-            help="what percentage of the cells to make black at the beginning. (between 2 and 100 or 0.0 and 1.0)")
-
-    argp.add_argument("--nondet", default=100, type=float,
-            help="with what percentage should cells be executed? (either between 2 and 100 or 0.0 and 1.0)")
-    argp.add_argument("--beta", default=100, type=float,
-            help="with what probability should a cell succeed in exposing its "\
-                 "state to its neighbours? (either between 2 and 100 or 0.0 and 1.0)")
-
-    argp.add_argument("--no-histogram", default=True, action="store_false", dest="histogram",
-            help="don't display a histogram")
-    argp.add_argument("--no-activity", default=True, action="store_false", dest="activity",
-            help="don't display the activity")
-    argp.add_argument("--base", default=2, type=int,
-            help="The base of the cells.")
-
-    argp.add_argument("--sparse", default=False, action="store_true",
-            help="should a sparse loop be created?")
+    argp = make_argument_parser()
 
     args = argp.parse_args()
 

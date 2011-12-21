@@ -1,7 +1,7 @@
 from ..external.qt import *
-from .stepfunc import StepFuncCompositionDialog
 from .elementary import ElementaryRuleWindow
 from .externaledit import ExternalEditWindow
+from .argp_qt import NewZasimWindow
 
 class ZasimMainWindow(QMainWindow):
     """This is a window that manages one simulator. It holds one
@@ -69,7 +69,8 @@ class ZasimMainWindow(QMainWindow):
         self.setup_menu()
 
         self.elementary_tool = None
-        self.comp_dlg = None
+        #self.comp_dlg = None
+        self.new_dlg = None
 
     def setup_menu(self):
         simulator_menu = self.menuBar().addMenu("Simulator")
@@ -112,15 +113,30 @@ class ZasimMainWindow(QMainWindow):
             self.elementary_tool.show()
 
     def show_new_sim_dlg(self):
+        #try:
+            #if self.comp_dlg and not self.comp_dlg.isVisible():
+                #self.comp_dlg = None
+        #except RuntimeError: # the object on the C++ side had already been deleted
+            #self.comp_dlg = None
+        #if self.comp_dlg is None:
+            #self.comp_dlg = StepFuncCompositionDialog()
+            #self.comp_dlg.setObjectName("composition_dialog")
+            #self.comp_dlg.show()
         try:
-            if self.comp_dlg and not self.comp_dlg.isVisible():
-                self.comp_dlg = None
+            if self.new_dlg and not self.new_dlg.isVisible():
+                self.new_dlg = None
         except RuntimeError: # the object on the C++ side had already been deleted
-            self.comp_dlg = None
-        if self.comp_dlg is None:
-            self.comp_dlg = StepFuncCompositionDialog()
-            self.comp_dlg.setObjectName("composition_dialog")
-            self.comp_dlg.show()
+            self.new_dlg = None
+        if self.new_dlg is None:
+            self.new_dlg = NewZasimWindow()
+            self.new_dlg.setObjectName("new_dialog")
+            self.new_dlg.exec_()
+
+            import subprocess
+            import sys
+            print sys.argv
+            subprocess.Popen([sys.executable, sys.argv[0]] + self.new_dlg.arguments)
+
 
     def attach_display(self, display):
         """Attach an extra display to the control.
