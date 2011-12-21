@@ -175,6 +175,8 @@ class ArgparseWindow(QDialog):
                 else:
                     arguments.extend([action.option_strings[-1]])
 
+                # FIXME try validating against the argument parsers validators, too
+
                 try:
                     if not widget.hasAcceptableInput():
                         return
