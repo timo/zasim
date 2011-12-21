@@ -107,7 +107,7 @@ class ActivityRecord(ExtraStats):
                 % dict(center=center_name))
 
         self.code.add_py_hook("after_step",
-                """activity[0] = cell_count - activity[1]""")
+                """self.target.activity[0] = cell_count - self.target.activity[1]""")
 
     def new_config(self):
         """Reset the activity counter to -1, which stands for "no data"."""
