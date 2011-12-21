@@ -88,7 +88,6 @@ And this is the generated python code::
     def step_pure_py(self):
     # from hook init
         result = None
-        sizeX = 15
         for pos in self.loop.get_iter():
     # from hook pre_compute
             l = self.acc.read_from(offset_pos(pos, (-1,)))
@@ -118,7 +117,6 @@ And this is the generated python code::
     def step_pure_py(self):
     # from hook init
         result = None
-        sizeX = 15
         for pos in self.loop.get_iter():
     # from hook pre_compute
             l = self.acc.read_from(offset_pos(pos, (-1,)))
