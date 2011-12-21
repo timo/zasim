@@ -3,6 +3,7 @@ from ..external.qt import (QDialog, QWidget,
         QGroupBox, QLabel,
         QCheckBox, QLineEdit,
         QDialogButtonBox,
+        QIntValidator, QDoubleValidator,
         app)
 
 import argparse as ap
@@ -79,6 +80,11 @@ class ArgparseWindow(QDialog):
 
         elif isinstance(action, ap._StoreAction):
             w = QLineEdit()
+
+            if action.type == int or action.type == long:
+                w.setValidator(QIntValidator(w))
+            elif action.type == float:
+                w.setValidator(QDoubleValidator(w))
 
             def set_last_changed_obj(*a):
                 self._last_changed_obj = w
@@ -168,6 +174,12 @@ class ArgparseWindow(QDialog):
                     arguments.extend([action.option_strings[-1], widget.text()])
                 else:
                     arguments.extend([action.option_strings[-1]])
+
+                try:
+                    if not widget.hasAcceptableInput():
+                        return
+                except AttributeError:
+                    pass
 
         self.arguments = arguments
         self.cmdline.setText(" ".join(
