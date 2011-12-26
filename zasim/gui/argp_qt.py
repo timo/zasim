@@ -22,7 +22,7 @@ class ArgparseWindow(QDialog):
     taken_dests = set()
     """What "dest" values are already taken."""
 
-    arguments = []
+    arguments = {}
     """What the commandline looked like the last time it was updated."""
 
     _last_changed_obj = None
@@ -36,6 +36,8 @@ class ArgparseWindow(QDialog):
         else:
             self.arguments = {}
 
+        self.action_widgets = {}
+        self.taken_dests = set()
         self.setup_ui()
 
     def _widget_with_checkbox(self, widget, action):
@@ -192,7 +194,7 @@ class ArgparseWindow(QDialog):
         pse = sys.exit
         errors = []
         sys.exit = lambda *a: errors.append(True)
-        self.argp.parse_args(self.arguments)
+        self.args = self.argp.parse_args(self.arguments)
         sys.exit = pse
 
         if errors:
@@ -211,6 +213,19 @@ class NewZasimWindow(ArgparseWindow):
         super(NewZasimWindow, self).__init__(ap, arguments)
 
 def make_argument_parser():
+    def make_rule_number(input):
+        input = input.lower()
+        try:
+            if input.startswith("0x"):
+                return int(input, 16)
+            elif input.startswith("0"):
+                if not any([a in input for a in "89abcdef"]):
+                    return int(input, 7)
+            else:
+                return int(input)
+        except ValueError as e:
+            raise ap.ArgumentTypeError(str(e))
+
     argp = ap.ArgumentParser(
         description="Run a 1d BinRule, a 2d Game of Life, or a 2d elementary "
                     "cellular automaton")
@@ -227,9 +242,9 @@ def make_argument_parser():
             help="the height of the image surface")
     argp.add_argument("-z", "--scale", default=3, dest="scale", type=int,
             help="the size of each cell of the configuration")
-    argp.add_argument("-r", "--rule", default=None, type=str,
+    argp.add_argument("-r", "--rule", default=None, type=make_rule_number,
             help="the elementary cellular automaton rule number to use")
-    argp.add_argument("-R", "--alt-rule", default=None, type=str,
+    argp.add_argument("-R", "--alt-rule", default=None, type=make_rule_number,
             help="the alternative rule to use. Supplying this will turn nondet into dual-rule mode")
     argp.add_argument("-c", "--dont-copy-borders", default=True, action="store_false", dest="copy_borders",
             help="copy borders or just read zeros?")

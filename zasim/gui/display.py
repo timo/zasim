@@ -7,7 +7,7 @@ constantly be tested with both bindings."""
 
 from .displaywidgets import DisplayWidget
 from .control import ControlWidget
-from .mainwin import ZasimMainWindow
+#from .mainwin import ZasimMainWindow
 display_objects = []
 
 class ZasimDisplay(object):
@@ -38,8 +38,10 @@ class ZasimDisplay(object):
         if self.control is None:
             self.control = ControlWidget(self.simulator)
 
-        if self.window is None:
-            self.window = ZasimMainWindow(self.simulator, self.display, self.control)
+        from .mainwin import ZasimMainWindow
+        self.window = ZasimMainWindow(self.simulator, self.display, self.control)
+
+        display_objects.append(self.window)
         self.window.show()
 
     def set_scale(self, scale):
