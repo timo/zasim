@@ -161,7 +161,10 @@ class CagenSimulator(BaseSimulator):
         self.snapshot_restored.emit()
 
     def set_config_value(self, pos, value=None):
-        self._step_func.set_config_value(pos, value)
+        try:
+            self._step_func.set_config_value(pos, value)
+        except IndexError:
+            return
         self.changed.emit()
 
     def step(self):
