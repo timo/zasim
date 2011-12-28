@@ -15,9 +15,13 @@ especially for loading configurations from files.
 {LICENSE_TEXT}
 """
 
+
+from __future__ import division
+
 from features import HAVE_NUMPY_RANDOM, HAVE_MULTIDIM
 
 import random
+import math
 import numpy as np
 from itertools import product
 
@@ -55,7 +59,7 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
         if self.percentages:
             self.cumulative_percentages = [sum(self.percentages[:index + 1]) for index in range(len(self.percentages))]
         else:
-            self.cumulative_percentages = [1.0 / self.base]
+            self.cumulative_percentages = [1 / self.base]
             rest -= 1
 
         if self.cumulative_percentages[-1] > 1.0:
@@ -69,13 +73,18 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
         if rest == 0 and self.cumulative_percentages[-1] != 1.0:
             raise ValueError("Probabilities must add up to 1.0")
 
-    def generate(self, size_hint=None, dtype=np.dtype("i")):
+    def size_hint_to_size(self, size_hint=None):
         if size_hint is None:
             size_hint = (random.randrange(1, 100),)
 
         size = []
         for entry in size_hint:
             size.append(random.randrange(1, 100) if entry is None else entry)
+
+        return tuple(size)
+
+    def generate(self, size_hint=None, dtype=np.dtype("i")):
+        size = self.size_hint_to_size(size_hint)
 
         if not HAVE_NUMPY_RANDOM and not HAVE_MULTIDIM:
             # pypy compatibility
@@ -141,14 +150,94 @@ class ImageInitialConfiguration(BaseInitialConfiguration):
         assert image.load(self.filename)
         image = image.convertToFormat(QImage.Format_RGB32)
         if self.scale != 1:
-            image = image.scaled(image.width() / self.scale,
-                                 image.height() / self.scale)
+            image = image.scaled(image.width() // self.scale,
+                                 image.height() // self.scale)
         nparr = np.frombuffer(image.bits(), dtype=np.uint32)
         nparr = nparr.reshape((image.width(), image.height()), order="F")
         result = np.ones((image.width(), image.height()), dtype=dtype)
 
         for value, color in self.palette.iteritems():
             result[nparr == color] = value
+
+        return result
+
+
+def function_of_radius(function, max_dist="diagonal"):
+    if max_dist == "shortest":
+        calc_max_dist = lambda size: min(size)
+    elif max_dist == "longest":
+        calc_max_dist = lambda size: max(size)
+    elif max_dist == "diagonal":
+        def calc_max_dist(size):
+            halves = [num / 2 for num in size]
+            squares = [num ** 2 for num in halves]
+            return math.sqrt(sum(squares))
+
+    def wrapper(*args):
+        dists = []
+        half = len(args) // 2
+        for num in range(half):
+            center = args[num + half] / 2
+            dists.append(abs(center - args[num]))
+
+        squares = [num ** 2 for num in dists]
+        dist = math.sqrt(sum(squares))
+
+        return function(dist, calc_max_dist(args[half:]))
+
+    return wrapper
+
+class DensityDistributedConfiguration(RandomInitialConfiguration):
+    """Create a distribution from functions giving the probability for each
+    field to have a given value.
+
+    For prob_dist_fun, supply a dictionary with one entry per value you
+    want to end up in the configuration as the key. The value is a lambda
+    from position and config size to relative probability at that position.
+
+    For each position in the configuration, every function is called and the
+    results added up to figure out, what value would be 100% for that cell,
+    then the relative probabilities are divided and used for choosing a
+    value.
+
+    If a value is an integer, rather than a callable, then it will be
+    interpreted as a constant function instead."""
+
+    def __init__(self, prob_dist_fun):
+        self.prob_dist_fun = prob_dist_fun
+
+    def generate(self, size_hint=None, dtype=np.dtype("i")):
+        size = self.size_hint_to_size(size_hint)
+
+        # XXX remove duplicate code here?
+        result = np.zeros(size, dtype)
+        if not HAVE_NUMPY_RANDOM and not HAVE_MULTIDIM:
+            # pypy compatibility
+            assert len(size) == 1
+            randoms = np.array([random.random() for i in xrange(size[0])])
+        else:
+            randoms = np.random.rand(*size)
+
+
+        for pos in product(*[xrange(siz) for siz in size]):
+            relative_probabs = {}
+            for key, func in self.prob_dist_fun.iteritems():
+                if isinstance(func, int):
+                    relative_probabs[key] = func
+                else:
+                    relative_probabs[key] = self.prob_dist_fun[key](*(pos + size))
+
+            one = sum(relative_probabs.values())
+            cumulative_percentages = {}
+            cumulative = 0
+            for key, relative_perc in relative_probabs.iteritems():
+                part = relative_perc / one
+                cumulative_percentages[key] = cumulative + part
+                cumulative += part
+
+            # XXX remove duplicate code here?
+            result[pos] = min(idx for idx, perc in cumulative_percentages.iteritems()
+                           if randoms[pos] < perc)
 
         return result
 
