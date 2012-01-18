@@ -157,6 +157,8 @@ def render_state_array_tiled(states, palette, rects, region=None, painter=None):
             assert h == 1
             states = states.reshape((states.shape[0], h))
             conf = states[x:x+w, y:y+h]
+
+        w, h = conf.shape
     else:
         x, y = 0, 0
         try:
