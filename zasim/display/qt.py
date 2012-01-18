@@ -138,7 +138,7 @@ def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
     _last_rendered_state_conf = nconf
     return image
 
-def render_state_array_tiled(states, palette, rects, region=None, tilesize=None):
+def render_state_array_tiled(states, palette, rects, region=None, painter=None):
     """Using a texture atlas and a dictionary of pixmap fragment "factories",
     draw a configuration using graphical tiles.
 
@@ -146,7 +146,7 @@ def render_state_array_tiled(states, palette, rects, region=None, tilesize=None)
     :param palette: The image to use.
     :param rects: A dictionary from state value to rect in the image.
     :param region: What part of the config to render (x, y, w, h).
-    :param tilesize: The size of individual tiles in the final image."""
+    """
 
     if region:
         x, y, w, h = region
@@ -168,21 +168,22 @@ def render_state_array_tiled(states, palette, rects, region=None, tilesize=None)
             states = states.reshape((w,h))
         conf = states
 
-    if not tilesize:
-        tilesize = rects.values()[0].height()
-
-    result = QPixmap(QSize(w * tilesize, h * tilesize))
-    ptr =  QPainter(result)
+    if not painter:
+        tilesize = rects.values()[0].size()
+        result = QPixmap(QSize(w * tilesize.width(), h * tilesize.height()))
+        painter =  QPainter(result)
+        painter.scale(tilesize.width(), tilesize.height())
 
     positions = product(xrange(w), xrange(h))
 
     values = [(pos, conf[pos]) for pos in positions]
-    fragments = [(QPoint(pos[0] * tilesize, pos[1] * tilesize), rects[value]) for pos, value in values]
+    fragments = [(QPoint(pos[0], pos[1]), rects[value]) for pos, value in values]
 
     for dest, src in fragments:
-        ptr.drawPixmap(QRect(dest, QSize(tilesize, tilesize)), palette, src)
+        painter.drawPixmap(QRect(dest, QSize(1, 1)), palette, src)
 
-    return result
+    if not painter:
+        return result
 
 class BaseQImagePainter(QObject):
     """This is a base class for implementing renderers for configs based on
