@@ -80,7 +80,7 @@ def main(width=200, height=200, scale=2,
         print sim_obj.t.rule, hex(sim_obj.rule_number)
 
     display = ZasimDisplay(sim_obj)
-    display.set_scale(scale * 10)
+    display.set_scale(scale)
 
     display.control.start()
 
@@ -118,7 +118,7 @@ def cli_main():
             help="the width of the image surface")
     argp.add_argument("-y", "--height", default=200, dest="height", type=int,
             help="the height of the image surface")
-    argp.add_argument("-z", "--scale", default=3, dest="scale", type=int,
+    argp.add_argument("-z", "--scale", default=3, dest="scale", type=float,
             help="the size of each cell of the configuration")
     argp.add_argument("-r", "--rule", default=None, type=str,
             help="the elementary cellular automaton rule number to use")
