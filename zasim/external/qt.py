@@ -33,6 +33,6 @@ app = None
 if "DISPLAY" in os.environ and os.environ["DISPLAY"]:
     import sys
     if WANT_GUI:
-        app = QApplication(sys.argv)
+        app = qApp or QApplication(sys.argv)
 if app is None:
-    app = QApplication(sys.argv, False)
+    app = qApp or QApplication(sys.argv, False)
