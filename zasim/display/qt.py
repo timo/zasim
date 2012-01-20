@@ -192,10 +192,9 @@ def render_state_array_tiled(states, palette, rects, region=None, painter=None):
     positions = product(xrange(w), xrange(h))
 
     values = [(pos, conf[pos]) for pos in positions]
-    fragments = [(QPoint(pos[0], pos[1]), rects[value]) for pos, value in values]
+    fragments = [QPainter.PixmapFragment.create(QPoint(pos[0], pos[1]), rects[value]) for pos, value in values]
 
-    for dest, src in fragments:
-        painter.drawPixmap(QRect(dest, QSize(1, 1)), palette, src)
+    painter.drawPixmapFragments(fragments, len(fragments), palette)
 
     if not painter:
         return result
