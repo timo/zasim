@@ -89,8 +89,7 @@ class StepFunc(object):
         :param border: A `BorderHandler`, that handles wrapping etc.
                        Can be elided.
         :param extra_code: Further `StepFuncVisitor` classes, that
-                           add more behaviour.
-                           Usually at least a `BorderCopier`.
+                           add more behaviour. This usually includes a Computation.
         :param target: The object to target.
         :param size: If the target is not supplied, the size has to be
                      specified here."""
@@ -177,24 +176,24 @@ class StepFunc(object):
 
         return conflicts, missing
 
-    def add_code(self, hook, code):
+    def add_weave_code(self, hook, code):
         """Add a snippet of C code to the section "hook".
 
         :param hook: the section to append the code to.
         :param code: the C source code to add."""
         self.code[hook].append(code)
 
-    def add_py_hook(self, hook, function):
+    def add_py_code(self, hook, code):
         """Add a string of python code to the section "hook".
 
         :param hook: the section to append the code to.
-        :param function: the python code to add (as a string)."""
-        assert isinstance(function, basestring), "py hooks must be strings now."
-        function = dedent_python_code(function)
-        function = function.split("\n")
+        :param code: the python code to add (as a string)."""
+        assert isinstance(code, basestring), "py hooks must be strings now."
+        code_text = dedent_python_code(code)
+        code_text = code_text.split("\n")
         newfunc = []
 
-        for line in function:
+        for line in code_text:
             if not HAVE_TUPLE_ARRAY_INDEX:
                 line = tuple_array_index_fixup(line)
             newfunc.append(" " * self.pycode_indent[hook] + line)

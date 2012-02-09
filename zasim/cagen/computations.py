@@ -74,8 +74,8 @@ class ElementaryCellularAutomatonBase(Computation):
         compute_code.append("result = rule(result);")
         compute_py.append("result = self.target.rule[int(result)]")
 
-        self.code.add_code("compute", "\n".join(compute_code))
-        self.code.add_py_hook("compute", "\n".join(compute_py))
+        self.code.add_weave_code("compute", "\n".join(compute_code))
+        self.code.add_py_code("compute", "\n".join(compute_py))
 
     def init_once(self):
         """Generate the rule lookup array and a pretty printer."""
@@ -170,15 +170,15 @@ class CountBasedComputationBase(Computation):
         else:
             self.central_name = None
 
-        self.code.add_code("localvars", "int nonzerocount;")
+        self.code.add_weave_code("localvars", "int nonzerocount;")
         if self.code.possible_values == (0, 1):
             single_values = names
         else:
             single_values = ["int(%d != 0)" % name for name in names]
         code = "nonzerocount = %s" % (" + ".join(single_values))
 
-        self.code.add_code("compute", code + ";")
-        self.code.add_py_hook("compute", code)
+        self.code.add_weave_code("compute", code + ";")
+        self.code.add_py_code("compute", code)
 
 class LifeCellularAutomatonBase(CountBasedComputationBase):
     """This computation base is useful for any game-of-life-like step function
@@ -209,7 +209,7 @@ class LifeCellularAutomatonBase(CountBasedComputationBase):
         super(LifeCellularAutomatonBase, self).visit()
         assert self.central_name is not None, "Need a neighbourhood with a named zero offset"
         self.params.update(central_name=self.central_name)
-        self.code.add_code("compute",
+        self.code.add_weave_code("compute",
                 """
     result = %(central_name)s;
     if (%(central_name)s == 0) {
@@ -219,7 +219,7 @@ class LifeCellularAutomatonBase(CountBasedComputationBase):
       if (nonzerocount < %(stay_alive_min)d || nonzerocount > %(stay_alive_max)d) {
         result = 0;
       }}""" % self.params)
-        self.code.add_py_hook("compute","""
+        self.code.add_py_code("compute","""
             result = %(central_name)s
             if %(central_name)s == 0:
                 if %(reproduce_min)d <= nonzerocount <= %(reproduce_max)d:

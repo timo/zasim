@@ -2,7 +2,7 @@
 
 {LICENSE_TEXT}
 """
-from .target import TestTarget
+from .target import Target
 from .computations import ElementaryCellularAutomatonBase, LifeCellularAutomatonBase
 from .beta_async import BetaAsynchronousAccessor, BetaAsynchronousNeighbourhood
 from .accessors import SimpleStateAccessor
@@ -25,10 +25,12 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                        copy_borders=True, neighbourhood=None,
                        base=2, extra_code=None,
                        sparse_loop=False,
-                       target_class=TestTarget,
+                       target_class=Target,
                        needs_random_generator=False, random_generator=None, **kwargs):
     """From the given parameters, assemble a StepFunc with the given
-    computation and extra_code objects. Returns the stepfunc."""
+    computation and extra_code objects. Additionally, a target is created.
+
+    Returns the stepfunc."""
     if size is None:
         # pypy compat: np.array is a type in pypy, whereas it's a function in numpy
         if ("ndarray" in dir(np) and isinstance(config, np.ndarray)) \

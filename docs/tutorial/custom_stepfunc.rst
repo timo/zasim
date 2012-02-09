@@ -107,8 +107,8 @@ interface. Those slots are:
    any other would have the bulk of their implementation in one of those. Some
    may also need special instances of `CellLoop` or `StateAccessor` to work.
 
-The `StepFunc` works by calling the following method on each `StepFuncVisitor`
-in turn:
+The `StepFunc` works by calling each of the following methods on all
+`StepFuncVisitor`s:
 
  * `~zasim.cagen.bases.StepFuncVisitor.bind` with itself as the `code` argument.
    This binds the StepFuncVisitor to the StepFunc. The StepFuncVisitor should
@@ -173,7 +173,7 @@ In the previous section, the *target instance* has been mentioned, but there was
 not yet any explanation for what it is or does. The target is, however, very
 simple. All it has to do is basically keep the configuration and a bunch of
 additional attributes together in one namespace. The only class currently useful
-as a target is the `~zasim.cagen.target.TestTarget`, which takes a config - or
+as a target is the `~zasim.cagen.target.Target`, which takes a config - or
 a size, which will generate a random config - and a base as arguments and offers
 the attributes `cconf` and `possible_values`.
 
@@ -191,11 +191,11 @@ A common interface: the `Simulator`
 
 In order for :ref:`displays <display-package>` and `controls
 <zasim.gui.control>` to work, there is a unified interface for all kinds of
-simulators, wether they are based on a `StepFunc` class and a `TestTarget`, or
+simulators, wether they are based on a `StepFunc` class and a `Target`, or
 any other class you can come up with. This interface is defined and documented
 in `zasim.simulator`. There is a special class for a Simulator built from a
-`StepFunc` and a `TestTarget`, which is the `~zasim.simulator.CagenSimulator`
-and a class for a StepFunc and TestTarget based simulator, that also
+`StepFunc` and a `Target`, which is the `~zasim.simulator.CagenSimulator`
+and a class for a StepFunc and Target based simulator, that also
 offers a rule number, like the elementary cellular automaton would, called
 `~zasim.simulator.ElementaryCagenSimulator`.
 
@@ -203,7 +203,7 @@ In fact, the simulators from `zasim.cagen.simulators` are all derived from
 either the `ElementaryCagenSimulator` or the `CagenSimulator`.
 
 The `CagenSimulator` and the `ElementaryCagenSimulator` are both constructed
-from a `StepFunc` and a `TestTarget`.
+from a `StepFunc` and a `Target`.
 
 The Simulator grants access to the extra attributes of the target via the `t`
 property. It is a `~zasim.simulator.TargetProxy` object, that will allow
@@ -214,8 +214,8 @@ Signals and Slots
 -----------------
 
 The `Simulator` interface offers a couple of signals,
-most notably `~zasim.simulator.BaseSimulator.updated` and
-`~zasim.simulator.BaseSimulator.changed`, which you can connect any python
+most notably `~zasim.simulator.SimulatorInterface.updated` and
+`~zasim.simulator.SimulatorInterface.changed`, which you can connect any python
 function or Qt slot to. `updated` will be emitted, when the simulator has made
 a step and `changed` will be emitted when the configuration has changed due to
 some other event, such as the user drawing on the image. Connecting functions to
@@ -288,7 +288,7 @@ for the generated C++ code:
 
     >>> from zasim.cagen import *
     >>> # create a random configuration, base 2, 15 cells wide
-    >>> t = TestTarget(size=(15,), base=2)
+    >>> t = Target(size=(15,), base=2)
     >>> a = SimpleStateAccessor()
     >>> # Create a border of constant zeros around the configuration
     >>> b = BorderSizeEnsurer()
@@ -332,7 +332,7 @@ This is due to the way the visitors work. Their visit methods are called in
 order, so if they just appended their code, it would come out interleaved, so
 instead, there are the sections `init`, `pre_compute`, `compute`,
 `post_compute`, `after_step` and `finalize`. Each StepFuncVisitor will call
-add_py_hook with a section name and a string containing the python code to add
+add_py_code with a section name and a string containing the python code to add
 and the StepFunc will correct the indentation of the code and add it to the
 given category.
 
@@ -345,7 +345,7 @@ Using a wrong combination of StepFuncVisitors will result in such an exception:
 
     >>> from zasim.cagen import *
     >>> # this time, the configuration is two-dimensional
-    >>> t = TestTarget(size=(15,15), base=2)
+    >>> t = Target(size=(15,15), base=2)
     >>> a = SimpleStateAccessor()
     >>> # we carelessly forgot to use the correct loop for the two-dimensional
     >>> # config

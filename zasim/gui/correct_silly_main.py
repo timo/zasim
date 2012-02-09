@@ -10,14 +10,14 @@ from zasim.cagen import *
 
 class SillyComputation(Computation):
     def visit(self):
-        self.code.add_py_hook("compute",
+        self.code.add_py_code("compute",
             """sup = max(%(name_one)s, %(name_two)s)
             second_sup = min(%(name_one)s, %(name_two)s)""" % dict(
                 name_one=self.code.neigh.names[0],
                 name_two=self.code.neigh.names[1]))
         # only create a loop if there are more than the 2 cells.
         if len(self.code.neigh.names) > 2:
-            self.code.add_py_hook("compute",
+            self.code.add_py_code("compute",
                 """
                 for val in [%(names)s]:
                     if val > sup:
@@ -26,14 +26,14 @@ class SillyComputation(Computation):
                         second_sup = val""" % dict(
                             names=",".join(self.code.neigh.names[2:])))
         # and finally, set the result value to be second_sup
-        self.code.add_py_hook("compute",
+        self.code.add_py_code("compute",
             """result = second_sup""")
 
         # we need at least the sup and second_sup variables
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
             """int sup, second_sup;""")
         # initialise sup and second_sup from the first two neighbourhood cells
-        self.code.add_code("compute",
+        self.code.add_weave_code("compute",
             """
             if (%(name_one)s > %(name_two)s) {
                 sup = %(name_one)s;
@@ -50,12 +50,12 @@ class SillyComputation(Computation):
         if len(self.code.neigh.names) > 2:
             # in order to loop over the values in C, we create an array from them
             # the C compiler will probably completely optimise this away.
-            self.code.add_code("localvars",
+            self.code.add_weave_code("localvars",
                     """int neigh_idx;""")
-            self.code.add_code("compute",
+            self.code.add_weave_code("compute",
                 """int neigh_arr[%d] = {%s};""" % (len(self.code.neigh.names) - 2,
                                              ", ".join(self.code.neigh.names[2:])))
-            self.code.add_code("compute",
+            self.code.add_weave_code("compute",
                 """
                 for (neigh_idx = 0; neigh_idx < %(size)d; neigh_idx++) {
                     if (neigh_arr[neigh_idx] > sup) {
@@ -65,7 +65,7 @@ class SillyComputation(Computation):
                         second_sup = neigh_arr[neigh_idx];
                     }
                 }""" % dict(size=len(self.code.neigh.names) - 2))
-        self.code.add_code("compute",
+        self.code.add_weave_code("compute",
            """if (second_sup != -1) {
                 result = second_sup; }
             else {
@@ -77,7 +77,7 @@ class SillySim(CagenSimulator):
             size = config.shape
 
         computer = SillyComputation()
-        target = TestTarget(size, config, base=base)
+        target = Target(size, config, base=base)
 
         neighbourhood = VonNeumannNeighbourhood()
         acc = SimpleStateAccessor()

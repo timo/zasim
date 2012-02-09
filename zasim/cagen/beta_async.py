@@ -68,18 +68,18 @@ class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
         outer array, the own value will be taken from the inner array."""
         for name, offset in zip(self.names, self.offsets):
             if offset != (0,) and offset != (0, 0):
-                self.code.add_code("pre_compute", "%s = %s;" % (name,
+                self.code.add_weave_code("pre_compute", "%s = %s;" % (name,
                          self.code.acc.read_access(
                              gen_offset_pos(self.code.loop.get_pos(), offset))))
             else:
-                self.code.add_code("pre_compute", "orig_%s = %s;" % (name,
+                self.code.add_weave_code("pre_compute", "orig_%s = %s;" % (name,
                          self.code.acc.read_access(
                              gen_offset_pos(self.code.loop.get_pos(), offset))))
-                self.code.add_code("pre_compute", "%s = %s;" % (name,
+                self.code.add_weave_code("pre_compute", "%s = %s;" % (name,
                          self.code.acc.inner_read_access(
                              self.code.loop.get_pos())))
 
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
         assignments = ["%s = self.acc.read_from(%s)" % (
@@ -91,8 +91,8 @@ class BetaAsynchronousNeighbourhood(SimpleNeighbourhood):
             assignments.append("%s = self.acc.read_from_inner((0,))" % self.center_name)
         else:
             assignments.append("%s = self.acc.read_from_inner((0, 0))" % self.center_name)
-        self.code.add_code("localvars", "int orig_" + self.center_name + ";")
-        self.code.add_py_hook("pre_compute",
+        self.code.add_weave_code("localvars", "int orig_" + self.center_name + ";")
+        self.code.add_py_code("pre_compute",
                 "\n".join(assignments))
 
 class BetaAsynchronousAccessor(SimpleStateAccessor):
@@ -128,11 +128,11 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
         return self.inner_write_access(pos)
 
     def visit(self):
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
          """int result;""")
-        self.code.add_code("post_compute",
+        self.code.add_weave_code("post_compute",
                 self.inner_write_access(self.code.loop.get_pos()) + " = result;")
-        self.code.add_code("post_compute",
+        self.code.add_weave_code("post_compute",
                 """if(rand() < RAND_MAX * beta_probab) {
                     %(write)s = result;
                 } else {
@@ -144,13 +144,13 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
              read=self.code.acc.read_access(self.code.loop.get_pos()),
              center=self.code.neigh.center_name))
 
-        self.code.add_py_hook("init",
+        self.code.add_py_code("init",
                 """result = None""")
         for sizename, value in zip(self.size_names, self.size):
-            self.code.add_py_hook("init",
+            self.code.add_py_code("init",
                     """%s = %d""" % (sizename, value))
 
-        self.code.add_py_hook("post_compute", """
+        self.code.add_py_code("post_compute", """
             self.acc.write_to_inner(pos, result)
             if self.random.random() < beta_probab:
                 self.acc.write_to(pos, result)
@@ -159,7 +159,7 @@ class BetaAsynchronousAccessor(SimpleStateAccessor):
                 self.acc.write_to(pos, result)
             %(center)s = orig_%(center)s""" % dict(center=self.code.neigh.center_name))
 
-        self.code.add_py_hook("finalize",
+        self.code.add_py_code("finalize",
                 """self.acc.swap_configs()""")
 
     def set_target(self, target):

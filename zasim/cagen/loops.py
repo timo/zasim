@@ -19,9 +19,9 @@ class OneDimCellLoop(CellLoop):
 
     def visit(self):
         super(OneDimCellLoop, self).visit()
-        self.code.add_code("loop_begin",
+        self.code.add_weave_code("loop_begin",
                 """for(int loop_x=0; loop_x < sizeX; loop_x++) {""")
-        self.code.add_code("loop_end",
+        self.code.add_weave_code("loop_end",
                 """}""")
 
     def get_iter(self):
@@ -42,10 +42,10 @@ class TwoDimCellLoop(CellLoop):
     def visit(self):
         super(TwoDimCellLoop, self).visit()
         size_names = self.code.acc.size_names
-        self.code.add_code("loop_begin",
+        self.code.add_weave_code("loop_begin",
             """for(int loop_x=0; loop_x < %s; loop_x++) {
                 for(int loop_y=0; loop_y < %s; loop_y++) {""" % (size_names))
-        self.code.add_code("loop_end",
+        self.code.add_weave_code("loop_end",
                 """}
                 }""")
 
@@ -137,20 +137,20 @@ class SparseCellLoop(CellLoop):
         self.code.attrs.append("sparse_list")
         self.code.attrs.append("prev_sparse_list")
 
-        self.code.add_py_hook("loop_end",
+        self.code.add_py_code("loop_end",
             """if was_active: self.loop.mark_cell_py(pos)""")
 
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
             """int sparse_cell_write_idx = 0;""")
 
         # copy all data over, because of the inactive cells.
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
             """nconf = cconf.copy();""")
 
-        self.code.add_code("loop_begin",
+        self.code.add_weave_code("loop_begin",
             """for(int cell_idx=0; prev_sparse_list(cell_idx) != -1; cell_idx++) {""")
         if self.probab is not None:
-            self.code.add_code("loop_begin",
+            self.code.add_weave_code("loop_begin",
                 """if(rand() >= RAND_MAX * NONDET_PROBAB) {
                     if(!sparse_mask(cell_idx)) {
                         sparse_list(sparse_cell_write_idx) = cell_idx;
@@ -160,10 +160,10 @@ class SparseCellLoop(CellLoop):
                     continue;
                 }""")
         if len(self.position_names) == 1:
-            self.code.add_code("loop_begin",
+            self.code.add_weave_code("loop_begin",
                 """    int %s = prev_sparse_list(cell_idx);""" % self.position_names)
         elif len(self.position_names) == 2:
-            self.code.add_code("loop_begin",
+            self.code.add_weave_code("loop_begin",
                 """    int %(pos_a)s = prev_sparse_list(cell_idx) %% %(size_a)s;
                        int %(pos_b)s = prev_sparse_list(cell_idx) / %(size_b)s;""" %
                            dict(pos_a = self.position_names[0],
@@ -173,7 +173,7 @@ class SparseCellLoop(CellLoop):
 
         # FIXME use proper position names here
         if len(self.position_names) == 1:
-            self.code.add_code("loop_end",
+            self.code.add_weave_code("loop_end",
                     """if(was_active) {
                                %s
                        }""" % ("\n".join([
@@ -187,7 +187,7 @@ class SparseCellLoop(CellLoop):
                                         wrap_x=self.code.border.correct_position_c(["loop_x + %s" % (offs[0])])[0])
                                for offs in self.code.neigh.offsets])))
         elif len(self.position_names) == 2:
-            self.code.add_code("loop_end",
+            self.code.add_weave_code("loop_end",
                     """if(was_active) {
                                %s
                        }""" % ("\n".join([
@@ -206,7 +206,7 @@ class SparseCellLoop(CellLoop):
                                             ("px", "py")
                                             ))))
                                for offs in self.code.neigh.offsets])))
-        self.code.add_code("loop_end",
+        self.code.add_weave_code("loop_end",
                 """
                 }
                 // null the sparse mask

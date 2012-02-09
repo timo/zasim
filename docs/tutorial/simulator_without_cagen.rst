@@ -96,7 +96,7 @@ The full step function is then simply this::
         self.updated.emit()
 
 In addition to changing the configuration array, we need to emit the `updated`
-signal to comply with the `zasim.simulator.BaseSimulator` interface.
+signal to comply with `zasim.simulator.SimulatorInterface`.
 
 Building the Palette
 --------------------
@@ -134,7 +134,7 @@ following code::
 Creating the Simulator class
 ----------------------------
 
-Deriving from `~zasim.simulator.BaseSimulator`, a `TuringTapeSimulator` can easily
+Deriving from `~zasim.simulator.SimulatorInterface`, a `TuringTapeSimulator` can easily
 be created. The first thing to note is, that a few properties are required to exist
 in the class, since otherwise other parts of zasim can and will complain.
 
@@ -145,7 +145,7 @@ target object to be a different object, so we can just set it up to be a
 available. This requires a `cconf` to actually exist, so we use the probabilities
 list for a `~zasim.config.RandomInitialConfiguration`::
 
-    class TuringTapeSimulator(BaseSimulator):
+    class TuringTapeSimulator(SimulatorInterface):
         def __init__(self):
             # call parents init so that Qt Signals can work
             super(TuringTapeSimulator, self).__init__()

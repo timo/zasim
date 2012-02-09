@@ -161,7 +161,7 @@ This pane at the bottom will display documentation."""
 w, h = 200, 200
 scale = 3
 
-t = cagen.TestTarget(size=(w, h))
+t = cagen.Target(size=(w, h))
 l = %(loop)s()
 acc = %(acc)s()
 neigh = %(neigh)s()

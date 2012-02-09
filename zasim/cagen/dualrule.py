@@ -95,8 +95,8 @@ if self.random.random() < RULE_ALPHA:
 else:
     result = self.target.rule_b[int(result)]""")
 
-        self.code.add_code("compute", "\n".join(compute_code))
-        self.code.add_py_hook("compute", "\n".join(compute_py))
+        self.code.add_weave_code("compute", "\n".join(compute_code))
+        self.code.add_py_code("compute", "\n".join(compute_py))
 
     def bind(self, code):
         """Add the RULE_ALPHA constant to the stepfunc object."""

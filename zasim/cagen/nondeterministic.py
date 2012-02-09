@@ -67,9 +67,9 @@ class RandomGenerator(StepFuncVisitor):
         """Add code to C and python """
         super(RandomGenerator, self).visit()
 
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
                 """srand(randseed(0));""")
-        self.code.add_code("after_step",
+        self.code.add_weave_code("after_step",
                 """randseed(0) = rand();""")
         self.code.attrs.append("randseed")
 
@@ -104,7 +104,7 @@ class NondeterministicCellLoopMixin(StepFuncVisitor):
     def visit(self):
         """Adds C code for handling the skipping."""
         super(NondeterministicCellLoopMixin, self).visit()
-        self.code.add_code("loop_begin",
+        self.code.add_weave_code("loop_begin",
                 """if(rand() >= RAND_MAX * NONDET_PROBAB) {
                     %(copy_code)s
                     continue;
@@ -112,7 +112,7 @@ class NondeterministicCellLoopMixin(StepFuncVisitor):
                     copy_code=self.code.acc.gen_copy_code(),
                     ))
 
-        self.code.add_py_hook("pre_compute", """
+        self.code.add_py_code("pre_compute", """
             # if the cell isn't executed, just copy instead.
             if self.random.random() >= NONDET_PROBAB:
                 %(copy_code)s

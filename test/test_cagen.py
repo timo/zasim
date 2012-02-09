@@ -53,9 +53,9 @@ class TestCAGen:
         with pytest.raises(AssertionError):
             br._step_func.set_target(br)
         with pytest.raises(AttributeError):
-            br._step_func.add_code("headers", "int foo = 42")
+            br._step_func.add_weave_code("headers", "int foo = 42")
         with pytest.raises(AttributeError):
-            br._step_func.add_py_hook("pre_compute", "print 'hello'")
+            br._step_func.add_py_code("pre_compute", "print 'hello'")
 
     def test_pretty_print_rules_1d(self):
         br = cagen.BinRule(size=(10,),rule=110)
@@ -70,7 +70,7 @@ class TestCAGen:
     @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pretty_print_rules_2d(self):
         conf = np.zeros((10, 10), int)
-        t = cagen.TestTarget(config=conf)
+        t = cagen.Target(config=conf)
 
         l = cagen.TwoDimCellLoop()
         acc = cagen.SimpleStateAccessor()
@@ -165,7 +165,7 @@ class TestCAGen:
             sf.gen_code()
             return sf
 
-        t = cagen.TestTarget(config=conf.copy())
+        t = cagen.Target(config=conf.copy())
         uno = make_stepfunc(t)
         if inline:
             uno.step_inline()
@@ -175,7 +175,7 @@ class TestCAGen:
         assert uno.get_config().any(), "oops, all cells have been executed :("
 
         # this is just a sanity check to see if the stepfunc does what we think
-        t = cagen.TestTarget(config=conf.copy())
+        t = cagen.Target(config=conf.copy())
         dos = make_stepfunc(t, True)
         if inline:
             dos.step_inline()
@@ -209,7 +209,7 @@ class TestCAGen:
         rand = ZerosThenOnesRandom(101)
         conf = np.ones(100)
 
-        t = cagen.TestTarget(config=conf)
+        t = cagen.Target(config=conf)
         computer = cagen.ElementaryCellularAutomatonBase(0)
 
         stepfunc = cagen.StepFunc(
@@ -236,7 +236,7 @@ class TestCAGen:
         rand = ZerosThenOnesRandom(101)
         conf = np.ones((10,10))
 
-        t = cagen.TestTarget(config=conf)
+        t = cagen.Target(config=conf)
         computer = cagen.ElementaryCellularAutomatonBase(0)
 
         stepfunc = cagen.StepFunc(
@@ -262,8 +262,8 @@ class TestCAGen:
         conf = np.zeros((4, 4), int)
         for num, pos in enumerate(product(range(0, 4), range(0, 4))):
             conf[pos] = int(str(pos[0] + 1) + str(pos[1] + 1))
-        t1 = cagen.TestTarget(config=conf)
-        t2 = cagen.TestTarget(config=conf)
+        t1 = cagen.Target(config=conf)
+        t2 = cagen.Target(config=conf)
 
         names = list("abXde" + "fg" + "hcI" + "Jk" + "lmnop")
         positions = ((-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
@@ -277,9 +277,9 @@ class TestCAGen:
         class MyComputation(cagen.Computation):
             def visit(self):
                 super(MyComputation, self).visit()
-                self.code.add_code("compute",
+                self.code.add_weave_code("compute",
                         "result = c * 10;")
-                self.code.add_py_hook("compute",
+                self.code.add_py_code("compute",
                         "result = c * 10")
 
         sf1 = cagen.StepFunc(
@@ -389,7 +389,7 @@ class TestCAGen:
 
 
     def body_histogram_2d(self, inline=False, deterministic=True):
-        t = cagen.TestTarget((20, 20))
+        t = cagen.Target((20, 20))
 
         compute = cagen.LifeCellularAutomatonBase()
         if deterministic:

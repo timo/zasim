@@ -23,7 +23,7 @@ class TargetProxy(object):
         else:
             raise AttributeError("%s not in target attrs" % attr)
 
-class BaseSimulator(QObject):
+class SimulatorInterface(QObject):
     """This class serves as the base for simulator objects.
 
     .. note::
@@ -130,10 +130,10 @@ class BaseSimulator(QObject):
         raise NotImplementedError("restoring of snapshots not implemented"\
                                   "for %s" % (self.__class__))
 
-class CagenSimulator(BaseSimulator):
-    """This Simulator takes a `StepFunc` and a `TestTarget`
+class CagenSimulator(SimulatorInterface):
+    """This Simulator takes a `StepFunc` and a `Target`
     instance and packs them together so they are compatible with the
-    `BaseSimulator` interface."""
+    `SimulatorInterface` interface."""
 
     def __init__(self, step_func, target):
         super(CagenSimulator, self).__init__()

@@ -47,17 +47,17 @@ class SimpleNeighbourhood(Neighbourhood):
         """Adds C and python code to get the neighbouring values and stores
         them in local variables."""
         for name, offset in zip(self.names, self.offsets):
-            self.code.add_code("pre_compute", "%s = %s;" % (name,
+            self.code.add_weave_code("pre_compute", "%s = %s;" % (name,
                      self.code.acc.read_access(
                          gen_offset_pos(self.code.loop.get_pos(), offset))))
 
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
                 "int " + ", ".join(self.names) + ";")
 
         assignments = ["%s = self.acc.read_from(%s)" % (
                 name, "offset_pos(pos, %s)" % (offset,))
                 for name, offset in zip(self.names, self.offsets)]
-        self.code.add_py_hook("pre_compute",
+        self.code.add_py_code("pre_compute",
                 "\n".join(assignments))
 
     def recalc_bounding_box(self):

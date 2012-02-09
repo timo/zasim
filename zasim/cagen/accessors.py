@@ -75,17 +75,17 @@ class SimpleStateAccessor(StateAccessor):
         for the result to be written to the config space and for the configs
         to be swapped by the python code."""
         super(SimpleStateAccessor, self).visit()
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
                 """int result;""")
-        self.code.add_code("post_compute",
+        self.code.add_weave_code("post_compute",
                 self.write_access(self.code.loop.get_pos()) + " = result;")
 
-        self.code.add_py_hook("init",
+        self.code.add_py_code("init",
                 """result = None""")
 
-        self.code.add_py_hook("post_compute",
+        self.code.add_py_code("post_compute",
                 """self.acc.write_to(pos, result)""")
-        self.code.add_py_hook("finalize",
+        self.code.add_py_code("finalize",
                 """self.acc.swap_configs()""")
 
     def set_target(self, target):
