@@ -74,11 +74,13 @@ class StepFunc(object):
     sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
     pysections = "init pre_compute compute post_compute loop_end after_step finalize".split()
 
-    def __init__(self, loop, accessor, neighbourhood, border=None, extra_code=[],
-                 target=None, size=None, **kwargs):
+    def __init__(self, target, 
+                 loop, accessor, neighbourhood, border=None, extra_code=[],
+                 **kwargs):
         """The Constructor creates a weave-based step function from the
         specified parts.
 
+        :param target: The object to target.
         :param loop: A `CellLoop`, that adds a loop at loop_begin
                      and loop_end.
         :param accessor: A `StateAccessor`, that handles accesses to the
@@ -90,11 +92,12 @@ class StepFunc(object):
                        Can be elided.
         :param extra_code: Further `StepFuncVisitor` classes, that
                            add more behaviour. This usually includes a Computation.
-        :param target: The object to target.
         :param size: If the target is not supplied, the size has to be
                      specified here."""
 
         super(StepFunc, self).__init__(**kwargs)
+
+        assert target is not None
 
         # prepare the sections for C code
         self.code = dict((s, []) for s in self.sections)
@@ -114,12 +117,10 @@ class StepFunc(object):
         self.loop = loop
         self.border = border
 
-        if size is None:
-            size = target.cconf.shape
+        size = target.cconf.shape
         self.acc.set_size(size)
 
-        if target is not None:
-            self.possible_values = target.possible_values
+        self.possible_values = target.possible_values
 
         self.visitors = ([self.acc, self.neigh, self.loop] +
                         ([self.border] if self.border else []) +
@@ -141,8 +142,7 @@ class StepFunc(object):
         for code in self.visitors:
             code.visit()
 
-        if target is not None:
-            self.set_target(target)
+        self.set_target(target)
 
 
     def _check_compatibility(self):
