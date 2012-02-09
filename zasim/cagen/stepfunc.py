@@ -74,7 +74,7 @@ class StepFunc(object):
     sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
     pysections = "init pre_compute compute post_compute loop_end after_step finalize".split()
 
-    def __init__(self, target, 
+    def __init__(self, target,
                  loop, accessor, neighbourhood, border=None, extra_code=[],
                  **kwargs):
         """The Constructor creates a weave-based step function from the

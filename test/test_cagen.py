@@ -298,8 +298,8 @@ class TestCAGen:
         sf1.gen_code()
         sf2.gen_code()
 
-        simo1 = cagen.CagenSimulator(sf1, t1)
-        simo2 = cagen.CagenSimulator(sf2, t2)
+        simo1 = cagen.CagenSimulator(sf1)
+        simo2 = cagen.CagenSimulator(sf2)
 
         print simo1.get_config().transpose()
         print simo2.get_config().transpose()
@@ -410,7 +410,7 @@ class TestCAGen:
                         extra_code=extra_code, target=t)
 
         sf.gen_code()
-        sim = cagen.CagenSimulator(sf, t)
+        sim = cagen.CagenSimulator(sf)
         assert_arrays_equal(sim.t.histogram,
                             np.bincount(np.ravel(sim.get_config())))
         for i in range(10):

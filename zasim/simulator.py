@@ -131,14 +131,13 @@ class SimulatorInterface(QObject):
                                   "for %s" % (self.__class__))
 
 class CagenSimulator(SimulatorInterface):
-    """This Simulator takes a `StepFunc` and a `Target`
-    instance and packs them together so they are compatible with the
-    `SimulatorInterface` interface."""
+    """This Simulator takes a `StepFunc` instance and packs it in an interface
+    compatible with `SimulatorInterface`."""
 
-    def __init__(self, step_func, target):
+    def __init__(self, step_func):
         super(CagenSimulator, self).__init__()
         self._step_func = step_func
-        self._target = target
+        self._target = step_func.target
         self._size = self._target.size
         self._bbox = self._step_func.neigh.bounding_box()
         self.shape = self._size
@@ -202,6 +201,6 @@ class ElementaryCagenSimulator(CagenSimulator):
     rule_number = 0
     """The rule number of the target."""
 
-    def __init__(self, step_func, target, rule_nr):
-        super(ElementaryCagenSimulator, self).__init__(step_func=step_func, target=target)
+    def __init__(self, step_func, rule_nr):
+        super(ElementaryCagenSimulator, self).__init__(step_func=step_func)
         self.rule_number = rule_nr

@@ -15,7 +15,7 @@ class TestDualRule:
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0.1)
         sf = cagen.automatic_stepfunc(computation=compu, histogram=True, needs_random_generator=True)
         sf.gen_code()
-        simu = CagenSimulator(sf, sf.target)
+        simu = CagenSimulator(sf)
 
         for i in range(20):
             simu.step_pure_py()
@@ -25,7 +25,7 @@ class TestDualRule:
         # implement nazim fatès density classifier
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0.1)
         sf = cagen.automatic_stepfunc(computation=compu, histogram=True, needs_random_generator=True)
-        simu = CagenSimulator(sf, sf.target)
+        simu = CagenSimulator(sf)
 
         for i in range(50):
             simu.step_inline()
@@ -34,7 +34,7 @@ class TestDualRule:
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0)
         sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True, needs_random_generator=True)
         sf.gen_code()
-        simu = CagenSimulator(sf, sf.target)
+        simu = CagenSimulator(sf)
 
         br = cagen.BinRule(rule=232, config=simu.get_config())
 
@@ -49,7 +49,7 @@ class TestDualRule:
         compu = cagen.DualRuleCellularAutomaton(184, 232, 1)
         sf = cagen.automatic_stepfunc(size=(100,), computation=compu, needs_random_generator=True, histogram=True)
         sf.gen_code()
-        simu = CagenSimulator(sf, sf.target)
+        simu = CagenSimulator(sf)
 
         br = cagen.BinRule(rule=184, config=simu.get_config())
 
@@ -66,7 +66,7 @@ class TestDualRule:
                                       needs_random_generator=True,
                                       random_generator=rando, histogram=True)
         sf.gen_code()
-        simu = CagenSimulator(sf, sf.target)
+        simu = CagenSimulator(sf)
 
         br = cagen.BinRule(rule=184, config=simu.get_config())
 

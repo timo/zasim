@@ -190,7 +190,7 @@ class ElementarySimulator(ElementaryCagenSimulator):
         self.rule = target.rule
         rule_nr = computer.rule
 
-        super(ElementarySimulator, self).__init__(stepfunc, target, rule_nr)
+        super(ElementarySimulator, self).__init__(stepfunc, rule_nr)
 
     def pretty_print(self):
         return self.computer.pretty_print()
@@ -235,5 +235,5 @@ class GameOfLife(CagenSimulator):
         target = stepfunc.target
         stepfunc.gen_code()
 
-        super(GameOfLife, self).__init__(stepfunc, target)
+        super(GameOfLife, self).__init__(stepfunc)
 
