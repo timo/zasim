@@ -199,14 +199,17 @@ class NewDisplayWidget(QWidget):
         tw = self.tilesize.width() * self._scale
         th = self.tilesize.height() * self._scale
 
-        region = map(int, (rect.x() / tw,
-                  rect.y() / th,
-                  rect.width() / tw + 1,
-                  rect.height() / th + 1))
-
         ofx, ofy = rect.x() % tw, rect.y() % th
 
-        print "painting region", rect, region
+
+        # FIXME +2 seems to work, but does it always work?
+        #       how can the border at the side be figured out?
+        region = map(int, (rect.x() / tw,
+                  rect.y() / th,
+                  rect.width() / tw + 2,
+                  rect.height() / th + 2))
+
+        #print "painting region", rect, region
 
         painter = QPainter(self)
         painter.translate(QPoint(rect.x() - ofx, rect.y() - ofy))
@@ -214,3 +217,8 @@ class NewDisplayWidget(QWidget):
 
         render_state_array_tiled(self._last_conf, self.palette, self.rects, region, painter=painter)
 
+        #color = QColor.fromHsv(random.random() * 360, 255, 255)
+        #print color
+        #painter.setBrush(color)
+        #painter.setPen(QColor(0, 0, 0))
+        #painter.drawRect(QRect(QPoint(0, 0), QSize(*region[2:])))
