@@ -194,7 +194,11 @@ def render_state_array_tiled(states, palette, rects, region=None, painter=None):
     values = [(pos, conf[pos]) for pos in positions]
     fragments = [QPainter.PixmapFragment.create(QPoint(pos[0], pos[1]), rects[value]) for pos, value in values]
 
+    # since the positions of the fragments are the middle points,
+    # transform by half a tile size
+    painter.translate(tilesize[0] / 2, tilesize[1] / 2)
     painter.drawPixmapFragments(fragments, palette)
+    painter.translate(-tilesize[0] / 2, -tilesize[1] / 2)
 
     if not painter:
         return result
