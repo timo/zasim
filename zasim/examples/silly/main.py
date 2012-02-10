@@ -88,7 +88,7 @@ class SillySim(cagen.simulators.CagenSimulator):
 
         print stepfunc.code_text
 
-        super(SillySim, self).__init__(stepfunc, self.target)
+        super(SillySim, self).__init__(stepfunc)
 
     def pretty_print(self):
         return "foo"
