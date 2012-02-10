@@ -147,7 +147,7 @@ As you can see, the code was successfully inserted. Let's see what it does!
 
     >>> from zasim.simulator import CagenSimulator
     >>> from zasim.display.console import OneDimConsolePainter
-    >>> sim = CagenSimulator(sf, t)
+    >>> sim = CagenSimulator(sf)
     >>> disp = OneDimConsolePainter(sim, lines=1)
     ;-^ #;,+^#-,,;;
     >>> sim.step_pure_py()
