@@ -91,6 +91,10 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
             assert len(size) == 1
             randoms = np.array([random.random() for i in xrange(size[0])])
             arr = np.zeros(len(randoms), dtype=dtype)
+        elif not HAVE_NUMPY_RANDOM:
+            randoms = np.array([random.random() for i in xrange(reduce(lambda a,b:a*b, size))])
+            randoms.reshape(*size)
+            arr = np.zeros(randoms.shape, dtype=dtype)
         else:
             randoms = np.random.rand(*size)
             arr = np.zeros(randoms.shape, dtype=dtype)
