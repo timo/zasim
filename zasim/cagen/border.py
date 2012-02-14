@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from .bases import BorderHandler
 from .utils import dedent_python_code, offset_pos
 
@@ -50,7 +54,7 @@ class BaseBorderCopier(BorderSizeEnsurer):
 
     .. note::
         In order for this to work you have to use :meth:`tee_copy_hook` instead
-        of :meth:`StepFunc.add_py_hook` for creating the border fixup
+        of :meth:`StepFunc.add_py_code` for creating the border fixup
         code, so that it can be retargetted and reused."""
     def visit(self):
         """Initialise :attr:`copy_py_code`."""
@@ -79,7 +83,7 @@ class BaseBorderCopier(BorderSizeEnsurer):
     def tee_copy_hook(self, code):
         """Append a piece of code to the "after_step" hook as well as the local
         code piece that gets retargetted and run in :meth:`new_config`."""
-        self.code.add_py_hook("after_step", code)
+        self.code.add_py_code("after_step", code)
         self.copy_py_code.append(dedent_python_code(code))
 
     def correct_position(self, pos):
@@ -179,7 +183,7 @@ class SimpleBorderCopier(BaseBorderCopier):
                 self.acc.write_to(%s,
                     value=self.acc.read_from_next((%s,)))""" % (write, ", ".join(map(str, read))))
 
-        self.code.add_code("after_step",
+        self.code.add_weave_code("after_step",
                 "\n".join(copy_code))
 
     def corect_position_code(self, pos):
@@ -264,7 +268,7 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
             } }""" % (self.code.acc.write_access(("-copy_x - 1", "copy_y")),
                   self.code.acc.write_access(("sizeX - copy_x - 1", "copy_y"))))
 
-        self.code.add_code("after_step",
+        self.code.add_weave_code("after_step",
                 "\n".join(copy_code))
 
     def build_name(self, parts):

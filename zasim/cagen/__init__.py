@@ -1,6 +1,9 @@
 # coding: utf-8
 """This module compiles all classes from all submodules for easier and less
 verbose importing.
+
+
+{LICENSE_TEXT}
 """
 
 # TODO make it extra hard to change the loop variables using a neighbourhood.

@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from .. import external
 
 external.WANT_GUI = False
@@ -39,7 +43,8 @@ def test(width=75, height=None, life=False, copy_borders=True,
             compu = DualRuleCellularAutomaton(rule, alt_rule, nondet)
             sf_obj = automatic_stepfunc(size,
                     computation=compu, histogram=histogram, activity=activity,
-                    copy_borders=copy_borders, base=base, sparse_loop=sparse)
+                    copy_borders=copy_borders, base=base, sparse_loop=sparse,
+                    needs_random_generator=True)
             sf_obj.gen_code()
             sim_obj = CagenSimulator(sf_obj, sf_obj.target)
 

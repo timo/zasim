@@ -15,6 +15,10 @@ For the graphical user interface, you need `PySide`_, nokias Qt bindings
 for Python. PyQt is, in theory, api-compatible, but the code is currently
 only tested with PySide and is not guaranteed to work with PyQt.
 
+If you have the `GNU indent`_ tool installed, generated C code will be a lot
+more pretty to look at and thus quite a bit easier to debug, if you run
+into trouble with self-made code.
+
 .. [1] The same subset of zasim you get if you have neither SciPy nor
        PySide is also usable with pypy 1.6 or newer, but currently you won't
        be able to run 2d cellular automata.
@@ -23,6 +27,7 @@ only tested with PySide and is not guaranteed to work with PyQt.
 .. _SciPy: http://scipy.org
 .. _GCC: http://gcc.gnu.org
 .. _PySide: http://pyside.org
+.. _GNU indent: http://indent.isidore-it.eu/beautify.html
 
 
 Installing zasim

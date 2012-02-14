@@ -1,5 +1,9 @@
 """This module offers a function to fork a gdb in a terminal and attach it to the
-running process, so that weave stepfuncs and other things may be debugged."""
+running process, so that weave stepfuncs and other things may be debugged.
+
+
+{LICENSE_TEXT}
+"""
 
 from __future__ import print_function
 
@@ -17,5 +21,4 @@ def indent_c_code(code):
         indent = sp.Popen(["indent", "-kr", "-", "-o", "-"], stdout=sp.PIPE, stdin=sp.PIPE)
         return indent.communicate(code)[0]
     except:
-        print("indent failed", file=sys.stderr)
         return code

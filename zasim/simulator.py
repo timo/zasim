@@ -1,5 +1,9 @@
 """A Simulator object holds together information about and functionality of
-cellular automaton simulators."""
+cellular automaton simulators.
+
+
+{LICENSE_TEXT}
+"""
 
 try:
     from .external.qt import QObject, Signal
@@ -19,7 +23,7 @@ class TargetProxy(object):
         else:
             raise AttributeError("%s not in target attrs" % attr)
 
-class BaseSimulator(QObject):
+class SimulatorInterface(QObject):
     """This class serves as the base for simulator objects.
 
     .. note::
@@ -126,15 +130,14 @@ class BaseSimulator(QObject):
         raise NotImplementedError("restoring of snapshots not implemented"\
                                   "for %s" % (self.__class__))
 
-class CagenSimulator(BaseSimulator):
-    """This Simulator takes a `StepFunc` and a `TestTarget`
-    instance and packs them together so they are compatible with the
-    `BaseSimulator` interface."""
+class CagenSimulator(SimulatorInterface):
+    """This Simulator takes a `StepFunc` instance and packs it in an interface
+    compatible with `SimulatorInterface`."""
 
-    def __init__(self, step_func, target):
+    def __init__(self, step_func):
         super(CagenSimulator, self).__init__()
         self._step_func = step_func
-        self._target = target
+        self._target = step_func.target
         self._size = self._target.size
         self._bbox = self._step_func.neigh.bounding_box()
         self.shape = self._size
@@ -157,7 +160,10 @@ class CagenSimulator(BaseSimulator):
         self.snapshot_restored.emit()
 
     def set_config_value(self, pos, value=None):
-        self._step_func.set_config_value(pos[::-1], value)
+        try:
+            self._step_func.set_config_value(pos, value)
+        except IndexError:
+            return
         self.changed.emit()
 
     def step(self):
@@ -195,6 +201,6 @@ class ElementaryCagenSimulator(CagenSimulator):
     rule_number = 0
     """The rule number of the target."""
 
-    def __init__(self, step_func, target, rule_nr):
-        super(ElementaryCagenSimulator, self).__init__(step_func=step_func, target=target)
+    def __init__(self, step_func, rule_nr):
+        super(ElementaryCagenSimulator, self).__init__(step_func=step_func)
         self.rule_number = rule_nr

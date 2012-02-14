@@ -53,9 +53,9 @@ class TestCAGen:
         with pytest.raises(AssertionError):
             br._step_func.set_target(br)
         with pytest.raises(AttributeError):
-            br._step_func.add_code("headers", "int foo = 42")
+            br._step_func.add_weave_code("headers", "int foo = 42")
         with pytest.raises(AttributeError):
-            br._step_func.add_py_hook("pre_compute", "print 'hello'")
+            br._step_func.add_py_code("pre_compute", "print 'hello'")
 
     def test_pretty_print_rules_1d(self):
         br = cagen.BinRule(size=(10,),rule=110)
@@ -70,7 +70,7 @@ class TestCAGen:
     @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_pretty_print_rules_2d(self):
         conf = np.zeros((10, 10), int)
-        t = cagen.TestTarget(config=conf)
+        t = cagen.Target(config=conf)
 
         l = cagen.TwoDimCellLoop()
         acc = cagen.SimpleStateAccessor()
@@ -106,12 +106,13 @@ class TestCAGen:
             sim.step_pure_py()
             assert_arrays_equal(glider_conf, sim.get_config())
 
-    def body_weave_nondeterministic_stepfunc_1d(self, inline=True):
+    def body_weave_nondeterministic_stepfunc_1d(self, inline=True, sparse=False):
         conf = np.ones(1000)
         # this rule would set all fields to 1 at every step.
         # since we use a nondeterministic step func, this will amount to about
         # half ones, half zeros
-        br = cagen.BinRule(nondet=0.5, config=conf, rule=0)
+        br = cagen.BinRule(nondet=0.5, config=conf, rule=0,
+                           sparse_loop=sparse, activity=sparse, needs_random_generator=sparse)
         if inline:
             br.step_inline()
         else:
@@ -122,7 +123,8 @@ class TestCAGen:
                               " nondeterministic step function"
 
         # and now a sanity check for rule 0
-        br2 = cagen.BinRule(size=(1000,), rule=0)
+        br2 = cagen.BinRule(size=(1000,), rule=0,
+                            sparse_loop=sparse, activity=sparse, needs_random_generator=sparse)
         assert not br2.get_config().all(), "why was the random config all ones?"
         assert br2.get_config().any(), "why was the random config all zeros?"
         if inline:
@@ -138,6 +140,13 @@ class TestCAGen:
 
     def test_pure_nondeterministic_stepfunc_id(self):
         self.body_weave_nondeterministic_stepfunc_1d(False)
+
+    @pytest.mark.skipif("not HAVE_WEAVE")
+    def test_weave_nondeterministic_sparse_stepfunc_id(self):
+        self.body_weave_nondeterministic_stepfunc_1d(True, True)
+
+    def test_pure_nondeterministic_sparse_stepfunc_id(self):
+        self.body_weave_nondeterministic_stepfunc_1d(False, True)
 
     def body_nondeterministic_stepfunc_2d(self, inline=True):
         conf = np.ones((100, 100))
@@ -156,7 +165,7 @@ class TestCAGen:
             sf.gen_code()
             return sf
 
-        t = cagen.TestTarget(config=conf.copy())
+        t = cagen.Target(config=conf.copy())
         uno = make_stepfunc(t)
         if inline:
             uno.step_inline()
@@ -166,7 +175,7 @@ class TestCAGen:
         assert uno.get_config().any(), "oops, all cells have been executed :("
 
         # this is just a sanity check to see if the stepfunc does what we think
-        t = cagen.TestTarget(config=conf.copy())
+        t = cagen.Target(config=conf.copy())
         dos = make_stepfunc(t, True)
         if inline:
             dos.step_inline()
@@ -200,7 +209,7 @@ class TestCAGen:
         rand = ZerosThenOnesRandom(101)
         conf = np.ones(100)
 
-        t = cagen.TestTarget(config=conf)
+        t = cagen.Target(config=conf)
         computer = cagen.ElementaryCellularAutomatonBase(0)
 
         stepfunc = cagen.StepFunc(
@@ -227,7 +236,7 @@ class TestCAGen:
         rand = ZerosThenOnesRandom(101)
         conf = np.ones((10,10))
 
-        t = cagen.TestTarget(config=conf)
+        t = cagen.Target(config=conf)
         computer = cagen.ElementaryCellularAutomatonBase(0)
 
         stepfunc = cagen.StepFunc(
@@ -253,8 +262,8 @@ class TestCAGen:
         conf = np.zeros((4, 4), int)
         for num, pos in enumerate(product(range(0, 4), range(0, 4))):
             conf[pos] = int(str(pos[0] + 1) + str(pos[1] + 1))
-        t1 = cagen.TestTarget(config=conf)
-        t2 = cagen.TestTarget(config=conf)
+        t1 = cagen.Target(config=conf)
+        t2 = cagen.Target(config=conf)
 
         names = list("abXde" + "fg" + "hcI" + "Jk" + "lmnop")
         positions = ((-2, -2), (-1, -2), (0, -2), (1, -2), (2, -2),
@@ -268,9 +277,9 @@ class TestCAGen:
         class MyComputation(cagen.Computation):
             def visit(self):
                 super(MyComputation, self).visit()
-                self.code.add_code("compute",
+                self.code.add_weave_code("compute",
                         "result = c * 10;")
-                self.code.add_py_hook("compute",
+                self.code.add_py_code("compute",
                         "result = c * 10")
 
         sf1 = cagen.StepFunc(
@@ -289,11 +298,11 @@ class TestCAGen:
         sf1.gen_code()
         sf2.gen_code()
 
-        simo1 = cagen.CagenSimulator(sf1, t1)
-        simo2 = cagen.CagenSimulator(sf2, t2)
+        simo1 = cagen.CagenSimulator(sf1)
+        simo2 = cagen.CagenSimulator(sf2)
 
-        print simo1.get_config().transpose()
-        print simo2.get_config().transpose()
+        print simo1.get_config().T
+        print simo2.get_config().T
         assert_arrays_equal(simo1.get_config(), simo2.get_config())
 
         if HAVE_WEAVE:
@@ -303,16 +312,16 @@ class TestCAGen:
             simo1.step_pure_py()
             simo2.step_pure_py()
 
-        print simo1.get_config().transpose()
-        print simo2.get_config().transpose()
+        print simo1.get_config().T
+        print simo2.get_config().T
         assert_arrays_equal(simo1.get_config(), simo2.get_config())
 
         if HAVE_WEAVE:
             simo1.step_pure_py()
             simo2.step_pure_py()
 
-            print simo1.get_config().transpose()
-            print simo2.get_config().transpose()
+            print simo1.get_config().T
+            print simo2.get_config().T
             assert_arrays_equal(simo1.get_config(), simo2.get_config())
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
@@ -380,7 +389,7 @@ class TestCAGen:
 
 
     def body_histogram_2d(self, inline=False, deterministic=True):
-        t = cagen.TestTarget((20, 20))
+        t = cagen.Target((20, 20))
 
         compute = cagen.LifeCellularAutomatonBase()
         if deterministic:
@@ -401,7 +410,7 @@ class TestCAGen:
                         extra_code=extra_code, target=t)
 
         sf.gen_code()
-        sim = cagen.CagenSimulator(sf, t)
+        sim = cagen.CagenSimulator(sf)
         assert_arrays_equal(sim.t.histogram,
                             np.bincount(np.ravel(sim.get_config())))
         for i in range(10):

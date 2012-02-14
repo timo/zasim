@@ -1,5 +1,9 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from .bases import CellLoop
-from .compatibility import one_dimension, two_dimensions, activity
+from .compatibility import one_dimension, two_dimensions, activity, random_generator
 from .utils import offset_pos
 
 from itertools import product, izip
@@ -15,9 +19,9 @@ class OneDimCellLoop(CellLoop):
 
     def visit(self):
         super(OneDimCellLoop, self).visit()
-        self.code.add_code("loop_begin",
+        self.code.add_weave_code("loop_begin",
                 """for(int loop_x=0; loop_x < sizeX; loop_x++) {""")
-        self.code.add_code("loop_end",
+        self.code.add_weave_code("loop_end",
                 """}""")
 
     def get_iter(self):
@@ -38,10 +42,10 @@ class TwoDimCellLoop(CellLoop):
     def visit(self):
         super(TwoDimCellLoop, self).visit()
         size_names = self.code.acc.size_names
-        self.code.add_code("loop_begin",
+        self.code.add_weave_code("loop_begin",
             """for(int loop_x=0; loop_x < %s; loop_x++) {
                 for(int loop_y=0; loop_y < %s; loop_y++) {""" % (size_names))
-        self.code.add_code("loop_end",
+        self.code.add_weave_code("loop_end",
                 """}
                 }""")
 
@@ -53,7 +57,7 @@ class TwoDimCellLoop(CellLoop):
         parts.insert(0, "2d")
 
 class SparseCellLoop(CellLoop):
-    """The SparseCellLoopBase offers common code for loops that only calculate
+    """The SparseCellLoop offers common code for loops that only calculate
     those fields, where the neighbours have changed in the last step.
 
     This is based on a list of positions called `sparse_list` as well as a mask
@@ -68,6 +72,8 @@ class SparseCellLoop(CellLoop):
 
     It requires an ActivityRecord for the `was_active` flag."""
 
+    probab = None
+
     def set_target(self, target):
         """Adds the activity mask and position list to the target attributes."""
         super(SparseCellLoop, self).set_target(target)
@@ -76,6 +82,11 @@ class SparseCellLoop(CellLoop):
         target.sparse_mask = np.zeros(size, dtype=bool)
         target.sparse_list = np.zeros(size, dtype=int)
         target.sparse_set = set()
+
+    def bind(self, code):
+        super(SparseCellLoop, self).bind(code)
+        if self.probab is not None:
+            code.consts["NONDET_PROBAB"] = self.probab
 
     def get_pos(self):
         return self.position_names
@@ -107,7 +118,17 @@ class SparseCellLoop(CellLoop):
         # iterate over a copy of the set, so that it can be modified while running
         the_list = list(self.target.sparse_set)
         self.target.sparse_set.clear()
-        return iter(the_list)
+        if self.probab is not None:
+            # get a list of entries to go through
+            sublist = []
+            for pos in the_list:
+                if self.code.random.random() >= self.probab:
+                    sublist.append(pos)
+                else:
+                    self.target.sparse_set.update([pos])
+            return iter(sublist)
+        else:
+            return iter(the_list)
 
     def visit(self):
         super(SparseCellLoop, self).visit()
@@ -116,23 +137,33 @@ class SparseCellLoop(CellLoop):
         self.code.attrs.append("sparse_list")
         self.code.attrs.append("prev_sparse_list")
 
-        self.code.add_py_hook("loop_end",
+        self.code.add_py_code("loop_end",
             """if was_active: self.loop.mark_cell_py(pos)""")
 
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
             """int sparse_cell_write_idx = 0;""")
 
         # copy all data over, because of the inactive cells.
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
             """nconf = cconf.copy();""")
 
-        self.code.add_code("loop_begin",
+        self.code.add_weave_code("loop_begin",
             """for(int cell_idx=0; prev_sparse_list(cell_idx) != -1; cell_idx++) {""")
+        if self.probab is not None:
+            self.code.add_weave_code("loop_begin",
+                """if(rand() >= RAND_MAX * NONDET_PROBAB) {
+                    if(!sparse_mask(cell_idx)) {
+                        sparse_list(sparse_cell_write_idx) = cell_idx;
+                        sparse_mask(cell_idx) = true;
+                        sparse_cell_write_idx++;
+                    }
+                    continue;
+                }""")
         if len(self.position_names) == 1:
-            self.code.add_code("loop_begin",
+            self.code.add_weave_code("loop_begin",
                 """    int %s = prev_sparse_list(cell_idx);""" % self.position_names)
         elif len(self.position_names) == 2:
-            self.code.add_code("loop_begin",
+            self.code.add_weave_code("loop_begin",
                 """    int %(pos_a)s = prev_sparse_list(cell_idx) %% %(size_a)s;
                        int %(pos_b)s = prev_sparse_list(cell_idx) / %(size_b)s;""" %
                            dict(pos_a = self.position_names[0],
@@ -142,7 +173,7 @@ class SparseCellLoop(CellLoop):
 
         # FIXME use proper position names here
         if len(self.position_names) == 1:
-            self.code.add_code("loop_end",
+            self.code.add_weave_code("loop_end",
                     """if(was_active) {
                                %s
                        }""" % ("\n".join([
@@ -156,7 +187,7 @@ class SparseCellLoop(CellLoop):
                                         wrap_x=self.code.border.correct_position_c(["loop_x + %s" % (offs[0])])[0])
                                for offs in self.code.neigh.offsets])))
         elif len(self.position_names) == 2:
-            self.code.add_code("loop_end",
+            self.code.add_weave_code("loop_end",
                     """if(was_active) {
                                %s
                        }""" % ("\n".join([
@@ -175,7 +206,7 @@ class SparseCellLoop(CellLoop):
                                             ("px", "py")
                                             ))))
                                for offs in self.code.neigh.offsets])))
-        self.code.add_code("loop_end",
+        self.code.add_weave_code("loop_end",
                 """
                 }
                 // null the sparse mask
@@ -192,3 +223,15 @@ class TwoDimSparseCellLoop(SparseCellLoop):
     requires_features = [two_dimensions, activity]
     def __init__(self):
         self.position_names = "loop_x", "loop_y"
+
+class OneDimSparseNondetCellLoop(OneDimSparseCellLoop):
+    requires_features = [one_dimension, activity, random_generator]
+    def __init__(self, probab=0.5):
+        super(OneDimSparseNondetCellLoop, self).__init__()
+        self.probab = probab
+
+class TwoDimSparseNondetCellLoop(SparseCellLoop):
+    requires_features = [two_dimensions, activity, random_generator]
+    def __init__(self, probab=0.5):
+        super(OneDimSparseNondetCellLoop, self).__init__()
+        self.probab = probab

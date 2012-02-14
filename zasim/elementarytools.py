@@ -10,6 +10,8 @@ the table-like step functions of elementary cellular automatons.
 
    from zasim import elementarytools
 
+
+{LICENSE_TEXT}
 """
 from __future__ import absolute_import
 from .cagen.utils import elementary_digits_and_values, rule_nr_to_rule_arr

@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 class StepFuncVisitor(object):
     """Base class for step function visitor objects."""
 

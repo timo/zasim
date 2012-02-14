@@ -1,7 +1,11 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from ..config import BaseInitialConfiguration, RandomInitialConfiguration
 
-class TestTarget(object):
-    """The TestTarget is a simple class that can act as a target for a
+class Target(object):
+    """The Target is a simple class that can act as a target for a
     `StepFunc`."""
 
     cconf = None
@@ -16,7 +20,7 @@ class TestTarget(object):
            :param config: Optionally the config or config generator to use.
            :param base: The base of possible values for the target.
         """
-        super(TestTarget, self).__init__(**kwargs)
+        super(Target, self).__init__(**kwargs)
         self.possible_values = tuple(range(base))
         if config is None:
             if self.possible_values != tuple(range(len(self.possible_values))):

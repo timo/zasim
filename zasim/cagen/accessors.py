@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from .bases import StateAccessor
 from .utils import gen_offset_pos, offset_pos
 
@@ -23,9 +27,13 @@ class SimpleStateAccessor(StateAccessor):
     size = None
     """The size of the target configuration."""
 
+    cell_count = 0
+    """The number of cells in the target configuration."""
+
     def set_size(self, size):
         super(SimpleStateAccessor, self).set_size(size)
         self.size = size
+        self.cell_count = reduce(lambda a, b: a * b, self.size)
         if len(self.size) == 1:
             self.size_names = ("sizeX",)
             self.border_names = (("LEFT_BORDER",), ("RIGHT_BORDER",))
@@ -47,6 +55,7 @@ class SimpleStateAccessor(StateAccessor):
         super(SimpleStateAccessor, self).init_once()
         for sizename, size in zip(self.size_names, self.size):
             self.code.consts[sizename] = size
+        self.code.consts["cell_count"] = self.cell_count
         self.code.attrs.extend(["nconf", "cconf"])
 
     def bind(self, code):
@@ -66,19 +75,17 @@ class SimpleStateAccessor(StateAccessor):
         for the result to be written to the config space and for the configs
         to be swapped by the python code."""
         super(SimpleStateAccessor, self).visit()
-        self.code.add_code("localvars",
+        self.code.add_weave_code("localvars",
                 """int result;""")
-        self.code.add_code("post_compute",
+        self.code.add_weave_code("post_compute",
                 self.write_access(self.code.loop.get_pos()) + " = result;")
 
-        self.code.add_py_hook("init",
+        self.code.add_py_code("init",
                 """result = None""")
-        for sizename, value in zip(self.size_names, self.size):
-            self.code.add_py_hook("init",
-                    """%s = %d""" % (sizename, value))
-        self.code.add_py_hook("post_compute",
+
+        self.code.add_py_code("post_compute",
                 """self.acc.write_to(pos, result)""")
-        self.code.add_py_hook("finalize",
+        self.code.add_py_code("finalize",
                 """self.acc.swap_configs()""")
 
     def set_target(self, target):

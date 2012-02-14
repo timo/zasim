@@ -1,5 +1,9 @@
 """For an in-depth description of how the StepFunc class works, see the
-:ref:`tutorial section about StepFunc <tutorial_stepfunc>`"""
+:ref:`tutorial section about StepFunc <tutorial_stepfunc>`
+
+
+{LICENSE_TEXT}
+"""
 from __future__ import print_function
 import new
 
@@ -70,11 +74,13 @@ class StepFunc(object):
     sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
     pysections = "init pre_compute compute post_compute loop_end after_step finalize".split()
 
-    def __init__(self, loop, accessor, neighbourhood, border=None, extra_code=[],
-                 target=None, size=None, **kwargs):
+    def __init__(self, target,
+                 loop, accessor, neighbourhood, border=None, extra_code=[],
+                 **kwargs):
         """The Constructor creates a weave-based step function from the
         specified parts.
 
+        :param target: The object to target.
         :param loop: A `CellLoop`, that adds a loop at loop_begin
                      and loop_end.
         :param accessor: A `StateAccessor`, that handles accesses to the
@@ -85,13 +91,13 @@ class StepFunc(object):
         :param border: A `BorderHandler`, that handles wrapping etc.
                        Can be elided.
         :param extra_code: Further `StepFuncVisitor` classes, that
-                           add more behaviour.
-                           Usually at least a `BorderCopier`.
-        :param target: The object to target.
+                           add more behaviour. This usually includes a Computation.
         :param size: If the target is not supplied, the size has to be
                      specified here."""
 
         super(StepFunc, self).__init__(**kwargs)
+
+        assert target is not None
 
         # prepare the sections for C code
         self.code = dict((s, []) for s in self.sections)
@@ -111,12 +117,10 @@ class StepFunc(object):
         self.loop = loop
         self.border = border
 
-        if size is None:
-            size = target.cconf.shape
+        size = target.cconf.shape
         self.acc.set_size(size)
 
-        if target is not None:
-            self.possible_values = target.possible_values
+        self.possible_values = target.possible_values
 
         self.visitors = ([self.acc, self.neigh, self.loop] +
                         ([self.border] if self.border else []) +
@@ -138,8 +142,7 @@ class StepFunc(object):
         for code in self.visitors:
             code.visit()
 
-        if target is not None:
-            self.set_target(target)
+        self.set_target(target)
 
 
     def _check_compatibility(self):
@@ -173,24 +176,24 @@ class StepFunc(object):
 
         return conflicts, missing
 
-    def add_code(self, hook, code):
+    def add_weave_code(self, hook, code):
         """Add a snippet of C code to the section "hook".
 
         :param hook: the section to append the code to.
         :param code: the C source code to add."""
         self.code[hook].append(code)
 
-    def add_py_hook(self, hook, function):
+    def add_py_code(self, hook, code):
         """Add a string of python code to the section "hook".
 
         :param hook: the section to append the code to.
-        :param function: the python code to add (as a string)."""
-        assert isinstance(function, basestring), "py hooks must be strings now."
-        function = dedent_python_code(function)
-        function = function.split("\n")
+        :param code: the python code to add (as a string)."""
+        assert isinstance(code, basestring), "py hooks must be strings now."
+        code_text = dedent_python_code(code)
+        code_text = code_text.split("\n")
         newfunc = []
 
-        for line in function:
+        for line in code_text:
             if not HAVE_TUPLE_ARRAY_INDEX:
                 line = tuple_array_index_fixup(line)
             newfunc.append(" " * self.pycode_indent[hook] + line)

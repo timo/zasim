@@ -1,9 +1,14 @@
-from .target import TestTarget
+"""
+
+{LICENSE_TEXT}
+"""
+from .target import Target
 from .computations import ElementaryCellularAutomatonBase, LifeCellularAutomatonBase
 from .beta_async import BetaAsynchronousAccessor, BetaAsynchronousNeighbourhood
 from .accessors import SimpleStateAccessor
 from .nondeterministic import OneDimNondeterministicCellLoop, TwoDimNondeterministicCellLoop, RandomGenerator
-from .loops import OneDimCellLoop, TwoDimCellLoop, OneDimSparseCellLoop, TwoDimSparseCellLoop
+from .loops import (OneDimCellLoop, TwoDimCellLoop, OneDimSparseCellLoop, TwoDimSparseCellLoop,
+                    OneDimSparseNondetCellLoop, TwoDimSparseNondetCellLoop)
 from .border import SimpleBorderCopier, TwoDimSlicingBorderCopier, BorderSizeEnsurer
 from .stats import SimpleHistogram, ActivityRecord
 from .neighbourhoods import ElementaryFlatNeighbourhood, VonNeumannNeighbourhood, MooreNeighbourhood
@@ -20,10 +25,12 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                        copy_borders=True, neighbourhood=None,
                        base=2, extra_code=None,
                        sparse_loop=False,
-                       target_class=TestTarget,
+                       target_class=Target,
                        needs_random_generator=False, random_generator=None, **kwargs):
     """From the given parameters, assemble a StepFunc with the given
-    computation and extra_code objects. Returns the stepfunc."""
+    computation and extra_code objects. Additionally, a target is created.
+
+    Returns the stepfunc."""
     if size is None:
         # pypy compat: np.array is a type in pypy, whereas it's a function in numpy
         if ("ndarray" in dir(np) and isinstance(config, np.ndarray)) \
@@ -68,9 +75,9 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                 loop = OneDimCellLoop()
         else:
             if sparse_loop:
-                raise NotImplementedError("Nondeterministic sparse loops are not"
-                        " yet implemented.")
-            loop = OneDimNondeterministicCellLoop(probab=nondet)
+                loop = OneDimSparseNondetCellLoop(probab=nondet)
+            else:
+                loop = OneDimNondeterministicCellLoop(probab=nondet)
             needs_random_generator = True
     elif len(size) == 2:
         if nondet == 1.0:
@@ -80,9 +87,9 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                 loop = TwoDimCellLoop()
         else:
             if sparse_loop:
-                raise NotImplementedError("Nondeterministic sparse loops are not"
-                        " yet implemented.")
-            loop = TwoDimNondeterministicCellLoop(probab=nondet)
+                loop = TwoDimSparseNondetCellLoop(probab=nondet)
+            else:
+                loop = TwoDimNondeterministicCellLoop(probab=nondet)
             needs_random_generator = True
 
     if copy_borders:
@@ -183,7 +190,7 @@ class ElementarySimulator(ElementaryCagenSimulator):
         self.rule = target.rule
         rule_nr = computer.rule
 
-        super(ElementarySimulator, self).__init__(stepfunc, target, rule_nr)
+        super(ElementarySimulator, self).__init__(stepfunc, rule_nr)
 
     def pretty_print(self):
         return self.computer.pretty_print()
@@ -228,5 +235,5 @@ class GameOfLife(CagenSimulator):
         target = stepfunc.target
         stepfunc.gen_code()
 
-        super(GameOfLife, self).__init__(stepfunc, target)
+        super(GameOfLife, self).__init__(stepfunc)
 

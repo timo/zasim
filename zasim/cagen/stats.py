@@ -1,3 +1,7 @@
+"""
+
+{LICENSE_TEXT}
+"""
 from .bases import ExtraStats
 from .compatibility import histogram, activity
 
@@ -18,10 +22,10 @@ class SimpleHistogram(ExtraStats):
             center_name = self.code.neigh.names[self.code.neigh.offsets.index((0,))]
         else:
             center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
-        self.code.add_code("post_compute",
+        self.code.add_weave_code("post_compute",
                 """if (result != %(center)s) { histogram(result) += 1; histogram(%(center)s) -= 1; }""" % dict(center=center_name))
 
-        self.code.add_py_hook("post_compute", """
+        self.code.add_py_code("post_compute", """
             # update the histogram
             if result != %(center)s:
                 self.target.histogram[result] += 1
@@ -83,17 +87,27 @@ class ActivityRecord(ExtraStats):
             center_name = self.code.neigh.names[self.code.neigh.offsets.index((0,))]
         else:
             center_name = self.code.neigh.names[self.code.neigh.offsets.index((0, 0))]
-        self.code.add_code("localvars",
-                """activity(0) = 0; activity(1) = 0; bool was_active;""")
-        self.code.add_code("post_compute",
-                """was_active = result != %(center)s; activity(was_active) += 1;""" % dict(center=center_name))
-        self.code.add_py_hook("init",
-                """self.target.activity[0] = 0; self.target.activity[1] = 0""")
-        self.code.add_py_hook("post_compute", """
+
+        self.code.add_weave_code("localvars",
+                """activity(1) = 0; bool was_active;""")
+        self.code.add_weave_code("post_compute",
+                """was_active = result != %(center)s;
+                   if (was_active) { activity(1) += 1; }""" % dict(center=center_name))
+
+        self.code.add_weave_code("after_step",
+                """activity(0) = cell_count - activity(1);""")
+
+        self.code.add_py_code("init",
+                """self.target.activity[1] = 0;""")
+        self.code.add_py_code("post_compute", """
             # count up the activity
             was_active = result != %(center)s
-            self.target.activity[int(was_active)] += 1"""
+            if was_active:
+                self.target.activity[1] += 1"""
                 % dict(center=center_name))
+
+        self.code.add_py_code("after_step",
+                """self.target.activity[0] = cell_count - self.target.activity[1]""")
 
     def new_config(self):
         """Reset the activity counter to -1, which stands for "no data"."""

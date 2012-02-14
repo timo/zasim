@@ -182,47 +182,6 @@ class TestGui:
         #popup = self.find_message_box()
         #popup.close()
 
-    def test_stepfunc_comp(self):
-        sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=2)
-
-        display = ZasimDisplay(sim_obj)
-        display.set_scale(1)
-
-        QTest.qWaitForWindowShown(display.window)
-
-        menu = display.window.menuBar().findChild(QMenu, u"simulator_menu")
-        assert menu is not None
-        QTest.mouseClick(menu, Qt.LeftButton)
-
-        stepfunc_action = menu.findChild(QAction, u"new")
-        stepfunc_action.trigger()
-
-        for execution in seconds(0.2):
-            app.processEvents()
-
-        stepfunc_window = app.activeWindow()
-        tree = stepfunc_window.findChild(QWidget, u"parts")
-        assert tree is not None
-        QTest.keyClick(tree, Qt.Key_Right)
-        for execution in seconds(0.05):
-            app.processEvents()
-        QTest.keyClick(tree, Qt.Key_Return)
-        for execution in seconds(0.05):
-            app.processEvents()
-        for i in range(5):
-            QTest.keyClick(tree, Qt.Key_Left)
-            QTest.keyClick(tree, Qt.Key_Left)
-            QTest.keyClick(tree, Qt.Key_Down)
-            QTest.keyClick(tree, Qt.Key_Return)
-
-        close = stepfunc_window.findChild(QPushButton, u"cancel")
-        assert close is not None
-        QTest.mouseClick(close, Qt.LeftButton)
-        for execution in seconds(0.05):
-            app.processEvents()
-
-        app.closeAllWindows()
-
     def test_animation(self):
         anim = WaitAnimationWindow()
 

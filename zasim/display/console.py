@@ -102,7 +102,7 @@ class TwoDimConsolePainter(BaseConsolePainter):
 
     def draw_conf(self, update_step=True):
         self._data = []
-        for line in self._last_conf.transpose():
+        for line in self._last_conf.T:
             newline = "".join(self.PALETTE[value] for value in line)
             self._data.append(newline)
 
