@@ -91,9 +91,9 @@ class RandomInitialConfiguration(BaseInitialConfiguration):
             assert len(size) == 1
             randoms = np.array([random.random() for i in xrange(size[0])])
             arr = np.zeros(len(randoms), dtype=dtype)
-        elif not HAVE_NUMPY_RANDOM:
+        elif not HAVE_NUMPY_RANDOM and HAVE_MULTIDIM:
             randoms = np.array([random.random() for i in xrange(reduce(lambda a,b:a*b, size))])
-            randoms.reshape(*size)
+            randoms = randoms.reshape(*size)
             arr = np.zeros(randoms.shape, dtype=dtype)
         else:
             randoms = np.random.rand(*size)
@@ -219,6 +219,9 @@ class DensityDistributedConfiguration(RandomInitialConfiguration):
             # pypy compatibility
             assert len(size) == 1
             randoms = np.array([random.random() for i in xrange(size[0])])
+        elif not HAVE_NUMPY_RANDOM and HAVE_MULTIDIM:
+            randoms = np.array([random.random() for i in xrange(reduce(lambda a,b:a*b, size))])
+            randoms = randoms.reshape(*size)
         else:
             randoms = np.random.rand(*size)
 
