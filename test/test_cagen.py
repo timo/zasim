@@ -301,8 +301,8 @@ class TestCAGen:
         simo1 = cagen.CagenSimulator(sf1)
         simo2 = cagen.CagenSimulator(sf2)
 
-        print simo1.get_config().transpose()
-        print simo2.get_config().transpose()
+        print simo1.get_config().T
+        print simo2.get_config().T
         assert_arrays_equal(simo1.get_config(), simo2.get_config())
 
         if HAVE_WEAVE:
@@ -312,16 +312,16 @@ class TestCAGen:
             simo1.step_pure_py()
             simo2.step_pure_py()
 
-        print simo1.get_config().transpose()
-        print simo2.get_config().transpose()
+        print simo1.get_config().T
+        print simo2.get_config().T
         assert_arrays_equal(simo1.get_config(), simo2.get_config())
 
         if HAVE_WEAVE:
             simo1.step_pure_py()
             simo2.step_pure_py()
 
-            print simo1.get_config().transpose()
-            print simo2.get_config().transpose()
+            print simo1.get_config().T
+            print simo2.get_config().T
             assert_arrays_equal(simo1.get_config(), simo2.get_config())
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")

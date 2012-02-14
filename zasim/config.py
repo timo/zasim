@@ -128,7 +128,7 @@ class AsciiInitialConfiguration(BaseInitialConfiguration):
         result = np.empty((len(lines), len(lines[0])), dtype=dtype)
         for value, entry in self.palette.iteritems():
             result[whole_conf == entry] = value
-        return result.transpose()
+        return result.T
 
 class ImageInitialConfiguration(BaseInitialConfiguration):
     """Import an image file as a configuration."""
