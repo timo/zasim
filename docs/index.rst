@@ -80,7 +80,10 @@ Interactive Tutorial
 If you install the `ipython notebook and its dependencies`_, you can run either
 of the following commands
 
+::
+
     zasim_tutorial
+
     python -m zasim.examples.notebooks.notebook_app
 
 to start zasim's interactive tutorial in a web browser.
