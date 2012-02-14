@@ -2,6 +2,21 @@ from __future__ import absolute_import
 
 from ..simulator import QObject
 
+import numpy as np
+
+try:
+    import numpypy
+    def palettize(data, palette):
+        return "".join([palette[int(value)] for value in data])
+except ImportError:
+    def palettize(data, palette):
+        arr = np.empty(data.shape, dtype=np.uint8)
+        for k, v in enumerate(palette):
+            arr[data == k] = ord(v)
+
+        return str(arr.data)
+
+
 class BaseConsolePainter(QObject):
     """This is a base class for implementing renderers that output the
     configuration of a simulator as an ascii-art string."""
@@ -75,7 +90,7 @@ class OneDimConsolePainter(BaseConsolePainter):
         self.after_step()
 
     def draw_conf(self, update_step=True):
-        newline = "".join(self.PALETTE[value] for value in self._last_conf)
+        newline = palettize(self._last_conf, self.PALETTE)
         if len(self._data) == self._lines and update_step:
             self._data.pop(0)
         elif not update_step:
