@@ -189,15 +189,9 @@ class ArgparseWindow(QDialog):
         self.cmdline.setText(" ".join(
             [arg if " " not in arg else arg.replace(" ", '" "') for arg in self.arguments]))
 
-        # XXX wow, this is terrible.
-        import sys
-        pse = sys.exit
-        errors = []
-        sys.exit = lambda *a: errors.append(True)
-        self.args = self.argp.parse_args(self.arguments)
-        sys.exit = pse
-
-        if errors:
+        try:
+            self.args = self.argp.parse_args(self.arguments)
+        except SystemExit:
             self._last_changed_obj.setVisible(False)
 
 
