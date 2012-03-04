@@ -27,7 +27,7 @@ class ArgparseWindow(QDialog):
 
     _last_changed_obj = None
 
-    def __init__(self, argparser, arguments=None, **kwargs):
+    def __init__(self, argparser, arguments=None, columns=3, **kwargs):
         super(ArgparseWindow, self).__init__(**kwargs)
 
         self.argp = argparser
@@ -38,6 +38,7 @@ class ArgparseWindow(QDialog):
 
         self.action_widgets = {}
         self.taken_dests = set()
+        self.columns = columns
         self.setup_ui()
 
     def _widget_with_checkbox(self, widget, action):
@@ -126,12 +127,8 @@ class ArgparseWindow(QDialog):
 
         layout = QGridLayout()
 
-        for row, (left, right) in enumerate(zip(widgets[::2], widgets[1::2])):
-            layout.addWidget(left, row, 0)
-            layout.addWidget(right, row, 1)
-
-        if len(widgets) % 2 != 0:
-            layout.addWidget(widgets[-1], row + 1, 0)
+        for index, widget in enumerate(widgets):
+            layout.addWidget(widget, index / self.columns, index % self.columns)
 
         w.setLayout(layout)
 
