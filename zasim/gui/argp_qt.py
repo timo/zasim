@@ -248,9 +248,9 @@ def make_argument_parser():
             help="with what probability should a cell succeed in exposing its "\
                  "state to its neighbours? (either between 2 and 100 or 0.0 and 1.0)")
 
-    argp.add_argument("--no-histogram", default=True, action="store_false", dest="histogram",
+    argp.add_argument("--no-histogram", default=False, action="store_true", dest="no_histogram",
             help="don't display a histogram")
-    argp.add_argument("--no-activity", default=True, action="store_false", dest="activity",
+    argp.add_argument("--no-activity", default=False, action="store_true", dest="no_activity",
             help="don't display the activity")
     argp.add_argument("--base", default=2, type=int,
             help="The base of the cells.")

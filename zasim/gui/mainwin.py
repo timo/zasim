@@ -144,8 +144,12 @@ def main(width=200, height=200, scale=2,
         beta=100, nondet=100,
         life=False, rule=None, alt_rule=None,
         copy_borders=True, black=None,
-        histogram=True, activity=True,
+        no_histogram=False, no_activity=False,
         base=2, sparse=False):
+
+    # this makes argp_qt more happy
+    histogram = not no_histogram
+    activity = not no_activity
 
     if beta > 1:
         beta = beta / 100.
