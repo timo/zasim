@@ -162,6 +162,9 @@ class OneDimQImagePainter(BaseQImagePainter):
     will fill up the display with a line that moves downwards and wraps at the
     bottom."""
 
+    image_wrapped = Signal()
+    """Emitted whenever the drawing position wraps around."""
+
     def __init__(self, simulator, lines=None, connect=True, **kwargs):
         """Initialise the OneDimQImagePainter.
 
@@ -189,6 +192,7 @@ class OneDimQImagePainter(BaseQImagePainter):
         peek = None
 
         confs_to_render = min(self._height - y, self._queued_steps)
+
         whole_conf = np.empty((confs_to_render, w), np.uint32, "C")
 
         try:
@@ -228,13 +232,15 @@ class OneDimQImagePainter(BaseQImagePainter):
         except Queue.Empty:
             pass
 
+        if self._last_step % self._height == 0 and rendered:
+            self.image_wrapped.emit()
+
         self._queued_steps -= rendered
         _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB32).scaled(w * self._scale, rendered * self._scale)
         _image.save("/tmp/zasim_render_batch_%d.png" % y)
 
         painter = QPainter(self._image)
         painter.drawImage(QPoint(0, y * self._scale), _image)
-
 
     def after_step(self, update_step=True):
         conf = self._sim.get_config().copy()
@@ -323,6 +329,13 @@ class TwoDimQImagePainter(BaseQImagePainter):
 #      display in ipython rich consoles and such.
 
 class HistogramPainter(BaseQImagePainter):
+    """The HistogramPainter draws an attribute from the simulator that's an array
+    of constant length as stacked, colored bars, so that the horizontal axis is
+    the time and the vertical axis is the amount."""
+
+    image_wrapped = Signal()
+    """Emitted whenever the drawing position wraps around."""
+
     def __init__(self, simulator, attribute, width, height, queue_size=1, connect=True, **kwargs):
         self._sim = simulator
         self._attribute = attribute
@@ -357,6 +370,7 @@ class HistogramPainter(BaseQImagePainter):
                     linepos += 1
                     if linepos >= self._width:
                         linepos = 0
+                        self.image_wrapped.emit()
                         # don't jump across the border, just draw
                         # two lines the next time.
                         break
