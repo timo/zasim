@@ -33,6 +33,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinxcontrib.programoutput',
               'sphinx.ext.intersphinx',
               'sphinxcontrib.proceduralimage',
+              'sphinxcontrib.aafigure',
              #'sphinx.ext.viewcode',
               ]
 
