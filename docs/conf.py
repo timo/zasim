@@ -242,3 +242,4 @@ man_pages = [
 ]
 
 inheritance_graph_attrs = dict(bgcolor="transparent")
+inheritance_node_attrs = dict(fillcolor="white", style="filled")
