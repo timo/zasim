@@ -240,3 +240,5 @@ man_pages = [
     ('index', 'zasim', u'zasim Documentation',
      [u'zasim team'], 1)
 ]
+
+inheritance_graph_attrs = dict(bgcolor="transparent")
