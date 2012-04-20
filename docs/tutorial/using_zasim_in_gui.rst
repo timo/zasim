@@ -62,4 +62,16 @@ of this documentation, though. This is the code for creating the user interface:
 
         self.setLayout(self.whole_layout)
 
+Running the simulation
+----------------------
+
+Our simulator should run as fast as possible until the display area has
+been filled. For that, the `~display.qt.OneDimQImagePainter` offers the
+signal `image_wrapped`. Each step of the simulator can be started by a
+QTimer that's set to run as fast as possible by starting it with a `delay`
+of 0.
+
+Instant feedback
+----------------
+
 
