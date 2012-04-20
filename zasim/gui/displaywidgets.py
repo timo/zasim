@@ -11,8 +11,6 @@ class DisplayWidget(QWidget):
 
         :param width: The width of the image to build.
         :param height: The height of the image to build.
-        :param queue_size: The amount of histories that may pile up before
-                           forcing a redraw.
         """
         super(DisplayWidget, self).__init__(**kwargs)
 
