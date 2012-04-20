@@ -22,5 +22,37 @@ Mocking up the GUI
 
 Using PyQt4 or PySide, creating the panel at the top for the sliders and
 input boxes is rather simple. Explaining it in detail is beyond the scope
-of this documentation, though. This is the code:
+of this documentation, though. This is the code for creating the user interface::
 
+    def init_gui(self):
+        self.control_box = QHBoxLayout()
+
+        self.rule_a_edit = QSpinBox(self)
+        self.rule_b_edit = QSpinBox(self)
+
+        self.rule_a_edit.setRange(0, 255)
+        self.rule_b_edit.setRange(0, 255)
+
+        self.rule_a_edit.setValue(self.rule_a)
+        self.rule_b_edit.setValue(self.rule_b)
+
+        self.probab_slider = QSlider(Qt.Horizontal, self)
+        self.probab_slider.setRange(0, 1000)
+        self.probab_slider.setSingleStep(10)
+        self.probab_slider.setValue(self.probability * 100)
+
+        self.reroll_conf = QPushButton("Re-roll config", self)
+
+        self.control_box.addWidget(self.rule_a_edit)
+        self.control_box.addWidget(self.probab_slider)
+        self.control_box.addWidget(self.rule_b_edit)
+        self.control_box.addWidget(self.reroll_conf)
+
+        self.whole_layout = QVBoxLayout()
+        self.whole_layout.addLayout(self.control_box)
+
+        self.displaywidget = DisplayWidget(self.sim)
+        self.displaywidget.set_scale(2)
+        self.whole_layout.addWidget(self.displaywidget)
+
+        self.setLayout(self.whole_layout)
