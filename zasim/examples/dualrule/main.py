@@ -92,7 +92,7 @@ class DualRuleGadget(QDialog):
         print "changes"
         self.rule_a = self.rule_a_edit.value()
         self.rule_b = self.rule_b_edit.value()
-        self.probability = self.probab_slider.value() / 100.
+        self.probability = 1.0 - (self.probab_slider.value() / 100.)
 
         self.displaywidget.display.image_wrapped.disconnect(self.sim_timer.stop)
         self.create_stepfunc()
