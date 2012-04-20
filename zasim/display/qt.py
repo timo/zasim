@@ -236,11 +236,12 @@ class OneDimQImagePainter(BaseQImagePainter):
             self.image_wrapped.emit()
 
         self._queued_steps -= rendered
-        _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB32).scaled(w * self._scale, rendered * self._scale)
-        _image.save("/tmp/zasim_render_batch_%d.png" % y)
+        if rendered:
+            _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB32)
+            _image = _image.scaled(w * self._scale, rendered * self._scale)
 
-        painter = QPainter(self._image)
-        painter.drawImage(QPoint(0, y * self._scale), _image)
+            painter = QPainter(self._image)
+            painter.drawImage(QPoint(0, y * self._scale), _image)
 
     def after_step(self, update_step=True):
         conf = self._sim.get_config().copy()
