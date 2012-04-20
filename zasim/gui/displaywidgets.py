@@ -52,15 +52,22 @@ class DisplayWidget(QWidget):
                 if self._scale != 1:
                     assert shape[1] * self._scale == self._height, "Height does not match config height times scale value"
                 else:
-                    scale = self._height / shape[1]
+                    self._scale = self._height / shape[1]
                     assert shape[1] * self._scale == self._height, "Height not a whole multiple of config height"
 
-            self.display = TwoDimQImagePainter(self._sim, scale=scale)
+            self.display = TwoDimQImagePainter(self._sim, scale=self._scale)
 
         else:
             raise ValueError("Simulators with %d dimensions are not supported for display" % len(shape))
 
 
+    def switch_simulator(self, simulator):
+        """This method replaces the previous simulator with `simulator`."""
+        self._sim = simulator
+        self._create_painter()
+        self.set_scale(self._scale)
+        self.display.setObjectName("display")
+        self.display.update.connect(self.update)
 
     def start_inverting_frames(self): self.display.start_inverting_frames()
     def stop_inverting_frames(self): self.display.stop_inverting_frames()
