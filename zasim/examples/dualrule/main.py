@@ -52,7 +52,7 @@ class DualRuleGadget(QDialog):
         self.probab_slider = QSlider(Qt.Horizontal, self)
         self.probab_slider.setRange(0, 1000)
         self.probab_slider.setSingleStep(10)
-        self.probab_slider.setValue(self.probability * 100)
+        self.probab_slider.setValue(1000 - self.probability * 1000)
 
         # with this button you build a new config
         self.reroll_conf = QPushButton("Re-roll config", self)
@@ -88,7 +88,7 @@ class DualRuleGadget(QDialog):
     def slot_change_settings(self):
         self.rule_a = self.rule_a_edit.value()
         self.rule_b = self.rule_b_edit.value()
-        self.probability = 1.0 - (self.probab_slider.value() / 100.)
+        self.probability = 1.0 - (self.probab_slider.value() / 1000.)
 
         # if we don't disconnect the signal, the old displays might be kept
         # instead of deleted by the garbage collector.
