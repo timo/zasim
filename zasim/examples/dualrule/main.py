@@ -89,7 +89,6 @@ class DualRuleGadget(QDialog):
         self.image_finished = True
 
     def slot_change_settings(self):
-        print "changes"
         self.rule_a = self.rule_a_edit.value()
         self.rule_b = self.rule_b_edit.value()
         self.probability = 1.0 - (self.probab_slider.value() / 100.)
