@@ -85,20 +85,20 @@ class DualRuleGadget(QDialog):
         # the reroll conf button calls slot_reroll_conf
         self.reroll_conf.clicked.connect(self.slot_reroll_conf)
 
-    def slot_line_wrapped(self):
-        self.image_finished = True
-
     def slot_change_settings(self):
         self.rule_a = self.rule_a_edit.value()
         self.rule_b = self.rule_b_edit.value()
         self.probability = 1.0 - (self.probab_slider.value() / 100.)
 
+        # if we don't disconnect the signal, the old displays might be kept
+        # instead of deleted by the garbage collector.
         self.displaywidget.display.image_wrapped.disconnect(self.sim_timer.stop)
         self.create_stepfunc()
         self.displaywidget.switch_simulator(self.sim)
         self.displaywidget.set_scale(2)
         self.displaywidget.display.image_wrapped.connect(self.sim_timer.stop)
 
+        # since we have changed things, run the simulation as fast as possible.
         self.sim_timer.start(0)
 
     def slot_reroll_conf(self):

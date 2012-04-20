@@ -74,4 +74,86 @@ of 0.
 Instant feedback
 ----------------
 
+Whenever something has changed, we need to reset the simulator. The only
+way to do this 100% properly is to create a new simulator every time a
+change was made. The following function will create a simulator for us::
 
+    def create_stepfunc(self):
+        compu = DualRuleCellularAutomaton(self.rule_a, self.rule_b, self.probability)
+        sf_obj = automatic_stepfunc(config=self.conf,
+                computation=compu, activity=True,
+                copy_borders=True, base=2, sparse_loop=True,
+                needs_random_generator=True)
+        sf_obj.gen_code()
+        self.sim = CagenSimulator(sf_obj)
+
+It will use the config `self.conf`, which will be generated once at the
+start and then every time the reroll config button is pushed.
+
+Additionally, we need a function to react to all changes::
+
+    def slot_change_settings(self):
+        self.rule_a = self.rule_a_edit.value()
+        self.rule_b = self.rule_b_edit.value()
+        self.probability = 1.0 - (self.probab_slider.value() / 100.)
+
+        # if we don't disconnect the signal, the old displays might be kept
+        # instead of deleted by the garbage collector.
+        self.displaywidget.display.image_wrapped.disconnect(self.sim_timer.stop)
+        self.create_stepfunc()
+        self.displaywidget.switch_simulator(self.sim)
+        self.displaywidget.set_scale(2)
+        self.displaywidget.display.image_wrapped.connect(self.sim_timer.stop)
+
+        # since we have changed things, run the simulation as fast as possible.
+        self.sim_timer.start(0)
+
+    def slot_reroll_conf(self):
+        self.conf = RandomInitialConfiguration(2, 0.5, 0.5).generate(self.sim.shape)
+        self.slot_change_settings()
+
+These slots will be connected to our user interface::
+
+    def make_connections(self):
+        # when the displaywidget is fully rendered, stop the timer
+        self.displaywidget.display.image_wrapped.connect(self.sim_timer.stop)
+
+        # when any change is made, change everything
+        self.probab_slider.sliderMoved.connect(self.slot_change_settings)
+        self.probab_slider.valueChanged.connect(self.slot_change_settings)
+        self.rule_a_edit.valueChanged.connect(self.slot_change_settings)
+        self.rule_b_edit.valueChanged.connect(self.slot_change_settings)
+
+        # the reroll conf button calls slot_reroll_conf
+        self.reroll_conf.clicked.connect(self.slot_reroll_conf)
+
+Finally, at the very beginning of the class, we initialise all our things::
+
+    def __init__(self):
+        super(DualRuleGadget, self).__init__()
+
+        self.rule_a = 184
+        self.rule_b = 232
+        self.probability = 0.99
+
+        self.sim_timer = QTimer(self)
+        self.sim_timer.timeout.connect(self.stepsim)
+
+        # here the size of our configuration is chosen.
+        self.conf = RandomInitialConfiguration(2, 0.5, 0.5).generate((300,))
+        self.create_stepfunc()
+        self.init_gui()
+        self.make_connections()
+        self.sim_timer.start(0)
+
+The `stepsim` method simply calls self.sim.step(). We need this because
+we reassign self.sim all the time and we don't want to disconnect and
+reconnect the timer over and over again.
+
+General approach
+================
+
+In general, using zasim in your own GUI application is not terribly
+complicated. Most classes in `zasim.gui` are widgets that you can just put
+into your application and immediately use. Qt's signals and slots make it
+fairly simple to connect elements together to do interesting things.
