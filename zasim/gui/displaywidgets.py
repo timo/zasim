@@ -21,48 +21,48 @@ class DisplayWidget(QWidget):
 
         self._sim = simulator
 
-        scale = 1
-
-        shape = simulator.shape
-        if len(shape) == 1:
-            if width is None:
-                width = shape[0]
-            else:
-                scale = width / shape[0]
-                assert shape[0] * scale == width, "Width not a whole multiple of config width"
-            if height is None:
-                height = width
-
-            self.display = OneDimQImagePainter(simulator, height, scale=scale)
-
-        elif len(shape) == 2:
-            if width is None:
-                width = shape[0]
-            else:
-                scale = width / shape[0]
-                assert shape[0] * scale == width, "Width not a whole multiple of config width"
-            if height is None:
-                height = shape[1]
-            else:
-                if scale != 1:
-                    assert shape[1] * scale == height, "Height does not match config height times scale value"
-                else:
-                    scale = height / shape[1]
-                    assert shape[1] * scale == height, "Height not a whole multiple of config height"
-
-            self.display = TwoDimQImagePainter(simulator, scale=scale)
-
-        else:
-            raise ValueError("Simulators with %d dimensions are not supported for display" % len(shape))
-
-        self._scale = scale
+        self._scale = 1
         self._width = width
         self._height = height
+
+        self._create_painter()
 
         self._scale_scroll = 0
 
         self.display.setObjectName("display")
         self.display.update.connect(self.update)
+
+    def _create_painter(self):
+        shape = self._sim.shape
+
+        if self._width is None:
+            self._width = shape[0]
+        else:
+            self._scale = self._width / shape[0]
+            assert shape[0] * self._scale == self._width, "Width not a whole multiple of config width"
+
+        if len(shape) == 1:
+            if self._height is None:
+                self._height = self._width
+
+            self.display = OneDimQImagePainter(self._sim, self._height, scale=self._scale)
+
+        elif len(shape) == 2:
+            if self._height is None:
+                self._height = shape[1]
+            else:
+                if self._scale != 1:
+                    assert shape[1] * self._scale == self._height, "Height does not match config height times scale value"
+                else:
+                    scale = self._height / shape[1]
+                    assert shape[1] * self._scale == self._height, "Height not a whole multiple of config height"
+
+            self.display = TwoDimQImagePainter(self._sim, scale=scale)
+
+        else:
+            raise ValueError("Simulators with %d dimensions are not supported for display" % len(shape))
+
+
 
     def start_inverting_frames(self): self.display.start_inverting_frames()
     def stop_inverting_frames(self): self.display.stop_inverting_frames()
