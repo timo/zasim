@@ -151,7 +151,7 @@ we reassign self.sim all the time and we don't want to disconnect and
 reconnect the timer over and over again.
 
 General approach
-================
+----------------
 
 In general, using zasim in your own GUI application is not terribly
 complicated. Most classes in `zasim.gui` are widgets that you can just put
