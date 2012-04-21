@@ -11,8 +11,6 @@ class DisplayWidget(QWidget):
 
         :param width: The width of the image to build.
         :param height: The height of the image to build.
-        :param queue_size: The amount of histories that may pile up before
-                           forcing a redraw.
         """
         super(DisplayWidget, self).__init__(**kwargs)
 
@@ -21,46 +19,53 @@ class DisplayWidget(QWidget):
 
         self._sim = simulator
 
-        scale = 1
+        self._scale = 1
+        self._width = width
+        self._height = height
 
-        shape = simulator.shape
+        self._create_painter()
+
+        self._scale_scroll = 0
+
+        self.display.setObjectName("display")
+        self.display.update.connect(self.update)
+
+    def _create_painter(self):
+        shape = self._sim.shape
+
+        if self._width is None:
+            self._width = shape[0]
+        else:
+            self._scale = self._width / shape[0]
+            assert shape[0] * self._scale == self._width, "Width not a whole multiple of config width"
+
         if len(shape) == 1:
-            if width is None:
-                width = shape[0]
-            else:
-                scale = width / shape[0]
-                assert shape[0] * scale == width, "Width not a whole multiple of config width"
-            if height is None:
-                height = width
+            if self._height is None:
+                self._height = self._width
 
-            self.display = OneDimQImagePainter(simulator, height, scale=scale)
+            self.display = OneDimQImagePainter(self._sim, self._height, scale=self._scale)
 
         elif len(shape) == 2:
-            if width is None:
-                width = shape[0]
+            if self._height is None:
+                self._height = shape[1]
             else:
-                scale = width / shape[0]
-                assert shape[0] * scale == width, "Width not a whole multiple of config width"
-            if height is None:
-                height = shape[1]
-            else:
-                if scale != 1:
-                    assert shape[1] * scale == height, "Height does not match config height times scale value"
+                if self._scale != 1:
+                    assert shape[1] * self._scale == self._height, "Height does not match config height times scale value"
                 else:
-                    scale = height / shape[1]
-                    assert shape[1] * scale == height, "Height not a whole multiple of config height"
+                    self._scale = self._height / shape[1]
+                    assert shape[1] * self._scale == self._height, "Height not a whole multiple of config height"
 
-            self.display = TwoDimQImagePainter(simulator, scale=scale)
+            self.display = TwoDimQImagePainter(self._sim, scale=self._scale)
 
         else:
             raise ValueError("Simulators with %d dimensions are not supported for display" % len(shape))
 
-        self._scale = scale
-        self._width = width
-        self._height = height
 
-        self._scale_scroll = 0
-
+    def switch_simulator(self, simulator):
+        """This method replaces the previous simulator with `simulator`."""
+        self._sim = simulator
+        self._create_painter()
+        self.set_scale(self._scale)
         self.display.setObjectName("display")
         self.display.update.connect(self.update)
 

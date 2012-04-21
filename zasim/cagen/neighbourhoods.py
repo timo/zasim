@@ -3,8 +3,8 @@
 
     from zasim.cagen import *
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 from .bases import Neighbourhood
 from .utils import gen_offset_pos
 from .compatibility import one_dimension

@@ -2,8 +2,8 @@
 running process, so that weave stepfuncs and other things may be debugged.
 
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 
 from __future__ import print_function
 

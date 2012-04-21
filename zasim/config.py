@@ -12,8 +12,8 @@ allowed to dictate what size the configuration should have. This is important
 especially for loading configurations from files.
 
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 
 
 from __future__ import division

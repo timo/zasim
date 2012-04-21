@@ -38,8 +38,8 @@ object in place, at the end of the computation "foo" (as defined above) contains
 outer value of the current cell.
 
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 
 from .neighbourhoods import SimpleNeighbourhood
 from .accessors import SimpleStateAccessor

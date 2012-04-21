@@ -1,7 +1,7 @@
 """
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 from zasim.gui.display import ZasimDisplay
 from zasim.gui.histogram import HistogramExtraDisplay
 

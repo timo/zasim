@@ -33,6 +33,7 @@ extensions = ['sphinx.ext.autodoc',
               'sphinxcontrib.programoutput',
               'sphinx.ext.intersphinx',
               'sphinxcontrib.proceduralimage',
+              'sphinx.ext.inheritance_diagram',
              #'sphinx.ext.viewcode',
               ]
 
@@ -50,7 +51,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'zasim'
-copyright = u'2011, zasim team'
+copyright = u'2012, zasim team'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -239,3 +240,6 @@ man_pages = [
     ('index', 'zasim', u'zasim Documentation',
      [u'zasim team'], 1)
 ]
+
+inheritance_graph_attrs = dict(bgcolor="transparent")
+inheritance_node_attrs = dict(fillcolor="white", style="filled")

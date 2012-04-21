@@ -27,7 +27,7 @@ class ArgparseWindow(QDialog):
 
     _last_changed_obj = None
 
-    def __init__(self, argparser, arguments=None, **kwargs):
+    def __init__(self, argparser, arguments=None, columns=3, **kwargs):
         super(ArgparseWindow, self).__init__(**kwargs)
 
         self.argp = argparser
@@ -38,6 +38,7 @@ class ArgparseWindow(QDialog):
 
         self.action_widgets = {}
         self.taken_dests = set()
+        self.columns = columns
         self.setup_ui()
 
     def _widget_with_checkbox(self, widget, action):
@@ -126,12 +127,8 @@ class ArgparseWindow(QDialog):
 
         layout = QGridLayout()
 
-        for row, (left, right) in enumerate(zip(widgets[::2], widgets[1::2])):
-            layout.addWidget(left, row, 0)
-            layout.addWidget(right, row, 1)
-
-        if len(widgets) % 2 != 0:
-            layout.addWidget(widgets[-1], row + 1, 0)
+        for index, widget in enumerate(widgets):
+            layout.addWidget(widget, index / self.columns, index % self.columns)
 
         w.setLayout(layout)
 
@@ -189,15 +186,9 @@ class ArgparseWindow(QDialog):
         self.cmdline.setText(" ".join(
             [arg if " " not in arg else arg.replace(" ", '" "') for arg in self.arguments]))
 
-        # XXX wow, this is terrible.
-        import sys
-        pse = sys.exit
-        errors = []
-        sys.exit = lambda *a: errors.append(True)
-        self.args = self.argp.parse_args(self.arguments)
-        sys.exit = pse
-
-        if errors:
+        try:
+            self.args = self.argp.parse_args(self.arguments)
+        except SystemExit:
             self._last_changed_obj.setVisible(False)
 
 
@@ -257,9 +248,9 @@ def make_argument_parser():
             help="with what probability should a cell succeed in exposing its "\
                  "state to its neighbours? (either between 2 and 100 or 0.0 and 1.0)")
 
-    argp.add_argument("--no-histogram", default=True, action="store_false", dest="histogram",
+    argp.add_argument("--no-histogram", default=False, action="store_true", dest="no_histogram",
             help="don't display a histogram")
-    argp.add_argument("--no-activity", default=True, action="store_false", dest="activity",
+    argp.add_argument("--no-activity", default=False, action="store_true", dest="no_activity",
             help="don't display the activity")
     argp.add_argument("--base", default=2, type=int,
             help="The base of the cells.")

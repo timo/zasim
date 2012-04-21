@@ -1,7 +1,7 @@
 """
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 from .. import external
 
 external.WANT_GUI = False

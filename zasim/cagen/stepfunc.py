@@ -2,8 +2,8 @@
 :ref:`tutorial section about StepFunc <tutorial_stepfunc>`
 
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 from __future__ import print_function
 import new
 

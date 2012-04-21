@@ -3,8 +3,8 @@
 
     from zasim.cagen.utils import *
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 from ..features import HAVE_TUPLE_ARRAY_INDEX
 
 if HAVE_TUPLE_ARRAY_INDEX:

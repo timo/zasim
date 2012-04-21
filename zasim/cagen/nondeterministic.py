@@ -24,8 +24,8 @@ a first base class next to any kind of `CellLoop`. For your convenience, the cla
 composed for you.
 
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 from .bases import StepFuncVisitor
 from .loops import OneDimCellLoop, TwoDimCellLoop
 from .compatibility import random_generator

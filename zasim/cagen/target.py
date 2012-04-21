@@ -1,7 +1,7 @@
 """
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 from ..config import BaseInitialConfiguration, RandomInitialConfiguration
 
 class Target(object):
