@@ -17,6 +17,15 @@ The GUI that will be developed has two entry boxes for the rules and a
 slider for the probability. There is a display for displaying the cellular
 automaton and a button to change the starting configuration.
 
+.. seealso::
+
+    The program developed in this section can be run from an installed
+    zasim or a source checkout by calling::
+
+        python -m zasim.examples.dualrule.main
+
+    The code can be found in `zasim/examples/dualrule/`
+
 Mocking up the GUI
 ------------------
 
