@@ -2,8 +2,8 @@
 cellular automaton simulators.
 
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 
 try:
     from .external.qt import QObject, Signal

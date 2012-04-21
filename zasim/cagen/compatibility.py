@@ -18,8 +18,8 @@ Each `StepFuncVisitor` has three attributes:
       A list of features that are incompatible with this class.
 
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 
 class CompatibilityException(Exception):
     def __init__(self, conflicts, missing):

@@ -1,8 +1,8 @@
 # * coding: utf8
 """
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 from random import randrange
 from .bases import Computation
 from .utils import elementary_digits_and_values, rule_nr_to_rule_arr

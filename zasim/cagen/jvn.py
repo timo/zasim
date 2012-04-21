@@ -1,7 +1,7 @@
 """
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 import numpy as np
 
 

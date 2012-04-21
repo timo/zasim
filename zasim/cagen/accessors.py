@@ -1,7 +1,7 @@
 """
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 from .bases import StateAccessor
 from .utils import gen_offset_pos, offset_pos
 

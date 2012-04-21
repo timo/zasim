@@ -1,7 +1,7 @@
 """
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 from .target import Target
 from .computations import ElementaryCellularAutomatonBase, LifeCellularAutomatonBase
 from .beta_async import BetaAsynchronousAccessor, BetaAsynchronousNeighbourhood

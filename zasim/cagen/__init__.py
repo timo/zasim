@@ -3,8 +3,8 @@
 verbose importing.
 
 
-{LICENSE_TEXT}
 """
+# {LICENSE_TEXT}
 
 # TODO make it extra hard to change the loop variables using a neighbourhood.
 
