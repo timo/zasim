@@ -78,12 +78,13 @@ class SollertCompressingHistoryStore(HistoryStore):
 
         self.Nmax = Nmax
         self.base = base
-        self.width = width
-        self.highest = self.base ** self.width
-        self._constant_factor = self.Nmax / self.highest
+        self.slice = slice(start, start+width)
+        self.highest = self.base ** width
+        self._constant_factor = 1.0 * self.Nmax / self.highest
         self._powers = np.array([self.base ** position for position in range(width - start)])
 
     def _prepare_conf(self, config):
+        config = config[self.slice]
         powered = config * self._powers
         prepared_digits = powered * self._constant_factor
         truncated = np.array(prepared_digits, dtype=int)
