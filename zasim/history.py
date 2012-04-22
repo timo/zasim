@@ -58,3 +58,12 @@ class HistoryStore(object):
 
         return result
 
+class SlicingHistoryStore(HistoryStore):
+    """Take only a slice of each config into the history."""
+    def __init__(self, slice_obj, **kwargs):
+        super(SlicingHistoryStore, self).__init__(**kwargs)
+        self.slice_obj = slice_obj
+
+    def _prepare_conf(self, config):
+        return config[self.slice_obj].copy()
+
