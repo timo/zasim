@@ -71,7 +71,7 @@ class SollertCompressingHistoryStore(HistoryStore):
     """Compress a slice of each configuration into a single number.
 
     Based on Martin Sollert, Algorithmische Klassifikation eindimensionaler
-    zellulärer Automaten mit symmetrischen Regelsatz. 2006."""
+    zellulaerer Automaten mit symmetrischen Regelsatz. 2006."""
 
     def __init__(self, base, Nmax=5000, start=0, width=100, **kwargs):
         super(SollertCompressingHistoryStore, self).__init__(**kwargs)
