@@ -67,3 +67,28 @@ class SlicingHistoryStore(HistoryStore):
     def _prepare_conf(self, config):
         return config[self.slice_obj].copy()
 
+class SollertCompressingHistoryStore(HistoryStore):
+    """Compress a slice of each configuration into a single number.
+
+    Based on Martin Sollert, Algorithmische Klassifikation eindimensionaler
+    zellulärer Automaten mit symmetrischen Regelsatz. 2006."""
+
+    def __init__(self, base, Nmax=5000, start=0, width=100, **kwargs):
+        super(SollertCompressingHistoryStore, self).__init__(**kwargs)
+
+        self.Nmax = Nmax
+        self.base = base
+        self.width = width
+        self.highest = self.base ** self.width
+        self._constant_factor = self.Nmax / self.highest
+        self._powers = np.array([self.base ** position for position in range(width - start)])
+
+    def _prepare_conf(self, config):
+        powered = config * self._powers
+        prepared_digits = powered * self._constant_factor
+        truncated = np.array(prepared_digits, dtype=int)
+        return truncated.sum()
+
+    def to_array(self):
+        return np.array(self._store)
+
