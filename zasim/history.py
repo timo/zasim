@@ -6,7 +6,9 @@ import numpy as np
 class HistoryStore(object):
     """Attach this class to a simulator and it will store the last `store_amount`
     configs. Use `to_array` to create an array with one more dimension than each
-    configuration from the stored configurations."""
+    configuration from the stored configurations.
+
+    When a simulator emits `snapshot_restored`, the history will be cleared."""
 
     def __init__(self, sim, store_amount=-1):
         super(HistoryStore, self).__init__()
@@ -15,6 +17,7 @@ class HistoryStore(object):
 
         self._sim.updated.connect(self.after_step)
         self._sim.changed.connect(self.change_conf)
+        self._sim.snapshot_restored.connect(self.clear_history)
 
         self.store_amount = store_amount
 
@@ -36,6 +39,12 @@ class HistoryStore(object):
 
     def change_conf(self):
         self.after_step(True)
+
+    def clear_history(self):
+        self._store = []
+
+        # XXX is this always correct?
+        self.after_step()
 
     def to_array(self):
         """Put the latest configurations into an array that has one dimension
