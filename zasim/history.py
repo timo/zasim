@@ -20,11 +20,16 @@ class HistoryStore(object):
 
         self._store = []
 
+    def _prepare_conf(self, conf):
+        """Re-implement this method to preprocess the configuration before storing it.
+        This may include things like cutting out a slice of it."""
+        return conf.copy()
+
     def after_step(self, change=False):
         if change:
             # remove the newest entry
             self._store.pop()
-        self._store.append(self._sim.get_config().copy())
+        self._store.append(self._prepare_conf(self._sim.get_config()))
 
         if len(self._store) > self.store_amount and not self.store_amount == -1:
             self._store.pop(0)
