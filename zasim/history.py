@@ -73,21 +73,20 @@ class SollertCompressingHistoryStore(HistoryStore):
     Based on Martin Sollert, Algorithmische Klassifikation eindimensionaler
     zellulaerer Automaten mit symmetrischen Regelsatz. 2006."""
 
-    def __init__(self, base, Nmax=5000, start=0, width=100, **kwargs):
+    def __init__(self, base, Nmax=4096, start=0, width=100, **kwargs):
         super(SollertCompressingHistoryStore, self).__init__(**kwargs)
 
         self.Nmax = Nmax
         self.base = base
         self.slice = slice(start, start+width)
         self.highest = self.base ** width
-        self._constant_factor = 1.0 * self.Nmax / self.highest
-        self._powers = np.array([self.base ** position for position in range(width - start)])
+        constant_factor = 1.0 * self.Nmax / self.highest
+        self._factors = np.array([constant_factor * (self.base ** position) for position in range(width - start)])
 
     def _prepare_conf(self, config):
         config = config[self.slice]
-        powered = config * self._powers
-        prepared_digits = powered * self._constant_factor
-        truncated = np.array(prepared_digits, dtype=int)
+        powered = config * self._factors
+        truncated = np.array(powered, dtype=int)
         return truncated.sum()
 
     def to_array(self):
