@@ -38,6 +38,6 @@ fft = np.abs(fft) # make all peaks positive
 fft = fft[1:] # cut off the first entry, as it is usually a very big number
 coordinates = np.arange(len(fft))
 
-plt.plot(coordinates, fft.real, 'b-')
+plt.plot(coordinates, fft, 'b-')
 plt.show()
 
