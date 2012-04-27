@@ -4,7 +4,9 @@
     from zasim.cagen import *
 
 """
-# {LICENSE_TEXT}
+# This file is part of zasim. zasim is licensed under the BSD 3-clause license.
+# See LICENSE.txt for details.
+
 from .bases import Neighbourhood
 from .utils import gen_offset_pos
 from .compatibility import one_dimension

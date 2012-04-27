@@ -1,7 +1,9 @@
 """
 
 """
-# {LICENSE_TEXT}
+# This file is part of zasim. zasim is licensed under the BSD 3-clause license.
+# See LICENSE.txt for details.
+
 from .bases import CellLoop
 from .compatibility import one_dimension, two_dimensions, activity, random_generator
 from .utils import offset_pos

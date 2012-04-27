@@ -12,7 +12,9 @@ the table-like step functions of elementary cellular automatons.
 
 
 """
-# {LICENSE_TEXT}
+# This file is part of zasim. zasim is licensed under the BSD 3-clause license.
+# See LICENSE.txt for details.
+
 from __future__ import absolute_import
 from .cagen.utils import elementary_digits_and_values, rule_nr_to_rule_arr
 
