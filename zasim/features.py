@@ -2,7 +2,9 @@
 
 
 """
-# {LICENSE_TEXT}
+# This file is part of zasim. zasim is licensed under the BSD 3-clause license.
+# See LICENSE.txt for details.
+
 
 HAVE_WEAVE = True
 """Is scipy.weave available?"""

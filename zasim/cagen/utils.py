@@ -4,7 +4,9 @@
     from zasim.cagen.utils import *
 
 """
-# {LICENSE_TEXT}
+# This file is part of zasim. zasim is licensed under the BSD 3-clause license.
+# See LICENSE.txt for details.
+
 from ..features import HAVE_TUPLE_ARRAY_INDEX
 
 if HAVE_TUPLE_ARRAY_INDEX:

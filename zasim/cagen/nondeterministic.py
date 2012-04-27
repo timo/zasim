@@ -25,7 +25,9 @@ composed for you.
 
 
 """
-# {LICENSE_TEXT}
+# This file is part of zasim. zasim is licensed under the BSD 3-clause license.
+# See LICENSE.txt for details.
+
 from .bases import StepFuncVisitor
 from .loops import OneDimCellLoop, TwoDimCellLoop
 from .compatibility import random_generator

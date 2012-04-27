@@ -1,7 +1,9 @@
 """
 
 """
-# {LICENSE_TEXT}
+# This file is part of zasim. zasim is licensed under the BSD 3-clause license.
+# See LICENSE.txt for details.
+
 from .bases import BorderHandler
 from .utils import dedent_python_code, offset_pos
 
