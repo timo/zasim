@@ -18,8 +18,9 @@ Zasim runs fast, but developing new cellular automatons is simple.
 Getting the code
 ================
 
-The code is not yet available on the 'net, due to licensing questions that
-still require resolving.
+The zasim code can be `found on github <http://github.com/timo/zasim/>`_.
+Additionally, this documentation is built with "view source" links for
+the files.
 
 Running zasim
 =============
