@@ -163,7 +163,7 @@ if __name__ == "__main__":
             help="don't display a histogram")
     argp.add_argument("--no-activity", default=True, action="store_false", dest="activity",
             help="don't display the activity")
-    argp.add_argument("--base", default=2, type=int,
+    argp.add_argument("--base", default=5, type=int,
             help="How many colors to have.")
 
     args = argp.parse_args()
