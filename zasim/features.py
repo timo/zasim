@@ -21,6 +21,9 @@ HAVE_BINCOUNT = True
 HAVE_NUMPY_RANDOM = True
 """Is numpy.random available?"""
 
+HAVE_DTYPE_AS_INDEX = True
+"""Can numpy dtypes be used as index to numpy arrays?"""
+
 def tuple_array_index_fixup(line):
     """Remove tuple-indexing operations to numpy arrays.
 
@@ -70,6 +73,12 @@ except TypeError:
     def tuple_array_index_fixup(line):
         return TUPLE_ACCESS_FIX.sub(r"\1", line)
 
+try:
+    import numpy as np
+    np.zeros((10,))[np.int8(5)]
+except TypeError:
+    HAVE_DTYPE_AS_INDEX = False
+
 __all__ = ["HAVE_WEAVE", "HAVE_MULTIDIM", "HAVE_TUPLE_ARRAY_INDEX",
-           "HAVE_BINCOUNT",
+           "HAVE_BINCOUNT", "HAVE_DTYPE_AS_INDEX",
            "tuple_array_index_fixup"]

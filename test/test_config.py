@@ -3,7 +3,10 @@ from __future__ import absolute_import
 from .testutil import assert_arrays_equal
 
 from zasim import config
-from zasim.features import HAVE_MULTIDIM
+from zasim.features import HAVE_MULTIDIM, HAVE_DTYPE_AS_INDEX
+
+import sys
+IS_PYPY = "pypy_version_info" in dir(sys)
 
 import pytest
 
@@ -98,6 +101,7 @@ class TestConfig:
         assert (crr == 2).any()
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
+    @pytest.mark.skipif("IS_PYPY")
     def test_export_import_conf_ascii(self):
         from zasim.cagen import ElementarySimulator
         from zasim.display.console import TwoDimConsolePainter
@@ -111,7 +115,7 @@ class TestConfig:
             nconf_imp = config.AsciiInitialConfiguration(tmpfile.name)
             assert_arrays_equal(nconf_imp.generate(), s.get_config())
 
-    @pytest.mark.skipif("not HAVE_MULTIDIM")
+    @pytest.mark.skipif("IS_PYPY")
     def test_export_import_conf_png(self, scale):
         from zasim.cagen import GameOfLife
         from zasim.display.qt import TwoDimQImagePainter
@@ -127,7 +131,6 @@ class TestConfig:
             nconf_imp = config.ImageInitialConfiguration(tmpfile.name, scale=scale)
             assert_arrays_equal(nconf_imp.generate(), s.get_config())
 
-
     def test_probability_distribution_1d(self):
         zero_fun = 1
         one_fun = lambda x, w: 0 if x <= w/2 else 5
@@ -140,6 +143,7 @@ class TestConfig:
             assert not conf[50:].all()
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
+    @pytest.mark.xfail("not HAVE_DTYPE_AS_INDEX")
     def test_probability_distribution_2d(self):
         zero_fun = 1
         one_fun = lambda x, y, w, h: 0 if x <= w/2 else 5

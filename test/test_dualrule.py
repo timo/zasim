@@ -10,6 +10,7 @@ from .testutil import *
 import pytest
 
 class TestDualRule:
+    @pytest.mark.xfail("not HAVE_DTYPE_AS_INDEX")
     def test_run_nondeterministic_pure(self):
         # implement nazim fatès density classifier
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0.1)
@@ -30,6 +31,7 @@ class TestDualRule:
         for i in range(50):
             simu.step_inline()
 
+    @pytest.mark.xfail("not HAVE_DTYPE_AS_INDEX")
     def test_compare_nondeterministic_pure(self):
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0)
         sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True, needs_random_generator=True)
@@ -59,6 +61,7 @@ class TestDualRule:
 
             assert_arrays_equal(simu.get_config(), br.get_config())
 
+    @pytest.mark.xfail("not HAVE_DTYPE_AS_INDEX")
     def test_compare_evil_random_pure(self):
         rando = ZerosThenOnesRandom(1000)
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0.5)
@@ -84,6 +87,7 @@ class TestDualRule:
 
             assert_arrays_equal(simu.get_config(), br2.get_config())
 
+    @pytest.mark.xfail("not HAVE_DTYPE_AS_INDEX")
     def test_dualrail_prettyprint(self):
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0.2)
         sf = cagen.automatic_stepfunc(size=(100,), computation=compu, histogram=True, needs_random_generator=True)
