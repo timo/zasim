@@ -237,7 +237,7 @@ class OneDimQImagePainter(BaseQImagePainter):
 
         self._queued_steps -= rendered
         if rendered:
-            _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB32)
+            _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB32).copy()
             _image = _image.scaled(w * self._scale, rendered * self._scale)
 
             painter = QPainter(self._image)
@@ -307,7 +307,7 @@ class TwoDimQImagePainter(BaseQImagePainter):
             for num, value in enumerate(self.palette):
                 nconf[conf == num+2] = value
 
-            image = QImage(nconf.data, w, h, QImage.Format_RGB32)
+            image = QImage(nconf.data, w, h, QImage.Format_RGB32).copy()
             image = QPixmap.fromImage(image)
             if self._scale != 1:
                 image = image.scaled(w * self._scale, h * self._scale)
