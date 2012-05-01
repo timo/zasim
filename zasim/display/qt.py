@@ -238,10 +238,10 @@ class OneDimQImagePainter(BaseQImagePainter):
         self._queued_steps -= rendered
         if rendered:
             _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB32).copy()
-            _image = _image.scaled(w * self._scale, rendered * self._scale)
 
             painter = QPainter(self._image)
-            painter.drawImage(QPoint(0, y * self._scale), _image)
+            painter.scale(self._scale, self._scale)
+            painter.drawImage(QPoint(0, y), _image)
 
     def after_step(self, update_step=True):
         conf = self._sim.get_config().copy()
