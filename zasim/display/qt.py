@@ -472,12 +472,17 @@ class TwoDimQImagePainter(TwoDimQImagePainterBase):
             pass
 
 class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
-    def __init__(self, simulator, palette, rects, scale=1, **kwargs):
-        self.palette = palette
-        self.rects = rects
+    def __init__(self, simulator, scale=0.1, **kwargs):
+        self._sim = simulator
+
+        if 'tiles' in self._sim.palette_info:
+            self.palette = self._sim.palette_info['tiles']['images']
+            self.rects = self._sim.palette_info['tiles']['rects']
+        else:
+            raise NotImplementedError("There is no default image palette yet.")
+
         self.tile_size = rects.values()[0].height()
         assert rects.values()[0].width() == self.tile_size
-        self._sim = simulator
 
         w, h = simulator.shape
         w = w * self.tile_size
