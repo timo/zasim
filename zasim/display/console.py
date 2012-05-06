@@ -3,7 +3,7 @@ from __future__ import absolute_import
 from ..simulator import QObject
 
 NO_DATA = " "
-PALETTE =       ["#", " ", "-", ";", ",", "^", "+", "Y"]
+PALETTE =       [" ", "#", "-", ";", ",", "^", "+", "Y"]
 HTML_PALETTE = "#000 #fff #f00 #00f #0f0 #ff0 #0ff #f0f".split(" ")
 
 class BaseConsolePainter(QObject):
@@ -31,7 +31,7 @@ class BaseConsolePainter(QObject):
             self._sim.palette_info['chars'] = self.palette
 
         if 'hexcols' in self._sim.palette_info:
-            self.palette = self._sim.palette_info['hexcols']
+            self.html_palette = self._sim.palette_info['hexcols']
         else:
             self.html_palette = HTML_PALETTE
             self._sim.palette_info['hexcols'] = self.html_palette

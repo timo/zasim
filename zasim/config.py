@@ -161,8 +161,8 @@ class AsciiInitialConfiguration(BaseInitialConfiguration):
 
         self.filename = filename
         if not palette:
-            from zasim.display.console import BaseConsolePainter
-            palette = BaseConsolePainter.PALETTE
+            from zasim.display import console
+            palette = console.PALETTE
         if isinstance(palette, list):
             palette = dict(enumerate(palette))
         self.palette = palette

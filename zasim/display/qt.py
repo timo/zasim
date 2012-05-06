@@ -519,7 +519,10 @@ class HistogramPainter(BaseQImagePainter):
         self._attribute = attribute
         self._linepos = 0
         if 'qcolors' not in self._sim.palette_info:
-            self.colors = make_palette_qc(self.palette)
+            if 'colors32' in self._sim.palette_info:
+                self.colors = make_palette_qc(self._sim.palette_info['colors32'])
+            else:
+                raise ValueError("The simulator needs either qcolors or colors32 in its palette_info")
             self._sim.palette_info['qcolors'] = self.colors
         else:
             self.colors = self._sim.palette_info['qcolors']
