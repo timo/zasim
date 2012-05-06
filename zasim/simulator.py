@@ -57,7 +57,10 @@ class SimulatorInterface(QObject):
 
     colors32: list or dictionary of 32bit padded RGB values, like QImage::Format_RGB32
     qcolors:  list or dictionary of QColor values
-    tiles:    dictionary with 'images', an image map and 'rects', a dictionary of rects"""
+    tiles:    dictionary with 'images', an image map and 'rects', a dictionary of rects
+    chars:    list or dictionary of ascii/unicode values
+    cboxes:   list or dictionary of multiline ascii/unicode values
+    """
 
     #rect_updated = Signal(tuple)
     #"""Is emitted when only a rectangular shaped area of the conf has changed."""

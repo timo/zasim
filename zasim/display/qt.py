@@ -223,6 +223,15 @@ class BaseQImagePainter(QObject):
         self.desired_frame_duration = frame_duration
         self.next_frame = 0
 
+        if 'colors32' not in self._sim.palette_info:
+            if self._sim.possible_values > len(PALETTE_32):
+                self.palette = make_gray_palette(self._sim.possible_values)
+            else:
+                self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
+            self._sim.palette_info['colors32'] = self.palette
+        else:
+            self.palette = self._sim.palette_info['colors32'][:len(self._sim.t.possible_values)]
+
         if connect:
             self.connect_simulator()
 
@@ -306,8 +315,6 @@ class OneDimQImagePainter(BaseQImagePainter):
         if lines is None:
             lines = simulator.shape[0]
         self._last_step = 0
-
-        self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
 
         super(OneDimQImagePainter, self).__init__(
                 simulator.shape[0], lines, lines,
@@ -493,8 +500,11 @@ class HistogramPainter(BaseQImagePainter):
         self._sim = simulator
         self._attribute = attribute
         self._linepos = 0
-        self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
-        self.colors = make_palette_qc(self.palette)
+        if 'qcolors' not in self._sim.palette_info:
+            self.colors = make_palette_qc(self.palette)
+            self._sim.palette_info['qcolors'] = self.colors
+        else:
+            self.colors = self._sim.palette_info['qcolors']
 
         super(HistogramPainter, self).__init__(width, height, queue_size, connect=connect, **kwargs)
 
