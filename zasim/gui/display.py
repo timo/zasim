@@ -5,7 +5,7 @@ from __future__ import absolute_import
 It will try importing PySide first, and if that fails PyQt. The code will
 constantly be tested with both bindings."""
 
-from .displaywidgets import DisplayWidget
+from .displaywidgets import DisplayWidget, NewDisplayWidget
 from .control import ControlWidget
 #from .mainwin import ZasimMainWindow
 display_objects = []
@@ -33,7 +33,10 @@ class ZasimDisplay(object):
         self.simulator = simulator
 
         if not self.display:
-            self.display = DisplayWidget(self.simulator)
+            if 'tiles' in self.simulator.palette_info:
+                self.display = NewDisplayWidget(self.simulator)
+            else:
+                self.display = DisplayWidget(self.simulator)
 
         if self.control is None:
             self.control = ControlWidget(self.simulator)

@@ -8,43 +8,106 @@ configurations in-line."""
 from __future__ import absolute_import
 
 from ..external.qt import (QObject, QPixmap, QImage, QPainter, QPoint, QSize, QRect,
-                           QLine, QColor, QBuffer, QIODevice, Signal, Qt)
+                           QPen, QBrush, QLine, QColor, QBuffer, QIODevice, Signal, Qt)
 
 import numpy as np
 import time
+import math
 import Queue
 
+from itertools import product
+
+def generate_tile_atlas(filename_map, common_prefix=""):
+    """From a mapping to state value to filename, create a texture atlas
+    from the given filenames. Those should all be as big as the first one.
+
+    :returns: The tile atlas as a QPixmap and a mapping from value to a
+              QRect into the image.
+    """
+    # use the size of the first tile for every tile.
+    size = QImage(filename_map.values()[0]).rect()
+    one_w, one_h = size.width(), size.height()
+
+    # try to make the image as near to a square image a spossible
+    columns = int(math.ceil(math.sqrt(len(filename_map))))
+    rows = len(filename_map) / columns + 1
+
+    new_image = QPixmap(QSize(columns * one_w, rows * one_h))
+    palette_rect = {}
+
+    ptr = QPainter(new_image)
+    ptr.fillRect(new_image.rect(), QBrush("pink"))
+    for num, (value, name) in enumerate(filename_map.iteritems()):
+        img = QImage(name)
+
+        if img.isNull():
+            print "warning:", name, "not found."
+
+            # draw a bright error image with a bit of text
+            img = QImage(one_w, one_h, QImage.Format_RGB32)
+            img.fill(0xffff00ff)
+            errptr = QPainter(img)
+            errptr.setPen(QPen("white"))
+            fnt = errptr.font()
+            fnt.setPixelSize(30)
+            errptr.setFont(fnt)
+            name = name[len(common_prefix):] if name.startswith(common_prefix) else name
+            errptr.drawText(QRect(0, 0, one_w, one_h), Qt.AlignCenter, u"ERROR\nnot found:\n%s\n:(" % (name))
+            errptr.end()
+
+        position_rect = QRect(one_w * (num / rows), one_h * (num % rows), one_w, one_h)
+        ptr.drawImage(position_rect, img, img.rect())
+        #palette_pf[nameStateDict[name]] = lambda x, y: QPainter.PixmapFragment.create(
+                #QPointF(x, y),
+                #position_rect)
+        palette_rect[value] = position_rect
+
+    ptr.end()
+
+    return new_image, palette_rect
 
 PALETTE_32 = [0xff000000, 0xffffffff, 0xffff0000, 0xff0000ff, 0xff00ff00, 0xffffff00, 0xff00ffff, 0xffff00ff]
 
 def make_palette_qc(pal):
-    result = []
-    for color in pal:
+    result = {}
+    if isinstance(pal, list):
+        pal = dict(enumerate(pal))
+    for val, color in pal.iteritems():
         b = color & 0xff
         color = color >> 8
         g = color & 0xff
         color = color >> 8
         r = color & 0xff
 
-        result.append(QColor.fromRgb(r, g, b))
+        result[val] = QColor.fromRgb(r, g, b)
 
     return result
 
 def make_gray_palette(number):
     """Generates a grayscale with `number` entries.
+    Alternatively, accept a list or dictionary with values.
 
     :returns: the RGB_32 palette and the QColor palette
     """
+    if isinstance(number, int):
+        keys = range(number)
+    elif isinstance(number, list):
+        number = len(list)
+        keys = range(number)
+    elif isinstance(number, dict):
+        number = len(list)
+        keys = number.keys()
+
     if number - 1 > 0xff:
         raise ValueError("cannot make 16bit grayscale with %d numbers" % number)
 
-    pal_32 = []
-    pal_qc = []
-    for i in range(number):
+    pal_32 = {}
+    pal_qc = {}
+    for key, i in zip(keys, number):
         perc = 1.0 * i / (number - 1)
         of_32 = int(0xff * perc)
-        pal_32.append(of_32 + (of_32 << 8) + (of_32 << 16))
-        pal_qc.append(QColor.fromRgbF(perc, perc, perc))
+        pal_32[key] = of_32 + (of_32 << 8) + (of_32 << 16)
+        pal_qc[key] = QColor.fromRgbF(perc, perc, perc)
 
     return pal_32, pal_qc
 
@@ -57,6 +120,85 @@ def qimage_to_pngstr(image):
     buf.close()
     return str(buf.data())
 
+_last_rendered_state_conf = None
+def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
+    global _last_rendered_state_conf
+    if region:
+        x, y, w, h = region
+        conf = states[x:x+w, y:y+h]
+    else:
+        x, y = 0, 0
+        w, h = states.shape
+        conf = states
+    nconf = np.empty((w - x, h - y), np.uint32, "F")
+
+    # XXX doesn't work with dictionary palettes yet.
+    if not invert:
+        nconf[conf==0] = palette[0]
+        nconf[conf==1] = palette[1]
+    else:
+        nconf[conf==1] = palette[0]
+        nconf[conf==0] = palette[1]
+
+    for num, value in enumerate(palette[2:]):
+        nconf[conf == num+2] = value
+
+    image = QImage(nconf.data, w - x, h - y, QImage.Format_RGB32)
+
+    # without this cheap trick, the data from the array is imemdiately freed and
+    # subsequently re-used, leading to the first pixels in the top left corner
+    # getting pretty colors and zasim eventually crashing.
+    _last_rendered_state_conf = nconf
+    return image
+
+def render_state_array_tiled(states, palette, rects, region=None, painter=None):
+    """Using a texture atlas and a dictionary of pixmap fragment "factories",
+    draw a configuration using graphical tiles.
+
+    :param states: The array of states to render.
+    :param palette: The image to use.
+    :param rects: A dictionary from state value to rect in the image.
+    :param region: What part of the config to render (x, y, w, h).
+    """
+
+    if region:
+        x, y, w, h = region
+        try:
+            conf = states[x:x+w, y:y+h]
+        except IndexError:
+            # this is 1d :(
+            assert h == 1
+            states = states.reshape((states.shape[0], h))
+            conf = states[x:x+w, y:y+h]
+
+        w, h = conf.shape
+    else:
+        x, y = 0, 0
+        try:
+            w, h = states.shape
+        except ValueError:
+            # the shape is 1d only
+            w, = states.shape
+            h = 1
+            states = states.reshape((w,h))
+        conf = states
+
+    if not painter:
+        tilesize = rects.values()[0].size()
+        result = QPixmap(QSize(w * tilesize.width(), h * tilesize.height()))
+        painter =  QPainter(result)
+        painter.scale(tilesize.width(), tilesize.height())
+
+    positions = product(xrange(w), xrange(h))
+
+    values = [(pos, conf[pos]) for pos in positions]
+    fragments = [(QPoint(pos[0], pos[1]), rects[value]) for pos, value in values]
+
+    for dest, src in fragments:
+        painter.drawPixmap(QRect(dest, QSize(1, 1)), palette, src)
+
+    if not painter:
+        return result
 
 class BaseQImagePainter(QObject):
     """This is a base class for implementing renderers for configs based on
@@ -93,6 +235,15 @@ class BaseQImagePainter(QObject):
 
         self.desired_frame_duration = frame_duration
         self.next_frame = 0
+
+        if 'colors32' not in self._sim.palette_info:
+            if len(self._sim.t.possible_values) > len(PALETTE_32):
+                self.palette = make_gray_palette(self._sim.t.possible_values)
+            else:
+                self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
+            self._sim.palette_info['colors32'] = self.palette
+        else:
+            self.palette = self._sim.palette_info['colors32'][:len(self._sim.t.possible_values)]
 
         if connect:
             self.connect_simulator()
@@ -178,8 +329,6 @@ class OneDimQImagePainter(BaseQImagePainter):
             lines = simulator.shape[0]
         self._last_step = 0
 
-        self.palette = PALETTE_32[2:len(self._sim.t.possible_values)]
-
         super(OneDimQImagePainter, self).__init__(
                 simulator.shape[0], lines, lines,
                 **kwargs)
@@ -193,7 +342,8 @@ class OneDimQImagePainter(BaseQImagePainter):
 
         confs_to_render = min(self._height - y, self._queued_steps)
 
-        whole_conf = np.empty((confs_to_render, w), np.uint32, "C")
+        # create whole_conf lazily, so that we can derive the dtype from the confs
+        whole_conf = None
 
         try:
             while rendered < confs_to_render:
@@ -211,17 +361,17 @@ class OneDimQImagePainter(BaseQImagePainter):
                         if peek is None:
                             raise
 
-                nconf = whole_conf[rendered, ...]
+                if whole_conf is None:
+                    whole_conf = np.zeros((w, confs_to_render), dtype=conf.dtype)
 
-                if not self._invert_odd or self._odd:
-                    nconf[conf==0] = 0
-                    nconf[conf==1] = 0xffffff
-                else:
-                    nconf[conf==0] = 0xffffff
-                    nconf[conf==1] = 0
+                # XXX this won't work with dictionary palettes
+                if (self._invert_odd and self._odd):
+                    new_zeros = conf == 1
+                    new_ones = conf == 0
+                    conf[new_zeros] = 0
+                    conf[new_ones] = 1
 
-                for num, value in enumerate(self.palette):
-                    nconf[conf == num+2] = value
+                whole_conf[...,rendered] = conf
 
                 rendered += 1
 
@@ -232,16 +382,18 @@ class OneDimQImagePainter(BaseQImagePainter):
         except Queue.Empty:
             pass
 
-        if self._last_step % self._height == 0 and rendered:
-            self.image_wrapped.emit()
+        if not rendered:
+            return
 
         self._queued_steps -= rendered
-        if rendered:
-            _image = QImage(whole_conf.data, w, rendered, QImage.Format_RGB32).copy()
+        _image = render_state_array(whole_conf, self.palette, False, (0, 0, w, rendered))
+        _image = _image.scaled(w * self._scale, rendered * self._scale)
 
-            painter = QPainter(self._image)
-            painter.scale(self._scale, self._scale)
-            painter.drawImage(QPoint(0, y), _image)
+        painter = QPainter(self._image)
+        painter.drawImage(QPoint(0, y * self._scale), _image)
+
+        if self._last_step % self._height == 0 and rendered:
+            self.image_wrapped.emit()
 
     def after_step(self, update_step=True):
         conf = self._sim.get_config().copy()
@@ -276,46 +428,9 @@ class OneDimQImagePainter(BaseQImagePainter):
 
         self.after_step(False)
 
-class TwoDimQImagePainter(BaseQImagePainter):
+class TwoDimQImagePainterBase(BaseQImagePainter):
     """This class offers rendering a two-dimensional simulator config to
     a QImage"""
-    def __init__(self, simulator, connect=True, **kwargs):
-        """Initialise the TwoDimQImagePainter.
-
-        :param simulator: The simulator to use.
-        :param connect: Connect the painter to the simulators change signals?
-        """
-        self._sim = simulator
-        w, h = simulator.shape
-
-        self.palette = PALETTE_32[2:len(self._sim.t.possible_values)]
-        super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
-
-    def draw_conf(self):
-        try:
-            update_step, conf = self._queue.get_nowait()
-            w, h = self._width, self._height
-            nconf = np.empty((w, h), np.uint32, "F")
-
-            if not self._invert_odd or self._odd:
-                nconf[conf==0] = 0
-                nconf[conf==1] = 0xffffffff
-            else:
-                nconf[conf==1] = 0
-                nconf[conf==0] = 0xffffffff
-
-            for num, value in enumerate(self.palette):
-                nconf[conf == num+2] = value
-
-            image = QImage(nconf.data, w, h, QImage.Format_RGB32)
-            pixmap = QPixmap.fromImage(image).copy()
-            if self._scale != 1:
-                pixmap = pixmap.scaled(w * self._scale, h * self._scale)
-            self._image = pixmap
-            if update_step:
-                self._odd = not self._odd
-        except Queue.Empty:
-            pass
 
     def after_step(self, update_step=True):
         if update_step and self.skip_frame():
@@ -325,6 +440,68 @@ class TwoDimQImagePainter(BaseQImagePainter):
 
         self.draw_conf()
         self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
+
+    def create_image_surf(self):
+        pass
+
+class TwoDimQImagePainter(TwoDimQImagePainterBase):
+    def __init__(self, simulator, connect=True, **kwargs):
+        """Initialise the TwoDimQImagePainter.
+
+        :param simulator: The simulator to use.
+        :param connect: Connect the painter to the simulators change signals?
+        """
+        self._sim = simulator
+        w, h = simulator.shape
+
+        super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
+
+    def draw_conf(self):
+        try:
+            update_step, conf = self._queue.get_nowait()
+            w, h = self._width, self._height
+
+            image = render_state_array(conf, self.palette, self._invert_odd and self._odd, (0, 0, w, h))
+            pixmap = QPixmap.fromImage(image)
+            if self._scale != 1:
+                pixmap = pixmap.scaled(w * self._scale, h * self._scale)
+            self._image = pixmap
+            if update_step:
+                self._odd = not self._odd
+        except Queue.Empty:
+            pass
+
+class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
+    def __init__(self, simulator, scale=0.1, **kwargs):
+        self._sim = simulator
+
+        if 'tiles' in self._sim.palette_info:
+            self.palette = self._sim.palette_info['tiles']['images']
+            self.rects = self._sim.palette_info['tiles']['rects']
+        else:
+            raise NotImplementedError("There is no default image palette yet.")
+
+        self.tile_size = rects.values()[0].height()
+        assert rects.values()[0].width() == self.tile_size
+
+        w, h = simulator.shape
+        w = w * self.tile_size
+        h = h * self.tile_size
+
+        super(TwoDimQImagePalettePainter, self).__init__(w, h, **kwargs)
+
+    def draw_conf(self):
+        try:
+            update_step, conf = self._queue.get_nowait()
+            tilesize = self.tile_size * self._scale
+            w, h = self._width / tilesize, self._height / tilesize
+
+            print self._width, self._height, tilesize
+            print w, h
+
+            self._image = render_state_array_tiled(conf, self.palette, self.rects)
+        except Queue.Empty:
+            pass
 
 # TODO make a painter that continuously moves up the old configurations for saner
 #      display in ipython rich consoles and such.
@@ -341,8 +518,14 @@ class HistogramPainter(BaseQImagePainter):
         self._sim = simulator
         self._attribute = attribute
         self._linepos = 0
-        self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
-        self.colors = make_palette_qc(self.palette)
+        if 'qcolors' not in self._sim.palette_info:
+            if 'colors32' in self._sim.palette_info:
+                self.colors = make_palette_qc(self._sim.palette_info['colors32'])
+            else:
+                raise ValueError("The simulator needs either qcolors or colors32 in its palette_info")
+            self._sim.palette_info['qcolors'] = self.colors
+        else:
+            self.colors = self._sim.palette_info['qcolors']
 
         super(HistogramPainter, self).__init__(width, height, queue_size, connect=connect, **kwargs)
 
@@ -360,7 +543,7 @@ class HistogramPainter(BaseQImagePainter):
                     maximum = 1
                 scale = self._height * 1.0 / maximum
                 absolute = 0.0
-                for value, color in zip(values, self.colors):
+                for value, color in zip(values, self.colors.values()):
                     value = value * scale
                     painter.setPen(color)
                     painter.drawLine(QLine(linepos, absolute,

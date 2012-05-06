@@ -150,6 +150,11 @@ list for a `~zasim.config.RandomInitialConfiguration`::
             # call parents init so that Qt Signals can work
             super(TuringTapeSimulator, self).__init__()
 
+            # use the palette for a character-boxes based renderer
+            self.palette_info = {
+                    'cboxes': palette
+                }
+
             # set the size of the tape, as per the Simulator interface.
             self.shape = (25,)
             self.cconf = RandomInitialConfiguration(12, *probabs).generate((self.shape))
@@ -173,7 +178,7 @@ When the `TuringTapeSimulator` class is done, with its step function from above,
 can be used quite simply::
 
     tape = TuringTapeSimulator()
-    painter = MultilineOneDimConsolePainter(tape, palette, compact_boxes=True)
+    painter = MultilineOneDimConsolePainter(tape, compact_boxes=True)
 
     painter.after_step()
     print
