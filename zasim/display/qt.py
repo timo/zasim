@@ -543,7 +543,7 @@ class HistogramPainter(BaseQImagePainter):
                     maximum = 1
                 scale = self._height * 1.0 / maximum
                 absolute = 0.0
-                for value, color in zip(values, self.colors):
+                for value, color in zip(values, self.colors.values()):
                     value = value * scale
                     painter.setPen(color)
                     painter.drawLine(QLine(linepos, absolute,
