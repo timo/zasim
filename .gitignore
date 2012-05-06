@@ -8,7 +8,5 @@ coverage.xml
 htmlcov
 junit*.xml
 .ropeproject
-docs/_templates/logo.png
-zasim/idle.png
 build/
 dist/

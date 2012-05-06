@@ -31,7 +31,7 @@ GAP = object()
 """The value passed to create_subwidget when a position is not held by a
 field."""
 
-CELL_COL = dict(enumerate(PALETTE_QC))
+CELL_COL = PALETTE_QC
 """What colors to use for what field values."""
 
 CELL_COL[GAP] = QColor("gray")

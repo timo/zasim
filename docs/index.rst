@@ -22,6 +22,17 @@ The zasim code can be `found on github <http://github.com/timo/zasim/>`_.
 Additionally, this documentation is built with "view source" links for
 the files.
 
+Examples
+========
+
+Have a look at the :ref:`Example Gallery <screenshot_gallery>` for a few
+interesting things zasim can do.
+
+.. toctree::
+    :hidden:
+
+    gallery
+
 Running zasim
 =============
 

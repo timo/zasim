@@ -24,13 +24,6 @@ or with
     cd docs
     make html
 
-In order to get a complete documentation, you still need to generate the logo
-image from the svg using inkscape with the following commands:
-
-# create the compilation animation picture like this:
-inkscape -f docs/logo.svg -i snake -j -C -e zasim/idle.png
-# create the logo for the documentation with this command:
-inkscape -e docs/_templates/logo.png -C -w 175 -h 175 docs/logo.svg
 
 Visit the homepage of zasim at http://zasim.wakelift.de/, which is basically
 just the generated html documentation put up on a webserver.

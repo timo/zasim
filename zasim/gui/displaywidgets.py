@@ -1,5 +1,10 @@
-from ..external.qt import QWidget, QPainter, Qt
-from ..display.qt import OneDimQImagePainter, TwoDimQImagePainter
+from ..external.qt import QWidget, QPainter, Qt, QSize, QPoint
+from ..display.qt import OneDimQImagePainter, TwoDimQImagePainter,\
+        render_state_array_tiled
+
+import Queue
+
+from pprint import pprint
 
 class DisplayWidget(QWidget):
     """A Display widget for one- and twodimensional configs.
@@ -126,3 +131,110 @@ class DisplayWidget(QWidget):
 
     def export(self, filename):
         return self.display.export(filename)
+
+class NewDisplayWidget(QWidget):
+    """A Display widget for one- and twodimensional configs utilising a
+    palette of images.
+
+    Based on `zasim.display.qt`"""
+
+    def __init__(self, simulator, palette=None, rects=None, scale=0.1, **kwargs):
+        """Initialize the DisplayWidget.
+
+        :param palette: The palette image to use.
+        :param rects: The tile atlas to use.
+        """
+        super(NewDisplayWidget, self).__init__(**kwargs)
+
+        self.setAttribute(Qt.WA_OpaquePaintEvent)
+        self.setAttribute(Qt.WA_NoSystemBackground)
+
+        self._sim = simulator
+
+        if not palette:
+            if 'tiles' in self._sim.palette_info:
+                palette = self._sim.palette_info['tiles']['images']
+
+        self.palette= palette
+
+        if not rects:
+            if 'tiles' in self._sim.palette_info:
+                rects = self._sim.palette_info['tiles']['rects']
+
+        self.rects = rects
+
+        self.tilesize = self.rects.values()[0].size()
+
+        self.shape = simulator.shape
+
+        if len(self.shape) == 1:
+            # TODO implement one-dim QImagePalettePainter
+            raise NotImplementedError("One dimensional paletted image painter not "
+                                      "implemented yet.")
+
+        elif len(self.shape) != 2:
+            raise ValueError("Simulators with %d dimensions are not supported for display" % len(self.shape))
+
+        self._scale = scale
+        self.size_change()
+
+        self._scale_scroll = 0
+
+        self._last_conf = None
+        self.update_display()
+
+        self._sim.changed.connect(self.update_display)
+        self._sim.updated.connect(self.update_display)
+
+    def set_scale(self, scale):
+        self._scale = scale
+        self.size_change()
+
+    def size_change(self):
+        self._width = self.shape[0] * self.tilesize.width() * self._scale
+        self._height = self.shape[1] * self.tilesize.height() * self._scale
+        self.setMinimumSize(QSize(self._width,
+                                  self._height))
+        pprint(vars(self))
+
+    def update_display(self):
+        try:
+            self._last_conf = self._sim.get_config()
+            self.update()
+            return True
+        except Queue.Empty:
+            return False
+
+    start_inverting_frames = stop_inverting_frames = lambda self: None
+
+    def paintEvent(self, event):
+        rect = event.rect()
+
+        tw = self.tilesize.width() * self._scale
+        th = self.tilesize.height() * self._scale
+
+        ofx, ofy = rect.x() % tw, rect.y() % th
+
+
+        # FIXME +2 seems to work, but does it always work?
+        #       how can the border at the side be figured out?
+        region = map(int, (rect.x() / tw,
+                  rect.y() / th,
+                  rect.width() / tw + 2,
+                  rect.height() / th + 2))
+
+        #print "painting region", rect, region
+
+        painter = QPainter(self)
+        painter.translate(QPoint(rect.x() - ofx, rect.y() - ofy))
+        painter.scale(self.tilesize.width() * self._scale, self.tilesize.height() * self._scale)
+
+        # XXX why doesn't this use the TwoDimQImagePalettePainter?
+
+        render_state_array_tiled(self._last_conf, self.palette, self.rects, region, painter=painter)
+
+        #color = QColor.fromHsv(random.random() * 360, 255, 255)
+        #print color
+        #painter.setBrush(color)
+        #painter.setPen(QColor(0, 0, 0))
+        #painter.drawRect(QRect(QPoint(0, 0), QSize(*region[2:])))

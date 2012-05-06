@@ -35,6 +35,7 @@ class TestSparseLoop:
         self.body_compare_sparse_life(True)
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
+    @pytest.mark.xfail("not HAVE_DTYPE_AS_INDEX")
     def test_compare_sparse_life_pure(self):
         self.body_compare_sparse_life(False)
 

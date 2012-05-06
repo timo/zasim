@@ -8,6 +8,60 @@
 
 import numpy as np
 
+## A map from states according to the bitmask to
+# pygame blittable states ( between 0 and 28 )
+displayableStateDict = {
+    0: 0,     # U
+    2048: 1,  #C00   2048
+    2049: 2,  #C10   2048+1
+    2050: 3,  #C01   2048+2
+    2051: 4,  #C11   2048+3
+    4192: 5,  #S000  4096+96
+    4160: 6,  #S00   4096+64
+    4168: 7,  #S01   4096+64+8
+    4128: 8,  #S0    4096+32
+    4176: 9,  #S10   4096+64+16
+    4184: 10, #S11   4096+64+16+8
+    4144: 11, #S1    4096+32+16
+    4096: 12, #S     4096
+    6144: 13, #T000  6144
+    6272: 14, #T001  6144+128
+    6400: 15, #T010  6144+256
+    6528: 16, #T011  6144+128+256
+    6656: 17, #T020  6144+512
+    6784: 18, #T021  6144+128+512
+    6912: 19, #T030  6144+256+512
+    7040: 20, #T031  6144+128+256+512
+    7168: 21, #T100  6144+1024
+    7296: 22, #T101  6144+128+1024
+    7424: 23, #T110  6144+256+1024
+    7552: 24, #T111  6144+128+256+1024
+    7680: 25, #T120  6144+512+1024
+    7808: 26, #T121  6144+128+512+1024
+    7936: 27, #T130  6144+256+512+1024
+    8064: 28, #T131  6144+128+256+1024+512
+    }
+
+## A map from human readable vonNeumann states ( such as 'U', 'T020' and 'C11' )
+# actual states calculated via bitmask
+nameStateDict = { "U": 0,
+                  #"C00" : 2048, "C10" : 2049, "C01" : 2050, "C11" : 2051,
+                  "C00" : 1, "C10" : 2, "C01" : 3, "C11" : 4,
+                  "S"   : 4096, "S0"  : 4128, "S1"  : 4144, "S00" : 4160,
+                  "S01" : 4168, "S10" : 4176, "S11" : 4184, "S000": 4192,
+                  "T000": 6144, "T001": 6272, "T010": 6400, "T011": 6528,
+                  "T020": 6656, "T032": 6784, "T030": 6912, "T031": 7040,
+                  "T100": 7168, "T101": 7296, "T110": 7424, "T111": 7552,
+                  "T120": 7680, "T121": 7808, "T130": 7936, "T131": 8064 }
+stateNameDict = {a:b for b,a in nameStateDict.iteritems()}
+states = sorted(nameStateDict.values())
+
+from os import path
+from zasim.display.qt import generate_tile_atlas
+
+# XXX get the absolute path if possible.
+filename_map = {num:path.join("images/vonNeumann", stateNameDict[num]) + ".png" for num in states}
+PALETTE_JVN_IMAGE, PALETTE_JVN_RECT = generate_tile_atlas(filename_map, "images/vonNeumann")
 
 ## The cellular automaton proposed by John von Neumann
 # \verbatim
@@ -40,55 +94,6 @@ class vonNeumann ( object ):
         self.dim = 2
         self.size = self.sizeX, self.sizeY = sizeX, sizeY
 
-        ## A map from states according to the bitmask to
-        # pygame blittable states ( between 0 and 28 )
-        self.displayableStateDict = {
-            0: 0,     # U
-            2048: 1,  #C00   2048
-            2049: 2,  #C10   2048+1
-            2050: 3,  #C01   2048+2
-            2051: 4,  #C11   2048+3
-            4192: 5,  #S000  4096+96
-            4160: 6,  #S00   4096+64
-            4168: 7,  #S01   4096+64+8
-            4128: 8,  #S0    4096+32
-            4176: 9,  #S10   4096+64+16
-            4184: 10, #S11   4096+64+16+8
-            4144: 11, #S1    4096+32+16
-            4096: 12, #S     4096
-            6144: 13, #T000  6144
-            6272: 14, #T001  6144+128
-            6400: 15, #T010  6144+256
-            6528: 16, #T011  6144+128+256
-            6656: 17, #T020  6144+512
-            6784: 18, #T021  6144+128+512
-            6912: 19, #T030  6144+256+512
-            7040: 20, #T031  6144+128+256+512
-            7168: 21, #T100  6144+1024
-            7296: 22, #T101  6144+128+1024
-            7424: 23, #T110  6144+256+1024
-            7552: 24, #T111  6144+128+256+1024
-            7680: 25, #T120  6144+512+1024
-            7808: 26, #T121  6144+128+512+1024
-            7936: 27, #T130  6144+256+512+1024
-            8064: 28, #T131  6144+128+256+1024+512
-            }
-
-        ## A map from human readable vonNeumann states ( such as 'U', 'T020' and 'C11' )
-        # actual states calculated via bitmask
-        self.nameStateDict = { "U": 0,
-                               "C00" : 2048, "C10" : 2049, "C01" : 2050, "C11" : 2051,
-                               "S"   : 4096, "S0"  : 4128, "S1"  : 4144, "S00" : 4160,
-                               "S01" : 4168, "S10" : 4176, "S11" : 4184, "S000": 4192,
-                               "T000": 6144, "T001": 6272, "T010": 6400, "T011": 6528,
-                               "T020": 6656, "T032": 6784, "T030": 6912, "T031": 7040,
-                               "T100": 7168, "T101": 7296, "T110": 7424, "T111": 7552,
-                               "T120": 7680, "T121": 7808, "T130": 7936, "T131": 8064 }
-
-        ## An array containing all correct states (see vonNeumann)
-        self.states = [ 0, 2048, 2049, 2050, 2051, 4096, 4128, 4144, 4160, 4168,
-                        4176, 4184, 4192, 6144, 6272, 6400, 6528, 6656, 6784,
-                        6912, 7040, 7168, 7296, 7424, 7552, 7680, 7808, 7936, 8064 ]
 
         ## The current configuration is held here
         # as usual, these two arrays contain the real configuration, that is used
@@ -111,27 +116,7 @@ class vonNeumann ( object ):
         # between 0 and ~2^13, so we need a dict (see vonNeumann::displayableStateDict)
         # to map the states to 0..28, so the Display-module can display states
         # without knowing the difference
-        self.displayConf = np.zeros( self.size, int)
-
-
-        for imgFile in ( "images/vonNeumann/U.jpg",    "images/vonNeumann/C00.jpg",
-                         "images/vonNeumann/C01.jpg",  "images/vonNeumann/C10.jpg",
-                         "images/vonNeumann/C11.jpg",  "images/vonNeumann/S000.jpg",
-                         "images/vonNeumann/S00.jpg",  "images/vonNeumann/S01.jpg",
-                         "images/vonNeumann/S0.jpg",   "images/vonNeumann/S10.jpg",
-                         "images/vonNeumann/S11.jpg",  "images/vonNeumann/S1.jpg",
-                         "images/vonNeumann/S.jpg",    "images/vonNeumann/T000.jpg",
-                         "images/vonNeumann/T001.jpg", "images/vonNeumann/T010.jpg",
-                         "images/vonNeumann/T011.jpg", "images/vonNeumann/T020.jpg",
-                         "images/vonNeumann/T021.jpg", "images/vonNeumann/T030.jpg",
-                         "images/vonNeumann/T031.jpg", "images/vonNeumann/T100.jpg",
-                         "images/vonNeumann/T101.jpg", "images/vonNeumann/T110.jpg",
-                         "images/vonNeumann/T111.jpg", "images/vonNeumann/T120.jpg",
-                         "images/vonNeumann/T121.jpg", "images/vonNeumann/T130.jpg",
-                         "images/vonNeumann/T131.jpg" ):
-            img = None #pygame.image.load( imgFile ).convert()
-            self.palette.append( img )
-
+        self.displayConf = np.zeros( self.size, int )
 
     ## Used to append cells to the list of cells to handle in the next step
     def enlist( self, x, y ):
@@ -144,81 +129,6 @@ class vonNeumann ( object ):
                 self.cActArr[ i ] = True
                 self.cList[self.cCounter] = i
                 self.cCounter += 1
-
-    #def click_on_cell( self, x, y, mousekey, mods ):
-        #EPS = 128
-        #SPECIAL = 1024
-        #CSTATE = 2048
-        #SSTATE = 4096
-        #TSTATE = 6144
-
-        #if x <= 0 or x >= self.sizeX-1 or y <= 0 or y >= self.sizeY-1:
-            #return
-        #state = self.states[self.displayConf[x][y]]
-        #s = 0
-
-        #if e.button == 1:
-            ## T-states
-            #s = TSTATE
-            #if mods & pygame.KMOD_LCTRL:
-                ## eps
-                #if state & EPS == 0 and (state & TSTATE == TSTATE):
-                    ## to just insert a new eps without changing anything
-                    #self.currConf[x][y] = state+EPS
-                    #self.nextConf[x][y] = state+EPS
-                    #self.enlist(x,y)
-                    #return
-                #s += EPS
-            #if mods & pygame.KMOD_LSHIFT:
-                ## u
-                #s += SPECIAL
-            #if state == 0:
-                #for nbs in ( self.states[self.displayConf[x+1][y]],
-                             #self.states[self.displayConf[x][y-1]],
-                             #self.states[self.displayConf[x-1][y]],
-                             #self.states[self.displayConf[x][y+1]] ):
-                    #if ( nbs & TSTATE == TSTATE ) \
-                            #and ( ( mods & pygame.KMOD_LSHIFT == state & SPECIAL ) \
-                                      #and ( mods & pygame.KMOD_LCTRL == state & EPS ) ):
-                        #s += nbs & 768
-                        #self.currConf[x][y] = s
-                        #self.nextConf[x][y] = s
-                        #self.enlist(x,y)
-                        #return
-            #s += (((state&768)+256) & 768)
-            #self.currConf[x][y] = s
-            #self.nextConf[x][y] = s
-            #self.enlist(x,y)
-        #if e.button == 3:
-            #if mods & pygame.KMOD_LCTRL:
-                ## C-states
-                #s = CSTATE
-                #s += (((state&3)+1) & 3)
-            #elif mods & pygame.KMOD_LSHIFT:
-                ## S-states
-                #if state == 0 or (state & SSTATE) != SSTATE:
-                    #s = SSTATE
-                    #self.currConf[x][y] = s
-                    #self.nextConf[x][y] = s
-                    #self.enlist(x,y)
-                    #return
-                #sIdx = ( ( self.displayableStateDict[state] - 5 + 1 ) % 8 ) + 5
-                #s = self.states[sIdx]
-            #else:
-                ## U-state
-                #s = 0
-            #self.currConf[x][y] = s
-            #self.nextConf[x][y] = s
-            #self.enlist(x,y)
-
-    #def getConf( self ):
-        #for i in range( 1, self.sizeX-1 ):
-            #for j in range( 1, self.sizeY-1 ):
-                #if self.displayableStateDict.has_key( self.currConf[i][j] ):
-                    #self.displayConf[i][j] = self.displayableStateDict[self.currConf[i][j]]
-                #else:
-                    #print "Unkown state in cell", i, j, ":", self.currConf[i][j]
-        #return self.displayConf
 
     ## Updates all cells using scipy.weave.inline
     def updateAllCellsWeaveInline( self ):

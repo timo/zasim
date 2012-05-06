@@ -60,6 +60,9 @@ class ZasimMainWindow(QMainWindow):
         sim_name = QLabel(str(self.simulator), self)
         # make text selectable and links (if any) clickable
         sim_name.setTextInteractionFlags(Qt.TextBrowserInteraction)
+        # there are some nasty long names if base gets bigger than 2.
+        sim_name.setWordWrap(True)
+
         layout.addWidget(sim_name)
 
         scroller = QScrollArea()
