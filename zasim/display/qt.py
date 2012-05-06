@@ -264,8 +264,6 @@ class OneDimQImagePainter(BaseQImagePainter):
         if self._last_step % self._height == 0 and rendered:
             self.image_wrapped.emit()
 
-        self._queued_steps -= rendered
-
     def after_step(self, update_step=True):
         conf = self._sim.get_config().copy()
         try:
