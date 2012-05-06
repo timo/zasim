@@ -2,8 +2,6 @@ try:
     from PySide.QtCore import *
     from PySide.QtGui import *
     from PySide.QtTest import *
-
-    app = qApp or QApplication([])
     HAVE_QT = True
 except ImportError:
     HAVE_QT = False
@@ -66,6 +64,19 @@ def teardown_module():
 
 @pytest.mark.skipif("not HAVE_QT")
 class TestGui:
+    def setup_method(self, method):
+        try:
+            self.app = QApplication([])
+        except RuntimeError:
+            self.app = QCoreApplication.instance()
+        self.app.setQuitOnLastWindowClosed(True)
+
+    def teardown_method(self, method):
+        self.app.closeAllWindows()
+        self.app.quit()
+        self.app.exit(0)
+        del self.app
+
     def test_start_stop_binrule(self, size, base, scale, histogram):
         print size, base, scale, histogram
         sim_obj = cagen.ElementarySimulator(size, copy_borders=True, base=base, histogram=histogram)
@@ -85,16 +96,16 @@ class TestGui:
         QTest.mouseClick(display.control.start_button, Qt.LeftButton)
 
         for execution in seconds(0.1):
-            app.processEvents()
+            self.app.processEvents()
         assert not display.control.start_button.isVisible()
         for execution in seconds(0.1):
-            app.processEvents()
+            self.app.processEvents()
         QTest.mouseClick(display.control.stop_button, Qt.LeftButton)
         for execution in seconds(0.1):
-            app.processEvents()
+            self.app.processEvents()
         assert not display.control.stop_button.isVisible()
 
-        app.closeAllWindows()
+        self.app.closeAllWindows()
         fail_on_exceptions()
 
     def test_reset_button(self):
@@ -131,11 +142,11 @@ class TestGui:
     def find_message_box(self, timeout=10):
         end = time.time() + timeout
         while time.time() < end:
-            widgets = app.allWidgets()
+            widgets = self.app.allWidgets()
             for widget in widgets:
                 if isinstance(widget, QMessageBox):
                     return widget
-            app.processEvents()
+            self.app.processEvents()
 
     def test_elementary_gui(self, base):
         sim_obj = cagen.ElementarySimulator((10, 10), copy_borders=True, base=base)
@@ -153,9 +164,9 @@ class TestGui:
         elementary_action.trigger()
 
         for execution in seconds(0.1):
-            app.processEvents()
+            self.app.processEvents()
 
-        elementary_window = app.activeWindow()
+        elementary_window = self.app.activeWindow()
         assert elementary_window is not None
 
         actions = [act for act in elementary_window.findChildren(QPushButton)
@@ -164,9 +175,9 @@ class TestGui:
         for action in actions:
             QTest.mouseClick(action, Qt.LeftButton)
             for execution in seconds(0.1):
-                app.processEvents()
+                self.app.processEvents()
 
-        app.closeAllWindows()
+        self.app.closeAllWindows()
 
         fail_on_exceptions()
 
@@ -186,7 +197,7 @@ class TestGui:
         anim = WaitAnimationWindow()
 
         for execution in seconds(1):
-            app.processEvents()
+            self.app.processEvents()
 
         fail_on_exceptions()
 
