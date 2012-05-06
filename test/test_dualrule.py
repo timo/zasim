@@ -63,15 +63,17 @@ class TestDualRule:
 
     @pytest.mark.xfail("not HAVE_DTYPE_AS_INDEX")
     def test_compare_evil_random_pure(self):
-        rando = ZerosThenOnesRandom(1000)
-        compu = cagen.DualRuleCellularAutomaton(184, 232, 0.5)
+        rule_a = 30
+        rule_b = 184
+        rando = ZerosThenOnesRandom(1001)
+        compu = cagen.DualRuleCellularAutomaton(rule_a, rule_b, 0.5)
         sf = cagen.automatic_stepfunc(size=(100,), computation=compu,
                                       needs_random_generator=True,
                                       random_generator=rando, histogram=True)
         sf.gen_code()
         simu = CagenSimulator(sf)
 
-        br = cagen.BinRule(rule=184, config=simu.get_config())
+        br = cagen.BinRule(rule=rule_a, config=simu.get_config())
 
         for i in range(10):
             simu.step_pure_py()
@@ -79,9 +81,9 @@ class TestDualRule:
 
             assert_arrays_equal(simu.get_config(), br.get_config())
 
-        br2 = cagen.BinRule(rule=232, config=simu.get_config())
+        br2 = cagen.BinRule(rule=rule_b, config=simu.get_config())
 
-        for i in range(20):
+        for i in range(19):
             simu.step_pure_py()
             br2.step_pure_py()
 
