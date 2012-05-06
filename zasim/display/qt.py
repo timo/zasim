@@ -69,20 +69,23 @@ def generate_tile_atlas(filename_map, common_prefix=""):
 PALETTE_32 = [0xff000000, 0xffffffff, 0xffff0000, 0xff0000ff, 0xff00ff00, 0xffffff00, 0xff00ffff, 0xffff00ff]
 
 def make_palette_qc(pal):
-    result = []
-    for color in pal:
+    result = {}
+    if isinstance(pal, list):
+        pal = dict(enumerate(pal))
+    for val, color in pal.iteritems):
         b = color & 0xff
         color = color >> 8
         g = color & 0xff
         color = color >> 8
         r = color & 0xff
 
-        result.append(QColor.fromRgb(r, g, b))
+        result[val] = QColor.fromRgb(r, g, b)
 
     return result
 
 def make_gray_palette(number):
     """Generates a grayscale with `number` entries.
+    Alternatively, accept a list or dictionary with values.
 
     :returns: the RGB_32 palette and the QColor palette
     """
@@ -98,13 +101,13 @@ def make_gray_palette(number):
     if number - 1 > 0xff:
         raise ValueError("cannot make 16bit grayscale with %d numbers" % number)
 
-    pal_32 = []
-    pal_qc = []
-    for i in range(number):
+    pal_32 = {}
+    pal_qc = {}
+    for key, i in zip(keys, number):
         perc = 1.0 * i / (number - 1)
         of_32 = int(0xff * perc)
-        pal_32.append(of_32 + (of_32 << 8) + (of_32 << 16))
-        pal_qc.append(QColor.fromRgbF(perc, perc, perc))
+        pal_32[key] = of_32 + (of_32 << 8) + (of_32 << 16)
+        pal_qc[key] = QColor.fromRgbF(perc, perc, perc)
 
     return pal_32, pal_qc
 
@@ -129,6 +132,7 @@ def render_state_array(states, palette=PALETTE_QC, invert=False, region=None):
         conf = states
     nconf = np.empty((w - x, h - y), np.uint32, "F")
 
+    # XXX doesn't work with dictionary palettes yet.
     if not invert:
         nconf[conf==0] = palette[0]
         nconf[conf==1] = palette[1]
@@ -360,6 +364,7 @@ class OneDimQImagePainter(BaseQImagePainter):
                 if whole_conf is None:
                     whole_conf = np.zeros((w, confs_to_render), dtype=conf.dtype)
 
+                # XXX this won't work with dictionary palettes
                 if (self._invert_odd and self._odd):
                     new_zeros = conf == 1
                     new_ones = conf == 0
@@ -449,7 +454,6 @@ class TwoDimQImagePainter(TwoDimQImagePainterBase):
         self._sim = simulator
         w, h = simulator.shape
 
-        self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
         super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
 
     def draw_conf(self):
