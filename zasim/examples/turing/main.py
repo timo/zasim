@@ -16,6 +16,10 @@ class TuringTapeSimulator(SimulatorInterface):
     def __init__(self):
         super(TuringTapeSimulator, self).__init__()
 
+        self.palette_info = {
+                'cboxes': palette
+            }
+
         self.shape = (25,)
         self.cconf = RandomInitialConfiguration(12, *probabs).generate((self.shape))
         # do not send stuff from the right border.
@@ -51,7 +55,7 @@ class TuringTapeSimulator(SimulatorInterface):
 
 def main():
     tape = TuringTapeSimulator()
-    painter = MultilineOneDimConsolePainter(tape, palette, compact_boxes=True)
+    painter = MultilineOneDimConsolePainter(tape, compact_boxes=True)
 
     painter.after_step()
     print
