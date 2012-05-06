@@ -86,6 +86,15 @@ def make_gray_palette(number):
 
     :returns: the RGB_32 palette and the QColor palette
     """
+    if isinstance(number, int):
+        keys = range(number)
+    elif isinstance(number, list):
+        number = len(list)
+        keys = range(number)
+    elif isinstance(number, dict):
+        number = len(list)
+        keys = number.keys()
+
     if number - 1 > 0xff:
         raise ValueError("cannot make 16bit grayscale with %d numbers" % number)
 
@@ -224,8 +233,8 @@ class BaseQImagePainter(QObject):
         self.next_frame = 0
 
         if 'colors32' not in self._sim.palette_info:
-            if self._sim.possible_values > len(PALETTE_32):
-                self.palette = make_gray_palette(self._sim.possible_values)
+            if len(self._sim.t.possible_values) > len(PALETTE_32):
+                self.palette = make_gray_palette(self._sim.t.possible_values)
             else:
                 self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
             self._sim.palette_info['colors32'] = self.palette
