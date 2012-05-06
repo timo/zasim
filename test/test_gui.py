@@ -98,7 +98,7 @@ class TestGui:
         fail_on_exceptions()
 
     def test_reset_button(self):
-        sim_obj = cagen.ElementarySimulator((1000, 100), copy_borders=True, base=3)
+        sim_obj = cagen.ElementarySimulator((100, 100), copy_borders=True, base=3)
 
         display = ZasimDisplay(sim_obj)
         display.set_scale(1)
@@ -224,7 +224,8 @@ def pytest_generate_tests(metafunc):
     if "size" in metafunc.funcargnames:
         calls = produce_more(calls, "size", [(100,), (100, 100)])
     if "base" in metafunc.funcargnames:
-        calls = produce_more(calls, "base", [2, 3])
+        calls = produce_more(calls, "base", [2, 3],
+                lambda call: len(call["size"]) == 2)
     if "histogram" in metafunc.funcargnames:
         calls = produce_more(calls, "histogram", [False, True],
                 lambda call: len(call["size"]) == 2)
