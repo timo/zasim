@@ -72,7 +72,7 @@ def make_palette_qc(pal):
     result = {}
     if isinstance(pal, list):
         pal = dict(enumerate(pal))
-    for val, color in pal.iteritems):
+    for val, color in pal.iteritems():
         b = color & 0xff
         color = color >> 8
         g = color & 0xff
