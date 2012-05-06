@@ -307,11 +307,11 @@ class TwoDimQImagePainter(BaseQImagePainter):
             for num, value in enumerate(self.palette):
                 nconf[conf == num+2] = value
 
-            image = QImage(nconf.data, w, h, QImage.Format_RGB32).copy()
-            image = QPixmap.fromImage(image)
+            image = QImage(nconf.data, w, h, QImage.Format_RGB32)
+            pixmap = QPixmap.fromImage(image).copy()
             if self._scale != 1:
-                image = image.scaled(w * self._scale, h * self._scale)
-            self._image = image
+                pixmap = pixmap.scaled(w * self._scale, h * self._scale)
+            self._image = pixmap
             if update_step:
                 self._odd = not self._odd
         except Queue.Empty:
