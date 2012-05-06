@@ -188,6 +188,8 @@ def render_state_array_tiled(states, palette, rects, region=None, painter=None):
         result = QPixmap(QSize(w * tilesize.width(), h * tilesize.height()))
         painter =  QPainter(result)
         painter.scale(tilesize.width(), tilesize.height())
+    else:
+        tilesize = (1, 1)
 
     positions = product(xrange(w), xrange(h))
 

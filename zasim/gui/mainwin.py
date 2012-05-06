@@ -217,6 +217,10 @@ def main(width=200, height=200, scale=2,
         print sim_obj.pretty_print()
         print sim_obj.t.rule, hex(sim_obj.rule_number)
 
+    from zasim.cagen.jvn import PALETTE_JVN_IMAGE, PALETTE_JVN_RECT
+    from zasim.display.qt import make_gray_palette
+    sim_obj.palette_info['tiles'] = {'images': PALETTE_JVN_IMAGE, 'rects': PALETTE_JVN_RECT}
+
     display = ZasimDisplay(sim_obj)
     display.set_scale(scale)
 
