@@ -66,7 +66,6 @@ class TestDisplayQt:
         img = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT)
 
         img2 = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT,region=(2, 2, 6, 6))
-        img3 = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT,region=(2, 2, 6, 6), tilesize=32)
 
     def test_tiled_display_1d(self):
         test_conf = RandomInitialConfigurationFromPalette(jvn.states)
@@ -74,4 +73,3 @@ class TestDisplayQt:
 
         img = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT)
         img2 = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT,region=(2, 0, 6, 1))
-        img3 = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT,region=(2, 0, 6, 1), tilesize=32)
