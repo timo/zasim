@@ -145,6 +145,13 @@ class ElementaryCellularAutomatonBase(Computation):
     def build_name(self, parts):
         if self.rule <= 255:
             mingle = str
+        elif self.rule > 0xffffff:
+            def mingle(value):
+                raw = hex(value)
+                chunks, raw = [raw[0:6]], raw[6:]
+                for idx in range(len(raw)/4):
+                    chunks.append(raw[idx * 4:idx * 4 + 4])
+                return " ".join(chunks)
         else:
             mingle = hex
         parts.append("calculating rule %s" % (mingle(self.rule)))
