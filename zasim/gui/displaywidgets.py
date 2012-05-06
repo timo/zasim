@@ -229,6 +229,8 @@ class NewDisplayWidget(QWidget):
         painter.translate(QPoint(rect.x() - ofx, rect.y() - ofy))
         painter.scale(self.tilesize.width() * self._scale, self.tilesize.height() * self._scale)
 
+        # XXX why doesn't this use the TwoDimQImagePalettePainter?
+
         render_state_array_tiled(self._last_conf, self.palette, self.rects, region, painter=painter)
 
         #color = QColor.fromHsv(random.random() * 360, 255, 255)
