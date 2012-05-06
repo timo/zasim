@@ -52,6 +52,13 @@ class SimulatorInterface(QObject):
     """Wether the simulator needs to run any kind of preparation before being
     able to perform steps"""
 
+    palette_info = {}
+    """Dictionary fro different display options and their extra data.
+
+    colors32: list or dictionary of 32bit padded RGB values, like QImage::Format_RGB32
+    qcolors:  list or dictionary of QColor values
+    tiles:    dictionary with 'images', an image map and 'rects', a dictionary of rects"""
+
     #rect_updated = Signal(tuple)
     #"""Is emitted when only a rectangular shaped area of the conf has changed."""
 

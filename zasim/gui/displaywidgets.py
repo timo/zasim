@@ -138,7 +138,7 @@ class NewDisplayWidget(QWidget):
 
     Based on `zasim.display.qt`"""
 
-    def __init__(self, simulator, palette, rects, scale=0.1, **kwargs):
+    def __init__(self, simulator, palette=None, rects=None, scale=0.1, **kwargs):
         """Initialize the DisplayWidget.
 
         :param palette: The palette image to use.
@@ -151,7 +151,16 @@ class NewDisplayWidget(QWidget):
 
         self._sim = simulator
 
+        if not palette:
+            if 'tiles' in self._sim.palette_info:
+                palette = self._sim.palette_info['tiles']['images']
+
         self.palette= palette
+
+        if not rects:
+            if 'tiles' in self._sim.palette_info:
+                rects = self._sim.palette_info['tiles']['rects']
+
         self.rects = rects
 
         self.tilesize = self.rects.values()[0].size()
