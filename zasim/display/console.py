@@ -2,13 +2,14 @@ from __future__ import absolute_import
 
 from ..simulator import QObject
 
+NO_DATA = " "
+PALETTE =       ["#", " ", "-", ";", ",", "^", "+", "Y"]
+HTML_PALETTE = "#000 #fff #f00 #00f #0f0 #ff0 #0ff #f0f".split(" ")
+
 class BaseConsolePainter(QObject):
     """This is a base class for implementing renderers that output the
     configuration of a simulator as an ascii-art string."""
 
-    NO_DATA = " "
-    PALETTE =       [" ", "#", "-", ";", ",", "^", "+", "Y"]
-    HTML_PALETTE = "#000 #fff #f00 #00f #0f0 #ff0 #0ff #f0f".split(" ")
 
     def __init__(self, simulator, extra=None, connect=True, auto_output=True, **kwargs):
         """Initialise the painter.
@@ -22,6 +23,18 @@ class BaseConsolePainter(QObject):
         self._data = []
         self._last_conf = None
         self._auto_output = auto_output
+
+        if 'chars' in self._sim.palette_info:
+            self.palette = self._sim.palette_info['chars']
+        else:
+            self.palette = PALETTE
+            self._sim.palette_info['chars'] = self.palette
+
+        if 'hexcols' in self._sim.palette_info:
+            self.palette = self._sim.palette_info['hexcols']
+        else:
+            self.html_palette = HTML_PALETTE
+            self._sim.palette_info['hexcols'] = self.html_palette
 
         if connect:
             self.connect_simulator()
@@ -55,7 +68,7 @@ class BaseConsolePainter(QObject):
     </table>"""
         def line_to_html(data):
             return ('<tr><td style="width: 10px; height: 10px; background: ' +
-                    '">&nbsp;</td><td style="width: 10px; height: 10px; background: '.join(self.HTML_PALETTE[self.PALETTE.index(value)] for value in data) +
+                    '">&nbsp;</td><td style="width: 10px; height: 10px; background: '.join(self.html_palette[self.palette.index(value)] for value in data) +
                     '">&nbsp;</td></tr>')
 
         content = "\n".join(line_to_html(line) for line in self._data)
@@ -70,12 +83,12 @@ class OneDimConsolePainter(BaseConsolePainter):
         super(OneDimConsolePainter, self).__init__(simulator, **kwargs)
 
         self._lines = lines
-        self._data = [self.NO_DATA * self._sim.shape[0]]
+        self._data = [NO_DATA * self._sim.shape[0]]
 
         self.after_step()
 
     def draw_conf(self, update_step=True):
-        newline = "".join(self.PALETTE[value] for value in self._last_conf)
+        newline = "".join(self.palette[value] for value in self._last_conf)
         if len(self._data) == self._lines and update_step:
             self._data.pop(0)
         elif not update_step:
@@ -87,7 +100,7 @@ class OneDimConsolePainter(BaseConsolePainter):
             out.write("\n".join(self._data + [""]))
 
     def conf_replaced(self):
-        self._data = [self.NO_DATA * self._sim.shape[0]]
+        self._data = [NO_DATA * self._sim.shape[0]]
 
 class TwoDimConsolePainter(BaseConsolePainter):
     """This painter always draws the most current config."""
@@ -95,7 +108,7 @@ class TwoDimConsolePainter(BaseConsolePainter):
     def __init__(self, simulator, **kwargs):
         super(TwoDimConsolePainter, self).__init__(simulator, **kwargs)
 
-        self._data = [[self.NO_DATA * self._sim.shape[1]]
+        self._data = [[NO_DATA * self._sim.shape[1]]
                       for i in range(self._sim.shape[0])]
 
         self.after_step()
@@ -103,7 +116,7 @@ class TwoDimConsolePainter(BaseConsolePainter):
     def draw_conf(self, update_step=True):
         self._data = []
         for line in self._last_conf.T:
-            newline = "".join(self.PALETTE[value] for value in line)
+            newline = "".join(self.palette[value] for value in line)
             self._data.append(newline)
 
     def __str__(self):
@@ -115,20 +128,21 @@ class TwoDimConsolePainter(BaseConsolePainter):
 
 class MultilineOneDimConsolePainter(BaseConsolePainter):
     """A painter for multiline palettes (as described in `convert_palette`)."""
-    def __init__(self, simulator, palette=None, compact_boxes=None, **kwargs):
+    def __init__(self, simulator, compact_boxes=None, **kwargs):
         """:param simulator: The simulator to get configs from.
-        :param palette: The palette to use. If none is supplied, a simple
-                        palette with boxes will be created.
         :param compact_boxes: If this parameter is True, boxart palettes will
                               share borders for a more compact display."""
 
         super(MultilineOneDimConsolePainter, self).__init__(simulator, **kwargs)
 
-        if palette is None:
+        if 'cboxes' not in self._sim.palette_info:
             box_contents = map(str, simulator.t.possible_values)
             palette = self.convert_palette(self.box_art_palette([box_contents]))
             if compact_boxes is None:
                 compact_boxes = True
+            self._sim.palette_info['cboxes'] = palette
+        else:
+            palette = self._sim.palette_info['cboxes']
 
         self.palette = palette
         self.palette_height = len(palette.values()[0])

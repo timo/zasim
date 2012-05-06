@@ -60,6 +60,7 @@ class SimulatorInterface(QObject):
     tiles:    dictionary with 'images', an image map and 'rects', a dictionary of rects
     chars:    list or dictionary of ascii/unicode values
     cboxes:   list or dictionary of multiline ascii/unicode values
+    hexcols:  list or dictionary of colors usable in css-like color definitions.
     """
 
     #rect_updated = Signal(tuple)
