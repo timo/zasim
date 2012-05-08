@@ -6,7 +6,7 @@ ca_init, display_init, histogram_init = sys.argv[1:]
 if ca_init == "constructor":
     binrule = zasim.ca.BinRule(
             rule = 110,
-            initial = zasim.conf.RandomInitialConfiguration)
+            initial = zasim.conf.RandomConfiguration)
     # this API must support setting the size manually and then initializing it
     # from random data, zeros, ones, whatever as well as initializing it from
     # a file
@@ -17,7 +17,7 @@ elif ca_init == "properties":
     # several attributes would actually be properties with getters and setters
     binrule.rule = 110
     binrule.size = (400,)
-    binrule.init(zasim.conf.RandomInitialConfiguration)
+    binrule.init(zasim.conf.RandomConfiguration)
 
 if display_init == "constructor":
     binrule_display = zasim.display.HistoryDisplay(

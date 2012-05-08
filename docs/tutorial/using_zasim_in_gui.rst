@@ -118,7 +118,7 @@ Additionally, we need a function to react to all changes::
         self.sim_timer.start(0)
 
     def slot_reroll_conf(self):
-        self.conf = RandomInitialConfiguration(2, 0.5, 0.5).generate(self.sim.shape)
+        self.conf = RandomConfiguration(2, 0.5, 0.5).generate(self.sim.shape)
         self.slot_change_settings()
 
 These slots will be connected to our user interface::
@@ -149,7 +149,7 @@ Finally, at the very beginning of the class, we initialise all our things::
         self.sim_timer.timeout.connect(self.stepsim)
 
         # here the size of our configuration is chosen.
-        self.conf = RandomInitialConfiguration(2, 0.5, 0.5).generate((300,))
+        self.conf = RandomConfiguration(2, 0.5, 0.5).generate((300,))
         self.create_stepfunc()
         self.init_gui()
         self.make_connections()

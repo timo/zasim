@@ -4,7 +4,7 @@
 # This file is part of zasim. zasim is licensed under the BSD 3-clause license.
 # See LICENSE.txt for details.
 
-from ..config import BaseInitialConfiguration, RandomInitialConfiguration
+from ..config import BaseConfiguration, RandomConfiguration
 
 class Target(object):
     """The Target is a simple class that can act as a target for a
@@ -27,10 +27,10 @@ class Target(object):
         if config is None:
             if self.possible_values != tuple(range(len(self.possible_values))):
                 raise ValueError("Can only create a random config if possible_values is contiguous")
-            gen = RandomInitialConfiguration(base=len(self.possible_values))
+            gen = RandomConfiguration(base=len(self.possible_values))
             self.cconf = gen.generate(size_hint=size)
             self.size = self.cconf.shape
-        elif isinstance(config, BaseInitialConfiguration):
+        elif isinstance(config, BaseConfiguration):
             self.cconf = config.generate(size_hint=size)
             self.size = self.cconf.shape
         else:
