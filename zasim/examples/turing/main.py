@@ -3,7 +3,7 @@ the tape of a turing machine."""
 
 from zasim.display.console import MultilineOneDimConsolePainter
 from zasim.simulator import SimulatorInterface, TargetProxy
-from zasim.config import RandomInitialConfiguration
+from zasim.config import RandomConfiguration
 
 palette = [[" a", " a", " a", " a", " b", " b", " b", " b", " c", " c", " c", " c"],
            ["<a", "<b", "<c", "  ", "<a", "<b", "<c", "  ", "<a", "<b", "<c", "  "]]
@@ -21,7 +21,7 @@ class TuringTapeSimulator(SimulatorInterface):
             }
 
         self.shape = (25,)
-        self.cconf = RandomInitialConfiguration(12, *probabs).generate((self.shape))
+        self.cconf = RandomConfiguration(12, *probabs).generate((self.shape))
         # do not send stuff from the right border.
         self.cconf[-1] = self.cconf[-1] | 3
 

@@ -60,7 +60,7 @@ def teardown_module():
 @pytest.mark.skipif("not HAVE_QT")
 class TestDisplayQt:
     def test_tiled_display(self):
-        test_conf = RandomInitialConfigurationFromPalette(jvn.states)
+        test_conf = RandomConfigurationFromPalette(jvn.states)
         conf = test_conf.generate((10, 10))
 
         img = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT)
@@ -68,7 +68,7 @@ class TestDisplayQt:
         img2 = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT,region=(2, 2, 6, 6))
 
     def test_tiled_display_1d(self):
-        test_conf = RandomInitialConfigurationFromPalette(jvn.states)
+        test_conf = RandomConfigurationFromPalette(jvn.states)
         conf = test_conf.generate((10,))
 
         img = render_state_array_tiled(conf, jvn.PALETTE_JVN_IMAGE, jvn.PALETTE_JVN_RECT)

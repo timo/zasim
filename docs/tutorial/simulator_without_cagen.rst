@@ -143,7 +143,7 @@ target object to be a different object, so we can just set it up to be a
 `~zasim.simulator.TargetProxy`. We set `cconf` and `possible_values` to be its
 `target_attrs`, which are the attributes, that the `TargetProxy` will make
 available. This requires a `cconf` to actually exist, so we use the probabilities
-list for a `~zasim.config.RandomInitialConfiguration`::
+list for a `~zasim.config.RandomConfiguration`::
 
     class TuringTapeSimulator(SimulatorInterface):
         def __init__(self):
@@ -157,7 +157,7 @@ list for a `~zasim.config.RandomInitialConfiguration`::
 
             # set the size of the tape, as per the Simulator interface.
             self.shape = (25,)
-            self.cconf = RandomInitialConfiguration(12, *probabs).generate((self.shape))
+            self.cconf = RandomConfiguration(12, *probabs).generate((self.shape))
             # do not send stuff from the right border.
             self.cconf[-1] = self.cconf[-1] | 3
 

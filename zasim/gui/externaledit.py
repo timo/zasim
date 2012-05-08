@@ -13,7 +13,7 @@ from ..external.qt import (QDialog, QHBoxLayout, QVBoxLayout,
         QDialogButtonBox,
         QFileSystemWatcher)
 
-from ..config import ImageInitialConfiguration, AsciiInitialConfiguration
+from ..config import ImageConfiguration, FileAsciiConfiguration
 from tempfile import NamedTemporaryFile
 
 from ..display.console import TwoDimConsolePainter
@@ -114,7 +114,7 @@ class ExternalEditWindow(QDialog):
 
     def external_png(self, prefix="zasim", suffix=".png"):
         self.exporter = self.conf_disp
-        self.__external_edit(prefix, suffix, ImageInitialConfiguration, ["gimp"])
+        self.__external_edit(prefix, suffix, ImageConfiguration, ["gimp"])
 
     def external_txt(self, prefix="zasim", suffix=".txt"):
         editor = None
@@ -132,7 +132,7 @@ class ExternalEditWindow(QDialog):
         editor = shlex.split(editor)
 
         self.exporter = TwoDimConsolePainter(self._sim)
-        self.__external_edit(prefix, suffix, AsciiInitialConfiguration, editor)
+        self.__external_edit(prefix, suffix, FileAsciiConfiguration, editor)
 
     def import_(self):
         self._sim.set_config(self.importer.generate())

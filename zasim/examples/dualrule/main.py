@@ -6,7 +6,7 @@ from zasim.gui.displaywidgets import DisplayWidget
 from zasim.cagen.dualrule import DualRuleCellularAutomaton
 from zasim.cagen.simulators import automatic_stepfunc
 from zasim.simulator import CagenSimulator
-from zasim.config import RandomInitialConfiguration
+from zasim.config import RandomConfiguration
 
 class DualRuleGadget(QDialog):
     def __init__(self):
@@ -19,7 +19,7 @@ class DualRuleGadget(QDialog):
         self.sim_timer = QTimer(self)
         self.sim_timer.timeout.connect(self.stepsim)
 
-        self.conf = RandomInitialConfiguration(2, 0.5, 0.5).generate((300,))
+        self.conf = RandomConfiguration(2, 0.5, 0.5).generate((300,))
         self.create_stepfunc()
         self.init_gui()
         self.make_connections()
@@ -102,7 +102,7 @@ class DualRuleGadget(QDialog):
         self.sim_timer.start(0)
 
     def slot_reroll_conf(self):
-        self.conf = RandomInitialConfiguration(2, 0.5, 0.5).generate(self.sim.shape)
+        self.conf = RandomConfiguration(2, 0.5, 0.5).generate(self.sim.shape)
         self.slot_change_settings()
 
     def stepsim(self):

@@ -10,7 +10,7 @@ import pytest
 
 class TestSparseLoop:
     def body_compare_sparse_life(self, weave=False):
-        conf = config.RandomInitialConfiguration().generate((25, 25))
+        conf = config.RandomConfiguration().generate((25, 25))
         life_full   = cagen.GameOfLife(config=conf, histogram=True, activity=True)
         life_sparse = cagen.GameOfLife(config=conf, histogram=True, activity=True,
                                        sparse_loop=True)
@@ -40,7 +40,7 @@ class TestSparseLoop:
         self.body_compare_sparse_life(False)
 
     def body_compare_sparse_elementary(self, rule_num, weave=False):
-        conf = cagen.RandomInitialConfiguration().generate((100,))
+        conf = cagen.RandomConfiguration().generate((100,))
         elem_full   = cagen.ElementarySimulator(config=conf, rule=rule_num, activity=True)
         elem_sparse = cagen.ElementarySimulator(config=conf, rule=rule_num, activity=True,
                                                 sparse_loop=True)

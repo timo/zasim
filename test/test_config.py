@@ -12,7 +12,7 @@ import pytest
 
 class TestConfig:
     def test_random_1d(self):
-        a = config.RandomInitialConfiguration()
+        a = config.RandomConfiguration()
         arr = a.generate((1000,))
         assert not any(arr >= 2)
         assert not any(arr < 0)
@@ -20,7 +20,7 @@ class TestConfig:
         assert any(arr == 1)
         assert len(arr) == 1000
 
-        b = config.RandomInitialConfiguration(base=3)
+        b = config.RandomConfiguration(base=3)
         brr = b.generate((1000,))
         assert not any(brr >= 3)
         assert not any(brr < 0)
@@ -28,22 +28,22 @@ class TestConfig:
         assert any(brr == 1)
         assert any(brr == 2)
 
-        c = config.RandomInitialConfiguration(3)
+        c = config.RandomConfiguration(3)
         crr = c.generate((None,))
         assert len(crr.shape) == 1
 
     def test_random_1d_probabilities(self):
-        a = config.RandomInitialConfiguration(2, 0)
+        a = config.RandomConfiguration(2, 0)
         arr = a.generate((1000,))
         assert not any(arr == 0)
         assert all(arr == 1)
 
-        b = config.RandomInitialConfiguration(2, 1)
+        b = config.RandomConfiguration(2, 1)
         brr = b.generate((1000,))
         assert not any(brr == 1)
         assert all(brr == 0)
 
-        c = config.RandomInitialConfiguration(3, 0)
+        c = config.RandomConfiguration(3, 0)
         crr = c.generate((1000,))
         assert not any(crr == 0)
         assert any(crr == 1)
@@ -51,17 +51,17 @@ class TestConfig:
 
     def test_random_errors_1d(self):
         with pytest.raises(ValueError):
-            a = config.RandomInitialConfiguration(2, 1.0, 1.0)
+            a = config.RandomConfiguration(2, 1.0, 1.0)
         with pytest.raises(ValueError):
-            b = config.RandomInitialConfiguration(2, 0.1, 0.1, 0.8)
+            b = config.RandomConfiguration(2, 0.1, 0.1, 0.8)
         with pytest.raises(TypeError):
-            c = config.RandomInitialConfiguration(2, [0.1, 0.9])
+            c = config.RandomConfiguration(2, [0.1, 0.9])
         with pytest.raises(ValueError):
-            d = config.RandomInitialConfiguration(2, 0.1, 0.8)
+            d = config.RandomConfiguration(2, 0.1, 0.8)
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_random_2d(self):
-        a = config.RandomInitialConfiguration()
+        a = config.RandomConfiguration()
         arr = a.generate((100,100))
         assert not (arr > 2).any()
         assert not (arr < 0).any()
@@ -69,7 +69,7 @@ class TestConfig:
         assert (arr == 1).any()
         assert arr.size == 100 * 100
 
-        b = config.RandomInitialConfiguration(base=3)
+        b = config.RandomConfiguration(base=3)
         brr = b.generate((100,100))
         assert not (brr > 3).any()
         assert not (brr < 0).any()
@@ -77,24 +77,24 @@ class TestConfig:
         assert (brr == 1).any()
         assert (brr == 2).any()
 
-        c = config.RandomInitialConfiguration(3)
+        c = config.RandomConfiguration(3)
         crr = c.generate((None, 100))
         assert len(crr.shape) == 2
         assert crr.shape[1] == 100
 
     @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_random_2d_probabilities(self):
-        a = config.RandomInitialConfiguration(2, 0)
+        a = config.RandomConfiguration(2, 0)
         arr = a.generate((100,100))
         assert not (arr == 0).any()
         assert (arr == 1).all()
 
-        b = config.RandomInitialConfiguration(2, 1)
+        b = config.RandomConfiguration(2, 1)
         brr = b.generate((100,100))
         assert not (brr == 1).any()
         assert (brr == 0).all()
 
-        c = config.RandomInitialConfiguration(3, 0)
+        c = config.RandomConfiguration(3, 0)
         crr = c.generate((100,100))
         assert not (crr == 0).any()
         assert (crr == 1).any()
@@ -112,7 +112,7 @@ class TestConfig:
 
         with NamedTemporaryFile(prefix="zasim_test_") as tmpfile:
             d.export(tmpfile.name)
-            nconf_imp = config.AsciiInitialConfiguration(tmpfile.name)
+            nconf_imp = config.FileAsciiConfiguration(tmpfile.name)
             assert_arrays_equal(nconf_imp.generate(), s.get_config())
 
     @pytest.mark.skipif("IS_PYPY")
@@ -128,7 +128,7 @@ class TestConfig:
 
         with NamedTemporaryFile(prefix="zasim_test_", suffix=".png", delete=False) as tmpfile:
             disp.export(tmpfile.name)
-            nconf_imp = config.ImageInitialConfiguration(tmpfile.name, scale=scale)
+            nconf_imp = config.ImageConfiguration(tmpfile.name, scale=scale)
             assert_arrays_equal(nconf_imp.generate(), s.get_config())
 
     def test_probability_distribution_1d(self):
