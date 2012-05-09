@@ -1,5 +1,5 @@
 import pytest
-import os,sys,time
+import os,sys
 
 wrapped_stdin = sys.stdin
 sys.stdin = sys.__stdin__
