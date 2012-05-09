@@ -19,41 +19,41 @@ def pytest_collect_file(path, parent):
 class IPyNbFile(pytest.File):
     def collect(self):
         with self.fspath.open() as f:
-            nb = reads(f.read(), 'json')
+            self.nb = reads(f.read(), 'json')
 
-            yield IPyNbItem(self.fspath.basename, self, nb)
+            cell_num = 0
 
-class IPyNbItem(pytest.Item):
-    def __init__(self, name, parent, notebook):
-        super(IPyNbItem, self).__init__(name, parent)
-        self.nb = notebook
-
-    def runtest(self):
-        km = BlockingKernelManager()
-        try:
-            km.start_kernel(stderr=open(os.devnull, 'w'))
-            km.start_channels()
-            shell = km.shell_channel
-            # simple ping:
-            shell.execute("pass")
-            shell.get_msg()
-
-            cells = 0
             for ws in self.nb.worksheets:
                 for cell in ws.cells:
-                    if cell.cell_type != 'code':
-                        continue
-                    shell.execute(cell.input, allow_stdin=False)
-                    # wait for finish, maximum 20s
-                    reply = shell.get_msg(timeout=20)['content']
-                    if reply['status'] == 'error':
-                        raise IPyNbException(cells, cell.input, '\n'.join(reply['traceback']))
-                    cells += 1
-                    sys.stdout.write('.')
+                    if cell.cell_type == "code":
+                        yield IPyNbCell(self.name, self, cell_num, cell)
+                        cell_num += 1
 
-        finally:
-            km.shutdown_kernel()
-            del km
+    def setup(self):
+        self.km = BlockingKernelManager()
+        self.km.start_kernel(stderr=open(os.devnull, 'w'))
+        self.km.start_channels()
+        self.shell = self.km.shell_channel
+
+    def teardown(self):
+        self.km.shutdown_kernel()
+        del self.shell
+        del self.km
+
+class IPyNbCell(pytest.Item):
+    def __init__(self, name, parent, cell_num, cell):
+        super(IPyNbCell, self).__init__(name, parent)
+
+        self.cell_num = cell_num
+        self.cell = cell
+
+    def runtest(self):
+        shell = self.parent.shell
+        shell.execute(self.cell.input, allow_stdin=False)
+        # wait for finish, maximum 20s
+        reply = shell.get_msg(timeout=20)['content']
+        if reply['status'] == 'error':
+            raise IPyNbException(self.cell.input, '\n'.join(reply['traceback']))
 
     def repr_failure(self, excinfo):
         """ called when self.runtest() raises an exception. """
@@ -66,7 +66,8 @@ class IPyNbItem(pytest.Item):
             ])
 
     def reportinfo(self):
-        return self.fspath, 0, "notebook: %s" % self.nb.metadata.name
+        return self.fspath, 0, "cell %d" % self.cell_num
 
 class IPyNbException(Exception):
     """ custom exception for error reporting. """
+
