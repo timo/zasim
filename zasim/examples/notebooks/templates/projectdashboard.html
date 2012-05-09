@@ -1,0 +1,34 @@
+{% extends layout.html %}
+
+{% block title %}
+zasim tutorial (IPython Dashboard)
+{% end %}
+
+{% block stylesheet %}
+{% end %}
+
+{% block meta %}
+    <meta name="read_only" content="{{read_only}}"/>
+{% end %}
+
+{% block params %}
+data-project={{project}}
+data-base-project-url={{base_project_url}}
+data-base-kernel-url={{base_kernel_url}}
+{% end %}
+
+{% block content_panel %}
+    <div id="content_toolbar">
+        <span id="notebooks_buttons" style="visibility: hidden">
+            <button id="new_notebook">New Notebook</button>
+        </span>
+    </div>
+    <div id="notebook_list">
+        <div id="project_name">These files can be found in {{project}}</div>
+    </div>
+{% end %}
+
+{% block script %}
+    <script src="static/js/notebooklist.js" type="text/javascript" charset="utf-8"></script>
+    <script src="static/js/projectdashboardmain.js" type="text/javascript" charset="utf-8"></script>
+{% end %}

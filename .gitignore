@@ -8,3 +8,5 @@ coverage.xml
 htmlcov
 junit*.xml
 .ropeproject
+build/
+dist/
