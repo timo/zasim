@@ -7,15 +7,16 @@ import os
 
 ZASIM_QT = os.environ.get("ZASIM_QT", "PySide").lower()
 
-try:
-    if ZASIM_QT != "pyside":
-        raise ImportError("Use PyQt instead")
+if ZASIM_QT == "pyside":
 
-    from PySide.QtCore import *
-    from PySide.QtGui import *
-except ImportError:
-    if ZASIM_QT != "pyqt":
-        raise ImportError("Don't use PyQt.")
+    try:
+        from PySide.QtCore import *
+        from PySide.QtGui import *
+    except ImportError:
+        print("pyside could not be imported.")
+        raise
+
+elif ZASIM_QT == "pyqt":
     # first, set QString and QVariant to api version 2, which causes them
     # to be created as normal python objects.
     import sip
@@ -27,6 +28,9 @@ except ImportError:
     from PyQt4.QtGui import *
     Signal = pyqtSignal
     print ("using pyqt4", file=sys.stderr)
+    print("PyQt is currently not supported and will likely break.", file=sys.stderr)
+    from time import sleep
+    sleep(3)
 
 import os
 app = None
