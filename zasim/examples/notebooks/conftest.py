@@ -53,7 +53,7 @@ class IPyNbCell(pytest.Item):
         # wait for finish, maximum 20s
         reply = shell.get_msg(timeout=20)['content']
         if reply['status'] == 'error':
-            raise IPyNbException(self.cell.input, '\n'.join(reply['traceback']))
+            raise IPyNbException(self.cell_num, self.cell.input, '\n'.join(reply['traceback']))
 
     def repr_failure(self, excinfo):
         """ called when self.runtest() raises an exception. """
