@@ -11,6 +11,12 @@ or
 
 for a quick overview of what zasim has to offer.
 
+There is an interactive tutorial using the ipython notebook that can be
+started with
+
+    zasim_tutorial
+
+
 Look at docs/tutorial/installation.rst for help on installation or read
 docs/tutorial/invocation.rst for info on how to use zasim.
 
