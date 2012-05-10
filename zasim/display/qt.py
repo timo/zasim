@@ -123,6 +123,8 @@ def qimage_to_pngstr(image):
 _last_rendered_state_conf = None
 def render_state_array(states, palette=PALETTE_32, invert=False, region=None):
     global _last_rendered_state_conf
+    if len(states.shape) == 1:
+        states = states.reshape((states.shape[0], 1))
     if region:
         x, y, w, h = region
         conf = states[x:x+w, y:y+h]
