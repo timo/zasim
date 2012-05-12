@@ -83,27 +83,29 @@ def make_palette_qc(pal):
 
     return result
 
-def make_gray_palette(number):
+def make_gray_palette(number_or_values):
     """Generates a grayscale with `number` entries.
     Alternatively, accept a list or dictionary with values.
 
     :returns: the RGB_32 palette and the QColor palette
     """
-    if isinstance(number, int):
-        keys = range(number)
-    elif isinstance(number, list):
-        number = len(list)
-        keys = range(number)
-    elif isinstance(number, dict):
-        number = len(list)
-        keys = number.keys()
+    if isinstance(number_or_values, int):
+        keys = range(number_or_values)
+
+    elif isinstance(number_or_values, list):
+        keys = number_or_values
+
+    elif isinstance(number_or_values, dict):
+        keys = number_or_values.keys()
+
+    number = len(keys)
 
     if number - 1 > 0xff:
         raise ValueError("cannot make 16bit grayscale with %d numbers" % number)
 
     pal_32 = {}
     pal_qc = {}
-    for key, i in zip(keys, number):
+    for i, key in enumerate(keys):
         perc = 1.0 * i / (number - 1)
         of_32 = int(0xff * perc)
         pal_32[key] = of_32 + (of_32 << 8) + (of_32 << 16)
