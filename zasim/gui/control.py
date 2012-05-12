@@ -22,6 +22,9 @@ class ControlWidget(QWidget):
 
         self._setup_ui()
 
+    def closeEvent(self, event):
+        self.sim_timer.stop()
+
     def _setup_ui(self):
         """Setup the widgets, connect the signals&slots."""
         l = QHBoxLayout(self)
