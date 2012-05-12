@@ -135,6 +135,39 @@ def make_gray_palette(number_or_values):
 
     return pal_32, pal_qc
 
+def mix_colors(colors):
+    lenf = float(len(colors))
+    red = sum(col.red() for col in colors)     / lenf
+    green = sum(col.green() for col in colors) / lenf
+    blue = sum(col.blue() for col in colors)   / lenf
+    return QColor.fromRgb(red, green, blue)
+
+def make_multiaxis_palette(values, hues):
+    """From a list of tuples of the form
+
+        (possible_values, hue_for_axis)
+
+       generate a palette for cells that are made up of multiple components.
+       Each component contributes a bit of color to the result."""
+    def values_along_axis(hue, values):
+        for idx, _ in enumerate(values):
+            yield QColor.fromHsv(hue, 255, 255. * (float(idx) / (len(values) - 1))).convertTo(QColor.Rgb)
+
+    indices = range(len(values))
+
+    axisvalues = list(list(values_along_axis(values[axis][1], values[axis][0])) for axis in indices)
+    values = list(values[axis][0] for axis in indices)
+
+    palette = {}
+
+    combinations = product(*values)
+    for position in combinations:
+        colors = []
+        for axidx, ordinate in enumerate(position):
+            colors.append(axisvalues[axidx][values[axidx].index(ordinate)])
+        palette[position] = mix_colors(colors)
+
+    return palette
 
 
 PALETTE_QC = make_palette_qc(PALETTE_32)
