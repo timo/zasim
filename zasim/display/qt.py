@@ -142,7 +142,7 @@ def mix_colors(colors):
     blue = sum(col.blue() for col in colors)   / lenf
     return QColor.fromRgb(red, green, blue)
 
-def make_multiaxis_palette(values, hues):
+def make_multiaxis_palette(values):
     """From a list of tuples of the form
 
         (possible_values, hue_for_axis)
