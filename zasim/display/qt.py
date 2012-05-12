@@ -245,7 +245,7 @@ class BaseQImagePainter(QObject):
                 self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
             self._sim.palette_info['colors32'] = self.palette
         else:
-            self.palette = self._sim.palette_info['colors32'][:len(self._sim.t.possible_values)]
+            self.palette = self._sim.palette_info['colors32']
 
         if connect:
             self.connect_simulator()
