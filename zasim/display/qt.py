@@ -69,6 +69,7 @@ def generate_tile_atlas(filename_map, common_prefix=""):
 PALETTE_32 = [0xff000000, 0xffffffff, 0xffff0000, 0xff0000ff, 0xff00ff00, 0xffffff00, 0xff00ffff, 0xffff00ff]
 
 def make_palette_qc(pal):
+    """Turn a 32bit color palette into a QColor palette."""
     result = {}
     if isinstance(pal, list):
         pal = dict(enumerate(pal))
@@ -80,6 +81,27 @@ def make_palette_qc(pal):
         r = color & 0xff
 
         result[val] = QColor.fromRgb(r, g, b)
+
+    return result
+
+def make_palette_32(pal):
+    """Turn a qcolor palette into a 32bit color palette."""
+    result = {}
+    if isinstance(pal, list):
+        pal = dict(enumerate(pal))
+
+    for val, color in pal.iteritems():
+        # first 2 byte are ff
+        res = 255
+        res = res >> 8
+        res += color.red()
+        res = res >> 8
+        res += color.green()
+        res = res >> 8
+        res += color.blue()
+        res = res >> 8
+
+        result[val] = res
 
     return result
 
@@ -112,6 +134,8 @@ def make_gray_palette(number_or_values):
         pal_qc[key] = QColor.fromRgbF(perc, perc, perc)
 
     return pal_32, pal_qc
+
+
 
 PALETTE_QC = make_palette_qc(PALETTE_32)
 
