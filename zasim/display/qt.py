@@ -136,16 +136,19 @@ def render_state_array(states, palette=PALETTE_32, invert=False, region=None):
         conf = states
     nconf = np.empty((w - x, h - y), np.uint32, "F")
 
-    # XXX doesn't work with dictionary palettes yet.
-    if not invert:
-        nconf[conf==0] = palette[0]
-        nconf[conf==1] = palette[1]
-    else:
-        nconf[conf==1] = palette[0]
-        nconf[conf==0] = palette[1]
+     #XXX doesn't work with dictionary palettes yet.
+    #if not invert:
+        #nconf[conf==0] = palette[0]
+        #nconf[conf==1] = palette[1]
+    #else:
+        #nconf[conf==1] = palette[0]
+        #nconf[conf==0] = palette[1]
 
-    for num, value in enumerate(palette[2:]):
-        nconf[conf == num+2] = value
+    #for num, value in enumerate(palette[2:]):
+        #nconf[conf == num+2] = value
+
+    for key, value in palette.iteritems():
+        nconf[conf == key] = value
 
     image = QImage(nconf.data, w - x, h - y, QImage.Format_RGB32)
 
