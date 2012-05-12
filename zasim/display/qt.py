@@ -93,13 +93,13 @@ def make_palette_32(pal):
     for val, color in pal.iteritems():
         # first 2 byte are ff
         res = 255
-        res = res >> 8
+        res = res << 8
         res += color.red()
-        res = res >> 8
+        res = res << 8
         res += color.green()
-        res = res >> 8
+        res = res << 8
         res += color.blue()
-        res = res >> 8
+        res = res << 8
 
         result[val] = res
 
