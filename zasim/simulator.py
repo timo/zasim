@@ -66,9 +66,6 @@ class SimulatorInterface(QObject):
     #rect_updated = Signal(tuple)
     #"""Is emitted when only a rectangular shaped area of the conf has changed."""
 
-    #positions_updated = Signal(list)
-    #"""Is emitted when only a list of cells have changed."""
-
     updated = Signal()
     """Is emitted when the conf has changed as result of a step."""
 
@@ -93,6 +90,13 @@ class SimulatorInterface(QObject):
 
     t = TargetProxy(object(), [])
     """A proxy object to access the target_attrs."""
+
+    changeinfo = None
+    """Information about the last configuration change.
+
+    May be
+    1. a rectangle (x, y, w, h) that has been changed
+    2. None, if everything changed."""
 
     def get_config(self):
         """Returns a copy of the configuration space as a numpy array.
