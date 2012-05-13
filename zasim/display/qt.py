@@ -158,7 +158,7 @@ def render_state_array(states, palette=PALETTE_32, invert=False, region=None):
         x, y = 0, 0
         w, h = states.shape
         conf = states
-    nconf = np.empty((w - x, h - y), np.uint32, "F")
+    nconf = np.empty((w, h), np.uint32, "F")
 
     # XXX doesn't work with dictionary palettes yet.
     if not invert:
@@ -171,7 +171,7 @@ def render_state_array(states, palette=PALETTE_32, invert=False, region=None):
     for num, value in enumerate(palette[2:]):
         nconf[conf == num+2] = value
 
-    image = QImage(nconf.data, w - x, h - y, QImage.Format_RGB32)
+    image = QImage(nconf.data, w, h, QImage.Format_RGB32)
 
     # without this cheap trick, the data from the array is imemdiately freed and
     # subsequently re-used, leading to the first pixels in the top left corner
@@ -460,14 +460,21 @@ class TwoDimQImagePainterBase(BaseQImagePainter):
     """This class offers rendering a two-dimensional simulator config to
     a QImage"""
 
+    _changed_rect = QRect()
+
     def after_step(self, update_step=True):
+        if self._sim.changeinfo:
+            self._changed_rect = self._changed_rect.united(QRect(*self._sim.changeinfo))
+
         if update_step and self.skip_frame():
             return
         conf = self._sim.get_config().copy()
-        self._queue.put((update_step, conf))
+        self._queue.put((update_step, conf, self._changed_rect))
 
         self.draw_conf()
         self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
+
+        self._changed_rect = QRect()
 
     def create_image_surf(self):
         pass
@@ -486,14 +493,27 @@ class TwoDimQImagePainter(TwoDimQImagePainterBase):
 
     def draw_conf(self):
         try:
-            update_step, conf = self._queue.get_nowait()
-            w, h = self._width, self._height
+            update_step, conf, changeinfo = self._queue.get_nowait()
+            if changeinfo:
+                x, y, w, h = changeinfo.getRect()
+                conf = conf[x:x+w, y:y+h]
+            else:
+                x, y = 0, 0
+                w, h = self._width, self._height
 
             image = render_state_array(conf, self.palette, self._invert_odd and self._odd, (0, 0, w, h))
-            pixmap = QPixmap.fromImage(image)
-            if self._scale != 1:
-                pixmap = pixmap.scaled(w * self._scale, h * self._scale)
-            self._image = pixmap
+            if changeinfo:
+                painter = QPainter(self._image)
+                painter.scale(self._scale, self._scale)
+                painter.drawImage(QPoint(x, y), image)
+                painter.end()
+            else:
+                pixmap = QPixmap.fromImage(image)
+                if self._scale != 1:
+                    pixmap = pixmap.scaled(w * self._scale, h * self._scale)
+
+                self._image = pixmap
+
             if update_step:
                 self._odd = not self._odd
         except Queue.Empty:
@@ -520,7 +540,7 @@ class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
 
     def draw_conf(self):
         try:
-            update_step, conf = self._queue.get_nowait()
+            update_step, conf, changeinfo = self._queue.get_nowait()
             tilesize = self.tile_size * self._scale
             w, h = self._width / tilesize, self._height / tilesize
 
