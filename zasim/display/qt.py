@@ -535,8 +535,8 @@ class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
         else:
             raise NotImplementedError("There is no default image palette yet.")
 
-        self.tile_size = rects.values()[0].height()
-        assert rects.values()[0].width() == self.tile_size
+        self.tile_size = self.rects.values()[0].height()
+        assert self.rects.values()[0].width() == self.tile_size
 
         w, h = simulator.shape
         w = w * self.tile_size
