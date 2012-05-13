@@ -99,7 +99,6 @@ def make_palette_32(pal):
         res += color.green()
         res = res << 8
         res += color.blue()
-        res = res << 8
 
         result[val] = res
 
@@ -141,6 +140,20 @@ def mix_colors(colors):
     green = sum(col.green() for col in colors) / lenf
     blue = sum(col.blue() for col in colors)   / lenf
     return QColor.fromRgb(red, green, blue)
+
+def normalize_palette(pal):
+    """Sometimes palettes that are automatically generated are too dark. This fixes that problem."""
+    color_len = lambda c: math.sqrt(c.red() ** 2 + c.green() ** 2 + c.blue() ** 2)
+    multiply_col = lambda m: lambda c: QColor.fromRgb(c.red() * m, c.green() * m, c.blue() * m)
+    max_len = 0
+    for color in pal.values():
+        c_len = color_len(color)
+        if c_len > max_len:
+            max_len = c_len
+
+    multiplicator = 255 / max_len
+
+    return {k: multiply_col(multiplicator)(v) for k, v in pal.iteritems()}
 
 def make_multiaxis_palette(values):
     """From a list of tuples of the form
