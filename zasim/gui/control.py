@@ -102,7 +102,8 @@ class ControlWidget(QWidget):
         if isinstance(delay, basestring) and delay.endswith("ms"):
             delay = delay[:-2]
         self.timer_delay = int(delay)
-        self.start()
+        if self.timer.started():
+            self.start()
 
     def set_config(self, conf=None):
         if conf is None:
