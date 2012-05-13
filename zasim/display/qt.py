@@ -523,7 +523,12 @@ class TwoDimQImagePainterBase(BaseQImagePainter):
         self._queue.put((update_step, conf, self._changed_rect))
 
         self.draw_conf()
-        self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
+        if self._changed_rect:
+            coords = self._changed_rect.getRect()
+            scaled_rect = QRect(*[coord * self._scale for coord in coords])
+            self.update.emit(scaled_rect)
+        else:
+            self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
 
         self._changed_rect = QRect()
 
