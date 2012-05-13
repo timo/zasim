@@ -460,18 +460,21 @@ class TwoDimQImagePainterBase(BaseQImagePainter):
     """This class offers rendering a two-dimensional simulator config to
     a QImage"""
 
+    _changed_rect = QRect()
+
     def after_step(self, update_step=True):
+        if self._sim.changeinfo:
+            self._changed_rect = self._changed_rect.united(QRect(*self._sim.changeinfo))
+
         if update_step and self.skip_frame():
             return
         conf = self._sim.get_config().copy()
-        self._queue.put((update_step, conf, self._sim.changeinfo))
+        self._queue.put((update_step, conf, self._changed_rect))
 
         self.draw_conf()
-        if self._sim.changeinfo:
-            ci = eslf._sim.changeinfo
-            self.update.emit(QRect(*[coord * self.scale for coord in ci]))
-        else:
-            self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
+        self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
+
+        self._changed_rect = QRect()
 
     def create_image_surf(self):
         pass
@@ -492,14 +495,13 @@ class TwoDimQImagePainter(TwoDimQImagePainterBase):
         try:
             update_step, conf, changeinfo = self._queue.get_nowait()
             if changeinfo:
-                x, y = changeinfo[:2]
-                w, h = changeinfo[2:]
+                x, y, w, h = changeinfo.getRect()
                 conf = conf[x:x+w, y:y+h]
             else:
                 x, y = 0, 0
                 w, h = self._width, self._height
 
-            image = render_state_array(conf, self.palette, self._invert_odd and self._odd, (x, y, w, h))
+            image = render_state_array(conf, self.palette, self._invert_odd and self._odd, (0, 0, w, h))
             if changeinfo:
                 painter = QPainter(self._image)
                 painter.scale(self._scale, self._scale)
