@@ -464,10 +464,14 @@ class TwoDimQImagePainterBase(BaseQImagePainter):
         if update_step and self.skip_frame():
             return
         conf = self._sim.get_config().copy()
-        self._queue.put((update_step, conf))
+        self._queue.put((update_step, conf, self._sim.changeinfo))
 
         self.draw_conf()
-        self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
+        if self._sim.changeinfo:
+            ci = eslf._sim.changeinfo
+            self.update.emit(QRect(*[coord * self.scale for coord in ci]))
+        else:
+            self.update.emit(QRect(QPoint(0, 0), QSize(self._width, self._height)))
 
     def create_image_surf(self):
         pass
@@ -486,14 +490,28 @@ class TwoDimQImagePainter(TwoDimQImagePainterBase):
 
     def draw_conf(self):
         try:
-            update_step, conf = self._queue.get_nowait()
-            w, h = self._width, self._height
+            update_step, conf, changeinfo = self._queue.get_nowait()
+            if changeinfo:
+                x, y = changeinfo[:2]
+                w, h = changeinfo[2:]
+                conf = conf[x:x+w, y:y+h]
+            else:
+                x, y = 0, 0
+                w, h = self._width, self._height
 
-            image = render_state_array(conf, self.palette, self._invert_odd and self._odd, (0, 0, w, h))
-            pixmap = QPixmap.fromImage(image)
-            if self._scale != 1:
-                pixmap = pixmap.scaled(w * self._scale, h * self._scale)
-            self._image = pixmap
+            image = render_state_array(conf, self.palette, self._invert_odd and self._odd, (x, y, w, h))
+            if changeinfo:
+                painter = QPainter(self._image)
+                painter.scale(self._scale, self._scale)
+                painter.drawImage(QPoint(x, y), image)
+                painter.end()
+            else:
+                pixmap = QPixmap.fromImage(image)
+                if self._scale != 1:
+                    pixmap = pixmap.scaled(w * self._scale, h * self._scale)
+
+                self._image = pixmap
+
             if update_step:
                 self._odd = not self._odd
         except Queue.Empty:
@@ -520,7 +538,7 @@ class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
 
     def draw_conf(self):
         try:
-            update_step, conf = self._queue.get_nowait()
+            update_step, conf, changeinfo = self._queue.get_nowait()
             tilesize = self.tile_size * self._scale
             w, h = self._width / tilesize, self._height / tilesize
 
