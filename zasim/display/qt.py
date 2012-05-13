@@ -163,8 +163,11 @@ def make_multiaxis_palette(values):
        generate a palette for cells that are made up of multiple components.
        Each component contributes a bit of color to the result."""
     def values_along_axis(hue, values):
-        for idx, _ in enumerate(values):
-            yield QColor.fromHsv(hue, 255, 255. * (float(idx) / (len(values) - 1))).convertTo(QColor.Rgb)
+        if len(values) > 1:
+            for idx, _ in enumerate(values):
+                yield QColor.fromHsv(hue, 255, 255. * (float(idx) / (len(values) - 1))).convertTo(QColor.Rgb)
+        else:
+            yield QColor.fromHsv(hue, 255, 255).convertTo(QColor.Rgb)
 
     indices = range(len(values))
 
