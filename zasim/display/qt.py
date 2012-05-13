@@ -509,11 +509,12 @@ class TwoDimQImagePainter(TwoDimQImagePainterBase):
             image = render_state_array(conf, self.palette, self._invert_odd and self._odd, (0, 0, w, h))
             if changeinfo:
                 painter = QPainter(self._image)
-                painter.scale(self._scale, self._scale)
+                if self._scale != 1:
+                    painter.scale(self._scale, self._scale)
                 painter.drawImage(QPoint(x, y), image)
                 painter.end()
             else:
-                pixmap = QPixmap.fromImage(image)
+                pixmap = QPixmap.fromImage(image.copy())
                 if self._scale != 1:
                     pixmap = pixmap.scaled(w * self._scale, h * self._scale)
 
