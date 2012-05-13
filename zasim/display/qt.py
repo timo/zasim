@@ -158,7 +158,7 @@ def render_state_array(states, palette=PALETTE_32, invert=False, region=None):
         x, y = 0, 0
         w, h = states.shape
         conf = states
-    nconf = np.empty((w - x, h - y), np.uint32, "F")
+    nconf = np.empty((w, h), np.uint32, "F")
 
     # XXX doesn't work with dictionary palettes yet.
     if not invert:
@@ -171,7 +171,7 @@ def render_state_array(states, palette=PALETTE_32, invert=False, region=None):
     for num, value in enumerate(palette[2:]):
         nconf[conf == num+2] = value
 
-    image = QImage(nconf.data, w - x, h - y, QImage.Format_RGB32)
+    image = QImage(nconf.data, w, h, QImage.Format_RGB32)
 
     # without this cheap trick, the data from the array is imemdiately freed and
     # subsequently re-used, leading to the first pixels in the top left corner
