@@ -89,7 +89,7 @@ development with zasim.
 Interactive Tutorial
 --------------------
 
-If you install the `ipython notebook and its dependencies`_, you can run either
+If you install the `ipython notebook`_ and its dependencies, you can run either
 of the following commands
 
 ::
@@ -97,6 +97,8 @@ of the following commands
     zasim_tutorial
 
     python -m zasim.examples.notebooks.notebook_app
+
+    ipython notebook --notebook-dir=zasim/examples/notebooks/notebooks/
 
 to start zasim's interactive tutorial in a web browser.
 
