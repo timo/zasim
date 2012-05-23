@@ -6,9 +6,6 @@ import random
 class ControlWidget(QWidget):
     """Control a simulator with buttons or from the interactive console."""
 
-    start_inverting_frames = Signal()
-    stop_inverting_frames = Signal()
-
     def __init__(self, simulator, **kwargs):
         """:param simulator: The simulator object to control."""
         super(ControlWidget, self).__init__(**kwargs)
@@ -61,13 +58,6 @@ class ControlWidget(QWidget):
         self.zero_percentage.setObjectName("zero_percentage")
         l.addWidget(self.zero_percentage)
 
-        self.invert_frames = QCheckBox(self)
-        self.invert_frames.setChecked(False)
-        self.invert_frames.setText("&invert odd frames")
-        self.invert_frames.stateChanged.connect(self.invert_odd)
-        self.invert_frames.setObjectName("invert_frames")
-        l.addWidget(self.invert_frames)
-
         self.framerate = FramerateWidget(self.sim)
         l.addWidget(self.framerate)
 
@@ -76,12 +66,6 @@ class ControlWidget(QWidget):
         self.start_button.clicked.connect(self.start)
         self.stop_button.clicked.connect(self.stop)
         delay.valueChanged.connect(self.change_delay)
-
-    def invert_odd(self, value):
-        if value == Qt.Checked:
-            self.start_inverting_frames.emit()
-        else:
-            self.stop_inverting_frames.emit()
 
     def start(self):
         """Start running the simulator."""

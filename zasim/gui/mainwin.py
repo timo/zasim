@@ -74,9 +74,6 @@ class ZasimMainWindow(QMainWindow):
 
         self.setCentralWidget(central_widget)
 
-        self.control.start_inverting_frames.connect(self.display.start_inverting_frames)
-        self.control.stop_inverting_frames.connect(self.display.stop_inverting_frames)
-
         self.setup_menu()
 
         self.elementary_tool = None
