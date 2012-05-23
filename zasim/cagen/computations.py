@@ -84,51 +84,51 @@ class ElementaryCellularAutomatonBase(Computation):
         self.target.rule = rule_nr_to_multidim_rule_arr(rule, self.digits, self.base)
 
         # and now do some heavy work to generate a pretty-printer!
-        #bbox = self.code.neigh.bounding_box()
-        #offsets = self.code.neigh.offsets
-        #offset_to_name = dict(self.neigh)
+        bbox = self.code.neigh.bounding_box()
+        offsets = self.code.neigh.offsets
+        offset_to_name = dict(self.neigh)
 
-        #if len(bbox) == 1:
-            #h = 3
-            #y_offset = None
-        #elif len(bbox) == 2:
-            #h = bbox[1][1] - bbox[1][0] + 3
-            #y_offset = bbox[1][0]
-        #else:
-            ## for higher dimensions, just fall back to the dummy pretty-printer
-            #return
-        #protolines = [[] for i in range(h)]
-        #lines = [line[:] for line in protolines]
-        #w = bbox[0][1] + 1 - bbox[0][0]
+        if len(bbox) == 1:
+            h = 3
+            y_offset = None
+        elif len(bbox) == 2:
+            h = bbox[1][1] - bbox[1][0] + 3
+            y_offset = bbox[1][0]
+        else:
+            # for higher dimensions, just fall back to the dummy pretty-printer
+            return
+        protolines = [[] for i in range(h)]
+        lines = [line[:] for line in protolines]
+        w = bbox[0][1] + 1 - bbox[0][0]
 
-        #for y in range(h):
-            #for x in range(bbox[0][0], bbox[0][1] + 1):
-                #if h == 3 and (x,) in offsets and y == 0:
-                    #lines[y].append("%(" + offset_to_name[(x,)]
-                               #+ ")d")
-                #elif h > 3 and (x, y + y_offset) in offsets:
-                    #lines[y].append("%(" + offset_to_name[(x, y + y_offset)]
-                               #+ ")d")
-                #else:
-                    #lines[y].append(" ")
-            #lines[y] = "".join(lines[y]) + "  "
+        for y in range(h):
+            for x in range(bbox[0][0], bbox[0][1] + 1):
+                if h == 3 and (x,) in offsets and y == 0:
+                    lines[y].append("%(" + offset_to_name[(x,)]
+                               + ")d")
+                elif h > 3 and (x, y + y_offset) in offsets:
+                    lines[y].append("%(" + offset_to_name[(x, y + y_offset)]
+                               + ")d")
+                else:
+                    lines[y].append(" ")
+            lines[y] = "".join(lines[y]) + "  "
 
-        #lines[-1] = ("X".center(w) + "  ").replace("X", "%(result_value)d")
+        lines[-1] = ("X".center(w) + "  ").replace("X", "%(result_value)d")
 
-        #template = [line[:] for line in lines]
+        template = [line[:] for line in lines]
 
-        #self.digits_and_values = \
-                #elementary_digits_and_values(self.code.neigh, self.base, self.target.rule)
+        self.digits_and_values = \
+                elementary_digits_and_values(self.code.neigh, self.base, self.target.rule)
 
-        #def pretty_printer(self):
-            #lines = [line[:] for line in protolines]
-            #for thedict in self.digits_and_values:
-                #for line, tmpl_line in zip(lines, template):
-                    #line.append(tmpl_line % thedict)
+        def pretty_printer(self):
+            lines = [line[:] for line in protolines]
+            for thedict in self.digits_and_values:
+                for line, tmpl_line in zip(lines, template):
+                    line.append(tmpl_line % thedict)
 
-            #return "\n".join(["".join(line) for line in lines])
+            return "\n".join(["".join(line) for line in lines])
 
-        #self.pretty_print = new.instancemethod(pretty_printer, self, self.__class__)
+        self.pretty_print = new.instancemethod(pretty_printer, self, self.__class__)
 
     def pretty_print(self):
         """This method is generated upon init_once and pretty-prints the rules

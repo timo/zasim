@@ -123,7 +123,12 @@ def elementary_digits_and_values(neighbourhood, base=2, rule_arr=None):
         digits_and_values.append(asdict)
 
     if rule_arr is not None:
-        for index in range(base ** digits):
-            digits_and_values[index].update(result_value = rule_arr[index])
+        if len(rule_arr.shape) == 1:
+            indices = enumerate(xrange(base ** digits))
+        else:
+            indices = enumerate(product(*([xrange(base-1,-1,-1)] * digits)))
+
+        for index, rule_idx in indices:
+            digits_and_values[index].update(result_value = rule_arr[rule_idx])
     return digits_and_values
 
