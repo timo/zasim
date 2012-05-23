@@ -312,11 +312,7 @@ for the generated C++ code:
             m = self.acc.read_from(offset_pos(pos, (0,)))
             r = self.acc.read_from(offset_pos(pos, (1,)))
     # from hook compute
-            result = 0
-            result += l * 4
-            result += m * 2
-            result += r * 1
-            result = self.target.rule[int(result)]
+            result = self.target.rule[l, m, r]
     # from hook post_compute
             self.acc.write_to(pos, result)
     # from hook loop_end
