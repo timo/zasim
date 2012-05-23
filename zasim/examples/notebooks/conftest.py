@@ -51,7 +51,7 @@ class IPyNbCell(pytest.Item):
         shell = self.parent.shell
         shell.execute(self.cell.input, allow_stdin=False)
         # wait for finish, maximum 20s
-        reply = shell.get_msg(timeout=20)['content']
+        reply = shell.get_msg(timeout=10)['content']
         if reply['status'] == 'error':
             raise IPyNbException(self.cell_num, self.cell.input, '\n'.join(reply['traceback']))
 
