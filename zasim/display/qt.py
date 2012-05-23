@@ -66,7 +66,7 @@ def generate_tile_atlas(filename_map, common_prefix=""):
 
     return new_image, palette_rect
 
-PALETTE_32 = [0xff000000, 0xffffffff, 0xffff0000, 0xff0000ff, 0xff00ff00, 0xffffff00, 0xff00ffff, 0xffff00ff]
+PALETTE_32 = dict(enumerate([0xff000000, 0xffffffff, 0xffff0000, 0xff0000ff, 0xff00ff00, 0xffffff00, 0xff00ffff, 0xffff00ff]))
 
 def make_palette_qc(pal):
     """Turn a 32bit color palette into a QColor palette."""
@@ -147,7 +147,7 @@ def qimage_to_pngstr(image):
     return str(buf.data())
 
 _last_rendered_state_conf = None
-def render_state_array(states, palette=PALETTE_32, invert=False, region=None):
+def render_state_array(states, palette=PALETTE_32, region=None):
     global _last_rendered_state_conf
     if len(states.shape) == 1:
         states = states.reshape((states.shape[0], 1))
@@ -160,16 +160,8 @@ def render_state_array(states, palette=PALETTE_32, invert=False, region=None):
         conf = states
     nconf = np.empty((w, h), np.uint32, "F")
 
-    # XXX doesn't work with dictionary palettes yet.
-    if not invert:
-        nconf[conf==0] = palette[0]
-        nconf[conf==1] = palette[1]
-    else:
-        nconf[conf==1] = palette[0]
-        nconf[conf==0] = palette[1]
-
-    for num, value in enumerate(palette[2:]):
-        nconf[conf == num+2] = value
+    for num, value in palette.iteritems():
+        nconf[conf == num] = value
 
     image = QImage(nconf.data, w, h, QImage.Format_RGB32)
 
@@ -268,7 +260,7 @@ class BaseQImagePainter(QObject):
             if len(self._sim.t.possible_values) > len(PALETTE_32):
                 self.palette = make_gray_palette(self._sim.t.possible_values)
             else:
-                self.palette = PALETTE_32[:len(self._sim.t.possible_values)]
+                self.palette = PALETTE_32
             self._sim.palette_info['colors32'] = self.palette
         else:
             self.palette = self._sim.palette_info['colors32']
@@ -392,20 +384,12 @@ class OneDimQImagePainter(BaseQImagePainter):
                 if whole_conf is None:
                     whole_conf = np.zeros((w, confs_to_render), dtype=conf.dtype)
 
-                # XXX this won't work with dictionary palettes
-                if (self._invert_odd and self._odd):
-                    new_zeros = conf == 1
-                    new_ones = conf == 0
-                    conf[new_zeros] = 0
-                    conf[new_ones] = 1
-
                 whole_conf[...,rendered] = conf
 
                 rendered += 1
 
                 if update_step:
                     self._last_step += 1
-                    self._odd = not self._odd
 
         except Queue.Empty:
             pass
@@ -414,7 +398,7 @@ class OneDimQImagePainter(BaseQImagePainter):
             return
 
         self._queued_steps -= rendered
-        _image = render_state_array(whole_conf, self.palette, False, (0, 0, w, rendered))
+        _image = render_state_array(whole_conf, self.palette, (0, 0, w, rendered))
         _image = _image.scaled(w * self._scale, rendered * self._scale)
 
         painter = QPainter(self._image)
@@ -506,7 +490,7 @@ class TwoDimQImagePainter(TwoDimQImagePainterBase):
                 x, y = 0, 0
                 w, h = self._width, self._height
 
-            image = render_state_array(conf, self.palette, self._invert_odd and self._odd, (0, 0, w, h))
+            image = render_state_array(conf, self.palette, (0, 0, w, h))
             if changeinfo:
                 painter = QPainter(self._image)
                 if self._scale != 1:
@@ -520,8 +504,6 @@ class TwoDimQImagePainter(TwoDimQImagePainterBase):
 
                 self._image = pixmap
 
-            if update_step:
-                self._odd = not self._odd
         except Queue.Empty:
             pass
 
@@ -589,8 +571,6 @@ class HistogramPainter(BaseQImagePainter):
         try:
             while True:
                 update_step, values = self._queue.get_nowait()
-                if self._invert_odd and self._odd:
-                    values = (values[1], values[0]) + tuple(values[1:])
                 maximum = sum(values)
                 if not maximum:
                     values = [1] + (len(values) - 1) * [0]
