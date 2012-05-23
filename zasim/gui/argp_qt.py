@@ -4,6 +4,7 @@ from ..external.qt import (QDialog, QWidget,
         QCheckBox, QLineEdit,
         QDialogButtonBox,
         QIntValidator, QDoubleValidator,
+        QTimer,
         app)
 
 import argparse as ap
@@ -26,6 +27,8 @@ class ArgparseWindow(QDialog):
     """What the commandline looked like the last time it was updated."""
 
     _last_changed_obj = None
+    _red_background_timer = None
+    _red_background_item = None
 
     def __init__(self, argparser, arguments=None, columns=3, **kwargs):
         super(ArgparseWindow, self).__init__(**kwargs)
@@ -35,6 +38,8 @@ class ArgparseWindow(QDialog):
             self.arguments = arguments
         else:
             self.arguments = {}
+
+        self._red_background_timer = QTimer(self)
 
         self.action_widgets = {}
         self.taken_dests = set()
@@ -186,11 +191,27 @@ class ArgparseWindow(QDialog):
         self.cmdline.setText(" ".join(
             [arg if " " not in arg else arg.replace(" ", '" "') for arg in self.arguments]))
 
+        correct_input = False
+
         try:
             self.args = self.argp.parse_args(self.arguments)
+            correct_input = True
         except SystemExit:
-            self._last_changed_obj.setVisible(False)
+            if self._red_background_item:
+                self.reset_red_background()
+            self._last_changed_obj.setStyleSheet("background: red")
+            self._red_background_item = self._last_changed_obj
+            self._red_background_timer.start(2500)
+            # self._last_changed_obj.setVisible(False)
 
+        if correct_input:
+            if self._last_changed_obj == self._red_background_item:
+                self.reset_red_background()
+
+
+    def reset_red_background(self):
+        self._red_background_item.setStyleSheet("")
+        self._red_background_item = None
 
     def try_accept(self):
         self.update_cmdline() # be extra sure, that this is up to date
