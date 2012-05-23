@@ -59,10 +59,8 @@ class IPyNbCell(pytest.Item):
         """ called when self.runtest() raises an exception. """
         if isinstance(excinfo.value, IPyNbException):
             return "\n".join([
-                "notebook worksheet execution failed",
-                " cell %d\n\n"
-                "   input: %r\n\n"
-                "   raised: %r\n" % excinfo.value.args[1:3],
+                "%s\n\n"
+                "%s\n" % excinfo.value.args[1:3],
             ])
 
     def reportinfo(self):
