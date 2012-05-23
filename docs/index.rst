@@ -3,24 +3,27 @@ Welcome to zasim
 
 zasim is a python package for simulating and developing cellular automatons.
 
-When in a more finished state, its main features will be:
+Its current features are:
 
-  - Reduction of boilerplate code by using the :doc:`cagen <cagen>` module.
-  - User interface tightly coupled with interactive console. Generate
-    transscripts of sessions and re-play them.
-  - Displaying one-dimensional and two-dimensional cellular automatons.
-  - Show different types of histograms.
-  - Compare different runs of cellular automatons.
-  - Manipulate cellular space through external programs, the UI or code.
+  - Reduction of boilerplate code and modularisation of cellular automaton
+    step functions using the :doc:`cagen` module for Python and C++ code.
+    *This allows running a synchronous automaton asynchronously without
+    any change to the particular computation code.*
+  - A GUI that's compatible with interactive usage through *IPythons* console,
+    *qtconsole* and *notebook* web application.
+  - Display configurations in one or two dimensions.
+  - Show different types of *histograms*.
+  - Manipulate cellular space through external programs, such as *The Gimp*,
+    text editors like *Vim* and *Emacs* or using the full range of *numpy*
+    from an interactive console.
+  - An interactive tutorial for use with the *IPython notebook*.
+  - A couple of *examples* with a walkthrough guiding the user through each.
 
-Zasim runs fast, but developing new cellular automatons is simple.
+Features that are currently in development in different branches are:
 
-Getting the code
-================
-
-The zasim code can be `found on github <http://github.com/timo/zasim/>`_.
-Additionally, this documentation is built with "view source" links for
-the files.
+  - Define cells as composed of multiple subcells (*numpy-records branch*)
+  - Turn any synchronous cellular automaton into an asynchronous automaton
+    that still does the same computation.
 
 Examples
 ========
@@ -32,6 +35,13 @@ interesting things zasim can do.
     :hidden:
 
     gallery
+
+Getting the code
+================
+
+The zasim code can be `found on github <http://github.com/timo/zasim/>`_.
+Additionally, this documentation is built with "view source" links for
+the files.
 
 Running zasim
 =============
