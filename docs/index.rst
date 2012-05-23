@@ -6,7 +6,7 @@ zasim is a python package for simulating and developing cellular automatons.
 Its current features are:
 
   - Reduction of boilerplate code and modularisation of cellular automaton
-    step functions using the :doc:`cagen` module for Python and C++ code.
+    step functions using the :doc:`cagen <cagen>` module for Python and C++ code.
     *This allows running a synchronous automaton asynchronously without
     any change to the particular computation code.*
   - A GUI that's compatible with interactive usage through *IPythons* console,
