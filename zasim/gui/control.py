@@ -25,9 +25,12 @@ class ControlWidget(QWidget):
     def _setup_ui(self):
         """Setup the widgets, connect the signals&slots."""
         l = QHBoxLayout(self)
-        self.start_button = QPushButton("&Start", self)
+
+        self.step_button = QPushButton("Ste&p", self)
+        self.step_button.setObjectName("step")
+        self.start_button = QPushButton("&Run", self)
         self.start_button.setObjectName("start")
-        self.stop_button = QPushButton("&Stop", self)
+        self.stop_button = QPushButton("St&op", self)
         self.stop_button.setObjectName("stop")
         self.stop_button.hide()
 
@@ -38,6 +41,7 @@ class ControlWidget(QWidget):
         delay.setValue(self.timer_delay)
         delay.setObjectName("delay")
 
+        l.addWidget(self.step_button)
         l.addWidget(self.start_button)
         l.addWidget(self.stop_button)
         l.addWidget(delay)
@@ -63,6 +67,7 @@ class ControlWidget(QWidget):
 
         self.setLayout(l)
 
+        self.step_button.clicked.connect(self.sim.step)
         self.start_button.clicked.connect(self.start)
         self.stop_button.clicked.connect(self.stop)
         delay.valueChanged.connect(self.change_delay)
