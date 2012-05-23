@@ -9,6 +9,8 @@ from ..external.qt import (QDialog, QWidget,
 
 import argparse as ap
 
+import sys
+
 
 class ArgparseWindow(QDialog):
     """This dialog takes an argparser as initialiser and returns an args
@@ -194,6 +196,8 @@ class ArgparseWindow(QDialog):
         correct_input = False
 
         try:
+            rescue_stderr = sys.stderr
+            sys.stderr = open("/dev/null", "w")
             self.args = self.argp.parse_args(self.arguments)
             correct_input = True
         except SystemExit:
@@ -203,6 +207,8 @@ class ArgparseWindow(QDialog):
             self._red_background_item = self._last_changed_obj
             self._red_background_timer.start(2500)
             # self._last_changed_obj.setVisible(False)
+        finally:
+            sys.stderr = rescue_stderr
 
         if correct_input:
             if self._last_changed_obj == self._red_background_item:
