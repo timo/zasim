@@ -24,6 +24,7 @@ from zasim import debug
 import sys
 import os
 import tempfile
+import atexit
 
 if HAVE_WEAVE:
     from scipy import weave
@@ -146,6 +147,7 @@ class StepFunc(object):
 
         self.set_target(target)
 
+        atexit.register(self.cleanup)
 
     def _check_compatibility(self):
         """Check all visitors for compatibility problems.
@@ -385,7 +387,10 @@ class StepFunc(object):
 
     def __del__(self):
         try:
-            self.codefile.close()
+            self.cleanup()
         except AttributeError:
             pass # the file was never opened, no need to close it.
 
+    def cleanup(self):
+        self.codefile.close()
+        self.codefile.file.close()
