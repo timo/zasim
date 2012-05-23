@@ -5,6 +5,8 @@ from ..simulator import QObject
 NO_DATA = " "
 PALETTE =       [" ", "#", "-", ";", ",", "^", "+", "Y"]
 HTML_PALETTE = "#000 #fff #f00 #00f #0f0 #ff0 #0ff #f0f".split(" ")
+PALETTE = dict(enumerate(PALETTE))
+HTML_PALETTE = dict(enumerate(HTML_PALETTE))
 
 class BaseConsolePainter(QObject):
     """This is a base class for implementing renderers that output the
