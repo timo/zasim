@@ -9,6 +9,9 @@
 
 from ..features import HAVE_TUPLE_ARRAY_INDEX
 
+from itertools import product
+import numpy as np
+
 if HAVE_TUPLE_ARRAY_INDEX:
     def offset_pos(pos, offset):
         """Offset a position by an offset. Any amount of dimensions should work.
@@ -61,6 +64,25 @@ def dedent_python_code(code):
         else:
             resultlines.extend(lines[1:])
     return "\n".join(resultlines)
+
+def rule_nr_to_multidim_rule_arr(number, digits, base=2):
+    """Given the rule `number`, the number of cells the neighbourhood has
+    (as `digits`) and the `base` of the cells, this function calculates the
+    multidimensional rule table for computing that rule."""
+
+    if base < 256: dtype = "int8"
+    else: dtype = "int16" # good luck with that.
+
+    res = np.zeros((base,) * digits, dtype=dtype)
+    entries = base ** digits
+    blubb = base ** entries
+    for position in product(*([xrange(base-1, -1, -1)] * digits)):
+        blubb /= base
+        d = int(number // (blubb))
+        number -= d * (blubb)
+        res[position] = d
+
+    return res
 
 def rule_nr_to_rule_arr(number, digits, base=2):
     """Given a rule `number`, the number of cells the neighbourhood has
