@@ -74,9 +74,6 @@ class DisplayWidget(QWidget):
         self.display.setObjectName("display")
         self.display.update.connect(self.update)
 
-    def start_inverting_frames(self): self.display.start_inverting_frames()
-    def stop_inverting_frames(self): self.display.stop_inverting_frames()
-
     def set_scale(self, scale):
         self._scale = scale
         self.display.set_scale(scale)
@@ -204,8 +201,6 @@ class NewDisplayWidget(QWidget):
             return True
         except Queue.Empty:
             return False
-
-    start_inverting_frames = stop_inverting_frames = lambda self: None
 
     def paintEvent(self, event):
         rect = event.rect()

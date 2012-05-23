@@ -250,9 +250,6 @@ class BaseQImagePainter(QObject):
         self._last_step = 0
         self._queued_steps = 0
 
-        self._invert_odd = False
-        self._odd = False
-
         self.desired_frame_duration = frame_duration
         self.next_frame = 0
 
@@ -289,9 +286,6 @@ class BaseQImagePainter(QObject):
     def draw_conf(self):
         """Get the conf/confs enqueued/set by `after_step` and draw them to
         `_image`."""
-
-    def start_inverting_frames(self): self._invert_odd = True
-    def stop_inverting_frames(self): self._invert_odd = False
 
     def connect_simulator(self):
         self._sim.changed.connect(self.conf_changed)
