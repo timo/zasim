@@ -77,8 +77,7 @@ Environment variables
     is started.
 
 `ZASIM_QT`
-    Set this to "pyside" to use pyside, "pyqt" to try using pyqt (experimental) or
-    anything else to not use Qt at all.
+    Set this to "pyside" to use pyside or anything else to not use Qt at all.
 
 .. seealso::
 
