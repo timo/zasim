@@ -5,6 +5,8 @@ from .testutil import assert_arrays_equal
 from zasim import config
 from zasim.features import HAVE_MULTIDIM, HAVE_DTYPE_AS_INDEX
 
+from itertools import product
+
 import sys
 IS_PYPY = "pypy_version_info" in dir(sys)
 
@@ -156,8 +158,15 @@ class TestConfig:
             conf = gen.generate((50,50))
             print conf
             assert not conf[0:24,0:24].any()
-            assert not (conf[...,0:24] == 2).any()
-            assert not (conf[0:24,...] == 1).any()
+            try:
+                assert not (conf[...,0:24] == 2).any()
+                assert not (conf[0:24,...] == 1).any()
+            except TypeError:
+                for x, y in product(xrange(50), xrange(50)):
+                    if x <= 25:
+                        assert conf[x, y] != 1
+                    if y <= 25:
+                        assert conf[x, y] != 2
 
 def pytest_generate_tests(metafunc):
     if "scale" in metafunc.funcargnames:

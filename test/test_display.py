@@ -14,7 +14,6 @@ IS_PYPY = "pypy_version_info" in dir(sys)
 
 class TestDisplay:
     @pytest.mark.skipif("not HAVE_MULTIDIM")
-    @pytest.mark.xfail("IS_PYPY")
     def test_pretty_print_config_2d(self, capsys):
         gconf = GLIDER[0]
         simo = cagen.GameOfLife(config=gconf)
@@ -41,7 +40,6 @@ class TestDisplay:
      
 """
 
-    @pytest.mark.xfail("IS_PYPY")
     def test_pretty_print_config_1d(self, capsys):
         conf = np.array([1,0,1,1,0])
         br = cagen.BinRule(config=conf, rule=204)

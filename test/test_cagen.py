@@ -108,7 +108,7 @@ class TestCAGen:
             assert_arrays_equal(glider_conf, sim.get_config())
 
     def body_weave_nondeterministic_stepfunc_1d(self, inline=True, sparse=False):
-        conf = np.ones(1000)
+        conf = np.ones(1000, dtype=np.int32)
         # this rule would set all fields to 1 at every step.
         # since we use a nondeterministic step func, this will amount to about
         # half ones, half zeros
@@ -150,7 +150,7 @@ class TestCAGen:
         self.body_weave_nondeterministic_stepfunc_1d(False, True)
 
     def body_nondeterministic_stepfunc_2d(self, inline=True):
-        conf = np.ones((100, 100))
+        conf = np.ones((100, 100), dtype=np.int32)
 
         def make_stepfunc(target, deterministic=False):
             computer = cagen.ElementaryCellularAutomatonBase(rule=0)
@@ -208,7 +208,7 @@ class TestCAGen:
                     return 1.0
 
         rand = ZerosThenOnesRandom(101)
-        conf = np.ones(100)
+        conf = np.ones(100, dtype=np.int32)
 
         t = cagen.Target(config=conf)
         computer = cagen.ElementaryCellularAutomatonBase(0)
@@ -235,7 +235,7 @@ class TestCAGen:
     @pytest.mark.skipif("not HAVE_MULTIDIM")
     def test_nondeterministic_leak_data_2d(self):
         rand = ZerosThenOnesRandom(101)
-        conf = np.ones((10,10))
+        conf = np.ones((10,10), dtype=np.int32)
 
         t = cagen.Target(config=conf)
         computer = cagen.ElementaryCellularAutomatonBase(0)
@@ -457,7 +457,7 @@ class TestCAGen:
             else:
                 br.step_pure_py()
 
-            assert_arrays_equal(br.t.inner, np.ones(100))
+            assert_arrays_equal(br.t.inner, np.ones(100, dtype=np.int32))
             if abs(sum(br.get_config()) - 50) < 10:
                 fail = False
                 break
