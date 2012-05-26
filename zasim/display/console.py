@@ -90,7 +90,8 @@ class OneDimConsolePainter(BaseConsolePainter):
         self.after_step()
 
     def draw_conf(self, update_step=True):
-        newline = "".join(self.palette[value] for value in self._last_conf)
+        # FIXME: numpypy int32 won't hash to the same as pythons int.
+        newline = "".join(self.palette[int(value)] for value in self._last_conf)
         if len(self._data) == self._lines and update_step:
             self._data.pop(0)
         elif not update_step:
@@ -118,7 +119,8 @@ class TwoDimConsolePainter(BaseConsolePainter):
     def draw_conf(self, update_step=True):
         self._data = []
         for line in self._last_conf.T:
-            newline = "".join(self.palette[value] for value in line)
+            # FIXME: numpypy int32 won't hash to the same as pythons int.
+            newline = "".join(self.palette[int(value)] for value in line)
             self._data.append(newline)
 
     def __str__(self):
