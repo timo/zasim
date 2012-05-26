@@ -26,11 +26,13 @@ import math
 import numpy as np
 from itertools import product
 
+default_dtype = np.int32
+
 class BaseConfiguration(object):
     """This class defines the interface that initial configuration generators
     should have to the outside."""
 
-    def generate(self, size_hint=None, dtype=np.dtype("i")):
+    def generate(self, size_hint=None, dtype=default_dtype):
         """Generate the configuration.
 
         :param size_hint: What size to generate. This can be None, if the
@@ -84,7 +86,7 @@ class BaseRandomConfiguration(BaseConfiguration):
 
         return tuple(size)
 
-    def generate(self, size_hint=None, dtype=np.dtype("i")):
+    def generate(self, size_hint=None, dtype=default_dtype):
         size = self.size_hint_to_size(size_hint)
 
         if not HAVE_NUMPY_RANDOM and not HAVE_MULTIDIM:
@@ -165,7 +167,7 @@ class BaseAsciiConfiguration(BaseConfiguration):
             palette = dict(enumerate(palette))
         self.palette = palette
 
-    def generate(self, size_hint=None, dtype=np.dtype("i")):
+    def generate(self, size_hint=None, dtype=default_dtype):
         lines = []
         for line in self.strdata.split("\n"):
             line_res = list(line.rstrip("\n\r"))
@@ -204,7 +206,7 @@ class ImageConfiguration(BaseConfiguration):
         self.palette = palette
         self.scale = scale
 
-    def generate(self, size_hint=None, dtype=np.dtype("i")):
+    def generate(self, size_hint=None, dtype=default_dtype):
         from .external.qt import QImage
         image = QImage()
         assert image.load(self.filename)
@@ -266,7 +268,7 @@ class DensityDistributedConfiguration(RandomConfiguration):
     def __init__(self, prob_dist_fun):
         self.prob_dist_fun = prob_dist_fun
 
-    def generate(self, size_hint=None, dtype=np.dtype("i")):
+    def generate(self, size_hint=None, dtype=default_dtype):
         size = self.size_hint_to_size(size_hint)
 
         # XXX remove duplicate code here?
