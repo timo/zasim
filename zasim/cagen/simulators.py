@@ -164,6 +164,7 @@ class ElementarySimulator(ElementaryCagenSimulator):
            :param sparse_loop: Should a sparse loop be used?
            """
         if size is None:
+            assert config is not None, "either supply size or config."
             size = config.shape
 
         computer = ElementaryCellularAutomatonBase(rule)
