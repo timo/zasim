@@ -76,9 +76,9 @@ def pretty_print_binrule(rule_arr):
     arrays are displayed"""
     l1 = []
     l2 = []
-    for i in range(8):
+    for i, idx in enumerate(product(*([[0, 1]] * 3))):
         l1.append("%03d" % int(bin(i)[2:]))
-        l2.append(str(int(rule_arr[i])))
+        l2.append(str(int(rule_arr[idx])))
     print " ".join(l1)
     print " " + "   ".join(l2)
 
