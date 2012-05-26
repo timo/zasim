@@ -123,7 +123,7 @@ def elementary_digits_and_values(neighbourhood, base=2, rule_arr=None):
         digits_and_values.append(asdict)
 
     if rule_arr is not None:
-        if len(rule_arr.shape) == 1:
+        if not isinstance(rule_arr, np.ndarray) or len(rule_arr.shape) == 1:
             indices = enumerate(xrange(base ** digits))
         else:
             indices = enumerate(product(*([xrange(base-1,-1,-1)] * digits)))
