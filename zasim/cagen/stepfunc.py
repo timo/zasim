@@ -386,11 +386,11 @@ class StepFunc(object):
             return repr(self)
 
     def __del__(self):
-        try:
-            self.cleanup()
-        except AttributeError:
-            pass # the file was never opened, no need to close it.
+        self.cleanup()
 
     def cleanup(self):
-        self.codefile.close()
-        self.codefile.file.close()
+        try:
+            self.codefile.close()
+            self.codefile.file.close()
+        except AttributeError:
+            pass # we're going down. if the file's already closed, so be it.
