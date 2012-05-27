@@ -115,8 +115,9 @@ class BaseRandomConfigurationResetter(BaseResetter):
             print i
             self.percs[i] -= change / float(others)
 
-        almost_all = sum(self.percs[:-1])
-        self.percs[-1] = 1.0 - almost_all
+        last_not_changed = -1 if index == len(self.percs) - 1 else -2
+        almost_all = sum(self.percs) - self.percs[last_not_changed]
+        self.percs[last_not_changed] = 1.0 - almost_all
 
         self.set_values()
 
