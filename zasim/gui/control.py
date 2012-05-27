@@ -46,22 +46,6 @@ class ControlWidget(QWidget):
         l.addWidget(self.stop_button)
         l.addWidget(delay)
 
-        l.addSpacing(11)
-        reset_button = QPushButton("&reset", self)
-        reset_button.clicked.connect(self.set_config)
-        reset_button.setObjectName("reset")
-        l.addWidget(reset_button)
-
-        self.zero_percentage = QDoubleSpinBox(self)
-        self.zero_percentage.setMaximum(1)
-        self.zero_percentage.setMinimum(0)
-        self.zero_percentage.setValue(0.5)
-        self.zero_percentage.setSingleStep(0.01)
-        self.zero_percentage.setDecimals(4)
-        self.zero_percentage.setSuffix(" black")
-        self.zero_percentage.setObjectName("zero_percentage")
-        l.addWidget(self.zero_percentage)
-
         self.framerate = FramerateWidget(self.sim)
         l.addWidget(self.framerate)
 
