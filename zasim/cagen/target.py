@@ -13,6 +13,13 @@ class Target(object):
     cconf = None
     """The current config the cellular automaton works on."""
 
+    _reset_size = None
+    """If a generator was passed as config, this holds the size of
+    new configurations to generate when a reset is called."""
+
+    _reset_generator = None
+    """If a generator was passed as config, this holds that generator."""
+
     possible_values = (0, 1)
     """What values the cells can have."""
 
@@ -30,7 +37,12 @@ class Target(object):
             gen = RandomConfiguration(base=len(self.possible_values))
             self.cconf = gen.generate(size_hint=size)
             self.size = self.cconf.shape
+
+            self._reset_generator = gen
+            self._reset_size = self.size
         elif isinstance(config, BaseConfiguration):
+            self._reset_generator = config
+            self._reset_size = size
             self.cconf = config.generate(size_hint=size)
             self.size = self.cconf.shape
         else:
