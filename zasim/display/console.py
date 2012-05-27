@@ -69,8 +69,9 @@ class BaseConsolePainter(QObject):
       %s
     </table>"""
         def line_to_html(data):
+            reverse = lambda val: [k for k, v in self.palette.iteritems() if v == val][0]
             return ('<tr><td style="width: 10px; height: 10px; background: ' +
-                    '">&nbsp;</td><td style="width: 10px; height: 10px; background: '.join(self.html_palette[self.palette.index(value)] for value in data) +
+                    '">&nbsp;</td><td style="width: 10px; height: 10px; background: '.join(self.html_palette[reverse(value)] for value in data) +
                     '">&nbsp;</td></tr>')
 
         content = "\n".join(line_to_html(line) for line in self._data)
