@@ -98,4 +98,10 @@ class ResetDocklet(QDockWidget):
         whole_layout.addWidget(resetter_selecter)
         self.resetter_selecter = resetter_selecter
 
+        dismiss_button = QPushButton("reset changes")
+        whole_layout.addWidget(dismiss_button)
+
+        reset_button = QPushButton("Generate new")
+        whole_layout.addWidget(reset_button)
+
         self.setLayout(whole_layout)
