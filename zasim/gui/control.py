@@ -96,14 +96,12 @@ class ControlWidget(QWidget):
 
     def set_config(self, conf=None):
         if conf is None:
-            conf = np.zeros(self.sim.get_config().shape, self.sim.get_config().dtype)
-            positions = product(*[range(size) for size in conf.shape])
-            zero_perc = self.zero_percentage.value()
-            for pos in positions:
-                if random.random() > zero_perc:
-                    conf[pos] = random.choice(self.sim.t.possible_values[1:])
-
-        self.sim.set_config(conf)
+            try:
+                self.sim.reset()
+            except ValueError:
+                print "simulator %s doesn't have a generator set."
+        else:
+            self.sim.set_config(conf)
 
 class FramerateWidget(QLabel):
     def __init__(self, sim, **kwargs):
