@@ -108,6 +108,11 @@ class ZasimMainWindow(QMainWindow):
         quit_a.setObjectName("quit")
         quit_a.activated.connect(self.close)
 
+        view_menu = self.menuBar().addMenu("View")
+
+        show_resetter = view_menu.addAction("Reset tool")
+        show_resetter.activated.connect(self.show_resetter)
+
     def open_external_img(self):
         editwin = ExternalEditWindow(self.simulator)
         editwin.external_png()
@@ -130,6 +135,10 @@ class ZasimMainWindow(QMainWindow):
 
         if QDialog.Accepted == self.new_dlg.exec_():
             main(**vars(self.new_dlg.args))
+
+    def show_resetter(self):
+        self.resetter.show()
+        self.resetter.setFloating(False)
 
     def attach_display(self, display):
         """Attach an extra display to the control.
