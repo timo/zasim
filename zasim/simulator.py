@@ -212,7 +212,7 @@ class CagenSimulator(SimulatorInterface):
 
     def reset(self):
         if self._target._reset_generator:
-            newconf = self._target._reset_generator(size_hint=self._target._reset_size)
+            newconf = self._target._reset_generator.generate(size_hint=self._target._reset_size)
             self.set_config(newconf)
         else:
             raise ValueError("This simulator's target wasn't created with a generator as config value.")
