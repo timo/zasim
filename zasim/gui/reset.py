@@ -317,6 +317,7 @@ class ResetDocklet(QDockWidget):
         self.switch_resetter(0)
 
     def setup_ui(self):
+        # TODO this may need a QScrollArea some day.
         centralwidget = QWidget()
 
         whole_layout = QVBoxLayout()
