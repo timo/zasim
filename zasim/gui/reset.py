@@ -58,10 +58,14 @@ class BaseRandomConfigurationResetter(BaseResetter):
     setting_values = False
 
     def take_over_settings(self, configuration=None):
-        if configuration:
+        if configuration and isinstance(configuration, BaseRandomConfiguration):
             self.original_configuration = configuration
         else:
-            configuration = self.original_configuration
+            try:
+                configuration = self.original_configuration
+            except:
+                configuration = RandomConfigurationFromPalette(self.values)
+                self.original_configuration = configuration
 
         self.values = configuration.values
         self.percs = list(configuration.percentages)
@@ -226,10 +230,13 @@ class PatternResetter(BaseResetter):
         def on_delete_me(self): self.delete_me.emit(self.position)
 
     def take_over_settings(self, configuration=None):
-        if configuration:
+        if configuration and isinstance(configuration, PaternConfiguration):
             self.original_configuration = configuration
         else:
-            configuration = self.original_configuration
+            try:
+                configuration = self.original_configuration
+            except:
+                configuration = PatternConfiguration([(0,), (1,)], [1, 1, 1])
 
         self.patterns = list(configuration.patterns)
         self.layout = list(configuration.layout)
@@ -325,9 +332,10 @@ class ResetDocklet(QDockWidget):
         self.resetters_layout = QVBoxLayout()
         whole_layout.addLayout(self.resetters_layout)
 
-        dismiss_button = QPushButton("reset changes")
+        dismiss_button = QPushButton("undo changes")
         dismiss_button.clicked.connect(self.dismiss_changes)
         whole_layout.addWidget(dismiss_button)
+        whole_layout.addSpacing(10)
 
         reset_button = QPushButton("Generate new")
         reset_button.clicked.connect(self.generate)
