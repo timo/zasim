@@ -142,6 +142,10 @@ class PatternResetter(BaseResetter):
 
         def setup_ui(self):
             layout = QHBoxLayout()
+            position_label = QLabel(str(self.position) if self.position != 0 else "bg")
+            position_label.setMinimumWidth(26)
+            layout.addWidget(position_label)
+            self.pos_lbl = position_label
             add_left = QPushButton("+")
             add_left.setMaximumSize(20,20)
             add_left.clicked.connect(self.add_left)
@@ -155,12 +159,12 @@ class PatternResetter(BaseResetter):
 
             layout.addLayout(self.editor_layout)
 
+            layout.addStretch()
             add_right = QPushButton("+")
             add_right.setMaximumSize(20,20)
             add_right.clicked.connect(self.add_right)
             layout.addWidget(add_right)
 
-            layout.addStretch()
             layout.addSpacing(16)
             delete_me = QPushButton("del")
             delete_me.clicked.connect(self.on_delete_me)
@@ -171,6 +175,7 @@ class PatternResetter(BaseResetter):
             layout.addWidget(add_new)
 
             self.setLayout(layout)
+            self.setSizePolicy(QSizePolicy.MinimumExpanding, QSizePolicy.Preferred)
 
         def make_pattern_editors(self):
             editors = []
@@ -204,6 +209,7 @@ class PatternResetter(BaseResetter):
 
         def set_position(self, position):
             self.position = position
+            self.pos_lbl.setText(str(self.position) if self.position != 0 else "bg")
 
         def on_add_more(self): self.add_more.emit(self.position)
         def on_delete_me(self): self.delete_me.emit(self.position)
@@ -220,14 +226,13 @@ class PatternResetter(BaseResetter):
     def setup_ui(self):
         layout = QVBoxLayout()
 
-        patterns_table = QGridLayout()
+        editors = QVBoxLayout()
 
         for idx, pattern in enumerate(self.patterns):
-            patterns_table.addWidget(self.make_pattern_editor(idx, pattern), idx, 1)
-            patterns_table.addWidget(QLabel(str(idx) if idx != 0 else "bg/0"), idx, 0)
+            editors.addWidget(self.make_pattern_editor(idx, pattern))
 
-        self.pat_table = patterns_table
-        layout.addLayout(patterns_table)
+        self.editors = editors
+        layout.addLayout(editors)
 
         self.layout_edit = QLineEdit()
         self.layout_edit.setText(", ".join(map(str,self.layout)))
@@ -242,43 +247,24 @@ class PatternResetter(BaseResetter):
         return editor
 
     def insert_new_pattern(self, position):
-        position = position + 1
-        print "inserting new pattern at", position
-        new_last_row = self.pat_table.rowCount()
-        self.pat_table.addWidget(QLabel(str(new_last_row)), new_last_row, 0)
+        self.patterns.insert(position, [0])
+        self.editors.insertWidget(position, self.make_pattern_editor(position, self.patterns[position]))
 
         # move layout items down a bit to make space.
-        for idx in range(position, new_last_row):
-            print "moving", idx, "to", idx + 1
-            old = self.pat_table.itemAtPosition(idx, 1)
-            widget = old.widget()
-            self.pat_table.removeItem(old)
-            self.pat_table.addWidget(widget, idx + 1, 1)
-            widget.set_position(idx + 1)
-
-        self.patterns.insert(position, [0])
-        self.pat_table.addWidget(self.make_pattern_editor(position, self.patterns[position]), position, 1)
+        for idx in range(0, self.editors.count()):
+            item = self.editors.itemAt(idx)
+            item.widget().set_position(idx)
 
     def remove_pattern(self, position):
         del self.patterns[position]
 
-        new_last_row = self.pat_table.rowCount() - 1
-        item_to_remove = self.pat_table.itemAtPosition(position, 1)
-        item_to_remove.widget().deleteLater()
-        self.pat_table.removeItem(item_to_remove)
-        item_to_remove = self.pat_table.itemAtPosition(new_last_row, 0)
-        print "removed item at ", new_last_row, 0
-        item_to_remove.widget().deleteLater()
-        self.pat_table.removeItem(item_to_remove)
+        new_last_row = self.editors.count() - 1
+        item = self.editors.takeAt(position)
+        item.widget().deleteLater()
 
-        for idx in range(position, new_last_row):
-            print "trying to move", idx + 1, "to", idx
-            old = self.pat_table.itemAtPosition(idx + 1, 1)
-            widget = old.widget()
-            self.pat_table.removeItem(old)
-            print "removed item at", idx + 1, 1
-            self.pat_table.addWidget(widget, idx, 1)
-            print "added item to", idx, 1
+        for idx in range(0, new_last_row):
+            item = self.editors.itemAt(idx)
+            item.widget().set_position(idx)
 
 class ResetDocklet(QDockWidget):
     """This dockwidget lets the user choose from a wide variety of
