@@ -237,6 +237,8 @@ class ResetDocklet(QDockWidget):
         reset_button = QPushButton("Generate new")
         whole_layout.addWidget(reset_button)
 
+        whole_layout.addStretch()
+
         self.whole_layout = whole_layout
         centralwidget.setLayout(self.whole_layout)
 
@@ -244,8 +246,9 @@ class ResetDocklet(QDockWidget):
 
     def switch_resetter(self, index):
         cls = self.resetter_selecter.itemData(index)
+        if self.current_resetter:
+            self.current_resetter.hide()
         if cls in self.resetters:
-            current_resetter.hide()
             w = self.resetters[cls]
             w.show()
         else:
