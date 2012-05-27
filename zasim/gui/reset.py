@@ -123,7 +123,7 @@ class PatternResetter(BaseResetter):
     to create a configuration."""
 
     friendly_name = "Pattern Editor"
-    
+
     patterns = ((0,), (1,))
     layout = (1,)
 
@@ -141,6 +141,7 @@ class PatternResetter(BaseResetter):
         def setup_ui(self):
             layout = QHBoxLayout()
             add_left = QPushButton("+")
+            add_left.setMaximumSize(20,20)
             add_left.clicked.connect(self.add_left)
             layout.addWidget(add_left)
 
@@ -149,6 +150,7 @@ class PatternResetter(BaseResetter):
                 layout.addWidget(editor)
 
             add_right = QPushButton("+")
+            add_right.setMaximumSize(20,20)
             add_right.clicked.connect(self.add_right)
             layout.addWidget(add_right)
 
@@ -226,9 +228,6 @@ class ResetDocklet(QDockWidget):
         self.resetter_selecter = resetter_selecter
 
         self.resetters_layout = QVBoxLayout()
-        self.dummy_widget = QWidget()
-        self.dummy_widget.hide()
-        self.resetters_layout.addWidget(self.dummy_widget)
         whole_layout.addLayout(self.resetters_layout)
 
         dismiss_button = QPushButton("reset changes")
