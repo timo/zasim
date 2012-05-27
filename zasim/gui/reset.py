@@ -135,7 +135,7 @@ class PatternResetter(BaseResetter):
 
     # XXX breaks down if the palette doesn't have 0 or 1.
     patterns = [(0,), (1,)]
-    layout = (1,1,1)
+    layout = (1,)
 
     class SubPatternEditor(QWidget): # {{{
         delete_me = Signal([int])
@@ -237,7 +237,7 @@ class PatternResetter(BaseResetter):
             try:
                 configuration = self.original_configuration
             except:
-                configuration = PatternConfiguration([(0,), (1,)], [1, 1, 1])
+                configuration = PatternConfiguration([(0,), (1,)], [1,])
 
         self.patterns = list(configuration.patterns)
         self.layout = list(configuration.layout)
