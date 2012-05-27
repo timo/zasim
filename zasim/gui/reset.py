@@ -220,14 +220,13 @@ class PatternResetter(BaseResetter):
     def setup_ui(self):
         layout = QVBoxLayout()
 
-        patterns_table = QGridLayout()
+        patterns_layout = QFormLayout()
 
         for idx, pattern in enumerate(self.patterns):
-            patterns_table.addWidget(self.make_pattern_editor(idx, pattern), idx, 1)
-            patterns_table.addWidget(QLabel(str(idx) if idx != 0 else "bg/0"), idx, 0)
+            patterns_layout.addRow(str(idx) if idx != 0 else "bg/0", self.make_pattern_editor(idx, pattern))
 
-        self.pat_table = patterns_table
-        layout.addLayout(patterns_table)
+        self.pat_layout = patterns_layout
+        layout.addLayout(patterns_layout)
 
         self.layout_edit = QLineEdit()
         self.layout_edit.setText(", ".join(map(str,self.layout)))
@@ -243,42 +242,27 @@ class PatternResetter(BaseResetter):
 
     def insert_new_pattern(self, position):
         position = position + 1
-        print "inserting new pattern at", position
-        new_last_row = self.pat_table.rowCount()
-        self.pat_table.addWidget(QLabel(str(new_last_row)), new_last_row, 0)
 
-        # move layout items down a bit to make space.
-        for idx in range(position, new_last_row):
-            print "moving", idx, "to", idx + 1
-            old = self.pat_table.itemAtPosition(idx, 1)
-            widget = old.widget()
-            self.pat_table.removeItem(old)
-            self.pat_table.addWidget(widget, idx + 1, 1)
-            widget.set_position(idx + 1)
+        new_last_row = self.pat_layout.rowCount()
 
-        self.patterns.insert(position, [0])
-        self.pat_table.addWidget(self.make_pattern_editor(position, self.patterns[position]), position, 1)
+        self.patterns.insert(position, self.patterns[position - 1])
+        self.pat_layout.insertRow(position, str(position), self.make_pattern_editor(position, self.patterns[position]))
+
+        # relabel rows below inserted row.
+        for idx in range(position + 1, new_last_row + 1):
+            item = self.pat_layout.itemAt(idx, QFormLayout.LabelRole)
+            item.widget().setText(str(idx))
 
     def remove_pattern(self, position):
         del self.patterns[position]
 
-        new_last_row = self.pat_table.rowCount() - 1
-        item_to_remove = self.pat_table.itemAtPosition(position, 1)
-        item_to_remove.widget().deleteLater()
-        self.pat_table.removeItem(item_to_remove)
-        item_to_remove = self.pat_table.itemAtPosition(new_last_row, 0)
-        print "removed item at ", new_last_row, 0
-        item_to_remove.widget().deleteLater()
-        self.pat_table.removeItem(item_to_remove)
+        for role in [QFormLayout.LabelRole, QFormLayout.FieldRole, QFormLayout.SpanningRole]:
+            self.pat_layout.removeItem(self.pat_layout.itemAt(position, role))
 
-        for idx in range(position, new_last_row):
-            print "trying to move", idx + 1, "to", idx
-            old = self.pat_table.itemAtPosition(idx + 1, 1)
-            widget = old.widget()
-            self.pat_table.removeItem(old)
-            print "removed item at", idx + 1, 1
-            self.pat_table.addWidget(widget, idx, 1)
-            print "added item to", idx, 1
+        # relabel rows
+        for idx in range(position, self.pat_layout.rowCount()):
+            item = self.pat_layout.itemAt(idx, QFormLayout.LabelRole)
+            item.widget().setText(str(idx))
 
 class ResetDocklet(QDockWidget):
     """This dockwidget lets the user choose from a wide variety of
