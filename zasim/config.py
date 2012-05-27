@@ -133,6 +133,14 @@ class BaseRandomConfiguration(BaseConfiguration):
 
         self.cumulative_percentages = list(zip(self.values, cumulative_percentages))
 
+        if len(self.cumulative_percentages) > len(self.percentages):
+            percs = []
+            cumu = 0
+            for val, perc_v in self.cumulative_percentages:
+                percs.append(perc_v - cumu)
+                cumu += perc_v
+            self.percentages = tuple(percs)
+
 class RandomConfiguration(BaseRandomConfiguration):
     def __init__(self, base=2, *percentages):
         """Create a random initial configuration with values from 0 to base-1
@@ -140,6 +148,7 @@ class RandomConfiguration(BaseRandomConfiguration):
         percentages for the different states."""
 
         self.values = range(base)
+        self.percentages = percentages
         self.make_percentages_cumulative(percentages)
 
 class RandomConfigurationFromPalette(BaseRandomConfiguration):
