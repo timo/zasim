@@ -81,7 +81,6 @@ class EditableCellDisplayWidget(QPushButton):
         self.value = value
         self.base = base
         self._palette = palette
-        print palette
         self.setFixedSize(size, size)
         self.setFlat(True)
         self.setAutoFillBackground(True)
@@ -113,6 +112,9 @@ class EditableCellDisplayWidget(QPushButton):
             paint.setPen(QColor("red") if self.bg_color != QColor("red")
                          else QColor("black"))
             paint.drawRect(QRect(1, 1, self.width() - 3, self.height() - 3))
+
+    def set_position(self, position):
+        self.position = position
 
 # TODO implement CellDisplayWidgets for images.
 

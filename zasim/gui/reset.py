@@ -124,6 +124,7 @@ class PatternResetter(BaseResetter):
 
     friendly_name = "Pattern Editor"
 
+    # XXX breaks down if the palette doesn't have 0 or 1.
     patterns = ((0,), (1,))
     layout = (1,)
 
@@ -146,8 +147,12 @@ class PatternResetter(BaseResetter):
             layout.addWidget(add_left)
 
             self.editors = self.make_pattern_editors()
+            self.editor_layout = QHBoxLayout()
+            self.editor_layout.setSpacing(0)
             for editor in self.editors:
-                layout.addWidget(editor)
+                self.editor_layout.addWidget(editor)
+
+            layout.addLayout(self.editor_layout)
 
             add_right = QPushButton("+")
             add_right.setMaximumSize(20,20)
@@ -158,6 +163,7 @@ class PatternResetter(BaseResetter):
             layout.addSpacing(16)
             delete_me = QPushButton("del")
             delete_me.clicked.connect(self.delete_me.emit)
+            self.delete_me = delete_me
             add_new = QPushButton("more")
             add_new.clicked.connect(self.add_more.emit)
             layout.addWidget(delete_me)
@@ -168,7 +174,8 @@ class PatternResetter(BaseResetter):
         def make_pattern_editors(self):
             editors = []
             for idx, value in enumerate(self.pattern):
-                editors.append(EditableCellDisplayWidget(value, idx, base=self.base, size=12, palette=self.sim_palette))
+                editors.append(
+                        EditableCellDisplayWidget(value, idx, base=self.base, size=12, palette=self.sim_palette))
 
             return editors
 
@@ -176,8 +183,24 @@ class PatternResetter(BaseResetter):
             self.pattern[idx] = new
             self.pattern_changed.emit()
 
-        def add_left(self): pass
-        def add_right(self): pass
+        def set_is_only(self, is_only):
+            if is_only:
+                self.delete_me.hide()
+            else:
+                self.delete_me.show()
+
+        def add_left(self):
+            self.editors.insert(0,
+                    EditableCellDisplayWidget(self.pattern[0], 0, base=self.base, size=12, palette=self.sim_palette))
+            self.editor_layout.insertWidget(self.editors[0], 0)
+            for idx, editor in enumerate(self.editors[1:]):
+                editor.set_position(idx + 2)
+
+        def add_right(self):
+            self.editors.append(
+                    EditableCellDisplayWidget(self.pattern[-1], len(self.pattern), base=self.base, size=12, palette=self.sim_palette))
+            self.editor_layout.addWidget(self.editors[-1])
+
 
     def take_over_settings(self, configuration=None):
         if configuration:
@@ -191,8 +214,17 @@ class PatternResetter(BaseResetter):
     def setup_ui(self):
         layout = QVBoxLayout()
 
-        for pattern in self.patterns:
-            layout.addWidget(self.SubPatternEditor(len(self.values), pattern, self.sim_palette))
+        patterns_table = QGridLayout()
+
+        for idx, pattern in enumerate(self.patterns):
+            patterns_table.addWidget(self.SubPatternEditor(len(self.values), pattern, self.sim_palette), idx, 1)
+            patterns_table.addWidget(QLabel(str(idx) if idx != 0 else "bg/0"), idx, 0)
+
+        layout.addLayout(patterns_table)
+
+        self.layout_edit = QLineEdit()
+        self.layout_edit.setText(", ".join(map(str,self.layout)))
+        layout.addWidget(self.layout_edit)
 
         self.setLayout(layout)
 
