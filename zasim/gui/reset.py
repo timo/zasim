@@ -358,17 +358,19 @@ class ImageResetter(BaseResetter):
 
     def browse(self):
         filename, typ = QFileDialog.getOpenFileName(self, "Select an image file")
+
         if filename:
             self.filename = filename
             self.preview.setPixmap(QPixmap(self.filename))
             self.path_edit.setText(filename)
 
     def try_load(self, path):
-        try:
+        image = QPixmap(path)
+        if image.isNull():
+            self.preview.setText("no preview")
+        else:
             self.preview.setPixmap(QPixmap(path))
             self.filename = path
-        except:
-            self.preview.setText("no preview")
 
 class ResetDocklet(QDockWidget):
     """This dockwidget lets the user choose from a wide variety of
