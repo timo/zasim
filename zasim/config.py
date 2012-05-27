@@ -138,7 +138,7 @@ class BaseRandomConfiguration(BaseConfiguration):
             cumu = 0
             for val, perc_v in self.cumulative_percentages:
                 percs.append(perc_v - cumu)
-                cumu += perc_v
+                cumu = perc_v
             self.percentages = tuple(percs)
 
 class RandomConfiguration(BaseRandomConfiguration):
