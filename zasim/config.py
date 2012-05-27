@@ -204,7 +204,7 @@ class FileAsciiConfiguration(BaseAsciiConfiguration):
 class ImageConfiguration(BaseConfiguration):
     """Import an image file as a configuration."""
 
-    def __init__(self, filename, scale=1, palette=None):
+    def __init__(self, filename, scale=1, palette=None, fuzz=False):
         self.filename = filename
 
         if palette is None:
@@ -214,21 +214,48 @@ class ImageConfiguration(BaseConfiguration):
             palette = dict(enumerate(palette))
         self.palette = palette
         self.scale = scale
+        self.fuzz = fuzz
 
     def generate(self, size_hint=None, dtype=default_dtype):
-        from .external.qt import QImage
+        from .external.qt import QImage, QColor
+        from .display.qt import make_palette_qc
         image = QImage()
         assert image.load(self.filename)
         image = image.convertToFormat(QImage.Format_RGB32)
         if self.scale != 1:
             image = image.scaled(image.width() // self.scale,
                                  image.height() // self.scale)
-        nparr = np.frombuffer(image.bits(), dtype=np.uint32)
-        nparr = nparr.reshape((image.width(), image.height()), order="F")
-        result = np.ones((image.width(), image.height()), dtype=dtype)
+        if size_hint:
+            w, h = size_hint
+        else:
+            w, h = image.width(), image.height()
 
-        for value, color in self.palette.iteritems():
-            result[nparr == color] = value
+        result = np.ones((w, h), dtype=dtype)
+
+        if self.fuzz:
+
+            def lowest_distance(color, palette):
+                min_dst = 1000000000
+                min_value = -1
+                for value, pcol in palette.iteritems():
+                    x1, y1, z1,_ = color.getHsv()
+                    x2, y2, z2,_ = pcol.getHsv()
+                    dist = (x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2
+                    if dist < min_dst:
+                        min_value = value
+                        min_dst = dist
+                return min_value
+
+            qc_pal = make_palette_qc(self.palette)
+            for x, y in product(range(image.width()), range(image.height())):
+                color = QColor.fromRgb(image.pixel(x, y))
+                value = lowest_distance(color, qc_pal)
+                result[x, y] = value
+        else:
+            nparr = np.frombuffer(image.bits(), dtype=np.uint32)
+            nparr = nparr.reshape((image.width(), image.height()), order="F")
+            for value, color in self.palette.iteritems():
+                result[nparr == color] = value
 
         return result
 

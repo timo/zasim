@@ -22,6 +22,8 @@ class BaseResetter(QWidget):
         if "colors_qc" not in self._sim.palette_info:
             self._sim.palette_info["colors_qc"] = make_palette_qc(self._sim.palette_info["colors32"])
         self.sim_palette = self._sim.palette_info["colors_qc"]
+        # XXX this needs to go somewhere else, I think.
+        self._sim.limit_palette()
 
         self.values = self._sim.t.possible_values
 
@@ -345,6 +347,8 @@ class ImageResetter(BaseResetter):
         self.scale_edit = QSpinBox()
         self.scale_edit.setMinimum(1)
         h_layout_2.addWidget(self.scale_edit)
+        self.fuzz_check = QCheckBox("fuzzy matching")
+        h_layout_2.addWidget(self.fuzz_check)
 
         v_layout.addLayout(h_layout_2)
 
@@ -354,7 +358,7 @@ class ImageResetter(BaseResetter):
         self.setLayout(v_layout)
 
     def generate_generator(self):
-        return ImageConfiguration(self.filename, scale=self.scale_edit.value(), palette=self.sim_palette)
+        return ImageConfiguration(self.filename, scale=self.scale_edit.value(), palette=self.sim_palette, fuzz=self.fuzz_check.isChecked())
 
     def browse(self):
         filename, typ = QFileDialog.getOpenFileName(self, "Select an image file")

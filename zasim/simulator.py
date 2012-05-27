@@ -155,6 +155,14 @@ class SimulatorInterface(QObject):
         See also `cagen.config`"""
         raise NotImplementedError("reset not implemented.")
 
+    def limit_palette(self):
+        result = {}
+        for key, pal in self.palette_info.iteritems():
+            new_dict = {k: pal[k] for k in self.t.possible_values}
+            result[key] = new_dict
+
+        self.palette_info = result
+
 class CagenSimulator(SimulatorInterface):
     """This Simulator takes a `StepFunc` instance and packs it in an interface
     compatible with `SimulatorInterface`."""
