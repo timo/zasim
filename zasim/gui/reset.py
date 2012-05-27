@@ -217,16 +217,21 @@ class PatternResetter(BaseResetter):
         self.patterns = configuration.patterns
         self.layout = configuration.layout
 
-    def setup_ui(self):
-        layout = QVBoxLayout()
-
+    def rebuild_patterns_layout(self):
         patterns_layout = QFormLayout()
-
         for idx, pattern in enumerate(self.patterns):
+            if 
             patterns_layout.addRow(str(idx) if idx != 0 else "bg/0", self.make_pattern_editor(idx, pattern))
 
         self.pat_layout = patterns_layout
-        layout.addLayout(patterns_layout)
+        self.pat_lay_container.setLayout(self.pat_layout)
+
+    def setup_ui(self):
+        layout = QVBoxLayout()
+
+        self.pat_lay_container = QWidget(self)
+        layout.addWidget(self.pat_lay_container)
+        self.rebuild_patterns_layout()
 
         self.layout_edit = QLineEdit()
         self.layout_edit.setText(", ".join(map(str,self.layout)))
@@ -241,28 +246,12 @@ class PatternResetter(BaseResetter):
         return editor
 
     def insert_new_pattern(self, position):
-        position = position + 1
-
-        new_last_row = self.pat_layout.rowCount()
-
-        self.patterns.insert(position, self.patterns[position - 1])
-        self.pat_layout.insertRow(position, str(position), self.make_pattern_editor(position, self.patterns[position]))
-
-        # relabel rows below inserted row.
-        for idx in range(position + 1, new_last_row + 1):
-            item = self.pat_layout.itemAt(idx, QFormLayout.LabelRole)
-            item.widget().setText(str(idx))
+        self.patterns.insert(position, self.patterns[position])
+        self.rebuild_patterns_layout()
 
     def remove_pattern(self, position):
         del self.patterns[position]
-
-        for role in [QFormLayout.LabelRole, QFormLayout.FieldRole, QFormLayout.SpanningRole]:
-            self.pat_layout.removeItem(self.pat_layout.itemAt(position, role))
-
-        # relabel rows
-        for idx in range(position, self.pat_layout.rowCount()):
-            item = self.pat_layout.itemAt(idx, QFormLayout.LabelRole)
-            item.widget().setText(str(idx))
+        self.rebuild_patterns_layout()
 
 class ResetDocklet(QDockWidget):
     """This dockwidget lets the user choose from a wide variety of
