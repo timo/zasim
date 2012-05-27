@@ -332,6 +332,7 @@ class ImageResetter(BaseResetter):
         h_layout = QHBoxLayout()
 
         self.path_edit = QLineEdit()
+        self.path_edit.textChanged.connect(self.try_load)
         self.browse_btn = QPushButton("...")
         self.browse_btn.clicked.connect(self.browse)
 
@@ -361,6 +362,13 @@ class ImageResetter(BaseResetter):
             self.filename = filename
             self.preview.setPixmap(QPixmap(self.filename))
             self.path_edit.setText(filename)
+
+    def try_load(self, path):
+        try:
+            self.preview.setPixmap(QPixmap(path))
+            self.filename = path
+        except:
+            self.preview.setText("no preview")
 
 class ResetDocklet(QDockWidget):
     """This dockwidget lets the user choose from a wide variety of
