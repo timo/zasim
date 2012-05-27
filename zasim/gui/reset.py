@@ -2,7 +2,7 @@ from ..external.qt import *
 from .elementary import CellDisplayWidget, EditableCellDisplayWidget
 from ..display.qt import make_palette_qc
 
-from ..config import BaseRandomConfiguration, RandomConfigurationFromPalette, PatternConfiguration
+from ..config import BaseRandomConfiguration, RandomConfigurationFromPalette, PatternConfiguration, ImageConfiguration
 
 import re
 
@@ -137,7 +137,7 @@ class PatternResetter(BaseResetter):
     patterns = [(0,), (1,)]
     layout = (1,1,1)
 
-    class SubPatternEditor(QWidget):
+    class SubPatternEditor(QWidget): # {{{
         delete_me = Signal([int])
         add_more = Signal([int])
         pattern_changed = Signal([int])
@@ -228,6 +228,7 @@ class PatternResetter(BaseResetter):
 
         def on_add_more(self): self.add_more.emit(self.position)
         def on_delete_me(self): self.delete_me.emit(self.position)
+        # }}}
 
     def take_over_settings(self, configuration=None):
         if configuration and isinstance(configuration, PaternConfiguration):
@@ -297,6 +298,68 @@ class PatternResetter(BaseResetter):
 
     def generate_generator(self):
         return PatternConfiguration(self.patterns, self.layout)
+
+@reg_resetter(ImageConfiguration)
+class ImageResetter(BaseResetter):
+    friendly_name = "From Image"
+
+    def __init__(self, *args, **kwargs):
+        super(ImageResetter, self).__init__(*args, **kwargs)
+        self.sim_palette = self._sim.palette_info["colors32"]
+
+    def take_over_settings(self, configuration=None):
+        if configuration and isinstance(configuration, ImageConfiguration):
+            self.original_configuration = configuration
+        else:
+            try:
+                configuration = self.original_configuration
+            except:
+                configuration = None
+
+        if configuration is not None:
+            self.filename = configuration.filename
+        else:
+            self.filename = None
+
+        self.path_edit.setText(self.filename)
+        try:
+            self.preview.setPixmap(QPixmap(self.filename))
+        except:
+            self.preview.setText("no preview")
+
+    def setup_ui(self):
+        v_layout = QVBoxLayout()
+        h_layout = QHBoxLayout()
+
+        self.path_edit = QLineEdit()
+        self.browse_btn = QPushButton("...")
+        self.browse_btn.clicked.connect(self.browse)
+
+        h_layout.addWidget(self.path_edit)
+        h_layout.addWidget(self.browse_btn)
+        v_layout.addLayout(h_layout)
+
+        h_layout_2 = QHBoxLayout()
+        h_layout_2.addWidget(QLabel("Scale factor"))
+        self.scale_edit = QSpinBox()
+        self.scale_edit.setMinimum(1)
+        h_layout_2.addWidget(self.scale_edit)
+
+        v_layout.addLayout(h_layout_2)
+
+        self.preview = QLabel("no preview")
+        v_layout.addWidget(self.preview)
+
+        self.setLayout(v_layout)
+
+    def generate_generator(self):
+        return ImageConfiguration(self.filename, scale=self.scale_edit.value(), palette=self.sim_palette)
+
+    def browse(self):
+        filename, typ = QFileDialog.getOpenFileName(self, "Select an image file")
+        if filename:
+            self.filename = filename
+            self.preview.setPixmap(QPixmap(self.filename))
 
 class ResetDocklet(QDockWidget):
     """This dockwidget lets the user choose from a wide variety of
