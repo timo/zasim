@@ -360,6 +360,7 @@ class ImageResetter(BaseResetter):
         if filename:
             self.filename = filename
             self.preview.setPixmap(QPixmap(self.filename))
+            self.path_edit.setText(filename)
 
 class ResetDocklet(QDockWidget):
     """This dockwidget lets the user choose from a wide variety of
