@@ -8,6 +8,7 @@ from .control import ControlWidget
 from .elementary import ElementaryRuleWindow
 from .externaledit import ExternalEditWindow
 from .argp_qt import NewZasimWindow
+from .reset import ResetDocklet
 
 import numpy as np
 
@@ -80,6 +81,9 @@ class ZasimMainWindow(QMainWindow):
         #self.comp_dlg = None
         self.new_dlg = None
 
+        self.resetter = ResetDocklet(self)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.resetter)
+
     def setup_menu(self):
         simulator_menu = self.menuBar().addMenu("Simulator")
         simulator_menu.setObjectName("simulator_menu")
@@ -132,11 +136,13 @@ class ZasimMainWindow(QMainWindow):
 
         Those displays are updated whenever a step occurs."""
         self.extra_displays.append(display)
+        self.addDockWidget(Qt.RightDockWidgetArea, display)
         #self.display_attached.emit(display)
 
     def detach_display(self, display):
         """Detach an extra attached display from the control."""
         self.extra_displays.remove(display)
+        self.removeDockWidget(display)
         #self.display_detached.emit(display)
 
 def main(width=200, height=200, scale=2,
@@ -226,7 +232,6 @@ def main(width=200, height=200, scale=2,
         extra_hist = HistogramExtraDisplay(sim_obj, parent=display, height=200, maximum= w * h)
         extra_hist.show()
         display.window.attach_display(extra_hist)
-        display.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
 
     if activity:
         extra_activity = HistogramExtraDisplay(sim_obj, attribute="activity", parent=display, height=200, maximum=w*h)

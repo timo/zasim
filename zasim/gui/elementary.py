@@ -52,7 +52,7 @@ class CellDisplayWidget(QLabel):
         self.setFixedSize(size, size)
         self.setPixmap(self.__pixmap_for_value(value))
         self.position = position
-        self.palette = palette or CELL_COL
+        self._palette = palette or CELL_COL
 
     def __pixmap_for_value(self, value):
         """Create a pixmap for the value of the cell."""
@@ -67,21 +67,25 @@ class EditableCellDisplayWidget(QPushButton):
     """This signal will be emitted when the user changed the value of the
     cell. It will emit the position and the new value."""
 
-    def __init__(self, value, position, base=2, size=16, **kwargs):
+    def __init__(self, value, position, base=2, size=16, palette=None, **kwargs):
         """Create the editable display widget.
 
         :param value: The start value.
         :param position: The position in the result list, used in the
                          :attr:`value_changed` signal.
         :param base: The numerical base for values.
-        :param size: The size for the display, used for both width and height."""
+        :param size: The size for the display, used for both width and height.
+        :param palette: The palette of qcolors to use.
+        """
         super(EditableCellDisplayWidget, self).__init__(**kwargs)
         self.value = value
         self.base = base
+        self._palette = palette
+        print palette
         self.setFixedSize(size, size)
         self.setFlat(True)
         self.setAutoFillBackground(True)
-        self.bg_color = self.palette[self.value]
+        self.bg_color = self._palette[self.value]
         self.position = position
 
         self.clicked.connect(self._change_value)
@@ -89,13 +93,13 @@ class EditableCellDisplayWidget(QPushButton):
     def _change_value(self):
         """Called by the clicked signal of the underlying QPushButton."""
         self.value = (self.value + 1) % self.base
-        self.bg_color = self.palette[self.value]
+        self.bg_color = self._palette[self.value]
         self.update()
         self.value_changed.emit(self.position, self.value)
 
     def set_value(self, value, emit=False):
         self.value = value
-        self.bg_color = self.palette[self.value]
+        self.bg_color = self._palette[self.value]
         self.update()
         if emit:
             self.value_changed.emit(self.position, self.value)
