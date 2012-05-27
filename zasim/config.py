@@ -232,6 +232,36 @@ class ImageConfiguration(BaseConfiguration):
 
         return result
 
+class PatternConfiguration(BaseConfiguration):
+    """This generator accepts different patterns as lists of values and a
+    layout that defines how those patterns make up the whole configuration.
+
+    Pattern 0 will be used to fill the whole background, all others will
+    be embedded centered in the configuration."""
+    def __init__(self, patterns, layout):
+        self.patterns = [list(a) for a in patterns] # deep copy
+        self.layout = tuple(layout)
+
+    def generate(self, size_hint=None, dtype=default_dtype):
+        assert len(size_hint) == 1, "two-dimensional pattern-based configs not supported yet."
+
+        print "generating %d wide configuration from:" % size_hint[0]
+        print self.patterns
+        print self.layout
+
+        background = self.patterns[0] * (size_hint[0] // len(self.patterns[0]) + 1)
+        result = np.array(background[:size_hint[0]], dtype=dtype)
+
+        internal_pattern = sum([self.patterns[idx] for idx in self.layout], [])
+        lendiff = size_hint[0] - len(internal_pattern)
+        if lendiff < 0:
+            result[0:-1] = internal_pattern[-lendiff//2:lendiff//2-1]
+        else:
+            middle = size_hint[0] // 2
+            halfwidth = len(internal_pattern) // 2
+            result[middle - halfwidth:middle - halfwidth + len(internal_pattern)] = internal_pattern
+
+        return result
 
 def function_of_radius(function, max_dist="diagonal"):
     if max_dist == "shortest":
