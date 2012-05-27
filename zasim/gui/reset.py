@@ -2,7 +2,7 @@ from ..external.qt import *
 from .elementary import CellDisplayWidget, EditableCellDisplayWidget
 from ..display.qt import make_palette_qc
 
-from ..config import BaseRandomConfiguration, PatternConfiguration
+from ..config import BaseRandomConfiguration, RandomConfigurationFromPalette, PatternConfiguration
 
 class_to_resetter = {}
 def reg_resetter(base_class):
@@ -117,6 +117,9 @@ class BaseRandomConfigurationResetter(BaseResetter):
 
         self.set_values()
 
+    def generate_generator(self):
+        return RandomConfigurationFromPalette(self.values, *self.percs)
+
 @reg_resetter(PatternConfiguration)
 class PatternResetter(BaseResetter):
     """This resetter allows the user to define patterns, that will be used
@@ -131,11 +134,11 @@ class PatternResetter(BaseResetter):
     class SubPatternEditor(QWidget):
         delete_me = Signal([int])
         add_more = Signal([int])
-        pattern_changed = Signal()
+        pattern_changed = Signal([int])
         def __init__(self, base, position, pattern=None, palette=None, **kwargs):
             super(PatternResetter.SubPatternEditor, self).__init__(**kwargs)
             self.base = base
-            self.pattern = pattern or [0]
+            self.pattern = list(pattern) or [0]
             self.sim_palette = palette
             self.position = position
             self.setup_ui()
@@ -180,14 +183,18 @@ class PatternResetter(BaseResetter):
         def make_pattern_editors(self):
             editors = []
             for idx, value in enumerate(self.pattern):
-                editors.append(
-                        EditableCellDisplayWidget(value, idx, base=self.base, size=12, palette=self.sim_palette))
+                editors.append(self.create_edit_widget(value, idx))
 
             return editors
 
+        def create_edit_widget(self, value, idx):
+            editor = EditableCellDisplayWidget(value, idx, base=self.base, size=12, palette=self.sim_palette)
+            editor.value_changed.connect(self.change_pattern)
+            return editor
+
         def change_pattern(self, idx, new):
             self.pattern[idx] = new
-            self.pattern_changed.emit()
+            self.pattern_changed.emit(self.position)
 
         def set_is_only(self, is_only):
             if is_only:
@@ -196,16 +203,18 @@ class PatternResetter(BaseResetter):
                 self.btn_delete_me.show()
 
         def add_left(self):
-            self.editors.insert(0,
-                    EditableCellDisplayWidget(self.pattern[0], 0, base=self.base, size=12, palette=self.sim_palette))
+            self.pattern.insert(0, self.pattern[0])
+            self.editors.insert(0, self.create_edit_widget(self.pattern[0], 0))
             self.editor_layout.insertWidget(0, self.editors[0])
             for idx, editor in enumerate(self.editors[1:]):
                 editor.set_position(idx + 2)
+            self.pattern_changed.emit(self.position)
 
         def add_right(self):
-            self.editors.append(
-                    EditableCellDisplayWidget(self.pattern[-1], len(self.pattern), base=self.base, size=12, palette=self.sim_palette))
+            self.pattern.append(self.pattern[-1])
+            self.editors.append(self.create_edit_widget(self.pattern[-1], len(self.pattern)-1))
             self.editor_layout.addWidget(self.editors[-1])
+            self.pattern_changed.emit(self.position)
 
         def set_position(self, position):
             self.position = position
@@ -220,8 +229,8 @@ class PatternResetter(BaseResetter):
         else:
             configuration = self.original_configuration
 
-        self.patterns = configuration.patterns
-        self.layout = configuration.layout
+        self.patterns = list(configuration.patterns)
+        self.layout = list(configuration.layout)
 
     def setup_ui(self):
         layout = QVBoxLayout()
@@ -244,7 +253,13 @@ class PatternResetter(BaseResetter):
         editor = self.SubPatternEditor(len(self.values), position, pattern, self.sim_palette)
         editor.add_more.connect(self.insert_new_pattern)
         editor.delete_me.connect(self.remove_pattern)
+        editor.pattern_changed.connect(self.pattern_changed)
         return editor
+
+    def pattern_changed(self, position):
+        print "pattern at position", position, "changed"
+        self.patterns[position] = self.editors.itemAt(position).widget().pattern
+        print self.patterns[position]
 
     def insert_new_pattern(self, position):
         self.patterns.insert(position, [0])
@@ -265,6 +280,9 @@ class PatternResetter(BaseResetter):
         for idx in range(0, new_last_row):
             item = self.editors.itemAt(idx)
             item.widget().set_position(idx)
+
+    def generate_generator(self):
+        return PatternConfiguration(self.patterns, self.layout)
 
 class ResetDocklet(QDockWidget):
     """This dockwidget lets the user choose from a wide variety of
@@ -305,6 +323,7 @@ class ResetDocklet(QDockWidget):
         whole_layout.addWidget(dismiss_button)
 
         reset_button = QPushButton("Generate new")
+        reset_button.clicked.connect(self.generate)
         whole_layout.addWidget(reset_button)
 
         whole_layout.addStretch()
@@ -334,3 +353,6 @@ class ResetDocklet(QDockWidget):
         self.current_resetter.take_over_settings()
         self.current_resetter.set_values()
 
+    def generate(self):
+        generator = self.current_resetter.generate_generator()
+        self._mw.simulator.reset(generator)

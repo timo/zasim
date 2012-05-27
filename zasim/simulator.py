@@ -147,9 +147,12 @@ class SimulatorInterface(QObject):
         raise NotImplementedError("restoring of snapshots not implemented"\
                                   "for %s" % (self.__class__))
 
-    def reset(self):
+    def reset(self, configurator=None):
         """Reset the simulator by using the same generator that was initially
-        used, if it's still available."""
+        used, if it's still available, or set a new configurator for the future
+        and reset the configuration with it once.
+
+        See also `cagen.config`"""
         raise NotImplementedError("reset not implemented.")
 
 class CagenSimulator(SimulatorInterface):
@@ -210,7 +213,9 @@ class CagenSimulator(SimulatorInterface):
         self.step_number += 1
         self.updated.emit()
 
-    def reset(self):
+    def reset(self, configurator=None):
+        if configurator is not None:
+            self._target._reset_generator = configurator
         if self._target._reset_generator:
             newconf = self._target._reset_generator.generate(size_hint=self._target._reset_size)
             self.set_config(newconf)
