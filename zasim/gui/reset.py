@@ -4,6 +4,8 @@ from ..display.qt import make_palette_qc
 
 from ..config import BaseRandomConfiguration, RandomConfigurationFromPalette, PatternConfiguration
 
+import re
+
 class_to_resetter = {}
 def reg_resetter(base_class):
     def register_func(cls):
@@ -129,7 +131,7 @@ class PatternResetter(BaseResetter):
 
     # XXX breaks down if the palette doesn't have 0 or 1.
     patterns = [(0,), (1,)]
-    layout = (1,)
+    layout = (1,1,1)
 
     class SubPatternEditor(QWidget):
         delete_me = Signal([int])
@@ -232,6 +234,8 @@ class PatternResetter(BaseResetter):
         self.patterns = list(configuration.patterns)
         self.layout = list(configuration.layout)
 
+        # TODO this doesn't change the GUI yet.
+
     def setup_ui(self):
         layout = QVBoxLayout()
 
@@ -244,7 +248,8 @@ class PatternResetter(BaseResetter):
         layout.addLayout(editors)
 
         self.layout_edit = QLineEdit()
-        self.layout_edit.setText(", ".join(map(str,self.layout)))
+        self.layout_edit.setText(" ".join(map(str,self.layout)))
+        self.layout_edit.textChanged.connect(self.layout_changed)
         layout.addWidget(self.layout_edit)
 
         self.setLayout(layout)
@@ -257,9 +262,7 @@ class PatternResetter(BaseResetter):
         return editor
 
     def pattern_changed(self, position):
-        print "pattern at position", position, "changed"
         self.patterns[position] = self.editors.itemAt(position).widget().pattern
-        print self.patterns[position]
 
     def insert_new_pattern(self, position):
         self.patterns.insert(position, [0])
@@ -280,6 +283,10 @@ class PatternResetter(BaseResetter):
         for idx in range(0, new_last_row):
             item = self.editors.itemAt(idx)
             item.widget().set_position(idx)
+
+    def layout_changed(self, text):
+        numbers = re.findall(r"\d+", text)
+        self.layout = map(int, numbers)
 
     def generate_generator(self):
         return PatternConfiguration(self.patterns, self.layout)

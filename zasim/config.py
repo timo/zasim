@@ -245,10 +245,6 @@ class PatternConfiguration(BaseConfiguration):
     def generate(self, size_hint=None, dtype=default_dtype):
         assert len(size_hint) == 1, "two-dimensional pattern-based configs not supported yet."
 
-        print "generating %d wide configuration from:" % size_hint[0]
-        print self.patterns
-        print self.layout
-
         background = self.patterns[0] * (size_hint[0] // len(self.patterns[0]) + 1)
         result = np.array(background[:size_hint[0]], dtype=dtype)
 
