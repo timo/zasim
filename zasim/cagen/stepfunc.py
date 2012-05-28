@@ -106,6 +106,8 @@ class StepFunc(object):
         self.code = dict((s, []) for s in self.sections)
         self.code_text = ""
 
+        self.extra_funcs = []
+
         # prepare the sections for python code
         self.pycode = dict((s, []) for s in self.pysections)
         self.pycode_indent = dict((s, 4) for s in self.pysections)
@@ -187,6 +189,12 @@ class StepFunc(object):
         :param code: the C source code to add."""
         self.code[hook].append(code)
 
+    def add_weave_extra_function(self, code):
+        """Add a support function to the head of the C result.
+
+        :param code: The C code to include. should be a self-contained function."""
+        self.extra_funcs.append(code)
+
     def add_py_code(self, hook, code):
         """Add a string of python code to the section "hook".
 
@@ -237,8 +245,13 @@ class StepFunc(object):
 
             self.code_text = debug.indent_c_code(self.code_text)
 
+            self.extra_func_text = debug.indent_c_code("\n".join(self.extra_funcs))
+
             if ZASIM_WEAVE_DEBUG:
                 print("/* Generated C code:", file=sys.stderr)
+                print("---8<---8<---8<--- */", file=sys.stderr)
+                print(self.extra_func_text, file=sys.stderr)
+                print("/*--->8--->8--->8--- */", file=sys.stderr)
                 print("---8<---8<---8<--- */", file=sys.stderr)
                 print(self.code_text, file=sys.stderr)
                 print("/*\n--->8--->8--->8--- */", file=sys.stderr)
@@ -316,7 +329,8 @@ class StepFunc(object):
         weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
                       type_converters = converters.blitz,
                       extra_compile_args=["-O0"] if ZASIM_WEAVE_DEBUG else [],
-                      verbose = 2 if ZASIM_WEAVE_DEBUG else 0)
+                      verbose = 2 if ZASIM_WEAVE_DEBUG else 0,
+                      support_code=self.extra_func_text)
         self.acc.swap_configs()
         self.prepared = True
 
