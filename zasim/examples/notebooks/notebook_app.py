@@ -224,7 +224,7 @@ def create_overlay():
     """This function copies all files from the source to the target and then
     links all missing files from IPython itself to the target.
 
-    Templates that are overrided will be linked to orig_{filename}, so that
+    Templates that are overridden will be linked to orig_{filename}, so that
     changes to templates can just use tornadowebs own template extension scheme.
 
     It returns a tuple with the temporary path as well as a dictionary with keys
