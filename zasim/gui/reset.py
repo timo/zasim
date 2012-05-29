@@ -5,8 +5,9 @@ from ..display.qt import make_palette_qc
 from ..config import BaseRandomConfiguration, RandomConfigurationFromPalette, PatternConfiguration, ImageConfiguration
 
 import re
+import collections
 
-class_to_resetter = {}
+class_to_resetter = collections.OrderedDict()
 def reg_resetter(base_class):
     def register_func(cls):
         class_to_resetter[base_class] = cls
