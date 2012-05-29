@@ -234,6 +234,13 @@ class StepFunc(object):
 
             code_bits = []
 
+            self.extra_func_text = debug.indent_c_code("\n".join(self.extra_funcs))
+            if self.extra_func_text:
+                # scipy.weave doesn't recompile whe nonly the "support code" changes.
+                # we can force it to, by putting a hash of the support code into the c code.
+                from hashlib import sha1
+                self.code_bits.append("/* hash of support_code: %s */" % (sha1(self.extra_func_text).hexdigest()))
+
             if ZASIM_WEAVE_DEBUG == "gdb":
                 code_bits.append("/* from ZASIM_WEAVE_DEBUG == gdb */")
                 code_bits.append(debug.trap_code)
@@ -244,8 +251,6 @@ class StepFunc(object):
             self.code_text = "\n".join(code_bits)
 
             self.code_text = debug.indent_c_code(self.code_text)
-
-            self.extra_func_text = debug.indent_c_code("\n".join(self.extra_funcs))
 
             if ZASIM_WEAVE_DEBUG:
                 print("/* Extra function definitions:", file=sys.stderr)
