@@ -239,7 +239,7 @@ class StepFunc(object):
                 # scipy.weave doesn't recompile whe nonly the "support code" changes.
                 # we can force it to, by putting a hash of the support code into the c code.
                 from hashlib import sha1
-                self.code_bits.append("/* hash of support_code: %s */" % (sha1(self.extra_func_text).hexdigest()))
+                code_bits.append("/* hash of support_code: %s */" % (sha1(self.extra_func_text).hexdigest()))
 
             if ZASIM_WEAVE_DEBUG == "gdb":
                 code_bits.append("/* from ZASIM_WEAVE_DEBUG == gdb */")
