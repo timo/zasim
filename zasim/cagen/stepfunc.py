@@ -248,10 +248,11 @@ class StepFunc(object):
             self.extra_func_text = debug.indent_c_code("\n".join(self.extra_funcs))
 
             if ZASIM_WEAVE_DEBUG:
-                print("/* Generated C code:", file=sys.stderr)
+                print("/* Extra function definitions:", file=sys.stderr)
                 print("---8<---8<---8<--- */", file=sys.stderr)
                 print(self.extra_func_text, file=sys.stderr)
-                print("/*--->8--->8--->8--- */", file=sys.stderr)
+                print("/*--->8--->8--->8---", file=sys.stderr)
+                print("  Generated C code:", file=sys.stderr)
                 print("---8<---8<---8<--- */", file=sys.stderr)
                 print(self.code_text, file=sys.stderr)
                 print("/*\n--->8--->8--->8--- */", file=sys.stderr)
