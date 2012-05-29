@@ -14,6 +14,7 @@ import numpy as np
 import time
 import math
 import Queue
+import contextlib
 
 from itertools import product
 
@@ -239,6 +240,8 @@ class BaseQImagePainter(QObject):
                            forcing a redraw.
         :param scale: The scale for the image.
         :param connect: Connect the update signals from the simulator?
+        :param frame_duration: How long a frame ideally takes. If there are
+                               too many frames per second, skip some.
         """
         super(BaseQImagePainter, self).__init__(**kwargs)
         self._width, self._height = width, height
@@ -252,6 +255,7 @@ class BaseQImagePainter(QObject):
 
         self.desired_frame_duration = frame_duration
         self.next_frame = 0
+        self._skip_all_frames = False
 
         if 'colors32' not in self._sim.palette_info:
             if len(self._sim.t.possible_values) > len(PALETTE_32):
@@ -264,6 +268,19 @@ class BaseQImagePainter(QObject):
 
         if connect:
             self.connect_simulator()
+
+    def begin_skip_frames(self):
+        self._skip_all_frames = True
+
+    def end_skip_frames(self):
+        self._skip_all_frames = False
+
+    @contextlib.contextmanager
+    def Frameskip(self):
+        rescue = self._skip_all_frames
+        self._skip_all_frames = True
+        yield
+        self._skip_all_frames = rescue
 
     def create_image_surf(self):
         """Create the image surface when the display is created."""
@@ -316,6 +333,8 @@ class BaseQImagePainter(QObject):
     def skip_frame(self):
         """Returns True, if the frame is supposed to be skipped to reach the
         desired framerate."""
+        if self._skip_all_frames:
+            return True
         now = time.time()
         if now > self.next_frame:
             self.next_frame = now + self.desired_frame_duration
