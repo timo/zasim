@@ -13,6 +13,7 @@ def reg_resetter(base_class):
         return cls
     return register_func
 
+
 class BaseResetter(QWidget):
     def __init__(self, mainwin, **kwargs):
         super(BaseResetter, self).__init__(**kwargs)
@@ -362,7 +363,10 @@ class ImageResetter(BaseResetter):
         self.setLayout(v_layout)
 
     def generate_generator(self):
-        return ImageConfiguration(self.filename, scale=self.scale_edit.value(), palette=self.sim_palette, fuzz=self.fuzz_check.isChecked())
+        return ImageConfiguration(self.filename,
+                                  scale=self.scale_edit.value(),
+                                  palette=self.sim_palette,
+                                  fuzz=self.fuzz_check.isChecked())
 
     def browse(self):
         filename, typ = QFileDialog.getOpenFileName(self, "Select an image file")
@@ -380,6 +384,30 @@ class ImageResetter(BaseResetter):
             self.preview.setPixmap(QPixmap(path))
             self.filename = path
 
+class FallbackResetter(BaseResetter):
+    friendly_name = "Reset using original"
+    def take_over_settings(self, configuration=None):
+        if configuration:
+            self.original_configuration = configuration
+
+    def setup_ui(self):
+        layout = QHBoxLayout()
+
+        label = QLabel("A %s was used to generate this configuration.<br/>"
+        "The GUI doesn't know how to configure this, but it does know how to"
+        "just use the same generator again. Use the generate button below to"
+        "do that." % type(self.original_configuration).__name__)
+        label.setWordWrap(True)
+        label.setTextFormat(Qt.RichText)
+        layout.addWidget(label)
+        layout.addStretch()
+
+        self.setLayout(layout)
+
+    def generate_generator(self):
+        return self.original_configuration
+
+# TODO - it would be great if this could be used as a normal widget/window
 class ResetDocklet(QDockWidget):
     """This dockwidget lets the user choose from a wide variety of
     config generators."""
@@ -405,8 +433,13 @@ class ResetDocklet(QDockWidget):
         whole_layout = QVBoxLayout()
 
         resetter_selecter = QComboBox(self)
+        needs_fallback = True
         for cls in class_to_resetter.values():
             resetter_selecter.addItem(cls.friendly_name, cls)
+            if isinstance(self._mw.simulator._target._reset_generator, cls):
+                needs_fallback = False
+        if needs_fallback:
+            resetter_selecter.addItem(FallbackResetter.friendly_name, FallbackResetter)
         resetter_selecter.currentIndexChanged.connect(self.switch_resetter)
 
         whole_layout.addWidget(resetter_selecter)
