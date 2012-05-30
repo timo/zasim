@@ -127,7 +127,7 @@ NOTEBOOK_TEMPLATE_PATH = os.path.join(NOTEBOOK_BASE_PATH, "templates")
 NOTEBOOK_STATIC_PATH = os.path.join(NOTEBOOK_BASE_PATH, "static")
 
 """This name will be the prefix for the temporary folder"""
-PROJECT_NAME = "my_pretty_framework"
+PROJECT_NAME = "zasim_tutorial"
 
 
 
