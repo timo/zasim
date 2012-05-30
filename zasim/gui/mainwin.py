@@ -1,6 +1,7 @@
 from ..external.qt import (QMainWindow, QDialog, Signal, QWidget, QVBoxLayout, QScrollArea,
         QLabel, Qt)
 from .. import cagen
+from ..config import RandomConfiguration
 from ..simulator import CagenSimulator
 from .display import ZasimDisplay
 from .histogram import HistogramExtraDisplay
@@ -9,8 +10,6 @@ from .elementary import ElementaryRuleWindow
 from .externaledit import ExternalEditWindow
 from .argp_qt import NewZasimWindow
 from .reset import ResetDocklet
-
-import numpy as np
 
 class ZasimMainWindow(QMainWindow):
     """This is a window that manages one simulator. It holds one
@@ -180,15 +179,9 @@ def main(width=200, height=200, scale=2,
         size = w, h
 
     if black is not None:
-        rands = np.random.rand(*size)
-        config = np.random.randint(0, base, size)
-        config[rands < black] = 0
-
-        size = None
+        config = RandomConfiguration(base, black)
     else:
         config = None
-
-    print size, config
 
     if onedim and not life:
         if alt_rule is None:
@@ -233,9 +226,6 @@ def main(width=200, height=200, scale=2,
     display.set_scale(scale)
 
     display.control.start()
-
-    if black is not None:
-        display.control.zero_percentage.setValue(black)
 
     if histogram:
         extra_hist = HistogramExtraDisplay(sim_obj, parent=display, height=200, maximum= w * h)
