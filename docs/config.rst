@@ -1,3 +1,5 @@
+.. _zasim_config_module:
+
 :mod:`zasim.config` - Generate configs from different sources
 =============================================================
 

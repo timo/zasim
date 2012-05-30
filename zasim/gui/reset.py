@@ -1,3 +1,28 @@
+"""This module offers a way for the user to reset a Simulator with
+different kinds of generated or specified configurations.
+
+The `ResetDocklet` gets embedded in the `ZasimMainWindow` automatically. The
+user then gets to choose from any of the available resetters, all derived from
+the `BaseResetter` class and registered with the `reg_resetter` class
+decorator.
+
+Each `Resetter` implements the following methods:
+
+* `~BaseResetter.setup_ui`, to create the user interface for changing settings
+  for this resetter.
+* `~BaseResetter.set_values`, to update the GUI whenever the internal state has
+  changed.
+* `~BaseResetter.take_over_settings`, to read in settings from an existing
+  `Configuration`
+* `~BaseResetter.generate_generator`, which returns a Generator to match the
+  settings from the user interface.
+
+.. seealso::
+
+    :ref:`zasim.config <zasim_config_module>`
+"""
+
+
 from ..external.qt import *
 from .elementary import CellDisplayWidget, EditableCellDisplayWidget
 from ..display.qt import make_palette_qc
