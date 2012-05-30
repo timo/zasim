@@ -68,6 +68,17 @@ class BaseResetter(QWidget):
         """This method changes the widgets to represent the internal state
         of the Resetter."""
 
+    def match_configuration(self, configuration):
+        """If the `configuration`, that's passed in, can be handled by us, I.E.
+        is in `handles_classes`, we use `take_over_settings` to extract the
+        settings and return True.
+
+        If the `configuration` doesn't match, return False."""
+        if isinstance(configuration, self.handles_classes):
+            self.take_over_settings(configuration)
+            return True
+        return False
+
     def take_over_settings(self, configuration=None):
         """Either take over the settings of another configurator or reset
         the settings to the last used configurator."""
@@ -85,7 +96,7 @@ class BaseRandomConfigurationResetter(BaseResetter):
     setting_values = False
 
     def take_over_settings(self, configuration=None):
-        if configuration and isinstance(configuration, BaseRandomConfiguration):
+        if configuration:
             self.original_configuration = configuration
         else:
             try:
@@ -263,7 +274,7 @@ class PatternResetter(BaseResetter):
         # }}}
 
     def take_over_settings(self, configuration=None):
-        if configuration and isinstance(configuration, PaternConfiguration):
+        if configuration:
             self.original_configuration = configuration
         else:
             try:
@@ -341,7 +352,7 @@ class ImageResetter(BaseResetter):
         self.sim_palette = self._sim.palette_info["colors32"]
 
     def take_over_settings(self, configuration=None):
-        if configuration and isinstance(configuration, ImageConfiguration):
+        if configuration:
             self.original_configuration = configuration
         else:
             try:
@@ -497,6 +508,7 @@ class ResetWidget(QWidget):
             w = cls(self._mw, parent=self)
             self.resetters[cls] = w
             self.resetters_layout.addWidget(w)
+            w.match_configuration(self._mw.simulator._target._reset_generator)
             w.show()
             self.whole_layout.update()
 
