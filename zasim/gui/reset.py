@@ -27,20 +27,17 @@ from ..external.qt import *
 from .elementary import CellDisplayWidget, EditableCellDisplayWidget
 from ..display.qt import make_palette_qc
 
-from ..config import BaseRandomConfiguration, RandomConfigurationFromPalette, PatternConfiguration, ImageConfiguration
+from ..config import *
 
 import re
-import collections
-
-class_to_resetter = collections.OrderedDict()
-def reg_resetter(base_class):
-    def register_func(cls):
-        class_to_resetter[base_class] = cls
-        return cls
-    return register_func
-
 
 class BaseResetter(QWidget):
+    friendly_name = ""
+    """Set this for the GUI."""
+
+    handles_classes = ()
+    """This defines, what kinds of Configuration classes we can handle."""
+
     def __init__(self, mainwin, **kwargs):
         super(BaseResetter, self).__init__(**kwargs)
 
@@ -78,11 +75,12 @@ class BaseResetter(QWidget):
     def generate_generator(self):
         """Generate a matching configuration generator from the settings."""
 
-@reg_resetter(BaseRandomConfiguration)
 class BaseRandomConfigurationResetter(BaseResetter):
     perc_widgets = {}
 
     friendly_name = "Random Configuration"
+
+    handles_classes = (BaseRandomConfiguration)
 
     setting_values = False
 
@@ -159,12 +157,13 @@ class BaseRandomConfigurationResetter(BaseResetter):
     def generate_generator(self):
         return RandomConfigurationFromPalette(self.values, *self.percs)
 
-@reg_resetter(PatternConfiguration)
 class PatternResetter(BaseResetter):
     """This resetter allows the user to define patterns, that will be used
     to create a configuration."""
 
     friendly_name = "Pattern Editor"
+
+    handles_classes = (PatternConfiguration)
 
     # XXX breaks down if the palette doesn't have 0 or 1.
     patterns = [(0,), (1,)]
@@ -332,9 +331,10 @@ class PatternResetter(BaseResetter):
     def generate_generator(self):
         return PatternConfiguration(self.patterns, self.layout)
 
-@reg_resetter(ImageConfiguration)
 class ImageResetter(BaseResetter):
     friendly_name = "From Image"
+
+    handles_classes = (ImageConfiguration)
 
     def __init__(self, *args, **kwargs):
         super(ImageResetter, self).__init__(*args, **kwargs)
@@ -412,6 +412,9 @@ class ImageResetter(BaseResetter):
 
 class FallbackResetter(BaseResetter):
     friendly_name = "Reset using original"
+
+    handles_classes = (BaseConfiguration)
+
     def take_over_settings(self, configuration=None):
         if configuration:
             self.original_configuration = configuration
@@ -455,9 +458,9 @@ class ResetWidget(QWidget):
 
         resetter_selecter = QComboBox(self)
         needs_fallback = True
-        for cls in class_to_resetter.values():
+        for cls in BaseResetter.__subclasses__():
             resetter_selecter.addItem(cls.friendly_name, cls)
-            if isinstance(self._mw.simulator._target._reset_generator, cls):
+            if isinstance(self._mw.simulator._target._reset_generator, cls.handles_classes):
                 needs_fallback = False
         if needs_fallback:
             resetter_selecter.addItem(FallbackResetter.friendly_name, FallbackResetter)
@@ -514,12 +517,15 @@ class ResetDocklet(QDockWidget):
     The ZasimMainWindow embeds this by default."""
 
     def __init__(self, mainwin, **kwargs):
+        super(ResetDocklet, self).__init__(**kwargs)
         self.setAllowedAreas(Qt.RightDockWidgetArea)
         self.setFloating(False)
+
+        self._mw = mainwin
 
         self.setup_ui()
 
     def setup_ui(self):
-        self.reset_widget = ResetWidget(self.mw, parent=self)
+        self.reset_widget = ResetWidget(self._mw, parent=self)
 
         self.setWidget(self.reset_widget)
