@@ -408,19 +408,17 @@ class FallbackResetter(BaseResetter):
     def generate_generator(self):
         return self.original_configuration
 
-# TODO - it would be great if this could be used as a normal widget/window
-class ResetDocklet(QDockWidget):
-    """This dockwidget lets the user choose from a wide variety of
-    config generators."""
+class ResetWidget(QWidget):
+    """This widget lets the user choose from a wide variety of
+    config generators using classes derived from BaseResetter and registered
+    with the reg_resetter class decorator."""
 
     resetters = {}
 
     current_resetter = None
 
     def __init__(self, mainwin, **kwargs):
-        super(ResetDocklet, self).__init__(**kwargs)
-        self.setAllowedAreas(Qt.RightDockWidgetArea)
-        self.setFloating(False)
+        super(ResetWidget, self).__init__(**kwargs)
 
         self._mw = mainwin
 
@@ -428,9 +426,6 @@ class ResetDocklet(QDockWidget):
         self.switch_resetter(0)
 
     def setup_ui(self):
-        # TODO this may need a QScrollArea some day.
-        centralwidget = QWidget()
-
         whole_layout = QVBoxLayout()
 
         resetter_selecter = QComboBox(self)
@@ -461,9 +456,7 @@ class ResetDocklet(QDockWidget):
         whole_layout.addStretch()
 
         self.whole_layout = whole_layout
-        centralwidget.setLayout(self.whole_layout)
-
-        self.setWidget(centralwidget)
+        self.setLayout(self.whole_layout)
 
     def switch_resetter(self, index):
         cls = self.resetter_selecter.itemData(index)
@@ -488,3 +481,20 @@ class ResetDocklet(QDockWidget):
     def generate(self):
         generator = self.current_resetter.generate_generator()
         self._mw.simulator.reset(generator)
+
+class ResetDocklet(QDockWidget):
+    """This dockwidget lets the user choose from a wide variety of
+    config generators, by embedding a ResetWidget into a DockWidget.
+
+    The ZasimMainWindow embeds this by default."""
+
+    def __init__(self, mainwin, **kwargs):
+        self.setAllowedAreas(Qt.RightDockWidgetArea)
+        self.setFloating(False)
+
+        self.setup_ui()
+
+    def setup_ui(self):
+        self.reset_widget = ResetWidget(self.mw, parent=self)
+
+        self.setWidget(self.reset_widget)
