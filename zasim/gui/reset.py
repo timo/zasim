@@ -8,12 +8,16 @@ the gui.
 
 Each `Resetter` implements the following methods:
 
-* `~BaseResetter.setup_ui`, to create the user interface for changing settings
+* `~BaseResetter.setup_ui` to create the user interface for changing settings
   for this resetter.
-* `~BaseResetter.set_values`, to update the GUI whenever the internal state has
+* `~BaseResetter.set_values` to update the GUI whenever the internal state has
   changed.
-* `~BaseResetter.take_over_settings`, to read in settings from an existing
+* `~BaseResetter.take_over_settings` to read in settings from an existing
   `Configuration`
+* `~BaseResetter.match_configuration` to check if the `Configuration` can be
+  used for take_over_settings.
+* `~BaseResetter.generate_example` will create usable values if the current
+  simulator has a non-matching `Configuration` class.
 * `~BaseResetter.generate_generator`, which returns a Generator to match the
   settings from the user interface.
 
