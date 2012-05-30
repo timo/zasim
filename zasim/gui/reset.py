@@ -260,7 +260,7 @@ class PatternResetter(BaseResetter):
             self.editors.insert(0, self.create_edit_widget(self.pattern[0], 0))
             self.editor_layout.insertWidget(0, self.editors[0])
             for idx, editor in enumerate(self.editors[1:]):
-                editor.set_position(idx + 2)
+                editor.set_position(idx + 1)
             self.pattern_changed.emit(self.position)
 
         def add_right(self):
