@@ -3,8 +3,8 @@ different kinds of generated or specified configurations.
 
 The `ResetDocklet` gets embedded in the `ZasimMainWindow` automatically. The
 user then gets to choose from any of the available resetters, all derived from
-the `BaseResetter` class and registered with the `reg_resetter` class
-decorator.
+the `BaseResetter` class. Subclasses are automatically registered to be used in
+the gui.
 
 Each `Resetter` implements the following methods:
 
