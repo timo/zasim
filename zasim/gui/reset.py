@@ -51,11 +51,8 @@ class BaseResetter(QWidget):
 
         self.values = self._sim.t.possible_values
 
-        try:
-            if self._sim._target._reset_generator is not None:
-                self.take_over_settings(self._sim._target._reset_generator)
-        except:
-            pass
+        if not self.match_configuration(self._sim._target._reset_generator):
+            self.generate_example()
 
         self.setup_ui()
         self.set_values()
@@ -83,6 +80,10 @@ class BaseResetter(QWidget):
         """Either take over the settings of another configurator or reset
         the settings to the last used configurator."""
 
+    def generate_example(self):
+        """Generate valid example values and take them over into the gui."""
+        self.take_over_settings(None)
+
     def generate_generator(self):
         """Generate a matching configuration generator from the settings."""
 
@@ -99,14 +100,13 @@ class BaseRandomConfigurationResetter(BaseResetter):
         if configuration:
             self.original_configuration = configuration
         else:
-            try:
-                configuration = self.original_configuration
-            except:
-                configuration = RandomConfigurationFromPalette(self.values)
-                self.original_configuration = configuration
+            configuration = self.original_configuration
 
         self.values = configuration.values
         self.percs = list(configuration.percentages)
+
+    def generate_example(self):
+        self.take_over_settings(RandomConfigurationFromPalette(self.values))
 
     def setup_ui(self):
         whole_layout = QVBoxLayout()
@@ -277,15 +277,15 @@ class PatternResetter(BaseResetter):
         if configuration:
             self.original_configuration = configuration
         else:
-            try:
-                configuration = self.original_configuration
-            except:
-                configuration = PatternConfiguration([(0,), (1,)], [1,])
+            configuration = self.original_configuration
 
         self.patterns = list(configuration.patterns)
         self.layout = list(configuration.layout)
 
         # TODO this doesn't change the GUI yet.
+
+    def generate_example(self):
+        self.take_over_settings(PatternConfiguration([(0,), (1,)], [1,]))
 
     def setup_ui(self):
         layout = QVBoxLayout()
@@ -508,7 +508,6 @@ class ResetWidget(QWidget):
             w = cls(self._mw, parent=self)
             self.resetters[cls] = w
             self.resetters_layout.addWidget(w)
-            w.match_configuration(self._mw.simulator._target._reset_generator)
             w.show()
             self.whole_layout.update()
 
