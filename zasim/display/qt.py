@@ -308,7 +308,7 @@ class BaseQImagePainter(QObject):
         self._sim.changed.connect(self.conf_changed)
         self._sim.snapshot_restored.connect(self.conf_replaced)
         self._sim.updated.connect(self.after_step)
-        self.conf_changed()
+        self.conf_replaced()
 
     def conf_changed(self):
         """React to a change in the configuration that was not caused by a step
