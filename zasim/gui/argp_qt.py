@@ -285,6 +285,9 @@ def make_argument_parser():
     argp.add_argument("--sparse", default=False, action="store_true",
             help="should a sparse loop be created?")
 
+    argp.add_argument("--run",
+            help="Let the simulation run immediately.")
+
     return argp
 
 if __name__ == "__main__":

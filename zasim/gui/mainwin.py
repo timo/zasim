@@ -145,7 +145,8 @@ def main(width=200, height=200, scale=2,
         life=False, rule=None, alt_rule=None,
         copy_borders=True, black=None,
         no_histogram=False, no_activity=False,
-        base=2, sparse=False):
+        base=2, sparse=False,
+        run=False):
 
     # this makes argp_qt more happy
     histogram = not no_histogram
@@ -217,7 +218,8 @@ def main(width=200, height=200, scale=2,
     display = ZasimDisplay(sim_obj)
     display.set_scale(scale)
 
-    display.control.start()
+    if run:
+        display.control.start()
 
     if black is not None:
         display.control.zero_percentage.setValue(black)
