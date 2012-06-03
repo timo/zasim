@@ -40,8 +40,6 @@ def test(width=75, height=None, life=False, copy_borders=True,
         size = (width,) if height is None else (width, height)
 
         if any((background, patterns, layout)):
-            print background, patterns, layout
-            print [background or [0]] + (patterns or [[1]])
             config = PatternConfiguration([background or [0]] + (patterns or [[1]]), layout or [1])
         else:
             config = None
