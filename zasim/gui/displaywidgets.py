@@ -35,6 +35,9 @@ class DisplayWidget(QWidget):
         self.display.setObjectName("display")
         self.display.update.connect(self.update)
 
+        # force correct size of widget etc.
+        self.set_scale(self._scale)
+
     def _create_painter(self):
         shape = self._sim.shape
 
