@@ -1,7 +1,7 @@
 from ..external.qt import (QMainWindow, QDialog, Signal, QWidget, QVBoxLayout, QScrollArea,
         QLabel, Qt)
 from .. import cagen
-from ..config import RandomConfiguration
+from ..config import RandomConfiguration, PatternConfiguration
 from ..simulator import CagenSimulator
 from .display import ZasimDisplay
 from .histogram import HistogramExtraDisplay
@@ -159,7 +159,8 @@ def main(width=200, height=200, scale=2,
         life=False, rule=None, alt_rule=None,
         copy_borders=True, black=None,
         no_histogram=False, no_activity=False,
-        base=2, sparse=False):
+        base=2, sparse=False,
+        background=None, patterns=None, layout=None):
 
     # this makes argp_qt more happy
     histogram = not no_histogram
@@ -177,6 +178,10 @@ def main(width=200, height=200, scale=2,
         size = (w,)
     else:
         size = w, h
+
+    if any((background, patterns, layout)):
+        assert black is None, "cannot use pattern configuration and black percentage"
+        config = PatternConfiguration([background or [0]] + (patterns or [[1]]), layout or [1])
 
     if black is not None:
         config = RandomConfiguration(base, black)

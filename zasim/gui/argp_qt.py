@@ -244,6 +244,12 @@ def make_argument_parser():
         except ValueError as e:
             raise ap.ArgumentTypeError(str(e))
 
+    def parse_intlist(text):
+        if " " not in text and "," not in text:
+            return map(int, text)
+        import re
+        return re.findall(r"\d+", text)
+
     argp = ap.ArgumentParser(
         description="Run a 1d BinRule, a 2d Game of Life, or a 2d elementary "
                     "cellular automaton")
@@ -284,6 +290,13 @@ def make_argument_parser():
 
     argp.add_argument("--sparse", default=False, action="store_true",
             help="should a sparse loop be created?")
+
+    argp.add_argument("--background", type=parse_intlist,
+            help="What background pattern should be generated?")
+    argp.add_argument("--pattern", type=parse_intlist, action="append", dest="patterns",
+            help="Add a pattern to the available patterns for the layout.")
+    argp.add_argument("--layout", type=parse_intlist, 
+            help="What combinations of patterns to put in the middle.")
 
     return argp
 
