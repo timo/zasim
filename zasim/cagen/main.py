@@ -12,6 +12,7 @@ from .simulators import BinRule, GameOfLife
 from ..simulator import CagenSimulator
 from ..display.console import OneDimConsolePainter, TwoDimConsolePainter
 from ..features import HAVE_WEAVE
+from ..config import PatternConfiguration
 from . import DualRuleCellularAutomaton, automatic_stepfunc
 
 from ..debug import launch_debugger
@@ -23,7 +24,7 @@ def test(width=75, height=None, life=False, copy_borders=True,
          histogram=True, activity=False,
          pure=False, print_rule=True,
          nondet=100, beta=100, steps=100, base=2,
-         sparse=False):
+         sparse=False, background=None, patterns=None, layout=None):
 
     if beta > 1.0:
         beta = beta / 100.
@@ -31,14 +32,22 @@ def test(width=75, height=None, life=False, copy_borders=True,
         nondet = nondet / 100.
 
     if life:
+        assert (background, patterns, layout) == (None, None, None), "cannot use pattern generator with game of life"
         if height is None:
             height = 40
         sim_obj = GameOfLife((width, height), nondet, histogram, activity, None, beta, copy_borders, sparse_loop=sparse)
     else:
         size = (width,) if height is None else (width, height)
 
+        if any((background, patterns, layout)):
+            print background, patterns, layout
+            print [background or [0]] + (patterns or [[1]])
+            config = PatternConfiguration([background or [0]] + (patterns or [[1]]), layout or [1])
+        else:
+            config = None
+
         if alt_rule is None:
-            sim_obj = BinRule(size=size, rule=rule,
+            sim_obj = BinRule(size=size, config=config, rule=rule,
                     histogram=histogram, activity=activity,
                     nondet=nondet, beta=beta, copy_borders=copy_borders, base=base, sparse_loop=sparse)
         else:
@@ -66,7 +75,6 @@ def test(width=75, height=None, life=False, copy_borders=True,
         launch_debugger()
 
     if HAVE_WEAVE and not pure:
-        print "weave"
         for i in xrange(steps):
             sim_obj.step_inline()
             if histogram:
@@ -74,7 +82,6 @@ def test(width=75, height=None, life=False, copy_borders=True,
             if activity:
                 print sim_obj.t.activity, sum(sim_obj.t.activity)
     else:
-        print "pure"
         for i in xrange(steps):
             sim_obj.step_pure_py()
             if histogram:
@@ -84,6 +91,12 @@ def test(width=75, height=None, life=False, copy_borders=True,
 
 def main(args=None):
     import argparse
+
+    def parse_intlist(text):
+        if " " not in text and "," not in text:
+            return map(int, text)
+        import re
+        return re.findall(r"\d+", text)
 
     argp = argparse.ArgumentParser(
         description="Run a generated BinRule simulator and display its results "
@@ -121,6 +134,14 @@ def main(args=None):
 
     argp.add_argument("--sparse", default=False, type=bool,
             help="Should a sparse loop be generated?")
+
+    argp.add_argument("--background", type=parse_intlist,
+            help="What background pattern should be generated?")
+    argp.add_argument("--pattern", type=parse_intlist, action="append", dest="patterns",
+            help="Add a pattern to the available patterns for the layout.")
+    argp.add_argument("--layout", type=parse_intlist, 
+            help="What combinations of patterns to put in the middle.")
+
 
     args = argp.parse_args(args)
 
