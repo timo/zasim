@@ -160,7 +160,8 @@ def main(width=200, height=200, scale=2,
         copy_borders=True, black=None,
         no_histogram=False, no_activity=False,
         base=2, sparse=False,
-        background=None, patterns=None, layout=None):
+        background=None, patterns=None, layout=None,
+        run=False):
 
     # this makes argp_qt more happy
     histogram = not no_histogram
@@ -230,7 +231,8 @@ def main(width=200, height=200, scale=2,
     display = ZasimDisplay(sim_obj)
     display.set_scale(scale)
 
-    display.control.start()
+    if run:
+        display.control.start()
 
     if histogram:
         extra_hist = HistogramExtraDisplay(sim_obj, parent=display, height=200, maximum= w * h)

@@ -298,6 +298,9 @@ def make_argument_parser():
     argp.add_argument("--layout", type=parse_intlist, 
             help="What combinations of patterns to put in the middle.")
 
+    argp.add_argument("--run",
+            help="Let the simulation run immediately.")
+
     return argp
 
 if __name__ == "__main__":
