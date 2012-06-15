@@ -106,6 +106,7 @@ class ExternalEditWindow(QDialog):
 
         self.tmpfile = None
         self.process = None
+        self.watcher.fileChanged.disconnect(self.import_)
         del self.watcher
         self.watcher = None
 
@@ -125,7 +126,7 @@ class ExternalEditWindow(QDialog):
                 break
 
         if editor is None:
-            editor = QInputDialog.getText(self, "Please specify the editor commandline", "Zasim looks at the environment variables %s to figure out what editor to use. Please consider setting it. Until then, specify the editor to use:", "gvim")
+            editor = QInputDialog.getText(self, "Please specify the editor commandline", "Zasim looks at the environment variables %s to figure out what editor to use. Please consider setting it. Until then, specify the editor to use:" % (", ".join(envvars)), "gvim")
             if editor is None:
                 return False
 
