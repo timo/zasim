@@ -185,12 +185,19 @@ class FileAsciiConfiguration(BaseAsciiConfiguration):
     `zasim.display.console.BaseConsolePainter.export`."""
 
     def __init__(self, file_or_name, palette=None):
-        if not isinstance(file_or_name, file):
-            file_or_name = open(file_or_name, "r")
+        self.file_or_name = file_or_name
 
-        strdata = file_or_name.read()
+        super(FileAsciiConfiguration, self).__init__("", palette)
 
-        super(FileAsciiConfiguration, self).__init__(strdata, palette)
+    def generate(self, **kwargs):
+        if not isinstance(self.file_or_name, file):
+            file_o = open(self.file_or_name, "r")
+            self.strdata = file_o.read()
+        else:
+            self.file_or_name.seek(0)
+            self.strdata = self.file_or_name.read()
+
+        return super(FileAsciiConfiguration, self).generate(**kwargs)
 
 class ImageConfiguration(BaseConfiguration):
     """Import an image file as a configuration."""
