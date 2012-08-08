@@ -43,6 +43,46 @@ The zasim code can be `found on github <http://github.com/timo/zasim/>`_.
 Additionally, this documentation is built with "view source" links for
 the files.
 
+Understanding Zasim
+===================
+
+There is an :ref:`overview document <overview>`, that will explain the most common
+concepts of zasim.
+
+.. toctree::
+    :hidden:
+
+    overview
+
+Tutorial
+--------
+
+This documentation contains a tutorial that guides you through usage of and
+development with zasim.
+
+.. toctree::
+    :maxdepth: 2
+
+    tutorial
+
+Interactive Tutorial
+--------------------
+
+If you install the `ipython notebook`_ and its dependencies, you can run either
+of the following commands
+
+::
+
+    zasim_tutorial
+
+    python -m zasim.examples.notebooks.notebook_app
+
+    ipython notebook --notebook-dir=zasim/examples/notebooks/notebooks/
+
+to start zasim's interactive tutorial in a web browser.
+
+.. _`ipython notebook`: http://ipython.org/ipython-doc/stable/install/install.html#dependencies-for-the-ipython-html-notebook
+
 Running zasim
 =============
 
@@ -83,35 +123,6 @@ Environment variables
 
     :doc:`Debugging cagen stepfuncs <tutorial/debug_cagen>` goes deeper into how
     to use these environment variables to debug step functions.
-
-Tutorial
-========
-
-This documentation contains a tutorial that guides you through usage of and
-development with zasim.
-
-.. toctree::
-    :maxdepth: 2
-
-    tutorial
-
-Interactive Tutorial
---------------------
-
-If you install the `ipython notebook`_ and its dependencies, you can run either
-of the following commands
-
-::
-
-    zasim_tutorial
-
-    python -m zasim.examples.notebooks.notebook_app
-
-    ipython notebook --notebook-dir=zasim/examples/notebooks/notebooks/
-
-to start zasim's interactive tutorial in a web browser.
-
-.. _`ipython notebook`: http://ipython.org/ipython-doc/stable/install/install.html#dependencies-for-the-ipython-html-notebook
 
 API Documentation
 =================
