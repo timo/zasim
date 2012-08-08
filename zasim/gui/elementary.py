@@ -39,17 +39,20 @@ CELL_COL[GAP] = QColor("gray")
 class CellDisplayWidget(QLabel):
     """A little Widget that displays a cell in a neighbourhood."""
 
-    def __init__(self, value, position=None, size=16, **kwargs):
+    def __init__(self, value, position=None, size=16, palette=None, **kwargs):
         """Create the DisplayWidget.
 
         :param value: The cell value to show.
         :param position: Alternatively, the position of the cell in the result
                         list, to be used for communication to the outside.
-        :param size: The size of the cell, used for both width and height."""
+        :param size: The size of the cell, used for both width and height.
+        :param palette: The palette of colors to use.
+        """
         super(CellDisplayWidget, self).__init__(**kwargs)
         self.setFixedSize(size, size)
         self.setPixmap(self.__pixmap_for_value(value))
         self.position = position
+        self._palette = palette or CELL_COL
 
     def __pixmap_for_value(self, value):
         """Create a pixmap for the value of the cell."""
@@ -64,21 +67,24 @@ class EditableCellDisplayWidget(QPushButton):
     """This signal will be emitted when the user changed the value of the
     cell. It will emit the position and the new value."""
 
-    def __init__(self, value, position, base=2, size=16, **kwargs):
+    def __init__(self, value, position, base=2, size=16, palette=None, **kwargs):
         """Create the editable display widget.
 
         :param value: The start value.
         :param position: The position in the result list, used in the
                          :attr:`value_changed` signal.
         :param base: The numerical base for values.
-        :param size: The size for the display, used for both width and height."""
+        :param size: The size for the display, used for both width and height.
+        :param palette: The palette of qcolors to use.
+        """
         super(EditableCellDisplayWidget, self).__init__(**kwargs)
         self.value = value
         self.base = base
+        self._palette = palette
         self.setFixedSize(size, size)
         self.setFlat(True)
         self.setAutoFillBackground(True)
-        self.bg_color = CELL_COL[self.value]
+        self.bg_color = self._palette[self.value]
         self.position = position
 
         self.clicked.connect(self._change_value)
@@ -86,13 +92,13 @@ class EditableCellDisplayWidget(QPushButton):
     def _change_value(self):
         """Called by the clicked signal of the underlying QPushButton."""
         self.value = (self.value + 1) % self.base
-        self.bg_color = CELL_COL[self.value]
+        self.bg_color = self._palette[self.value]
         self.update()
         self.value_changed.emit(self.position, self.value)
 
     def set_value(self, value, emit=False):
         self.value = value
-        self.bg_color = CELL_COL[self.value]
+        self.bg_color = self._palette[self.value]
         self.update()
         if emit:
             self.value_changed.emit(self.position, self.value)
@@ -107,6 +113,11 @@ class EditableCellDisplayWidget(QPushButton):
                          else QColor("black"))
             paint.drawRect(QRect(1, 1, self.width() - 3, self.height() - 3))
 
+    def set_position(self, position):
+        self.position = position
+
+# TODO implement CellDisplayWidgets for images.
+
 class BaseNeighbourhoodDisplay(QWidget):
     """The BaseNeighbourhoodDisplay offers a skeleton for different ways of
     displaying neighbourhoods.
@@ -116,16 +127,17 @@ class BaseNeighbourhoodDisplay(QWidget):
     there is no spot in the neighbourhood at that position, and will then be
     put into a QGridLayout.
 
-    This class itself displays white or black blocks in the shape of the
+    This class itself displays colored blocks in the shape of the
     neighbourhood."""
 
-    def __init__(self, neighbourhood, values=None, base=2, **kwargs):
+    def __init__(self, neighbourhood, values=None, base=2, palette=None, **kwargs):
         super(BaseNeighbourhoodDisplay, self).__init__(**kwargs)
         self.neighbourhood = neighbourhood
         self.offsets = neighbourhood.offsets
         self.names = neighbourhood.names
         self.bbox = self.neighbourhood.bounding_box()
         self.base = base
+        self.palette = palette or CELL_COL
 
         dims = len(self.bbox)
         assert dims in (1, 2), "Only 1d or 2d neighbourhoods are supported"
@@ -189,7 +201,7 @@ class BaseNeighbourhoodDisplay(QWidget):
                       if the widget is to be created for an empty space,
                       :data:`GAP`.
         :returns: a QWidget initialised for the cell. Alternatively, None."""
-        return CellDisplayWidget(value)
+        return CellDisplayWidget(value, self.palette)
 
     def update_value(self, widget, offset, new_value):
         """Manipulate the given widget for the new value.
@@ -239,11 +251,13 @@ class NextToResult(QWidget):
 
 class ElementaryRuleWindow(QWidget):
     """A window usable to modify the table of an elementary step function."""
-    def __init__(self, neighbourhood, rule=None, base=2, **kwargs):
+    def __init__(self, neighbourhood, rule=None, base=2, palette_info=None, **kwargs):
         """:param neighbourhood: The `Neighbourhood` instance to get the
                 data from.
            :param rule: The rule to set at the beginning.
-           :param base: The numerical base for the cells."""
+           :param base: The numerical base for the cells.
+           :param palette: The palette_info for the simulator.
+           """
         super(ElementaryRuleWindow, self).__init__(**kwargs)
         self.neighbourhood = neighbourhood
 
@@ -270,7 +284,7 @@ class ElementaryRuleWindow(QWidget):
             result = data["result_value"]
             del data["result_value"]
             n_w = BaseNeighbourhoodDisplay(neighbourhood, data, parent=self)
-            r_w = EditableCellDisplayWidget(result, pos, base=base, parent=self)
+            r_w = EditableCellDisplayWidget(result, pos, base=base, parent=self, palette=self.palette)
             n_r_w = NextToResult(n_w, r_w, parent=self, direction="r")
             n_r_w.setObjectName("block_%d" % pos)
 

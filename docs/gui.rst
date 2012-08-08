@@ -15,6 +15,7 @@ documentation.
     gui/bases
     gui/mainwin
     gui/control
+    gui/reset
     gui/displaywidgets
     gui/histogram
     gui/externaledit

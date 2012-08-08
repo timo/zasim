@@ -1,6 +1,7 @@
 from ..external.qt import (QMainWindow, QDialog, Signal, QWidget, QVBoxLayout, QScrollArea,
         QLabel, Qt)
 from .. import cagen
+from ..config import RandomConfiguration, PatternConfiguration
 from ..simulator import CagenSimulator
 from .display import ZasimDisplay
 from .histogram import HistogramExtraDisplay
@@ -8,8 +9,7 @@ from .control import ControlWidget
 from .elementary import ElementaryRuleWindow
 from .externaledit import ExternalEditWindow
 from .argp_qt import NewZasimWindow
-
-import numpy as np
+from .reset import ResetDocklet
 
 class ZasimMainWindow(QMainWindow):
     """This is a window that manages one simulator. It holds one
@@ -80,6 +80,9 @@ class ZasimMainWindow(QMainWindow):
         #self.comp_dlg = None
         self.new_dlg = None
 
+        self.resetter = ResetDocklet(self)
+        self.addDockWidget(Qt.RightDockWidgetArea, self.resetter)
+
     def setup_menu(self):
         simulator_menu = self.menuBar().addMenu("Simulator")
         simulator_menu.setObjectName("simulator_menu")
@@ -104,6 +107,11 @@ class ZasimMainWindow(QMainWindow):
         quit_a.setObjectName("quit")
         quit_a.activated.connect(self.close)
 
+        view_menu = self.menuBar().addMenu("View")
+
+        show_resetter = view_menu.addAction("Reset tool")
+        show_resetter.activated.connect(self.show_resetter)
+
     def open_external_img(self):
         editwin = ExternalEditWindow(self.simulator)
         editwin.external_png()
@@ -127,16 +135,22 @@ class ZasimMainWindow(QMainWindow):
         if QDialog.Accepted == self.new_dlg.exec_():
             main(**vars(self.new_dlg.args))
 
+    def show_resetter(self):
+        self.resetter.show()
+        self.resetter.setFloating(False)
+
     def attach_display(self, display):
         """Attach an extra display to the control.
 
         Those displays are updated whenever a step occurs."""
         self.extra_displays.append(display)
+        self.addDockWidget(Qt.RightDockWidgetArea, display)
         #self.display_attached.emit(display)
 
     def detach_display(self, display):
         """Detach an extra attached display from the control."""
         self.extra_displays.remove(display)
+        self.removeDockWidget(display)
         #self.display_detached.emit(display)
 
 def main(width=200, height=200, scale=2,
@@ -146,6 +160,7 @@ def main(width=200, height=200, scale=2,
         copy_borders=True, black=None,
         no_histogram=False, no_activity=False,
         base=2, sparse=False,
+        background=None, patterns=None, layout=None,
         run=False):
 
     # this makes argp_qt more happy
@@ -165,16 +180,14 @@ def main(width=200, height=200, scale=2,
     else:
         size = w, h
 
-    if black is not None:
-        rands = np.random.rand(*size)
-        config = np.random.randint(0, base, size)
-        config[rands < black] = 0
+    if any((background, patterns, layout)):
+        assert black is None, "cannot use pattern configuration and black percentage"
+        config = PatternConfiguration([background or [0]] + (patterns or [[1]]), layout or [1])
 
-        size = None
+    if black is not None:
+        config = RandomConfiguration(base, black)
     else:
         config = None
-
-    print size, config
 
     if onedim and not life:
         if alt_rule is None:
@@ -221,14 +234,10 @@ def main(width=200, height=200, scale=2,
     if run:
         display.control.start()
 
-    if black is not None:
-        display.control.zero_percentage.setValue(black)
-
     if histogram:
         extra_hist = HistogramExtraDisplay(sim_obj, parent=display, height=200, maximum= w * h)
         extra_hist.show()
         display.window.attach_display(extra_hist)
-        display.window.addDockWidget(Qt.RightDockWidgetArea, extra_hist)
 
     if activity:
         extra_activity = HistogramExtraDisplay(sim_obj, attribute="activity", parent=display, height=200, maximum=w*h)

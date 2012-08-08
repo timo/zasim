@@ -147,6 +147,22 @@ class SimulatorInterface(QObject):
         raise NotImplementedError("restoring of snapshots not implemented"\
                                   "for %s" % (self.__class__))
 
+    def reset(self, configurator=None):
+        """Reset the simulator by using the same generator that was initially
+        used, if it's still available, or set a new configurator for the future
+        and reset the configuration with it once.
+
+        See also `cagen.config`"""
+        raise NotImplementedError("reset not implemented.")
+
+    def limit_palette(self):
+        result = {}
+        for key, pal in self.palette_info.iteritems():
+            new_dict = {k: pal[k] for k in self.t.possible_values}
+            result[key] = new_dict
+
+        self.palette_info = result
+
 class CagenSimulator(SimulatorInterface):
     """This Simulator takes a `StepFunc` instance and packs it in an interface
     compatible with `SimulatorInterface`."""
@@ -204,6 +220,15 @@ class CagenSimulator(SimulatorInterface):
         self._step_func.step_pure_py()
         self.step_number += 1
         self.updated.emit()
+
+    def reset(self, configurator=None):
+        if configurator is not None:
+            self._target._reset_generator = configurator
+        if self._target._reset_generator:
+            newconf = self._target._reset_generator.generate(size_hint=self._target._reset_size)
+            self.set_config(newconf)
+        else:
+            raise ValueError("This simulator's target wasn't created with a generator as config value.")
 
     def __str__(self):
         try:

@@ -133,6 +133,14 @@ class BaseRandomConfiguration(BaseConfiguration):
 
         self.cumulative_percentages = list(zip(self.values, cumulative_percentages))
 
+        if len(self.cumulative_percentages) > len(self.percentages):
+            percs = []
+            cumu = 0
+            for val, perc_v in self.cumulative_percentages:
+                percs.append(perc_v - cumu)
+                cumu = perc_v
+            self.percentages = tuple(percs)
+
 class RandomConfiguration(BaseRandomConfiguration):
     def __init__(self, base=2, *percentages):
         """Create a random initial configuration with values from 0 to base-1
@@ -140,6 +148,7 @@ class RandomConfiguration(BaseRandomConfiguration):
         percentages for the different states."""
 
         self.values = range(base)
+        self.percentages = percentages
         self.make_percentages_cumulative(percentages)
 
 class RandomConfigurationFromPalette(BaseRandomConfiguration):
@@ -202,7 +211,7 @@ class FileAsciiConfiguration(BaseAsciiConfiguration):
 class ImageConfiguration(BaseConfiguration):
     """Import an image file as a configuration."""
 
-    def __init__(self, filename, scale=1, palette=None):
+    def __init__(self, filename, scale=1, palette=None, fuzz=False):
         self.filename = filename
 
         if palette is None:
@@ -212,24 +221,77 @@ class ImageConfiguration(BaseConfiguration):
             palette = dict(enumerate(palette))
         self.palette = palette
         self.scale = scale
+        self.fuzz = fuzz
 
     def generate(self, size_hint=None, dtype=default_dtype):
-        from .external.qt import QImage
+        from .external.qt import QImage, QColor
+        from .display.qt import make_palette_qc
         image = QImage()
         assert image.load(self.filename)
         image = image.convertToFormat(QImage.Format_RGB32)
         if self.scale != 1:
             image = image.scaled(image.width() // self.scale,
                                  image.height() // self.scale)
-        nparr = np.frombuffer(image.bits(), dtype=np.uint32)
-        nparr = nparr.reshape((image.width(), image.height()), order="F")
-        result = np.ones((image.width(), image.height()), dtype=dtype)
+        if size_hint:
+            w, h = size_hint
+        else:
+            w, h = image.width(), image.height()
 
-        for value, color in self.palette.iteritems():
-            result[nparr == color] = value
+        result = np.ones((w, h), dtype=dtype)
+
+        if self.fuzz:
+
+            def lowest_distance(color, palette):
+                min_dst = 1000000000
+                min_value = -1
+                for value, pcol in palette.iteritems():
+                    x1, y1, z1,_ = color.getHsv()
+                    x2, y2, z2,_ = pcol.getHsv()
+                    dist = (x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2
+                    if dist < min_dst:
+                        min_value = value
+                        min_dst = dist
+                return min_value
+
+            qc_pal = make_palette_qc(self.palette)
+            for x, y in product(range(image.width()), range(image.height())):
+                color = QColor.fromRgb(image.pixel(x, y))
+                value = lowest_distance(color, qc_pal)
+                result[x, y] = value
+        else:
+            nparr = np.frombuffer(image.bits(), dtype=np.uint32)
+            nparr = nparr.reshape((image.width(), image.height()), order="F")
+            for value, color in self.palette.iteritems():
+                result[nparr == color] = value
 
         return result
 
+class PatternConfiguration(BaseConfiguration):
+    """This generator accepts different patterns as lists of values and a
+    layout that defines how those patterns make up the whole configuration.
+
+    Pattern 0 will be used to fill the whole background, all others will
+    be embedded centered in the configuration."""
+    def __init__(self, patterns, layout):
+        self.patterns = [list(a) for a in patterns] # deep copy
+        self.layout = tuple(layout)
+
+    def generate(self, size_hint=None, dtype=default_dtype):
+        assert len(size_hint) == 1, "two-dimensional pattern-based configs not supported yet."
+
+        background = self.patterns[0] * (size_hint[0] // len(self.patterns[0]) + 1)
+        result = np.array(background[:size_hint[0]], dtype=dtype)
+
+        internal_pattern = sum([self.patterns[idx] for idx in self.layout], [])
+        lendiff = size_hint[0] - len(internal_pattern)
+        if lendiff < 0:
+            result[0:-1] = internal_pattern[-lendiff//2:lendiff//2-1]
+        else:
+            middle = size_hint[0] // 2
+            halfwidth = len(internal_pattern) // 2
+            result[middle - halfwidth:middle - halfwidth + len(internal_pattern)] = internal_pattern
+
+        return result
 
 def function_of_radius(function, max_dist="diagonal"):
     if max_dist == "shortest":

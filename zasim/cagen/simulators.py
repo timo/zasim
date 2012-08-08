@@ -154,6 +154,8 @@ class ElementarySimulator(ElementaryCagenSimulator):
            :param histogram: Generate and update a histogram as well?
            :param rule: The rule number for the elementary cellular automaton.
            :param config: Optionally the configuration to use.
+                          Supply a configuration generator here
+                          to make the reset method of the simulator work.
            :param beta: If the probability is not 1, use this as the
                         probability for each cell to succeed in exposing its
                         result to the neighbouring cells.
@@ -217,6 +219,8 @@ class GameOfLife(CagenSimulator):
                           for each cell to get executed.
            :param histogram: Generate and update a histogram as well?
            :param config: Optionally the configuration to use.
+                          Supply a configuration generator here
+                          to make the reset method of the simulator work.
            :param beta: If the probability is not 1, use this as the
                         probability for each cell to succeed in exposing its
                         result to the neighbouring cells.
@@ -235,7 +239,6 @@ class GameOfLife(CagenSimulator):
                 extra_code=[],
                 sparse_loop=sparse_loop)
 
-        target = stepfunc.target
         stepfunc.gen_code()
 
         super(GameOfLife, self).__init__(stepfunc)

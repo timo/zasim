@@ -451,7 +451,7 @@ class OneDimQImagePainter(BaseQImagePainter):
         # set the position back to 0
         self._last_step = 0
 
-        self.after_step(False)
+        self.after_step()
 
 class TwoDimQImagePainterBase(BaseQImagePainter):
     """This class offers rendering a two-dimensional simulator config to
