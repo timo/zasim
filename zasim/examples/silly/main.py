@@ -8,9 +8,8 @@ from zasim.gui.display import ZasimDisplay
 from zasim.gui.histogram import HistogramExtraDisplay
 
 from zasim.external.qt import Qt, app
+from zasim.config import RandomConfiguration
 from zasim import cagen
-
-import numpy as np
 
 import sys
 
@@ -108,11 +107,7 @@ def main(width=200, height=200, scale=2,
     size = w, h
 
     if black is not None:
-        rands = np.random.rand(*size)
-        config = np.random.randint(0, base, size)
-        config[rands < black] = 0
-
-        size = None
+        config = RandomConfiguration(base, black)
     else:
         config = None
 
@@ -150,7 +145,7 @@ if __name__ == "__main__":
             help="the size of each cell of the configuration")
     argp.add_argument("-c", "--dont-copy-borders", default=True, action="store_false", dest="copy_borders",
             help="copy borders or just read zeros?")
-    argp.add_argument("--black", default=80, type=int,
+    argp.add_argument("--black", default=None, type=float,
             help="what percentage of the cells to make black at the beginning.")
 
     argp.add_argument("--nondet", default=100, type=int,
