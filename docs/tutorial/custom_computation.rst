@@ -266,7 +266,7 @@ Here you see a few snapshots from the SillyComputation in action.
     from zasim.display.qt import TwoDimQImagePainter, qimage_to_pngstr, display_table
     from zasim.external.qt import QApplication
 
-    base = 7
+    base = 5
     w, h = 50, 50
     size = w, h
     black = 0.7
@@ -280,11 +280,13 @@ Here you see a few snapshots from the SillyComputation in action.
     captions = [sim.step_number]
     for i in range(2):
         sim.step()
+        disp.after_step(False) # force rendering
         images.append(disp._image.copy())
         captions.append(sim.step_number)
     for i in range(9):
         for j in range(1 + 2 * i):
             sim.step()
+        disp.after_step(False) # force rendering
         images.append(disp._image.copy())
         captions.append(sim.step_number)
     image_data = qimage_to_pngstr(display_table(images, 4, captions))
