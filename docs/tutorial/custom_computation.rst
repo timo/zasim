@@ -260,21 +260,20 @@ Here you see a few snapshots from the SillyComputation in action.
     from zasim.cagen import *
     from zasim.simulator import CagenSimulator
     from zasim.examples.silly.main import SillySim
+    from zasim.config import RandomConfiguration
     import numpy as np
 
     from zasim.display.qt import TwoDimQImagePainter, qimage_to_pngstr, display_table
     from zasim.external.qt import QApplication
 
-    base = 8
+    base = 7
     w, h = 50, 50
     size = w, h
-    black = 0.85
+    black = 0.7
 
-    rands = np.random.rand(w, h)
-    config = np.random.randint(0, base, size)
-    config[rands < black] = 0
+    config = RandomConfiguration(base, black)
 
-    sim = SillySim(config=config, base=8)
+    sim = SillySim(size=size, config=config, base=base)
     disp = TwoDimQImagePainter(sim, scale=3)
     disp.after_step(False) # force rendering of the first config
     images = [disp._image.copy()]
