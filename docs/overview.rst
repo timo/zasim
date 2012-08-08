@@ -97,3 +97,6 @@ different components of the `StepFunc` to do its work. Examples for this
 include asking the `Neighbourhood` how many fields are to be looked at and where
 they are or asking the `Accessor` how to store and retrieve data from the
 cell configuration.
+
+Using a `StepFunc` object also gives us proper support for `get_config()` and
+`set_config()` as well as the step function, all the signals and a bit more.
