@@ -108,3 +108,14 @@ cell configuration.
 Using a `StepFunc` object in a `CagenSimulator` also gives us proper support
 for `get_config()` and `set_config()` as well as the step function, all the
 signals and a bit more.
+
+
+Generating Configurations
+-------------------------
+
+Oftentimes, the computation is especially interesting with the right starting
+configuration. Zasim has a `zasim.config <module>` for generating
+configurations from images, ascii files, patterns and probabilities, but since
+a configuration is just a numpy array, anything can be used as a data source.
+
+
