@@ -20,6 +20,9 @@ simulator prototypes with interesting parameters you can tweak and the
 simulator on the console as ascii art - or as images when using the rich
 consoles from IPython.
 
+For the simplest of experiments, the `~zasim.gui` or the commandline
+interface of the `~zasim.cagen` module can be used.
+
 High-Level Concepts
 -------------------
 
@@ -36,11 +39,12 @@ There are a core concepts and pieces that come together in `zasim`:
    `~zasim.simulator.SimulatorInterface` and implement the functions
    manually, use a pre-made simulator from `~zasim.cagen.simulators` or
    assemble a `~zasim.cagen.stepfunc.StepFunc` object from pieces offered
-   by the `~zasim.cagen` module.
+   by the `~zasim.cagen` module and pass it to the constructor of
+   `~zasim.simulator.CagenSimulator`.
 
  * `Painter`
 
-   A `Painter` serves to make the state of the Simulator visible at each step.
+   A `Painter` serves to make the state of the `Simulator` visible at each step.
    It listens to the `updated` signal from a Simulator and uses `get_config()`
    to retrieve a configuration, which is then displayed to the user in some
    form.
@@ -71,12 +75,13 @@ a function implemented in `Cython`, C code, that's in lined with `weave`, a
 request to some server on your network, ...
 
 But writing the whole step function from scratch for each little experiment
-requires a lot of work and makes the whole process less flexible.
+requires a lot of work and makes the whole process less flexible than
+it could be.
 
-The `cagen` module offers a way out. With it, you can compose a `Simulator`
-object from sets of parts that each serve a different purpose. Those
-parts are put together into a `StepFunc` object, which can then be used as
-a `Simulator` object.
+The `~zasim.cagen` module offers a way out. With it, you can compose a
+`Simulator` object from sets of parts that each serve a different purpose.
+Those parts are put together into a `~zasim.cagen.stepfunc.StepFunc` object,
+which can then be used as a `Simulator` object.
 
 The different parts are sufficiently weakly coupled, so that most parts can
 be replaced with other parts that already exist or with parts written for a
@@ -100,5 +105,6 @@ include asking the `Neighbourhood` how many fields are to be looked at and where
 they are or asking the `Accessor` how to store and retrieve data from the
 cell configuration.
 
-Using a `StepFunc` object also gives us proper support for `get_config()` and
-`set_config()` as well as the step function, all the signals and a bit more.
+Using a `StepFunc` object in a `CagenSimulator` also gives us proper support
+for `get_config()` and `set_config()` as well as the step function, all the
+signals and a bit more.
