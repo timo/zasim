@@ -23,6 +23,12 @@ consoles from IPython.
 For the simplest of experiments, the `~zasim.gui` or the commandline
 interface of the `~zasim.cagen` module can be used.
 
+For more complex experiments, you would usually want to create a whole new
+python script. The IPython notebook is very good for rapid and exploratory
+development of such scripts and can export a runnable python script when it's
+complete. Of course, these scripts can use the gui elements of zasim without
+problems.
+
 High-Level Concepts
 -------------------
 
@@ -64,6 +70,7 @@ There are a core concepts and pieces that come together in `zasim`:
    Essentially, everything that would be needed to reset a `Simulator` to an
    earlier state or what would be saved away for being resumed later would go
    in the `Target`.
+
 
 Jigsaw Puzzle: The `cagen` module
 ---------------------------------
@@ -118,4 +125,14 @@ configuration. Zasim has a `zasim.config <module>` for generating
 configurations from images, ascii files, patterns and probabilities, but since
 a configuration is just a numpy array, anything can be used as a data source.
 
+Such a configuration generator object from the config module can be passed as
+the `config` option to the constructor of Target and most prefabricated
+simulators.
 
+Some cellular automata like those that work like electronic or logic circuits
+require a powerful editor for comfortable creation and editing of
+configurations. Zasim doesn't strive to offer such a tool. Instead, the
+`zasim.config.ImageConfiguration <image import>` config generator and the
+`~zasim.display.qt.BaseQImagePainter.export` function of the qt display classes
+allow you to use regular graphics programs like `The Gimp` for
+your configurations.
