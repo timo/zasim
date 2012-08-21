@@ -1,3 +1,5 @@
+.. _cagen_package:
+
 :mod:`zasim.cagen` - Programmatically generating CAs
 ====================================================
 

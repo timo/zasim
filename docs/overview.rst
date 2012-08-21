@@ -14,14 +14,14 @@ called "notebook". Using the `ipython qtconsole`, images from the cellular
 automaton can be displayed directly inside the console as pictures, rather
 than ascii art.
 
-The package :mod:`zasim.cagen` offers a variety of pre-fabricated
-simulator prototypes with interesting parameters you can tweak and the
-:mod:`zasim.display` package offers a way to display each step of the
-simulator on the console as ascii art - or as images when using the rich
-consoles from IPython.
+The package :ref:`zasim.cagen <cagen_package>` offers a variety of
+pre-fabricated simulator prototypes with interesting parameters you can
+tweak and the :ref:`zasim.display <display-package>` package offers a way to
+display each step of the simulator on the console as ascii art - or as images
+when using the rich consoles from IPython.
 
-For the simplest of experiments, the `~zasim.gui` or the commandline
-interface of the `~zasim.cagen` module can be used.
+For the simplest of experiments, the `gui <zasim.gui.main>` or the commandline
+interface of the `cagen <zasim.cagen.main>` module can be used.
 
 For more complex experiments, you would usually want to create a whole new
 python script. The IPython notebook is very good for rapid and exploratory
@@ -121,7 +121,7 @@ Generating Configurations
 -------------------------
 
 Oftentimes, the computation is especially interesting with the right starting
-configuration. Zasim has a `zasim.config <module>` for generating
+configuration. Zasim has a `module <zasim.config>` for generating
 configurations from images, ascii files, patterns and probabilities, but since
 a configuration is just a numpy array, anything can be used as a data source.
 
@@ -132,7 +132,7 @@ simulators.
 Some cellular automata like those that work like electronic or logic circuits
 require a powerful editor for comfortable creation and editing of
 configurations. Zasim doesn't strive to offer such a tool. Instead, the
-`zasim.config.ImageConfiguration <image import>` config generator and the
+`image import <zasim.config.ImageConfiguration>` config generator and the
 `~zasim.display.qt.BaseQImagePainter.export` function of the qt display classes
 allow you to use regular graphics programs like `The Gimp` for
 your configurations.
