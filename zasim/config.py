@@ -271,7 +271,7 @@ class PatternConfiguration(BaseConfiguration):
     layout that defines how those patterns make up the whole configuration.
 
     Pattern 0 will be used to fill the whole background, all others will
-    be embedded centered in the configuration."""
+    be embedded centered in the configuration according to `layout`."""
     def __init__(self, patterns, layout):
         self.patterns = [list(a) for a in patterns] # deep copy
         self.layout = tuple(layout)
