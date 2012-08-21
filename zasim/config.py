@@ -294,6 +294,9 @@ class PatternConfiguration(BaseConfiguration):
         return result
 
 def function_of_radius(function, max_dist="diagonal"):
+    """Turns a function that takes the radius and maximum distance as
+    arguments into a function compatible with the
+    `DensityDistributedConfiguration` class."""
     if max_dist == "shortest":
         calc_max_dist = lambda size: min(size)
     elif max_dist == "longest":
