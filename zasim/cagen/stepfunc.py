@@ -96,7 +96,10 @@ class StepFunc(object):
         :param visitors: Further `StepFuncVisitor` instances, that
                          add more behaviour. This usually includes a Computation.
         :param size: If the target is not supplied, the size has to be
-                     specified here."""
+                     specified here.
+
+        `loop`, `accessor`, `neighbourhood`, and `border` are special cases,
+        because they get names that other visitors can later access."""
 
         super(StepFunc, self).__init__(**kwargs)
 

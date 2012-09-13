@@ -90,6 +90,37 @@ The `~zasim.cagen` module offers a way out. With it, you can compose a
 Those parts are put together into a `~zasim.cagen.stepfunc.StepFunc` object,
 which can then be used as a `Simulator` object.
 
+Each of those parts, called `visitors` contributes piece of code to the
+`StepFunc` object. There are a few different categories which are later put
+together in a template. There's one template for python code and one for C
+code.
+
+.. code::
+    {localvars} // usually variable declarations for neighbourhood cells
+                // and computation
+    {loop_begin} // normally one or two nested loops
+        {pre_compute} // here, the neighbourhood grabs the values from the
+                      // neighbouring cells
+        {compute} // here, some result is calculated and stored into the
+                  // local variable `result`
+        {post_compute} // in this section, the result gets stored.
+    {loop_end} // this is usually just closing braces
+    {after_step} // here, some additional stuff is done, like storing
+                 // histograms and similar things
+
+.. code::
+    {init} # local variables are initialized to starting values
+    for pos in self.loop.get_iter(): # the iterator is always created the same way.
+        {pre_compute} # values from neighbouring cells are read
+        {compute} # a computation is done and the local var `result` is written
+        {post_compute} # the result value is written
+        {loop_end} # things like histograms do their work here
+    {after_step} # stats are written etc.
+    {finalize} # old and new arrays are swapped
+
+    pysections = "init pre_compute compute post_compute loop_end after_step finalize".split()
+
+
 The different parts are sufficiently weakly coupled, so that most parts can
 be replaced with other parts that already exist or with parts written for a
 specific purpose.
