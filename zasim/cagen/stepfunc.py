@@ -95,8 +95,6 @@ class StepFunc(object):
                        Can be elided.
         :param visitors: Further `StepFuncVisitor` instances, that
                          add more behaviour. This usually includes a Computation.
-        :param size: If the target is not supplied, the size has to be
-                     specified here.
 
         `loop`, `accessor`, `neighbourhood`, and `border` are special cases,
         because they get names that other visitors can later access."""
@@ -186,12 +184,16 @@ class StepFunc(object):
     def add_weave_code(self, hook, code):
         """Add a snippet of C code to the section "hook".
 
+        StepFuncVisitor subclasses call this method in their visit method.
+
         :param hook: the section to append the code to.
         :param code: the C source code to add."""
         self.code[hook].append(code)
 
     def add_py_code(self, hook, code):
         """Add a string of python code to the section "hook".
+
+        StepFuncVisitor subclasses call this method in their visit method.
 
         :param hook: the section to append the code to.
         :param code: the python code to add (as a string)."""
