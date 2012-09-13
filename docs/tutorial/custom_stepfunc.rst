@@ -98,7 +98,7 @@ interface. Those slots are:
      offers a local variable `nonzerocount` inside the loop, that holds the
      number of cells from the neighbourhood, that are not zero.
 
-   - Based on the `CountBasedComputationBase`, the 
+   - Based on the `CountBasedComputationBase`, the
      `~zasim.cagen.computations.LifeCellularAutomatonBase`, that implements
      Conways Game of Life.
 

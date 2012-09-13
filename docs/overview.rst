@@ -29,6 +29,7 @@ development of such scripts and can export a runnable python script when it's
 complete. Of course, these scripts can use the gui elements of zasim without
 problems.
 
+
 High-Level Concepts
 -------------------
 
@@ -118,8 +119,6 @@ code.
     {after_step} # stats are written etc.
     {finalize} # old and new arrays are swapped
 
-    pysections = "init pre_compute compute post_compute loop_end after_step finalize".split()
-
 
 The different parts are sufficiently weakly coupled, so that most parts can
 be replaced with other parts that already exist or with parts written for a
@@ -167,3 +166,45 @@ configurations. Zasim doesn't strive to offer such a tool. Instead, the
 `~zasim.display.qt.BaseQImagePainter.export` function of the qt display classes
 allow you to use regular graphics programs like `The Gimp` for
 your configurations.
+
+
+Displaying Configurations
+-------------------------
+
+Zasim comes with a package called `display`, which has a module for ascii-based
+console output and a module for graphical output.
+
+A display will connect to the `updated` signal, that gets emitted by a `Simulator`
+whenever the configuration changes and then brings the result to the screen.
+
+The display classes, usually called something ending in `Painter` will generally
+use a palette to figure out how to display the configuration. Those can be set in
+the `palette_info` dictionary of the Simulator object.
+
+Palettes are always a dictionary from what value is in the configuration to how
+it's displayed in the output.
+
+ * colors32, qcolors
+
+   Those are used by the `QImagePainter` to display each cell in the configuration
+   as a pixel.
+
+ * tiles
+
+   Those are used by the `TwoDimQImagePalettePainter` to display a little picture
+   for each cell.
+
+ * chars
+
+   Those are used by most of the ConsolePainters.
+
+ * cboxes
+
+   Those are used by the `MultiLineOneDimConsolePainter`, which displays more
+   than one line per cell. Utility functions in the class allow you to create
+   cbox tilesets with ascii-art boxes around the values.
+
+ * hexcolors
+
+   Those are used to display HTML table based representations by the
+   ConsolePainters for use in IPython `qtconsole` and `notebook`.
