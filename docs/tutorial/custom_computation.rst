@@ -248,7 +248,8 @@ The generated C code for a simple example looks like this:
                     }
     /* from section after_step */
 
-**
+..
+  ** <- because vim highlighter gets confused by the stars in c code.
 
 The fruit of our efforts
 ------------------------
