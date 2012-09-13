@@ -78,7 +78,7 @@ class StepFunc(object):
     pysections = "init pre_compute compute post_compute loop_end after_step finalize".split()
 
     def __init__(self, target,
-                 loop, accessor, neighbourhood, border=None, extra_code=[],
+                 loop, accessor, neighbourhood, border=None, visitors=[],
                  **kwargs):
         """The Constructor creates a weave-based step function from the
         specified parts.
@@ -93,8 +93,8 @@ class StepFunc(object):
                               neighbouring cell values into known variables.
         :param border: A `BorderHandler`, that handles wrapping etc.
                        Can be elided.
-        :param extra_code: Further `StepFuncVisitor` classes, that
-                           add more behaviour. This usually includes a Computation.
+        :param visitors: Further `StepFuncVisitor` instances, that
+                         add more behaviour. This usually includes a Computation.
         :param size: If the target is not supplied, the size has to be
                      specified here."""
 
@@ -127,7 +127,7 @@ class StepFunc(object):
 
         self.visitors = ([self.acc, self.neigh, self.loop] +
                         ([self.border] if self.border else []) +
-                        extra_code)
+                        visitors)
 
         for code in self.visitors:
             code.bind(self)

@@ -82,7 +82,7 @@ class SillySim(cagen.simulators.CagenSimulator):
                 nondet=nondet, beta=beta,
                 histogram=histogram, activity=activity,
                 copy_borders=copy_borders, neighbourhood=neighbourhood,
-                base=base, extra_code=[])
+                base=base, visitors=[])
         self.computer = computer
         self.target = stepfunc.target
         stepfunc.gen_code()

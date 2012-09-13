@@ -78,7 +78,7 @@ Jigsaw Puzzle: The `cagen` module
 Zasim itself doesn't care how the `step()` function is implemented. You can
 write global step functions in a lot of different ways, like a pure python loop
 that goes over all cells, a class or function from a `CPython extension module`,
-a function implemented in `Cython`, C code, that's in lined with `weave`, a
+a function implemented in `Cython`, C code, that's inlined with `weave`, a
 request to some server on your network, ...
 
 But writing the whole step function from scratch for each little experiment

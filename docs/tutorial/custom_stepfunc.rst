@@ -77,7 +77,7 @@ interface. Those slots are:
    with them. The `~zasim.cagen.loops.SparseCellLoop` uses these functions to
    correctly mark neighbourhood cells as active if there was a change.
 
- * A `~zasim.cagen.bases.ExtraStats` instance (in the `extra_code` list, as
+ * A `~zasim.cagen.bases.ExtraStats` instance (in the `visitors` list, as
    well), which gathers some additional statistics about the step function
    execution. The following two `ExtraStats` classes are already available:
 
@@ -87,7 +87,7 @@ interface. Those slots are:
    - `~zasim.cagen.stats.ActivityRecord` counts, how many cells have changed
      their value in one step.
 
- * Finally, a `~zasim.cagen.bases.Computation` instance (in the `extra_code`
+ * Finally, a `~zasim.cagen.bases.Computation` instance (in the `visitors`
    list), that does the actual computation. Examples include:
 
    - `~zasim.cagen.computations.ElementaryCellularAutomatonBase`, a class, that
@@ -300,7 +300,7 @@ for the generated C++ code:
     >>> n = ElementaryFlatNeighbourhood()
     >>> # finally, compose the parts into a whole
     >>> sf = StepFunc(loop=l, accessor=a, neighbourhood=n,
-    ...               extra_code=[b, c], target=t)
+    ...               visitors=[b, c], target=t)
     >>> sf.gen_code()
     >>> print sf.pure_py_code_text
     def step_pure_py(self):

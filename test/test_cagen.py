@@ -79,7 +79,7 @@ class TestCAGen:
         copier = cagen.SimpleBorderCopier()
 
         sf = cagen.StepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                           extra_code=[copier, compute], target=t)
+                           visitors=[copier, compute], target=t)
 
         res = compute.pretty_print()
         res = "\n".join(a.strip() for a in res.split("\n"))
@@ -159,7 +159,7 @@ class TestCAGen:
                           cagen.TwoDimNondeterministicCellLoop(),
                     accessor=cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
-                    extra_code=[cagen.SimpleBorderCopier(),
+                    visitors=[cagen.SimpleBorderCopier(),
                         computer] +
                            ([] if deterministic else [cagen.RandomGenerator()]),
                     target=target)
@@ -217,7 +217,7 @@ class TestCAGen:
                 loop=cagen.OneDimNondeterministicCellLoop(),
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.ElementaryFlatNeighbourhood(),
-                extra_code=[cagen.SimpleBorderCopier(),
+                visitors=[cagen.SimpleBorderCopier(),
                     cagen.RandomGenerator(random_generator=rand),
                     computer], target=t)
 
@@ -244,7 +244,7 @@ class TestCAGen:
                 loop=cagen.TwoDimNondeterministicCellLoop(),
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=cagen.VonNeumannNeighbourhood(),
-                extra_code=[cagen.SimpleBorderCopier(),
+                visitors=[cagen.SimpleBorderCopier(),
                     cagen.RandomGenerator(random_generator=rand),
                     computer], target=t)
 
@@ -288,13 +288,13 @@ class TestCAGen:
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=n1,
                 target=t1,
-                extra_code=[cagen.TwoDimSlicingBorderCopier(), MyComputation()])
+                visitors=[cagen.TwoDimSlicingBorderCopier(), MyComputation()])
         sf2 = cagen.StepFunc(
                 loop=cagen.TwoDimCellLoop(),
                 accessor=cagen.SimpleStateAccessor(),
                 neighbourhood=n2,
                 target=t2,
-                extra_code=[cagen.SimpleBorderCopier(), MyComputation()])
+                visitors=[cagen.SimpleBorderCopier(), MyComputation()])
 
         sf1.gen_code()
         sf2.gen_code()
@@ -402,13 +402,13 @@ class TestCAGen:
         neigh = cagen.MooreNeighbourhood()
         copier = cagen.SimpleBorderCopier()
         histogram = cagen.SimpleHistogram()
-        extra_code = [copier, compute, histogram]
+        visitors = [copier, compute, histogram]
 
         if not deterministic:
-            extra_code.append(cagen.RandomGenerator())
+            visitors.append(cagen.RandomGenerator())
 
         sf = cagen.StepFunc(loop=l, accessor=acc, neighbourhood=neigh,
-                        extra_code=extra_code, target=t)
+                        visitors=visitors, target=t)
 
         sf.gen_code()
         sim = cagen.CagenSimulator(sf)

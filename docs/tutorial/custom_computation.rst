@@ -79,7 +79,7 @@ Now we can feed that into a StepFunc and see what happens.
     c = SillyComputation()
 
     sf = StepFunc(loop=l, accessor=a, neighbourhood=n,
-                  extra_code=[b, c], target=t)
+                  visitors=[b, c], target=t)
     sf.gen_code()
     print sf.pure_py_code_text
 

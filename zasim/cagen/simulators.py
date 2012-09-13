@@ -25,12 +25,12 @@ def automatic_stepfunc(size=None, config=None, computation=None,
                        nondet=1, beta=1,
                        histogram=False, activity=False,
                        copy_borders=True, neighbourhood=None,
-                       base=2, extra_code=None,
+                       base=2, visitors=None,
                        sparse_loop=False,
                        target_class=Target,
                        needs_random_generator=False, random_generator=None, **kwargs):
     """From the given parameters, assemble a StepFunc with the given
-    computation and extra_code objects. Additionally, a target is created.
+    computation and visitors objects. Additionally, a target is created.
 
     Returns the stepfunc."""
     if size is None:
@@ -102,21 +102,21 @@ def automatic_stepfunc(size=None, config=None, computation=None,
     else:
         border = BorderSizeEnsurer()
 
-    if extra_code is None:
-        extra_code = []
+    if visitors is None:
+        visitors = []
 
     if needs_random_generator:
-        extra_code.append(RandomGenerator(random_generator=random_generator))
+        visitors.append(RandomGenerator(random_generator=random_generator))
 
     stepfunc = StepFunc(
             loop=loop,
             accessor=acc,
             neighbourhood=neighbourhood,
             border=border,
-            extra_code=[computation] +
+            visitors=[computation] +
             ([SimpleHistogram()] if histogram else []) +
             ([ActivityRecord()] if activity else []) +
-            extra_code, target=target)
+            visitors, target=target)
 
     return stepfunc
 
@@ -186,7 +186,7 @@ class ElementarySimulator(ElementaryCagenSimulator):
                 nondet=nondet, beta=beta,
                 histogram=histogram, activity=activity,
                 copy_borders=copy_borders, neighbourhood=neighbourhood,
-                base=base, extra_code=[],
+                base=base, visitors=[],
                 sparse_loop=sparse_loop)
 
         target = stepfunc.target
@@ -236,7 +236,7 @@ class GameOfLife(CagenSimulator):
                 nondet=nondet, beta=beta,
                 histogram=histogram, activity=activity,
                 copy_borders=copy_borders, neighbourhood=MooreNeighbourhood,
-                extra_code=[],
+                visitors=[],
                 sparse_loop=sparse_loop)
 
         stepfunc.gen_code()

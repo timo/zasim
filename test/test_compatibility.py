@@ -10,7 +10,7 @@ class TestCompatibility:
                     loop=cagen.OneDimCellLoop(),
                     accessor=cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
-                    extra_code=[],
+                    visitors=[],
                     target=cagen.target.Target(size=(100,)))
 
     def test_twodim_loop_onedim_conf(self):
@@ -19,7 +19,7 @@ class TestCompatibility:
                     loop=cagen.TwoDimCellLoop(),
                     accessor = cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
-                    extra_code=[],
+                    visitors=[],
                     target=cagen.target.Target(size=(100,)))
 
     def test_onedim_conf_twodim_neighbourhood(self):
@@ -28,7 +28,7 @@ class TestCompatibility:
                     loop=cagen.OneDimCellLoop(),
                     accessor = cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
-                    extra_code=[],
+                    visitors=[],
                     target=cagen.target.Target(size=(100,)))
 
     def test_incomplete_beta_async(self):
@@ -37,7 +37,7 @@ class TestCompatibility:
                     loop=cagen.OneDimCellLoop(),
                     accessor = cagen.BetaAsynchronousAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(),
-                    extra_code=[],
+                    visitors=[],
                     target=cagen.target.Target(size=(100,)))
 
         with pytest.raises(cagen.CompatibilityException):
@@ -45,5 +45,5 @@ class TestCompatibility:
                     loop=cagen.OneDimCellLoop(),
                     accessor = cagen.SimpleStateAccessor(),
                     neighbourhood=cagen.VonNeumannNeighbourhood(Base=cagen.BetaAsynchronousNeighbourhood),
-                    extra_code=[],
+                    visitors=[],
                     target=cagen.target.Target(size=(100,)))
