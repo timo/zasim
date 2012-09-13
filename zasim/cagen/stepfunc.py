@@ -74,7 +74,7 @@ class StepFunc(object):
     Do not set this yourself. This is set from the constructor and taken from
     the `target` object!"""
 
-    sections = "headers localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
+    sections = "localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
     pysections = "init pre_compute compute post_compute loop_end after_step finalize".split()
 
     def __init__(self, target,
