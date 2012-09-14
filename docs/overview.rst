@@ -106,7 +106,8 @@ code.
                       // neighbouring cells
         {compute} // here, some result is calculated and stored into the
                   // local variable `result`
-        {post_compute} // in this section, the result gets stored.
+        {post_compute} // in this section, the result gets stored, histogram
+                       // values are counted, ...
     {loop_end} // this is usually just closing braces
     {after_step} // here, some additional stuff is done, like storing
                  // histograms and similar things
