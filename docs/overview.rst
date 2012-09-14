@@ -93,11 +93,12 @@ which can then be used as a `Simulator` object.
 
 Each of those parts, called `visitors` contributes piece of code to the
 `StepFunc` object. There are a few different categories which are later put
-together in a template. There's one template for python code and one for C
+together in a template. There's one template for C code and one for python
 code.
 
 .. sourcecode:: c
 
+    // C code template
     {localvars} // usually variable declarations for neighbourhood cells
                 // and computation
     {loop_begin} // normally one or two nested loops
@@ -112,6 +113,7 @@ code.
 
 .. sourcecode:: py
 
+    # python code template
     {init} # local variables are initialized to starting values
     for pos in self.loop.get_iter(): # the iterator is always created the same way.
         {pre_compute} # values from neighbouring cells are read
