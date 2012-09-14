@@ -96,7 +96,8 @@ Each of those parts, called `visitors` contributes piece of code to the
 together in a template. There's one template for python code and one for C
 code.
 
-.. code::
+.. sourcecode:: c
+
     {localvars} // usually variable declarations for neighbourhood cells
                 // and computation
     {loop_begin} // normally one or two nested loops
@@ -109,7 +110,8 @@ code.
     {after_step} // here, some additional stuff is done, like storing
                  // histograms and similar things
 
-.. code::
+.. sourcecode:: py
+
     {init} # local variables are initialized to starting values
     for pos in self.loop.get_iter(): # the iterator is always created the same way.
         {pre_compute} # values from neighbouring cells are read
@@ -198,13 +200,48 @@ it's displayed in the output.
 
    Those are used by most of the ConsolePainters.
 
+ * hexcolors
+
+   Those are used to display HTML table based representations by the
+   ConsolePainters for use in IPython `qtconsole` and `notebook`.
+
  * cboxes
 
    Those are used by the `MultiLineOneDimConsolePainter`, which displays more
    than one line per cell. Utility functions in the class allow you to create
    cbox tilesets with ascii-art boxes around the values.
 
- * hexcolors
+cboxes
+======
 
-   Those are used to display HTML table based representations by the
-   ConsolePainters for use in IPython `qtconsole` and `notebook`.
+When not supplying a `cboxes` value in the `palette_info` dictionary of your
+Simulator, the `MultiLineOneDimConsolePainter` will create a palette of boxes
+based on the `possible_values` list of the Simulator.
+
+Otherwise, you can create a palette by creating one list for each line in the
+box as well as an optional list of keys that correspond to each box.
+
+.. sourcecode:: py
+
+    palette = [["foo", "bar", "baz"],
+               [" 1 ", " 2 ", " 3 "]]
+    values  = [   1,     2,     3  ]
+
+    palette_to_use = MultiLineOneDimConsolePainter.convert_palette(palette, values)
+
+Alternatively, you can directly use the internal format, which is a dictionary
+that maps values to a list with one entry per line of the box:
+
+.. sourcecode:: py
+
+    palette = {1: ["foo", " 1 "],
+               2: ["bar", " 2 "],
+               3: ["baz", " 3 "]}
+
+There is another function that automatically creates ascii-art boxes for
+such palettes:
+
+.. sourcecode:: py
+
+    boxed_palette = MultiLineOneDimConsolePainter.box_art_palette(palette)
+
