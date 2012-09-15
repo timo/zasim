@@ -27,16 +27,30 @@ class BorderSizeEnsurer(BorderHandler):
         shape = self.target.cconf.shape
         dtype = self.target.cconf.dtype
         if dims == 1:
-            (left,), (right,) = self.code.acc.border_names
-            new_conf = np.zeros(shape[0] + borders[left] + borders[right], dtype)
-            new_conf[borders[left]:-borders[right]] = self.target.cconf
+            if len(shape) == dims:
+                (left,), (right,) = self.code.acc.border_names
+                new_conf = np.zeros(shape[0] + borders[left] + borders[right], dtype)
+                new_conf[borders[left]:-borders[right]] = self.target.cconf
+            else:
+                # do we have a subcell dtype?
+                (left,), (right,) = self.code.acc.border_names
+                new_conf = np.zeros((shape[0] + borders[left] + borders[right],) + shape[1:], dtype)
+                new_conf[borders[left]:-borders[right],...] = self.target.cconf
         elif dims == 2:
             # TODO figure out how to create slice objects in a general way.
-            (left,up), (right,down) = self.code.acc.border_names
-            new_conf = np.zeros((shape[0] + borders[left] + borders[right],
-                                 shape[1] + borders[up] + borders[down]), dtype)
-            new_conf[borders[left]:-borders[right],
-                     borders[up]:-borders[down]] = self.target.cconf
+            if len(shape) == dims:
+                (left,up), (right,down) = self.code.acc.border_names
+                new_conf = np.zeros((shape[0] + borders[left] + borders[right],
+                                     shape[1] + borders[up] + borders[down]), dtype)
+                new_conf[borders[left]:-borders[right],
+                         borders[up]:-borders[down]] = self.target.cconf
+            else:
+                (left,up), (right,down) = self.code.acc.border_names
+                new_conf = np.zeros((shape[0] + borders[left] + borders[right],
+                                     shape[1] + borders[up] + borders[down]) + shape[2:], dtype)
+                new_conf[borders[left]:-borders[right],
+                         borders[up]:-borders[down],...] = self.target.cconf
+
         self.target.cconf = new_conf
 
     def is_position_valid(self, pos):
