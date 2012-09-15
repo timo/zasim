@@ -438,8 +438,8 @@ class FallbackResetter(BaseResetter):
         layout = QHBoxLayout()
 
         label = QLabel("A %s was used to generate this configuration.<br/>"
-        "The GUI doesn't know how to configure this, but it does know how to"
-        "just use the same generator again. Use the generate button below to"
+        "The GUI doesn't know how to configure this, but it does know how to "
+        "just use the same generator again. Use the generate button below to "
         "do that." % type(self.original_configuration).__name__)
         label.setWordWrap(True)
         label.setTextFormat(Qt.RichText)
