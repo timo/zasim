@@ -198,6 +198,7 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
     db = warp(0, h+1, 1)
 
     result_template = {}
+    neighbours = list(neighbours)
     for x, y in neighbours:
         fixed = originalboxes[:]
         if (x-1, y-1) in neighbours: fixed.extend(luc)
