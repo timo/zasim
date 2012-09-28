@@ -215,15 +215,15 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
     neighbours = list(neighbours)
     for x, y in neighbours:
         fixed = originalboxes[:]
-        if (x-1, y-1) in neighbours: fixed.extend(luc)
-        if (x+1, y-1) in neighbours: fixed.extend(ruc)
-        if (x-1, y+1) in neighbours: fixed.extend(ldc)
-        if (x+1, y+1) in neighbours: fixed.extend(rdc)
+        if (x-1, y-1) in neighbours: fixed.extend(ldc); print "ldc"
+        if (x+1, y-1) in neighbours: fixed.extend(rdc); print "rdc"
+        if (x-1, y+1) in neighbours: fixed.extend(luc); print "luc"
+        if (x+1, y+1) in neighbours: fixed.extend(ruc); print "ruc"
 
-        if (x+1, y  ) in neighbours: fixed.extend(lb)
-        if (x-1, y  ) in neighbours: fixed.extend(rb)
-        if (x,   y+1) in neighbours: fixed.extend(ub)
-        if (x,   y-1) in neighbours: fixed.extend(db)
+        if (x+1, y  ) in neighbours: fixed.extend(lb); print "lb"
+        if (x-1, y  ) in neighbours: fixed.extend(rb); print "rb"
+        if (x,   y+1) in neighbours: fixed.extend(ub); print "ub"
+        if (x,   y-1) in neighbours: fixed.extend(db); print "db"
 
         result_template[(x,y)] = draw_box_template(fixed, content_width, w, h)
 
@@ -275,15 +275,18 @@ class ZacConsoleDisplay(object):
         self.template_h = len(self.template[(0,0)])
 
     def draw_conf(self, update_step=True):
-        w, h = self._last_conf.values()[0].shape
+        size = self._last_conf.values()[0].shape
+        if len(size) == 1:
+            size = (size[0], 1)
+        w, h = size
         def subpos(x, y):
-            xp = -1 if x == 0 else (1 if x == w else 0)
-            yp = -1 if y == 0 else (1 if y == h else 0)
+            xp = -1 if x == 0 else ( 1 if x == w-1 else 0)
+            yp =  1 if y == 0 else (-1 if y == h-1 else 0)
             return (xp, yp)
 
         datalines = []
         for y in range(h):
-            lines = [[] for y in range(self.template_h)]
+            lines = [[] for _ in range(self.template_h)]
             for x in range(w):
                 val = dict()
                 for k in self._last_conf.keys():
@@ -377,3 +380,4 @@ class ZacSimulator(SimulatorInterface):
 
     def get_config(self):
         return self.cconf
+
