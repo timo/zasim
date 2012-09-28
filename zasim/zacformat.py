@@ -4,6 +4,8 @@ like text_to_cell outputs."""
 import yaml
 import unicodedata
 import itertools
+from simulator import SimulatorInterface
+from cagen.neighbourhoods import SimpleNeighbourhood
 
 n2c = lambda name: (int(name[1:name.find("l")]), int(name[name.find("l")+1:]))
 n2c.__doc__ = """Turn a name of a subcell into x/y coords"""
@@ -292,8 +294,40 @@ class ZacConsoleDisplay(object):
     def __str__(self):
         return self.data
 
-class ZacSimulator(object):
-    def __init__(self, data_or_file):
+class ZacNeighbourhood(SimpleNeighbourhood):
+    def __init__(self, neigh_data, subcells):
+        names = []
+        offsets = []
+        for entry in neigh_data:
+            names.append(entry.name)
+            offsets.append((entry.x, entry.y))
+        super(ZacNeighbourhood, self).__init__(names, offsets)
+
+        self.subcells = subcells
+
+    def visit(self):
+        """Adds C and python code to get the neighbouring values and stores
+        them in local variables."""
+        for name, offset in zip(self.names, self.offsets):
+            for subcell in self.subcells:
+                self.code.add_weave_code("pre_compute", "%s_%s = %s;" % (name, subcell,
+                         self.code.acc.read_access(
+                             gen_offset_pos(self.code.loop.get_pos(), offset), subcell)))
+
+        for subcell in self.subcells:
+            self.code.add_weave_code("localvars",
+                    "int " + ", ".join(map(lambda n: "%s_%s" % n, subcell, self.names)) + ";")
+
+        for subcell in self.subcells:
+            assignments = ["%s_%s = self.acc.read_from(%s, %s)" % (
+                            name, subcell, "offset_pos(pos, %s)" % (offset,), subcell)
+                            for name, offset in zip(self.names, self.offsets)]
+        self.code.add_py_code("pre_compute",
+                "\n".join(assignments))
+
+
+class ZacSimulator(SimulatorInterface):
+    def __init__(self, data_or_file, shape):
         if isinstance(data_or_file, file):
             data = yaml.load(data_or_file)
         else:
@@ -304,3 +338,16 @@ class ZacSimulator(object):
         self.python_code = data.python_code
         self.cpp_code = data.cpp_code
 
+        self.neighbourhood = ZacNeighbourhood(data.neighbourhood, self.sets.keys())
+
+        self.cconf = {}
+        self.nconf = {}
+        for k in self.sets.keys():
+            self.cconf[k] = np.zeros(shape)
+            self.nconf[k] = np.zeros(shape)
+
+    def flip_configs(self):
+        self.cconf, self.nconf = self.nconf, self.cconf
+
+    def get_config(self):
+        
