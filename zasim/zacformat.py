@@ -22,8 +22,6 @@ def draw_box_template(boxes, w=1):
     w = max([t[0] for t in boxes])
     h = max([t[1] for t in boxes])
 
-    print w, h
-
     def corner(x, y):
         a = (x-1, y-1) in boxes
         b = (x,   y-1) in boxes
@@ -102,12 +100,11 @@ def draw_box_template(boxes, w=1):
             elif not ud and not both:
                 n += "SINGLE "
 
-        print x, y, a, b, c, d, ld, ud,
         try:
             res = unicodedata.lookup(n.rstrip())
         except:
             res = n.rstrip()
-        print res
+        # print x, y, a, b, c, d, ld, ud, res
         return res
 
     bhs, bhd = [unicodedata.lookup("BOX DRAWINGS %s HORIZONTAL" % a) for a in "LIGHT DOUBLE".split(" ")]
