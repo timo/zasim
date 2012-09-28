@@ -169,7 +169,10 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
 
     originalboxes = boxes[:]
 
-    neighbours = itertools.product([-1,0,1], [-1,0,1])
+    if twodim:
+        neighbours = itertools.product([-1,0,1], [-1,0,1])
+    else:
+        neighbours = itertools.product([-1,0,1], [0])
 
     content_width = w
 
@@ -226,6 +229,8 @@ class ZacConsoleDisplay(object):
         self.sets = sets
         self.strings = strings
 
+        self.data = ""
+
         self.measure_sets()
 
         if connect:
@@ -252,12 +257,40 @@ class ZacConsoleDisplay(object):
         all_contents = sum(self.sets.values(), [])
         max_w = max(map(len, all_contents))
 
+        self.stringy_subcells = [k for k, v in self.sets.iteritems() if isinstance(v[0], basestring)]
+
         coords = map(n2c, self.sets.keys())
 
-        self.template = draw_box_template(coords, max_w)
+        self.template = draw_tiled_box_template(coords, max_w)
+        self.template_h = len(self.template[(0,0)])
 
     def draw_conf(self, update_step=True):
-        pass
+        w, h = self._last_conf.values()[0].shape
+        def subpos(x, y):
+            xp = -1 if x == 0 else (1 if x == w else 0)
+            yp = -1 if y == 0 else (1 if y == h else 0)
+            return (xp, yp)
+
+        datalines = []
+        for y in range(h):
+            lines = [[] for y in range(self.template_h)]
+            for x in range(w):
+                val = dict()
+                for k in self._last_conf.keys():
+                    if k in self.stringy_subcells:
+                        val[k] = self.strings[self._last_conf[k][x,y]]
+                    else:
+                        val[k] = self._last_conf[k][x,y]
+                sp   = subpos(x,y)
+                box  = self.template[sp] % val
+                # TODO condense like in TwoDimConsolePainter
+                lines = [line.append(boxcontent) for line, boxcontent in zip(lines, box)]
+            # TODO condense like in TwoDimConsolePainter
+            datalines.extend("".join(line_c) for line_c in lines)
+        self.data = "\n".join(datalines)
+
+    def __str__(self):
+        return self.data
 
 class ZacSimulator(object):
     def __init__(self, data_or_file):
