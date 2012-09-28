@@ -215,15 +215,15 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
     neighbours = list(neighbours)
     for x, y in neighbours:
         fixed = originalboxes[:]
-        if (x-1, y-1) in neighbours: fixed.extend(ldc); print "ldc"
-        if (x+1, y-1) in neighbours: fixed.extend(rdc); print "rdc"
-        if (x-1, y+1) in neighbours: fixed.extend(luc); print "luc"
-        if (x+1, y+1) in neighbours: fixed.extend(ruc); print "ruc"
+        if (x-1, y-1) in neighbours: fixed.extend(ldc)
+        if (x+1, y-1) in neighbours: fixed.extend(rdc)
+        if (x-1, y+1) in neighbours: fixed.extend(luc)
+        if (x+1, y+1) in neighbours: fixed.extend(ruc)
 
-        if (x+1, y  ) in neighbours: fixed.extend(lb); print "lb"
-        if (x-1, y  ) in neighbours: fixed.extend(rb); print "rb"
-        if (x,   y+1) in neighbours: fixed.extend(ub); print "ub"
-        if (x,   y-1) in neighbours: fixed.extend(db); print "db"
+        if (x+1, y  ) in neighbours: fixed.extend(lb)
+        if (x-1, y  ) in neighbours: fixed.extend(rb)
+        if (x,   y+1) in neighbours: fixed.extend(ub)
+        if (x,   y-1) in neighbours: fixed.extend(db)
 
         result_template[(x,y)] = draw_box_template(fixed, content_width, w, h)
 
@@ -271,7 +271,10 @@ class ZacConsoleDisplay(object):
 
         coords = map(n2c, self.sets.keys())
 
-        self.template = draw_tiled_box_template(coords, max_w)
+        if len(self._sim.shape) == 1 or self._sim.shape[1] == 1:
+            self.template = draw_tiled_box_template(coords, max_w, twodim=False)
+        else:
+            self.template = draw_tiled_box_template(coords, max_w)
         self.template_h = len(self.template[(0,0)])
 
     def draw_conf(self, update_step=True):
@@ -282,6 +285,8 @@ class ZacConsoleDisplay(object):
         def subpos(x, y):
             xp = -1 if x == 0 else ( 1 if x == w-1 else 0)
             yp =  1 if y == 0 else (-1 if y == h-1 else 0)
+            if h == 1:
+                yp = 0
             return (xp, yp)
 
         datalines = []
@@ -296,9 +301,11 @@ class ZacConsoleDisplay(object):
                         val[k] = self._last_conf[k][x,y]
                 sp   = subpos(x,y)
                 box  = [line % val for line in self.template[sp]]
-                # TODO condense like in TwoDimConsolePainter
+                for line in lines:
+                    if len(line):
+                        line[-1] = line[-1][:-1]
                 [line.append(boxcontent) for line, boxcontent in zip(lines, box)]
-            # TODO condense like in TwoDimConsolePainter
+            datalines = datalines[:-1]
             datalines.extend("".join(line_c) for line_c in lines)
         self.data = "\n".join(datalines)
 
@@ -351,6 +358,7 @@ class ZacSimulator(SimulatorInterface):
         self.strings = data["strings"]
         self.python_code = "# auto-generated code:\n" + data["python_code"]
         self.cpp_code = data["cpp_code"]
+        self.shape = shape
 
         self.possible_values = self.sets
 
