@@ -9,6 +9,7 @@ from .cagen.neighbourhoods import SimpleNeighbourhood
 from .cagen.accessors import SubcellAccessor
 from .cagen.computations import PasteComputation
 from .cagen.loops import OneDimCellLoop, TwoDimCellLoop
+from .cagen.utils import gen_offset_pos
 
 import numpy as np
 
@@ -342,6 +343,8 @@ class ZacSimulator(SimulatorInterface):
         self.python_code = data.python_code
         self.cpp_code = data.cpp_code
 
+        self.stringy_subcells = [k for k, v in self.sets.iteritems() if isinstance(v[0], basestring)]
+
         self.neighbourhood = ZacNeighbourhood(data.neighbourhood, self.sets.keys())
         self.acc = SubcellAccessor(self.sets.keys())
         self.computation = PasteComputation(self.cpp_code, self.py_code)
@@ -353,8 +356,13 @@ class ZacSimulator(SimulatorInterface):
         self.cconf = {}
         self.nconf = {}
         for k in self.sets.keys():
-            self.cconf[k] = np.zeros(shape)
-            self.nconf[k] = np.zeros(shape)
+            self.cconf[k] = np.zeros(shape, dtype=int)
+            self.nconf[k] = np.zeros(shape, dtype=int)
+            if k in self.stringy_subcells:
+                val = self.strings.find(self.sets[k][0])
+                self.cconf[k][:] = val
+                self.nconf[k][:] = val
 
     def get_config(self):
         return self.cconf
+
