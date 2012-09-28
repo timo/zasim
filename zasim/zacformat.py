@@ -9,7 +9,7 @@ n2c = lambda name: (int(name[1:name.find("l")]), int(name[name.find("l")+1:]))
 n2c.__doc__ = """Turn a name of a subcell into x/y coords"""
 c2n = lambda x, y: "c%dl%d" % (x, y)
 
-def draw_box_template(boxes, t_w=1):
+def draw_box_template(boxes, t_w=1, w=None, h=None):
     """
     Create an ascii art template suitable for string interpolation.
 
@@ -20,8 +20,8 @@ def draw_box_template(boxes, t_w=1):
     :param w: the width of each of the boxes.
     :returns: a list of strings usable for drawing an ascii box art."""
 
-    w = max([t[0] for t in boxes])
-    h = max([t[1] for t in boxes])
+    w = w or max([t[0] for t in boxes])
+    h = h or max([t[1] for t in boxes])
 
     def corner(x, y):
         a = (x-1, y-1) in boxes
@@ -66,6 +66,8 @@ def draw_box_template(boxes, t_w=1):
                 n += "AND RIGHT "
             if ld and not ud:
                 n += "SINGLE"
+            if ud and not ld:
+                n += "DOUBLE"
 
         elif a and b or c and d:
             if a:
@@ -167,22 +169,22 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
 
     originalboxes = boxes[:]
 
-    neighbours = itertools.product([-1,0,1], [-1, 0, 1])
+    neighbours = itertools.product([-1,0,1], [-1,0,1])
 
     content_width = w
 
-    w = max([t[0] for t in boxes])
-    h = max([t[1] for t in boxes])
+    w = max([t[0] for t in originalboxes])
+    h = max([t[1] for t in originalboxes])
 
     # determine wether the corners have boxes next to them.
-    luc = [(-1,-1)] if (w,h) in boxes else []
-    ruc = [( w,-1)] if (0,h) in boxes else []
-    ldc = [(-1, h)] if (w,0) in boxes else []
-    rdc = [( w, h)] if (0,0) in boxes else []
+    luc = [( -1, -1)] if (w,h) in originalboxes else []
+    ruc = [(w+1, -1)] if (0,h) in originalboxes else []
+    ldc = [( -1,h+1)] if (w,0) in originalboxes else []
+    rdc = [(w+1,h+1)] if (0,0) in originalboxes else []
 
     def warp(src,dst,axis):
         res = []
-        for box in boxes:
+        for box in originalboxes:
             if box[axis] == src:
                 if axis == 0:
                     res.append((dst, box[1]))
@@ -206,12 +208,12 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
         if (x-1, y+1) in neighbours: fixed.extend(ldc)
         if (x+1, y+1) in neighbours: fixed.extend(rdc)
 
-        if (x-1, y  ) in neighbours: fixed.extend(lb)
-        if (x+1, y  ) in neighbours: fixed.extend(rb)
-        if (x,   y-1) in neighbours: fixed.extend(ub)
-        if (x,   y+1) in neighbours: fixed.extend(db)
+        if (x+1, y  ) in neighbours: fixed.extend(lb)
+        if (x-1, y  ) in neighbours: fixed.extend(rb)
+        if (x,   y+1) in neighbours: fixed.extend(ub)
+        if (x,   y-1) in neighbours: fixed.extend(db)
 
-        result_template[(x,y)] = draw_box_template(fixed, content_width)
+        result_template[(x,y)] = draw_box_template(fixed, content_width, w, h)
 
     return result_template
 
