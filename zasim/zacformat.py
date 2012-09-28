@@ -154,6 +154,9 @@ def draw_box_template(boxes, w=1):
         else:
             template[h * 2 + 2] += "  " + " " * w
 
+    if (w, h) in boxes:
+        template[h * 2 + 2] += corner(w+1,h+1)
+
     return template
 
 def draw_tiled_box_template(boxes, w=1, twodim=True):
