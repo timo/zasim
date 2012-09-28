@@ -4,8 +4,13 @@ like text_to_cell outputs."""
 import yaml
 import unicodedata
 import itertools
-from simulator import SimulatorInterface
-from cagen.neighbourhoods import SimpleNeighbourhood
+from .simulator import SimulatorInterface
+from .cagen.neighbourhoods import SimpleNeighbourhood
+from .cagen.accessors import SubcellAccessor
+from .cagen.computations import PasteComputation
+from .cagen.loops import OneDimCellLoop, TwoDimCellLoop
+
+import numpy as np
 
 n2c = lambda name: (int(name[1:name.find("l")]), int(name[name.find("l")+1:]))
 n2c.__doc__ = """Turn a name of a subcell into x/y coords"""
@@ -325,7 +330,6 @@ class ZacNeighbourhood(SimpleNeighbourhood):
         self.code.add_py_code("pre_compute",
                 "\n".join(assignments))
 
-
 class ZacSimulator(SimulatorInterface):
     def __init__(self, data_or_file, shape):
         if isinstance(data_or_file, file):
@@ -339,6 +343,12 @@ class ZacSimulator(SimulatorInterface):
         self.cpp_code = data.cpp_code
 
         self.neighbourhood = ZacNeighbourhood(data.neighbourhood, self.sets.keys())
+        self.acc = SubcellAccessor(self.sets.keys())
+        self.computation = PasteComputation(self.cpp_code, self.py_code)
+        if len(shape) == 1:
+            self.loop = OneDimCellLoop()
+        else:
+            self.loop = TwoDimCellLoop()
 
         self.cconf = {}
         self.nconf = {}
@@ -346,8 +356,5 @@ class ZacSimulator(SimulatorInterface):
             self.cconf[k] = np.zeros(shape)
             self.nconf[k] = np.zeros(shape)
 
-    def flip_configs(self):
-        self.cconf, self.nconf = self.nconf, self.cconf
-
     def get_config(self):
-        
+        return self.cconf

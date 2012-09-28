@@ -140,6 +140,7 @@ class SubcellAccessor(SimpleStateAccessor):
 
     def __init__(self, cells):
         self.cells = cells
+        super(SubcellAccessor, self).__init__()
 
     def visit(self):
         """Take care for result and sizeX to exist in python and C code,
