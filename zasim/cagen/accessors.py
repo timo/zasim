@@ -158,7 +158,7 @@ class SubcellAccessor(SimpleStateAccessor):
                     """result_%s = None""" % cell)
 
             self.code.add_py_code("post_compute",
-                    """self.acc.write_to(pos, result, %s)""" % cell)
+                    """self.acc.write_to(pos, result_%s, "%s")""" % (cell, cell))
 
         self.code.add_py_code("finalize",
                 """self.acc.swap_configs()""")
@@ -186,8 +186,8 @@ class SubcellAccessor(SimpleStateAccessor):
 
     def multiplicate_config(self):
         """Copy cconf to nconf in the target."""
+        self.target.nconf = dict()
         for k in self.cells:
-            self.target.nconf = dict()
             self.target.nconf[k] = self.target.cconf[k].copy()
 
     def gen_copy_code(self):
@@ -203,5 +203,5 @@ class SubcellAccessor(SimpleStateAccessor):
         old config."""
         res = []
         for cell in self.cells:
-            res.append("self.acc.write_to(pos, self.acc.read_from(pos, %s), %s)" % cell)
+            res.append("self.acc.write_to(pos, self.acc.read_from(pos, '%s'), '%s')" % (cell, cell))
         return "\n".join(res)

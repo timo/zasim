@@ -10,6 +10,7 @@ from .cagen.accessors import SubcellAccessor
 from .cagen.computations import PasteComputation
 from .cagen.loops import OneDimCellLoop, TwoDimCellLoop
 from .cagen.utils import gen_offset_pos
+from .cagen.border import BorderSizeEnsurer
 from .cagen.stepfunc import StepFunc
 
 import numpy as np
@@ -339,10 +340,11 @@ class ZacNeighbourhood(SimpleNeighbourhood):
             self.code.add_weave_code("localvars",
                     "int " + ", ".join(map(lambda n: "%s_%s" % (n, subcell), self.names)) + ";")
 
+        assignments = []
         for subcell in self.subcells:
-            assignments = ["%s_%s = self.acc.read_from(%s, %s)" % (
+            assignments.extend(["%s_%s = self.acc.read_from(%s, '%s')" % (
                             name, subcell, "offset_pos(pos, %s)" % (offset,), subcell)
-                            for name, offset in zip(self.names, self.offsets)]
+                            for name, offset in zip(self.names, self.offsets)])
         self.code.add_py_code("pre_compute",
                 "\n".join(assignments))
 
@@ -369,6 +371,7 @@ class ZacSimulator(SimulatorInterface):
         self.neighbourhood = ZacNeighbourhood(data["neighbourhood"], self.sets.keys())
         self.acc = SubcellAccessor(self.sets.keys())
         self.computation = PasteComputation(self.cpp_code, self.python_code)
+        self.border = BorderSizeEnsurer()
 
         if len(shape) == 1:
             self.loop = OneDimCellLoop()
@@ -385,9 +388,12 @@ class ZacSimulator(SimulatorInterface):
                 self.cconf[k][:] = val
                 self.nconf[k][:] = val
 
-        self.stepfunc = StepFunc(self, self.loop, self.acc, self.neighbourhood, extra_code=[self.computation])
+        self.stepfunc = StepFunc(self, self.loop, self.acc, self.neighbourhood, self.border, extra_code=[self.computation])
         self.stepfunc.gen_code()
 
     def get_config(self):
         return self.cconf
 
+    def step(self):
+        self.stepfunc.step_pure_py()
+        self.updated.emit()

@@ -18,18 +18,17 @@ class BorderSizeEnsurer(BorderHandler):
     returned by :meth:`Neighbourhood.bounding_box` - the underlying config
     array is big enough, so that getting the neighbourhood from the outermost
     cells will not access outside the bounds of the array."""
-    def new_config(self):
-        """Resizes the configuration array."""
-        super(BorderSizeEnsurer, self).new_config()
-        bbox = self.code.neigh.bounding_box()
+    def resize_array(self, array):
         borders = self.code.acc.border_size
+        shape = array.shape
+        dtype = array.dtype
+        bbox = self.code.neigh.bounding_box()
         dims = len(bbox)
-        shape = self.target.cconf.shape
-        dtype = self.target.cconf.dtype
+
         if dims == 1:
             (left,), (right,) = self.code.acc.border_names
             new_conf = np.zeros(shape[0] + borders[left] + borders[right], dtype)
-            new_conf[borders[left]:-borders[right]] = self.target.cconf
+            new_conf[borders[left]:-borders[right]] = array
         elif dims == 2:
             # TODO figure out how to create slice objects in a general way.
             (left,up), (right,down) = self.code.acc.border_names
@@ -37,7 +36,17 @@ class BorderSizeEnsurer(BorderHandler):
                                  shape[1] + borders[up] + borders[down]), dtype)
             new_conf[borders[left]:-borders[right],
                      borders[up]:-borders[down]] = self.target.cconf
-        self.target.cconf = new_conf
+
+        return new_conf
+
+    def new_config(self):
+        """Resizes the configuration array."""
+        super(BorderSizeEnsurer, self).new_config()
+        if isinstance(self.target.cconf, np.ndarray):
+            self.target.cconf = self.resize_array(self.target.cconf)
+        elif isinstance(self.target.cconf, dict):
+            for k in self.target.cconf.keys():
+                self.target.cconf[k] = self.resize_array(self.target.cconf[k])
 
     def is_position_valid(self, pos):
         # FIXME this should really use get_size_of instead of reading from size.

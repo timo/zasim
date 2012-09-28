@@ -314,7 +314,7 @@ class StepFunc(object):
                 print("# Generated python code:", file=sys.stderr)
                 print("# filename: %s" % (self.codefile.name), file=sys.stderr)
                 print("# ---8<---8<---8<---", file=sys.stderr)
-                print(self.code_text, file=sys.stderr)
+                print(code_text, file=sys.stderr)
                 print("# --->8--->8--->8---", file=sys.stderr)
 
             myglob = globals()
