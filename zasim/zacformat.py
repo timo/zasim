@@ -358,6 +358,8 @@ class ZacSimulator(SimulatorInterface):
         self.strings = data["strings"]
         self.python_code = "# auto-generated code:\n" + data["python_code"]
         self.cpp_code = data["cpp_code"]
+        if len(shape) == 1:
+            shape = (shape[0], 1)
         self.shape = shape
 
         self.possible_values = self.sets
