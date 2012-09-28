@@ -22,103 +22,135 @@ def draw_box_template(boxes, w=1):
     w = max([t[0] for t in boxes])
     h = max([t[1] for t in boxes])
 
-    def corner(x, y, w, h):
+    print w, h
+
+    def corner(x, y):
         a = (x-1, y-1) in boxes
         b = (x,   y-1) in boxes
         c = (x-1, y)   in boxes
         d = (x,y)      in boxes
+
+        if not a and not b and not c and not d:
+            return " "
 
         # which lines should be drawn double?
         ld = x == 0 or x == w + 1
         ud = y == 0 or y == h + 1
         if ld == ud:
             both = "DOUBLE " if ld else "LIGHT "
+        else:
+            both = None
 
         # the unicode name
         n = "BOX DRAWINGS "
 
-        if both == "LIGHT ":
+        if both:
             n += both
 
         if c and b or a and d:
             if both:
-                n += "DOUBLE VERTICAL AND HORIZONTAL"
+                n += "VERTICAL AND HORIZONTAL"
             elif ld:
                 n += "VERTICAL DOUBLE AND HORIZONTAL SINGLE"
             elif ud:
                 n += "VERTICAL SINGLE AND HORIZONTAL DOUBLE"
 
         elif b and d or a and c:
-            if ld: n += "DOUBLE "
             n += "VERTICAL "
+            if ld and not ud:
+                n += "DOUBLE "
+            elif ud and not ld:
+                n += "SINGLE "
             if a:
-                n += "AND LEFT"
+                n += "AND LEFT "
             else:
-                n += "AND RIGHT"
+                n += "AND RIGHT "
+            if ld and not ud:
+                n += "SINGLE"
 
         elif a and b or c and d:
-            if ud: n += "DOUBLE "
             if a:
-                n += "UP"
+                n += "UP "
             else:
-                n += "DOWN"
-            n += "AND HORIZONTAL"
+                n += "DOWN "
+            if ld and not ud:
+                n += "DOUBLE "
+            elif not ld and ud:
+                n += "SINGLE "
+            n += "AND HORIZONTAL "
+            if not ud and ld:
+                n += "SINGLE"
+            elif not ld and ud:
+                n += "DOUBLE"
 
         else:
-            if both == "DOUBLE ":
-                n += both
             if not c and not d:
                 n += "UP "
             else:
                 n += "DOWN "
             if ld and not both:
                 n += "DOUBLE "
+            if not ld and not both:
+                n += "SINGLE "
             n += "AND "
             if not b and not d:
-                n += "LEFT"
+                n += "LEFT "
             else:
-                n += "RIGHT"
+                n += "RIGHT "
             if ud and not both:
                 n += "DOUBLE "
+            elif not ud and not both:
+                n += "SINGLE "
 
-        return unicodedata.lookup(n)
+        print x, y, a, b, c, d, ld, ud,
+        try:
+            res = unicodedata.lookup(n.rstrip())
+        except:
+            res = n.rstrip()
+        print res
+        return res
+
+    bhs, bhd = [unicodedata.lookup("BOX DRAWINGS %s HORIZONTAL" % a) for a in "LIGHT DOUBLE".split(" ")]
+    bvs, bvd = [unicodedata.lookup("BOX DRAWINGS %s VERTICAL" % a) for a in "LIGHT DOUBLE".split(" ")]
 
     template = ["" for _ in range(h * 2 + 3)]
     for x in range(w+1):
+        left_v = bvs if x != 0 else bvd
         for y in range(h+1):
+            up_h = bhs if y != 0 else bhd
             if (x, y) in boxes:
-                template[y * 2] += "+--" + "-" * w
-                template[y * 2 + 1] += "|%%(%s) %ds " % (c2n(x, y), w + 1)
+                template[y * 2] += corner(x, y) + up_h * (w + 2)
+                template[y * 2 + 1] += left_v + "%%(%s) %ds " % (c2n(x, y), w + 1)
             else:
                 if (x, y-1) in boxes or (x - 1, y) in boxes or (x-1,y-1) in boxes:
-                    template[y * 2] += "+"
+                    template[y * 2] += corner(x, y)
                 else:
                     template[y * 2] += " "
                 if (x, y-1) in boxes:
-                    template[y * 2] += "--" + "-" * w
+                    template[y * 2] += up_h * (w + 2)
                 else:
                     template[y * 2] += "  " + " " * w
                 if (x-1,y) in boxes:
-                    template[y * 2 + 1] += "|"
+                    template[y * 2 + 1] += left_v
                 else:
                     template[y * 2 + 1] += " "
                 template[y * 2 + 1] += "  " + " " * w
 
     for y in range(h+1):
         if (w,y) in boxes or (x, y-1) in boxes:
-            template[y * 2] += "+"
+            template[y * 2] += corner(w + 1, y)
         else:
             template[y * 2] += " "
         if (w,y) in boxes:
-            template[y * 2 + 1] += "|"
+            template[y * 2 + 1] += bvd
 
     for x in range(w+1):
         if (x, h) in boxes or (x-1,h) in boxes:
-            template[h * 2 + 2] += "+"
+            template[h * 2 + 2] += corner(x, h + 1)
         else:
             template[h * 2 + 2] += " "
         if (x, h) in boxes:
-            template[h * 2 + 2] += "--" + "-" * w
+            template[h * 2 + 2] += bhd * (w + 2)
         else:
             template[h * 2 + 2] += "  " + " " * w
 
