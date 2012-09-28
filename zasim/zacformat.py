@@ -10,6 +10,7 @@ from .cagen.accessors import SubcellAccessor
 from .cagen.computations import PasteComputation
 from .cagen.loops import OneDimCellLoop, TwoDimCellLoop
 from .cagen.utils import gen_offset_pos
+from .cagen.stepfunc import StepFunc
 
 import numpy as np
 
@@ -229,13 +230,13 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
     return result_template
 
 class ZacConsoleDisplay(object):
-    def __init__(self, simulator, sets, strings, connect=True, auto_output=True):
+    def __init__(self, simulator, connect=True, auto_output=True):
         self._sim = simulator
         self._data = []
         self._last_conf = None
         self._auto_output = auto_output
-        self.sets = sets
-        self.strings = strings
+        self.sets = simulator.sets
+        self.strings = simulator.strings
 
         self.data = ""
 
@@ -253,7 +254,8 @@ class ZacConsoleDisplay(object):
         self._last_conf = self._sim.get_config().copy()
         self.draw_conf(update_step)
         if self._auto_output:
-            print str(self),
+            print unicode(self)
+            print
 
     def conf_changed(self):
         self.after_step(False)
@@ -263,7 +265,7 @@ class ZacConsoleDisplay(object):
 
     def measure_sets(self):
         all_contents = sum(self.sets.values(), [])
-        max_w = max(map(len, all_contents))
+        max_w = max(map(len, map(str, all_contents)))
 
         self.stringy_subcells = [k for k, v in self.sets.iteritems() if isinstance(v[0], basestring)]
 
@@ -290,23 +292,26 @@ class ZacConsoleDisplay(object):
                     else:
                         val[k] = self._last_conf[k][x,y]
                 sp   = subpos(x,y)
-                box  = self.template[sp] % val
+                box  = [line % val for line in self.template[sp]]
                 # TODO condense like in TwoDimConsolePainter
-                lines = [line.append(boxcontent) for line, boxcontent in zip(lines, box)]
+                [line.append(boxcontent) for line, boxcontent in zip(lines, box)]
             # TODO condense like in TwoDimConsolePainter
             datalines.extend("".join(line_c) for line_c in lines)
         self.data = "\n".join(datalines)
 
-    def __str__(self):
-        return self.data
+    def __unicode__(self):
+        try:
+            return self.data
+        except:
+            return "error"
 
 class ZacNeighbourhood(SimpleNeighbourhood):
     def __init__(self, neigh_data, subcells):
         names = []
         offsets = []
         for entry in neigh_data:
-            names.append(entry.name)
-            offsets.append((entry.x, entry.y))
+            names.append(entry["name"])
+            offsets.append((entry["x"], entry["y"]))
         super(ZacNeighbourhood, self).__init__(names, offsets)
 
         self.subcells = subcells
@@ -322,7 +327,7 @@ class ZacNeighbourhood(SimpleNeighbourhood):
 
         for subcell in self.subcells:
             self.code.add_weave_code("localvars",
-                    "int " + ", ".join(map(lambda n: "%s_%s" % n, subcell, self.names)) + ";")
+                    "int " + ", ".join(map(lambda n: "%s_%s" % (n, subcell), self.names)) + ";")
 
         for subcell in self.subcells:
             assignments = ["%s_%s = self.acc.read_from(%s, %s)" % (
@@ -333,21 +338,25 @@ class ZacNeighbourhood(SimpleNeighbourhood):
 
 class ZacSimulator(SimulatorInterface):
     def __init__(self, data_or_file, shape):
+        super(ZacSimulator, self).__init__()
         if isinstance(data_or_file, file):
             data = yaml.load(data_or_file)
         else:
             data = yaml.loads(data_or_file)
 
-        self.sets = data.sets
-        self.strings = data.strings
-        self.python_code = data.python_code
-        self.cpp_code = data.cpp_code
+        self.sets = data["sets"]
+        self.strings = data["strings"]
+        self.python_code = "# auto-generated code:\n" + data["python_code"]
+        self.cpp_code = data["cpp_code"]
+
+        self.possible_values = self.sets
 
         self.stringy_subcells = [k for k, v in self.sets.iteritems() if isinstance(v[0], basestring)]
 
-        self.neighbourhood = ZacNeighbourhood(data.neighbourhood, self.sets.keys())
+        self.neighbourhood = ZacNeighbourhood(data["neighbourhood"], self.sets.keys())
         self.acc = SubcellAccessor(self.sets.keys())
-        self.computation = PasteComputation(self.cpp_code, self.py_code)
+        self.computation = PasteComputation(self.cpp_code, self.python_code)
+
         if len(shape) == 1:
             self.loop = OneDimCellLoop()
         else:
@@ -359,10 +368,12 @@ class ZacSimulator(SimulatorInterface):
             self.cconf[k] = np.zeros(shape, dtype=int)
             self.nconf[k] = np.zeros(shape, dtype=int)
             if k in self.stringy_subcells:
-                val = self.strings.find(self.sets[k][0])
+                val = [index for index, val in enumerate(self.strings) if val == self.sets[k][0]][0]
                 self.cconf[k][:] = val
                 self.nconf[k][:] = val
 
+        self.stepfunc = StepFunc(self, self.loop, self.acc, self.neighbourhood, extra_code=[self.computation])
+        self.stepfunc.gen_code()
+
     def get_config(self):
         return self.cconf
-

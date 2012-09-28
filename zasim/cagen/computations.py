@@ -258,6 +258,6 @@ class PasteComputation(Computation):
 
     def visit(self):
         if self.py_code is not None:
-            self.code.add_py_code(self.py_code)
+            self.code.add_py_code("compute", self.py_code)
         if self.c_code is not None:
-            self.code.add_weave_code(self.c_code)
+            self.code.add_weave_code("compute", self.c_code)

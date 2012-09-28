@@ -26,6 +26,8 @@ import os
 import tempfile
 import atexit
 
+import numpy as np
+
 if HAVE_WEAVE:
     from scipy import weave
     from scipy.weave import converters
@@ -122,7 +124,11 @@ class StepFunc(object):
         self.loop = loop
         self.border = border
 
-        size = target.cconf.shape
+        if isinstance(target.cconf, np.ndarray):
+            size = target.cconf.shape
+        elif isinstance(target.cconf, dict): # for ZacSimulators, cconf is a dict of ndarrays.
+            size = target.cconf.values()[0].shape
+
         self.acc.set_size(size)
 
         self.possible_values = target.possible_values

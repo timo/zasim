@@ -152,7 +152,7 @@ class SubcellAccessor(SimpleStateAccessor):
                     """int result_%s;""" % cell)
 
             self.code.add_weave_code("post_compute",
-                    self.write_access(self.code.loop.get_pos()) + " = result_%s;" % cell, cell)
+                    self.write_access(self.code.loop.get_pos(), cell) + " = result_%s;" % cell)
 
             self.code.add_py_code("init",
                     """result_%s = None""" % cell)
