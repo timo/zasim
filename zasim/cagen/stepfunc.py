@@ -303,7 +303,7 @@ class StepFunc(object):
             try:
                 execfile(self.codefile.name, myglob, myloc)
             except IOError:
-                eval(code_text, myglob, myloc)
+                exec code_text in myglob, myloc
             self.pure_py_code_text = code_text
             self.step_pure_py = new.instancemethod(myloc["step_pure_py"], self, self.__class__)
         else:
