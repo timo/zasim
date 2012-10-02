@@ -136,6 +136,7 @@ API Documentation
    cagen
    gui
    elementarytools
+   zacformat
 
 Indices and tables
 ==================
