@@ -26,6 +26,8 @@ import os
 import tempfile
 import atexit
 
+import numpy as np
+
 if HAVE_WEAVE:
     from scipy import weave
     from scipy.weave import converters
@@ -107,6 +109,8 @@ class StepFunc(object):
         self.code = dict((s, []) for s in self.sections)
         self.code_text = ""
 
+        self.extra_funcs = []
+
         # prepare the sections for python code
         self.pycode = dict((s, []) for s in self.pysections)
         self.pycode_indent = dict((s, 4) for s in self.pysections)
@@ -121,7 +125,11 @@ class StepFunc(object):
         self.loop = loop
         self.border = border
 
-        size = target.cconf.shape
+        try:
+            size = target.cconf.shape
+        except: # for ZacSimulators, cconf/nconf don't exist
+            size = target.shape
+
         self.acc.set_size(size)
 
         self.possible_values = target.possible_values
@@ -190,6 +198,12 @@ class StepFunc(object):
         :param code: the C source code to add."""
         self.code[hook].append(code)
 
+    def add_weave_extra_function(self, code):
+        """Add a support function to the head of the C result.
+
+        :param code: The C code to include. should be a self-contained function."""
+        self.extra_funcs.append(code)
+
     def add_py_code(self, hook, code):
         """Add a string of python code to the section "hook".
 
@@ -231,6 +245,13 @@ class StepFunc(object):
 
             code_bits = []
 
+            self.extra_func_text = debug.indent_c_code("\n".join(self.extra_funcs))
+            if self.extra_func_text:
+                # scipy.weave doesn't recompile whe nonly the "support code" changes.
+                # we can force it to, by putting a hash of the support code into the c code.
+                from hashlib import sha1
+                code_bits.append("/* hash of support_code: %s */" % (sha1(self.extra_func_text).hexdigest()))
+
             if ZASIM_WEAVE_DEBUG == "gdb":
                 code_bits.append("/* from ZASIM_WEAVE_DEBUG == gdb */")
                 code_bits.append(debug.trap_code)
@@ -243,7 +264,11 @@ class StepFunc(object):
             self.code_text = debug.indent_c_code(self.code_text)
 
             if ZASIM_WEAVE_DEBUG:
-                print("/* Generated C code:", file=sys.stderr)
+                print("/* Extra function definitions:", file=sys.stderr)
+                print("---8<---8<---8<--- */", file=sys.stderr)
+                print(self.extra_func_text, file=sys.stderr)
+                print("/*--->8--->8--->8---", file=sys.stderr)
+                print("  Generated C code:", file=sys.stderr)
                 print("---8<---8<---8<--- */", file=sys.stderr)
                 print(self.code_text, file=sys.stderr)
                 print("/*\n--->8--->8--->8--- */", file=sys.stderr)
@@ -294,7 +319,7 @@ class StepFunc(object):
                 print("# Generated python code:", file=sys.stderr)
                 print("# filename: %s" % (self.codefile.name), file=sys.stderr)
                 print("# ---8<---8<---8<---", file=sys.stderr)
-                print(self.code_text, file=sys.stderr)
+                print(code_text, file=sys.stderr)
                 print("# --->8--->8--->8---", file=sys.stderr)
 
             myglob = globals()
@@ -324,7 +349,8 @@ class StepFunc(object):
         weave.inline( self.code_text, global_dict=local_dict, arg_names=attrs,
                       type_converters = converters.blitz,
                       extra_compile_args=["-O0"] if ZASIM_WEAVE_DEBUG else [],
-                      verbose = 2 if ZASIM_WEAVE_DEBUG else 0)
+                      verbose = 2 if ZASIM_WEAVE_DEBUG else 0,
+                      support_code=self.extra_func_text)
         self.acc.swap_configs()
         self.prepared = True
 
@@ -340,7 +366,8 @@ class StepFunc(object):
         try:
             self.step_inline()
             self.step = self.step_inline
-        except:
+        except Exception as e:
+            print(e)
             print("falling back to pure python step function", file=sys.stderr)
 
             self.step_pure_py()
@@ -398,7 +425,10 @@ class StepFunc(object):
 
     def cleanup(self):
         try:
-            self.codefile.close()
-            self.codefile.file.close()
+            self.cleanup()
         except AttributeError:
-            pass # we're going down. if the file's already closed, so be it.
+            pass # the file was never opened, no need to close it.
+
+    def cleanup(self):
+        self.codefile.close()
+        self.codefile.file.close()

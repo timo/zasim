@@ -32,6 +32,8 @@ class SimpleStateAccessor(StateAccessor):
     cell_count = 0
     """The number of cells in the target configuration."""
 
+    conf_names = ("nconf", "cconf")
+
     def set_size(self, size):
         super(SimpleStateAccessor, self).set_size(size)
         self.size = size
@@ -58,7 +60,7 @@ class SimpleStateAccessor(StateAccessor):
         for sizename, size in zip(self.size_names, self.size):
             self.code.consts[sizename] = size
         self.code.consts["cell_count"] = self.cell_count
-        self.code.attrs.extend(["nconf", "cconf"])
+        self.code.attrs.extend(self.conf_names)
 
     def bind(self, code):
         """Get the bounding box from the neighbourhood object,
@@ -132,4 +134,92 @@ class SimpleStateAccessor(StateAccessor):
         old config."""
         return "self.acc.write_to(pos, self.acc.read_from(pos))"
 
+class SubcellAccessor(SimpleStateAccessor):
+    """With the SubcellAccessor you can handle configurations where each cell
+    is conceptually made up of multiple cells. This can be done either with
+    one `ndarray` per subcell or a suitable record `ndarray`, from which views
+    for each subcell "plane" can be created."""
 
+    def __init__(self, cells):
+        super(SubcellAccessor, self).__init__()
+        self.cells = cells
+        cnames = []
+        for c in cells:
+            cnames.extend(("cconf_%s" % c, "nconf_%s" % c))
+        self.conf_names = tuple(cnames)
+
+    def visit(self):
+        """Take care for result and sizeX to exist in python and C code,
+        for the result to be written to the config space and for the configs
+        to be swapped by the python code."""
+        super(SimpleStateAccessor, self).visit()
+        for cell in self.cells:
+            self.code.add_weave_code("localvars",
+                    """int result_%s;""" % cell)
+
+            self.code.add_weave_code("post_compute",
+                    self.write_access(self.code.loop.get_pos(), cell) + " = result_%s;" % cell)
+
+            self.code.add_py_code("init",
+                    """result_%s = None""" % cell)
+
+            self.code.add_py_code("post_compute",
+                    """self.acc.write_to(pos, result_%s, "%s")""" % (cell, cell))
+
+        self.code.add_py_code("finalize",
+                """self.acc.swap_configs()""")
+
+    def read_access(self, pos, cell):
+        return "cconf_%s(%s)" % (cell, ", ".join(gen_offset_pos(pos, self.border_names[0])),)
+
+    def write_access(self, pos, cell):
+        return "nconf_%s(%s)" % (cell, ",".join(gen_offset_pos(pos, self.border_names[0])),)
+
+    def read_from(self, pos, cell):
+        cconf = getattr(self.target, "cconf_%s" % cell)
+        return cconf[offset_pos(pos, self.border[0])]
+
+    def read_from_next(self, pos, cell):
+        nconf = getattr(self.target, "nconf_%s" % cell)
+        return nconf[offset_pos(pos, self.border[0])]
+
+    def write_to(self, pos, value, cell):
+        nconf = getattr(self.target, "nconf_%s" % cell)
+        nconf[offset_pos(pos, self.border[0])] = value
+
+    def write_to_current(self, pos, value, cell):
+        cconf = getattr(self.target, "cconf_%s" % cell)
+        cconf[offset_pos(pos, self.border[0])] = value
+
+    def get_size_of(self, dimension=0):
+        return self.size[dimension]
+
+    def multiplicate_config(self):
+        """Copy cconf to nconf in the target."""
+        self.target.nconf = dict()
+        for k in self.cells:
+            cconf = getattr(self.target, "cconf_%s" % k)
+            setattr(self.target, "nconf_%s" % k, cconf.copy())
+
+    def swap_configs(self):
+        for cell in self.cells:
+            nconf = getattr(self.target, "nconf_%s" % cell)
+            cconf = getattr(self.target, "cconf_%s" % cell)
+            setattr(self.target, "nconf_%s" % cell, cconf)
+            setattr(self.target, "cconf_%s" % cell, nconf)
+
+    def gen_copy_code(self):
+        """Generate a bit of C code to copy the current field over from the old
+        config. This is necessary for instance for nondeterministic step funcs
+        combined with swapping two confs around."""
+        for cell in self.cells:
+            return "%s = %s;" % (self.write_access(self.code.loop.get_pos(), cell),
+                                self.read_access(self.code.loop.get_pos(), cell))
+
+    def gen_copy_py_code(self):
+        """Generate a bit of py code to copy the current field over from the
+        old config."""
+        res = []
+        for cell in self.cells:
+            res.append("self.acc.write_to(pos, self.acc.read_from(pos, '%s'), '%s')" % (cell, cell))
+        return "\n".join(res)

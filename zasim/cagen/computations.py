@@ -8,6 +8,7 @@
 from random import randrange
 from .bases import Computation
 from .utils import elementary_digits_and_values, rule_nr_to_multidim_rule_arr
+from .compatibility import no_weave_code, no_python_code
 
 import new
 
@@ -240,3 +241,18 @@ class LifeCellularAutomatonBase(CountBasedComputationBase):
                     "stay alive [%(stay_alive_min)s: %(stay_alive_max)s]" % self.params)
         else:
             parts.append("calculating game of life")
+
+class PasteComputation(Computation):
+    def __init__(self, c_code=None, py_code=None, name=None):
+        if c_code is None:
+            self.provides_features.append(no_weave_code)
+        self.c_code = c_code
+        if py_code is None:
+            self.provides_features.append(no_python_code)
+        self.py_code = py_code
+
+    def visit(self):
+        if self.py_code is not None:
+            self.code.add_py_code("compute", self.py_code)
+        if self.c_code is not None:
+            self.code.add_weave_code("compute", self.c_code)
