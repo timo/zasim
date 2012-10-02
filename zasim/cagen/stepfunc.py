@@ -124,10 +124,10 @@ class StepFunc(object):
         self.loop = loop
         self.border = border
 
-        if isinstance(target.cconf, np.ndarray):
+        try:
             size = target.cconf.shape
-        elif isinstance(target.cconf, dict): # for ZacSimulators, cconf is a dict of ndarrays.
-            size = target.cconf.values()[0].shape
+        except: # for ZacSimulators, cconf/nconf don't exist
+            size = target.shape
 
         self.acc.set_size(size)
 
@@ -358,7 +358,8 @@ class StepFunc(object):
         try:
             self.step_inline()
             self.step = self.step_inline
-        except:
+        except Exception as e:
+            print(e)
             print("falling back to pure python step function", file=sys.stderr)
 
             self.step_pure_py()

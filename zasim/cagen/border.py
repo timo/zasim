@@ -34,19 +34,19 @@ class BorderSizeEnsurer(BorderHandler):
             (left,up), (right,down) = self.code.acc.border_names
             new_conf = np.zeros((shape[0] + borders[left] + borders[right],
                                  shape[1] + borders[up] + borders[down]), dtype)
-            new_conf[borders[left]:-borders[right],
-                     borders[up]:-borders[down]] = self.target.cconf
+            new_conf[borders[left]:new_conf.shape[0]-borders[right],
+                     borders[up]:new_conf.shape[1]-borders[down]] = array
 
         return new_conf
 
     def new_config(self):
         """Resizes the configuration array."""
         super(BorderSizeEnsurer, self).new_config()
-        if isinstance(self.target.cconf, np.ndarray):
+        try:
             self.target.cconf = self.resize_array(self.target.cconf)
-        elif isinstance(self.target.cconf, dict):
-            for k in self.target.cconf.keys():
-                self.target.cconf[k] = self.resize_array(self.target.cconf[k])
+        except AttributeError: # either we have a cconf/nconf or we have a sets variable
+            for k in self.target.sets.keys():
+                setattr(self.target, "cconf_%s" % k, self.resize_array(getattr(self.target, "cconf_%s" % k)))
 
     def is_position_valid(self, pos):
         # FIXME this should really use get_size_of instead of reading from size.

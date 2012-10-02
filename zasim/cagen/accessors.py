@@ -32,6 +32,8 @@ class SimpleStateAccessor(StateAccessor):
     cell_count = 0
     """The number of cells in the target configuration."""
 
+    conf_names = ("nconf", "cconf")
+
     def set_size(self, size):
         super(SimpleStateAccessor, self).set_size(size)
         self.size = size
@@ -58,7 +60,7 @@ class SimpleStateAccessor(StateAccessor):
         for sizename, size in zip(self.size_names, self.size):
             self.code.consts[sizename] = size
         self.code.consts["cell_count"] = self.cell_count
-        self.code.attrs.extend(["nconf", "cconf"])
+        self.code.attrs.extend(self.conf_names)
 
     def bind(self, code):
         """Get the bounding box from the neighbourhood object,
@@ -139,8 +141,12 @@ class SubcellAccessor(SimpleStateAccessor):
     for each subcell "plane" can be created."""
 
     def __init__(self, cells):
-        self.cells = cells
         super(SubcellAccessor, self).__init__()
+        self.cells = cells
+        cnames = []
+        for c in cells:
+            cnames.extend(("cconf_%s" % c, "nconf_%s" % c))
+        self.conf_names = tuple(cnames)
 
     def visit(self):
         """Take care for result and sizeX to exist in python and C code,
@@ -170,16 +176,20 @@ class SubcellAccessor(SimpleStateAccessor):
         return "nconf_%s(%s)" % (cell, ",".join(gen_offset_pos(pos, self.border_names[0])),)
 
     def read_from(self, pos, cell):
-        return self.target.cconf[cell][offset_pos(pos, self.border[0])]
+        cconf = getattr(self.target, "cconf_%s" % cell)
+        return cconf[offset_pos(pos, self.border[0])]
 
     def read_from_next(self, pos, cell):
-        return self.target.nconf[cell][offset_pos(pos, self.border[0])]
+        nconf = getattr(self.target, "nconf_%s" % cell)
+        return nconf[offset_pos(pos, self.border[0])]
 
     def write_to(self, pos, value, cell):
-        self.target.nconf[cell][offset_pos(pos, self.border[0])] = value
+        nconf = getattr(self.target, "nconf_%s" % cell)
+        nconf[offset_pos(pos, self.border[0])] = value
 
     def write_to_current(self, pos, value, cell):
-        self.target.cconf[cell][offset_pos(pos, self.border[0])] = value
+        cconf = getattr(self.target, "cconf_%s" % cell)
+        cconf[offset_pos(pos, self.border[0])] = value
 
     def get_size_of(self, dimension=0):
         return self.size[dimension]
@@ -188,7 +198,15 @@ class SubcellAccessor(SimpleStateAccessor):
         """Copy cconf to nconf in the target."""
         self.target.nconf = dict()
         for k in self.cells:
-            self.target.nconf[k] = self.target.cconf[k].copy()
+            cconf = getattr(self.target, "cconf_%s" % k)
+            setattr(self.target, "nconf_%s" % k, cconf.copy())
+
+    def swap_configs(self):
+        for cell in self.cells:
+            nconf = getattr(self.target, "nconf_%s" % cell)
+            cconf = getattr(self.target, "cconf_%s" % cell)
+            setattr(self.target, "nconf_%s" % cell, cconf)
+            setattr(self.target, "cconf_%s" % cell, nconf)
 
     def gen_copy_code(self):
         """Generate a bit of C code to copy the current field over from the old

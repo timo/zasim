@@ -378,22 +378,26 @@ class ZacSimulator(SimulatorInterface):
         else:
             self.loop = TwoDimCellLoop()
 
-        self.cconf = {}
-        self.nconf = {}
         for k in self.sets.keys():
-            self.cconf[k] = np.zeros(shape, dtype=int)
-            self.nconf[k] = np.zeros(shape, dtype=int)
+            nconf_arr = np.zeros(shape, dtype=int)
+            cconf_arr = np.zeros(shape, dtype=int)
+            setattr(self, "cconf_%s" % k, cconf_arr)
+            setattr(self, "nconf_%s" % k, nconf_arr)
             if k in self.stringy_subcells:
                 val = [index for index, val in enumerate(self.strings) if val == self.sets[k][0]][0]
-                self.cconf[k][:] = val
-                self.nconf[k][:] = val
+                cconf_arr[:] = val
+                nconf_arr[:] = val
 
         self.stepfunc = StepFunc(self, self.loop, self.acc, self.neighbourhood, self.border, extra_code=[self.computation])
         self.stepfunc.gen_code()
 
     def get_config(self):
-        return self.cconf
+        res = {}
+        for k in self.sets.keys():
+            res[k] = getattr(self, "cconf_%s" % k)
+        return res
 
     def step(self):
-        self.stepfunc.step_pure_py()
+        self.stepfunc.step()
         self.updated.emit()
+
