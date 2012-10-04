@@ -139,3 +139,18 @@ def MooreNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
                 list(product([-1, 0, 1], [-1, 0, 1])),
                 "MooreNeighbourhood",
                 **kwargs)
+
+def HexagonalNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
+    """This is the Neighbourhood for Hexagonal grids.
+    The cell and all of its 6 neighbours are considered for computation.
+
+    The fields are called lu, ru, l, m, r, ld, and rd for left-up,
+    right-up, left, middle, right, left-down, and right-down
+    respectively."""
+
+    return Base("lu ru l m r ld rd".split(" "),
+                [pos for pos in 
+                    product([-1, 0, 1], [-1, 0, 1])
+                        if pos not in [(-1,-1), (1, 1)]],
+                "HexagonalNeighbourhood",
+                **kwargs)

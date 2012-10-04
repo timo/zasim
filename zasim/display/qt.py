@@ -283,7 +283,7 @@ def render_state_array_hexagon(states, palette, rects, region=None, orig_painter
     tip_height = 0.25 * rects.values()[0].width()
 
     if not orig_painter:
-        result = QPixmap(QSize(math.ceil((w + 0.5) * tilesize.width()),
+        result = QPixmap(QSize(math.ceil((w + h * 0.5) * tilesize.width()),
                                math.ceil(h * (tilesize.height() - tip_height))))
         result.fill(0)
         painter = QPainter(result)
@@ -293,7 +293,7 @@ def render_state_array_hexagon(states, palette, rects, region=None, orig_painter
     positions = product(xrange(w), xrange(h))
     values = [(pos, conf[pos]) for pos in positions]
     fragments = [(QPoint(
-                    (pos[0] + (0.5 if pos[1] % 2 == 0 else 0)) * tilesize.width(),
+                    (pos[0] + 0.5 * pos[1]) * tilesize.width(),
                     pos[1] * (tilesize.height() - tip_height)),
                   rects[value])
                  for pos, value in values]
@@ -648,7 +648,7 @@ class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
 
         w, h = simulator.shape
         if hexagonal:
-            w = w * self.tile_size
+            w = (w + 0.5 * h) * self.tile_size
             h = h * (0.75 * self.tile_size)
         else:
             w = w * self.tile_size
