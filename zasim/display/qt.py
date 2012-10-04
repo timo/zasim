@@ -321,7 +321,6 @@ def cut_hexagons(image, rects):
                          QPoint(w / 2, h),
                          QPoint(0, h - cut_h)])
     del painter
-    stamp.save("/tmp/stamp.png")
 
     painter = QPainter(image)
     painter.setCompositionMode(QPainter.CompositionMode_DestinationAtop)
