@@ -244,7 +244,7 @@ def __fixup_states_region(states, region):
         conf = states
     return conf, (x, y, w, h)
 
-def render_state_array_tiled(states, palette, rects, region=None, painter=None):
+def render_state_array_tiled(states, palette, rects, region=None, orig_painter=None):
     """Using a texture atlas and a dictionary of pixmap fragment "factories",
     draw a configuration using graphical tiles.
 
@@ -254,13 +254,15 @@ def render_state_array_tiled(states, palette, rects, region=None, painter=None):
     :param region: What part of the config to render (x, y, w, h).
     """
 
-    conf, x, y, w, h = __fixup_states_region(states,region)
+    conf, (x, y, w, h) = __fixup_states_region(states,region)
 
-    if not painter:
+    if not orig_painter:
         tilesize = rects.values()[0].size()
         result = QPixmap(QSize(w * tilesize.width(), h * tilesize.height()))
         painter =  QPainter(result)
         painter.scale(tilesize.width(), tilesize.height())
+    else:
+        painter = orig_painter
 
     positions = product(xrange(w), xrange(h))
 
@@ -270,20 +272,22 @@ def render_state_array_tiled(states, palette, rects, region=None, painter=None):
     for dest, src in fragments:
         painter.drawPixmap(QRect(dest, QSize(1, 1)), palette, src)
 
-    if not painter:
+    if not orig_painter:
         return result
 
-def render_state_array_hexagon(states, palette, rects, region=None, painter=None):
-    conf, x, y, w, h = __fixup_states_region(states,region)
+def render_state_array_hexagon(states, palette, rects, region=None, orig_painter=None):
+    conf, (x, y, w, h) = __fixup_states_region(states,region)
 
     tilesize = rects.values()[0].size()
     # the height of the tip of the hexagon
     tip_height = 0.25 * rects.values()[0].width()
 
-    if not painter:
+    if not orig_painter:
         result = QPixmap(QSize(math.ceil((w + 0.5) * tilesize.width()),
                                math.ceil(h * (tilesize.height() - tip_height))))
         painter = QPainter(result)
+    else:
+        painter = orig_painter
 
     positions = product(xrange(w), xrange(h))
     values = [(pos, conf[pos]) for pos in positions]
@@ -296,8 +300,37 @@ def render_state_array_hexagon(states, palette, rects, region=None, painter=None
     for dest, src in fragments:
         painter.drawPixmap(QRect(dest, tilesize), palette, src)
 
-    if not painter:
+    if not orig_painter:
         return result
+
+def cut_hexagons(image, rects):
+    w, h = rects.values()[0].width(), rects.values()[0].height()
+    count_w, count_h = image.size().width() / w, image.size().height() / h
+    cut_h = 0.25 * w
+
+    image = image.toImage().convertToFormat(QImage.Format_ARGB32_Premultiplied)
+
+    stamp = QImage(QSize(w, h), QImage.Format_ARGB32_Premultiplied)
+    stamp.fill(0x0)
+    painter = QPainter(stamp)
+    painter.setBrush(QColor("black"))
+    painter.drawPolygon([QPoint(0, cut_h),
+                         QPoint(w / 2, 0),
+                         QPoint(w, cut_h),
+                         QPoint(w, h - cut_h),
+                         QPoint(w / 2, h),
+                         QPoint(0, h - cut_h)])
+    del painter
+    stamp.save("/tmp/stamp.png")
+
+    painter = QPainter(image)
+    painter.setCompositionMode(QPainter.CompositionMode_DestinationAtop)
+    for x, y in product(xrange(count_w), xrange(count_h)):
+        painter.drawImage(QPoint(x * w, y * h), stamp)
+
+    del painter
+
+    return QPixmap.fromImage(image)
 
 class BaseQImagePainter(QObject):
     """This is a base class for implementing renderers for configs based on
