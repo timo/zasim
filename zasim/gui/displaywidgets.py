@@ -11,7 +11,7 @@ class DisplayWidget(QWidget):
 
     Based on `zasim.display.qt`"""
 
-    def __init__(self, simulator, width=None, height=None, **kwargs):
+    def __init__(self, simulator, width=None, height=None, painter=None, scale=1, **kwargs):
         """Initialize the DisplayWidget.
 
         :param width: The width of the image to build.
@@ -24,11 +24,15 @@ class DisplayWidget(QWidget):
 
         self._sim = simulator
 
-        self._scale = 1
+        self._scale = scale
         self._width = width
         self._height = height
 
-        self._create_painter()
+        if painter is None:
+            self._create_painter()
+        else:
+            self.display = painter
+            self._width, self._height = painter._width, painter._height
 
         self._scale_scroll = 0
 

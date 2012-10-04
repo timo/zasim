@@ -285,6 +285,7 @@ def render_state_array_hexagon(states, palette, rects, region=None, orig_painter
     if not orig_painter:
         result = QPixmap(QSize(math.ceil((w + 0.5) * tilesize.width()),
                                math.ceil(h * (tilesize.height() - tip_height))))
+        result.fill(0)
         painter = QPainter(result)
     else:
         painter = orig_painter
@@ -592,7 +593,7 @@ class TwoDimQImagePainterBase(BaseQImagePainter):
         pass
 
 class TwoDimQImagePainter(TwoDimQImagePainterBase):
-    def __init__(self, simulator, connect=True, **kwargs):
+    def __init__(self, simulator, connect=True, hexagonal=False, **kwargs):
         """Initialise the TwoDimQImagePainter.
 
         :param simulator: The simulator to use.
@@ -600,6 +601,7 @@ class TwoDimQImagePainter(TwoDimQImagePainterBase):
         """
         self._sim = simulator
         w, h = simulator.shape
+        self.hexagonal = hexagonal
 
         super(TwoDimQImagePainter, self).__init__(w, h, queue_size=1, **kwargs)
 
@@ -631,23 +633,33 @@ class TwoDimQImagePainter(TwoDimQImagePainterBase):
             pass
 
 class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
-    def __init__(self, simulator, scale=0.1, **kwargs):
+    def __init__(self, simulator, scale=0.1, hexagonal=False, connect=True, **kwargs):
+
         self._sim = simulator
+        self.hexagonal = hexagonal
 
         if 'tiles' in self._sim.palette_info:
-            self.palette = self._sim.palette_info['tiles']['images']
             self.rects = self._sim.palette_info['tiles']['rects']
         else:
             raise NotImplementedError("There is no default image palette yet.")
-
         self.tile_size = self.rects.values()[0].height()
+
         assert self.rects.values()[0].width() == self.tile_size
 
         w, h = simulator.shape
-        w = w * self.tile_size
-        h = h * self.tile_size
+        if hexagonal:
+            w = w * self.tile_size
+            h = h * (0.75 * self.tile_size)
+        else:
+            w = w * self.tile_size
+            h = h * self.tile_size
 
-        super(TwoDimQImagePalettePainter, self).__init__(w, h, **kwargs)
+        super(TwoDimQImagePalettePainter, self).__init__(w, h, connect=False, **kwargs)
+
+        self.palette = self._sim.palette_info['tiles']['images']
+
+        if connect:
+            self.connect_simulator()
 
     def draw_conf(self):
         try:
@@ -655,10 +667,15 @@ class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
             tilesize = self.tile_size * self._scale
             w, h = self._width / tilesize, self._height / tilesize
 
-            print self._width, self._height, tilesize
-            print w, h
+            #print self._width, self._height, tilesize
+            #print w, h
 
-            self._image = render_state_array_tiled(conf, self.palette, self.rects)
+            if self.hexagonal:
+                self._image = render_state_array_hexagon(conf, self.palette, self.rects)
+            else:
+                self._image = render_state_array_tiled(conf, self.palette, self.rects)
+            self._image = self._image.scaled(self._image.width() * self._scale,
+                                             self._image.height() * self._scale)
         except Queue.Empty:
             pass
 

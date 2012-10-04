@@ -1,7 +1,10 @@
-from zasim.display.qt import cut_hexagons, generate_tile_atlas, render_state_array_hexagon
+from zasim.display.qt import cut_hexagons, generate_tile_atlas, TwoDimQImagePalettePainter
+from zasim.cagen.simulators import ElementarySimulator
 from os import path
 from PySide.QtGui import *
 from PySide.QtCore import *
+from zasim.gui.display import DisplayWidget
+from zasim.gui.control import ControlWidget
 
 import numpy as np
 
@@ -22,7 +25,18 @@ image, rects = generate_tile_atlas(filename_map, "images/vonNeumann")
 
 image = cut_hexagons(image, rects)
 
-states = np.random.randint(0, 4, (10, 10))
-image = render_state_array_hexagon(states, image, rects)
-image.save("/tmp/result.png")
+states = np.random.randint(0, 2, (30, 30))
+sim = ElementarySimulator(base=2, config=states)
+sim.palette_info["tiles"] = {}
+sim.palette_info["tiles"]["images"] = image
+sim.palette_info["tiles"]["rects"] = rects
 
+painter = TwoDimQImagePalettePainter(sim, hexagonal=True)
+
+display = DisplayWidget(sim, painter=painter, scale=0.5)
+
+cnt = ControlWidget(sim)
+display.show()
+cnt.show()
+
+qApp.exec_()
