@@ -220,16 +220,7 @@ def render_state_array(states, palette=PALETTE_32, region=None):
     _last_rendered_state_conf = nconf
     return image
 
-def render_state_array_tiled(states, palette, rects, region=None, painter=None):
-    """Using a texture atlas and a dictionary of pixmap fragment "factories",
-    draw a configuration using graphical tiles.
-
-    :param states: The array of states to render.
-    :param palette: The image to use.
-    :param rects: A dictionary from state value to rect in the image.
-    :param region: What part of the config to render (x, y, w, h).
-    """
-
+def __fixup_states_region(states, region):
     if region:
         x, y, w, h = region
         try:
@@ -251,6 +242,19 @@ def render_state_array_tiled(states, palette, rects, region=None, painter=None):
             h = 1
             states = states.reshape((w,h))
         conf = states
+    return conf, (x, y, w, h)
+
+def render_state_array_tiled(states, palette, rects, region=None, painter=None):
+    """Using a texture atlas and a dictionary of pixmap fragment "factories",
+    draw a configuration using graphical tiles.
+
+    :param states: The array of states to render.
+    :param palette: The image to use.
+    :param rects: A dictionary from state value to rect in the image.
+    :param region: What part of the config to render (x, y, w, h).
+    """
+
+    conf, x, y, w, h = __fixup_states_region(states,region)
 
     if not painter:
         tilesize = rects.values()[0].size()
@@ -265,6 +269,32 @@ def render_state_array_tiled(states, palette, rects, region=None, painter=None):
 
     for dest, src in fragments:
         painter.drawPixmap(QRect(dest, QSize(1, 1)), palette, src)
+
+    if not painter:
+        return result
+
+def render_state_array_hexagon(states, palette, rects, region=None, painter=None):
+    conf, x, y, w, h = __fixup_states_region(states,region)
+
+    tilesize = rects.values()[0].size()
+    # the height of the tip of the hexagon
+    tip_height = 0.25 * rects.values()[0].width()
+
+    if not painter:
+        result = QPixmap(QSize(math.ceil((w + 0.5) * tilesize.width()),
+                               math.ceil(h * (tilesize.height() - tip_height))))
+        painter = QPainter(result)
+
+    positions = product(xrange(w), xrange(h))
+    values = [(pos, conf[pos]) for pos in positions]
+    fragments = [(QPoint(
+                    (pos[0] + (0.5 if pos[1] % 2 == 0 else 0)) * tilesize.width(),
+                    pos[1] * (tilesize.height() - tip_height)),
+                  rects[value])
+                 for pos, value in values]
+
+    for dest, src in fragments:
+        painter.drawPixmap(QRect(dest, tilesize), palette, src)
 
     if not painter:
         return result
