@@ -120,14 +120,20 @@ class DisplayWidget(QWidget):
             self._scale_scroll += num_steps
 
         if self._scale_scroll > 1:
-            self._scale += 1
+            if self._scale <= 1:
+                self._scale *= 2
+            else:
+                self._scale += 1
             self._scale_scroll = 0
         elif self._scale_scroll < 1:
-            self._scale -= 1
+            if self._scale <= 1:
+                self._scale *= 0.5
+            else:
+                self._scale -= 1
             self._scale_scroll = 0
 
-        if self._scale < 1:
-            self._scale = 1
+        if self._scale < 0.01:
+            self._scale = 0.01
         elif self._scale > 50:
             self._scale = 50
 
