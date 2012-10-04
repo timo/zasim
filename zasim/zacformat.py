@@ -266,7 +266,7 @@ class ZacConsoleDisplay(object):
 
     def measure_sets(self):
         all_contents = sum(self.sets.values(), [])
-        max_w = max(map(len, map(str, all_contents)))
+        max_w = max(map(len, map(unicode, all_contents)))
 
         self.stringy_subcells = [k for k, v in self.sets.iteritems() if isinstance(v[0], basestring)]
 
