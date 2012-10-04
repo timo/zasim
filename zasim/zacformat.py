@@ -388,7 +388,7 @@ class ZacSimulator(SimulatorInterface):
                 cconf_arr[:] = val
                 nconf_arr[:] = val
 
-        self.stepfunc = StepFunc(self, self.loop, self.acc, self.neighbourhood, self.border, extra_code=[self.computation])
+        self.stepfunc = StepFunc(self, self.loop, self.acc, self.neighbourhood, self.border, visitors=[self.computation])
         self.stepfunc.gen_code()
 
     def get_config(self):
