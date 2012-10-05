@@ -6,6 +6,7 @@ from PySide.QtGui import *
 from PySide.QtCore import *
 from zasim.gui.display import DisplayWidget
 from zasim.gui.control import ControlWidget
+from zasim.gui.mainwin import ZasimMainWindow
 
 import numpy as np
 
@@ -31,13 +32,15 @@ sim = ElementarySimulator(base=2, config=states, neighbourhood=HexagonalNeighbou
 sim.palette_info["tiles"] = {}
 sim.palette_info["tiles"]["images"] = image
 sim.palette_info["tiles"]["rects"] = rects
+sim.t.possible_values = (0, 1)
 
 painter = TwoDimQImagePalettePainter(sim, hexagonal=True)
 
 display = DisplayWidget(sim, painter=painter, scale=0.25)
 
 cnt = ControlWidget(sim)
-display.show()
-cnt.show()
+
+mainwin = ZasimMainWindow(sim, display, cnt)
+mainwin.show()
 
 qApp.exec_()
