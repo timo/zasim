@@ -29,6 +29,13 @@ def generate_tile_atlas(filename_map, common_prefix=""):
     size = QImage(filename_map.values()[0]).rect()
     one_w, one_h = size.width(), size.height()
 
+    if one_w != one_h:
+        if one_w < one_h:
+            one_w = one_h
+        else:
+            one_h = one_w
+        print "made pictures square."
+
     # try to make the image as near to a square image a spossible
     columns = int(math.ceil(math.sqrt(len(filename_map))))
     rows = len(filename_map) / columns + 1
