@@ -158,8 +158,11 @@ class SimulatorInterface(QObject):
     def limit_palette(self):
         result = {}
         for key, pal in self.palette_info.iteritems():
-            new_dict = {k: pal[k] for k in self.t.possible_values}
-            result[key] = new_dict
+            try:
+                new_dict = {k: pal[k] for k in self.t.possible_values}
+                result[key] = new_dict
+            except KeyError:
+                pass
 
         self.palette_info = result
 
