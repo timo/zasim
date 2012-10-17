@@ -291,7 +291,7 @@ def render_state_array_hexagon(states, palette, rects, region=None, orig_painter
 
     if not orig_painter:
         result = QPixmap(QSize(math.ceil((w + 0.5) * tilesize.width()),
-                               math.ceil(h * (tilesize.height() - tip_height))))
+                               math.ceil((h + 0.5) * (tilesize.height() - tip_height))))
         result.fill(0)
         painter = QPainter(result)
     else:
@@ -655,8 +655,8 @@ class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
 
         w, h = simulator.shape
         if hexagonal:
-            w = w * self.tile_size
-            h = h * (0.75 * self.tile_size)
+            w = (w + 0.5) * self.tile_size
+            h = (h + 0.5) * (0.75 * self.tile_size)
         else:
             w = w * self.tile_size
             h = h * self.tile_size
@@ -678,11 +678,11 @@ class TwoDimQImagePalettePainter(TwoDimQImagePainterBase):
             #print w, h
 
             if self.hexagonal:
-                self._image = render_state_array_hexagon(conf, self.palette, self.rects)
+                _image = render_state_array_hexagon(conf, self.palette, self.rects)
             else:
-                self._image = render_state_array_tiled(conf, self.palette, self.rects)
-            self._image = self._image.scaled(self._image.width() * self._scale,
-                                             self._image.height() * self._scale)
+                _image = render_state_array_tiled(conf, self.palette, self.rects)
+            self._image = _image.scaled(_image.width() * self._scale,
+                                        _image.height() * self._scale)
         except Queue.Empty:
             pass
 
