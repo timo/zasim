@@ -9,8 +9,6 @@ from zasim.gui.control import ControlWidget
 from zasim.gui.mainwin import ZasimMainWindow
 from zasim import config
 
-import numpy as np
-
 nameStateDict = { "U": 0,
                   #"C00" : 2048, "C10" : 2049, "C01" : 2050, "C11" : 2051,
                   "C00" : 1, "C10" : 2, "C01" : 3, "C11" : 4,
@@ -38,7 +36,7 @@ def HexagonalNeighbourhood(Base=AlternatingNeighbourhood, **kwargs):
                   (0, 1), (1, 1)]])
 
 config = config.RandomConfiguration(2, 0.9, 0.1)
-sim = ElementarySimulator(base=2, rule=8, size=(20,20), config=config, neighbourhood=HexagonalNeighbourhood)
+sim = ElementarySimulator(base=2, size=(20,20), config=config, neighbourhood=HexagonalNeighbourhood)
 sim.palette_info["tiles"] = {}
 sim.palette_info["tiles"]["images"] = image
 sim.palette_info["tiles"]["rects"] = rects
@@ -46,7 +44,7 @@ sim.t.possible_values = (0, 1)
 
 painter = TwoDimQImagePalettePainter(sim, hexagonal=True)
 
-display = DisplayWidget(sim, painter=painter, scale=0.5)
+display = DisplayWidget(sim, painter=painter, scale=0.25)
 
 cnt = ControlWidget(sim)
 
