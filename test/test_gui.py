@@ -45,12 +45,16 @@ def my_abort_hook():
     _aborts.append(True)
 
 def fail_on_exceptions():
+    import traceback
     exc = _exceptions[:]
     [_exceptions.remove(a) for a in exc]
     aborts = _aborts[:]
     [_aborts.remove(a) for a in aborts]
     if exc:
-        pytest.fail("There were exceptions in the base.\n%s" % (exc[0]))
+        exceptiontext = []
+        for exception in exc:
+            exceptiontext.extend(traceback.format_exception(*exception))
+        pytest.fail("There were exceptions in the base.\n%s" % "\n".join(exceptiontext))
     if aborts:
         pytest.fail("There were abort signals in the tests.")
 
@@ -106,37 +110,6 @@ class TestGui:
         assert not display.control.stop_button.isVisible()
 
         self.app.closeAllWindows()
-        fail_on_exceptions()
-
-    def test_reset_button(self):
-        sim_obj = cagen.ElementarySimulator((100, 100), copy_borders=True, base=3)
-
-        display = ZasimDisplay(sim_obj)
-        display.set_scale(1)
-
-        QTest.qWaitForWindowShown(display.window)
-
-        reset_button = display.control.findChild(QWidget, u"reset")
-        assert reset_button is not None
-
-        display.control.zero_percentage.setValue(0.33)
-        QTest.mouseClick(reset_button, Qt.LeftButton)
-
-        config = sim_obj.get_config()
-        histogram = np.bincount(config.ravel())
-        zeros = histogram[0]
-        other = sum(histogram[1:])
-        assert abs((1.0 * zeros / (zeros + other)) - 0.33) < 0.2
-
-        display.control.zero_percentage.setValue(0.99)
-        QTest.mouseClick(reset_button, Qt.LeftButton)
-
-        config = sim_obj.get_config()
-        histogram = np.bincount(config.ravel())
-        zeros = histogram[0]
-        other = sum(histogram[1:])
-        assert abs((1.0 * zeros / (zeros + other)) - 0.99) < 0.2
-
         fail_on_exceptions()
 
     def find_message_box(self, timeout=10):

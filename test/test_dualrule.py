@@ -26,6 +26,7 @@ class TestDualRule:
         # implement nazim fatès density classifier
         compu = cagen.DualRuleCellularAutomaton(184, 232, 0.1)
         sf = cagen.automatic_stepfunc(computation=compu, histogram=True, needs_random_generator=True)
+        sf.gen_code()
         simu = CagenSimulator(sf)
 
         for i in range(50):
