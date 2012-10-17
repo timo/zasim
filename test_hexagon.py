@@ -1,6 +1,6 @@
 from zasim.display.qt import cut_hexagons, generate_tile_atlas, TwoDimQImagePalettePainter
 from zasim.cagen.simulators import ElementarySimulator
-from zasim.cagen.neighbourhoods import HexagonalNeighbourhood
+from zasim.cagen.neighbourhoods import AlternatingNeighbourhood
 from os import path
 from PySide.QtGui import *
 from PySide.QtCore import *
@@ -27,6 +27,15 @@ image, rects = generate_tile_atlas(filename_map, "images/vonNeumann")
 
 image = cut_hexagons(image, rects)
 
+def HexagonalNeighbourhood(Base=AlternatingNeighbourhood, **kwargs):
+    return Base("lu ru l m r ld rd".split(" "),
+                [[(-1, -1), (0, -1),
+                  (-1, 0), (0, 0), (1, 0),
+                  (-1, 1), (0, 1)],
+                 [(0, -1), (1, -1),
+                  (-1, 0), (0, 0), (1, 0),
+                  (0, 1), (1, 1)]])
+
 states = np.random.randint(0, 2, (30, 30))
 sim = ElementarySimulator(base=2, config=states, neighbourhood=HexagonalNeighbourhood)
 sim.palette_info["tiles"] = {}
@@ -36,7 +45,7 @@ sim.t.possible_values = (0, 1)
 
 painter = TwoDimQImagePalettePainter(sim, hexagonal=True)
 
-display = DisplayWidget(sim, painter=painter, scale=0.25)
+display = DisplayWidget(sim, painter=painter, scale=0.5)
 
 cnt = ControlWidget(sim)
 
