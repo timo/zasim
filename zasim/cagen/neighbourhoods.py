@@ -159,6 +159,10 @@ class AlternatingNeighbourhood(Neighbourhood):
         self.bb = _calc_bb(list(all_offsets))
         self.alternate_dimension = alternate_dimension
 
+        # for compatibility, expose the first of the position sets
+        # FIXME how can this be more sensible?
+        self.offsets = self.positionsets[0]
+
     def visit(self):
         """Adds C and python code to get the neighbouring values and stores
         them in local variables."""
