@@ -53,7 +53,7 @@ class TestCAGen:
         with pytest.raises(AssertionError):
             br._step_func.set_target(br)
         with pytest.raises(AttributeError):
-            br._step_func.add_weave_code("headers", "int foo = 42")
+            br._step_func.add_weave_code("pre_compute", "int foo = 42")
         with pytest.raises(AttributeError):
             br._step_func.add_py_code("pre_compute", "print 'hello'")
 
