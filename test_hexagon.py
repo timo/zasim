@@ -7,6 +7,7 @@ from PySide.QtCore import *
 from zasim.gui.display import DisplayWidget
 from zasim.gui.control import ControlWidget
 from zasim.gui.mainwin import ZasimMainWindow
+from zasim import config
 
 import numpy as np
 
@@ -36,8 +37,8 @@ def HexagonalNeighbourhood(Base=AlternatingNeighbourhood, **kwargs):
                   (-1, 0), (0, 0), (1, 0),
                   (0, 1), (1, 1)]])
 
-states = np.random.randint(0, 2, (30, 30))
-sim = ElementarySimulator(base=2, config=states, neighbourhood=HexagonalNeighbourhood)
+config = config.RandomConfiguration(2, 0.9, 0.1)
+sim = ElementarySimulator(base=2, rule=8, size=(20,20), config=config, neighbourhood=HexagonalNeighbourhood)
 sim.palette_info["tiles"] = {}
 sim.palette_info["tiles"]["images"] = image
 sim.palette_info["tiles"]["rects"] = rects
