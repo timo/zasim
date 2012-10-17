@@ -13,6 +13,26 @@ from .compatibility import one_dimension
 
 from itertools import product
 
+def _calc_bb(offsets):
+    """Calculate a bounding box from a set of offsets."""
+    # there is at least one offset and that has to have the right number of
+    # dimensions already.
+    num_dimensions = len(offsets[0])
+
+    # initialise the maximums and minimums from the first offset
+    maxes = list(offsets[0])
+    mins = list(offsets[0])
+
+    # go through all offsets
+    for offset in offsets:
+        # for each offset, go through all dimensions it has
+        for dim in range(num_dimensions):
+            maxes[dim] = max(maxes[dim], offset[dim])
+            mins[dim] = min(mins[dim], offset[dim])
+
+    return tuple(zip(mins, maxes))
+
+
 class SimpleNeighbourhood(Neighbourhood):
     """The SimpleNeighbourhood offers named access to any number of
     neighbouring fields with any number of dimensions."""
@@ -28,10 +48,10 @@ class SimpleNeighbourhood(Neighbourhood):
         :param offsets: A list of offsets for each of the neighbouring cells."""
         super(Neighbourhood, self).__init__()
         self.names = tuple(names)
-        self.offsets = tuple([tuple(offset) for offset in offsets])
+        self.offsets = tuple(map(tuple, offsets))
         assert len(self.names) == len(self.offsets)
         self._sort_names_offsets()
-        self.recalc_bounding_box()
+        self.bb = _calc_bb(self.offsets)
 
         # if the neighbourhood isn't flat, make one_dimension incompatible
         if len(self.offsets[0]) == 2 and any(y != 0 for (x, y) in self.offsets):
@@ -61,25 +81,6 @@ class SimpleNeighbourhood(Neighbourhood):
                 for name, offset in zip(self.names, self.offsets)]
         self.code.add_py_code("pre_compute",
                 "\n".join(assignments))
-
-    def recalc_bounding_box(self):
-        """Calculate a bounding box from a set of offsets."""
-        # there is at least one offset and that has to have the right number of
-        # dimensions already.
-        num_dimensions = len(self.offsets[0])
-
-        # initialise the maximums and minimums from the first offset
-        maxes = list(self.offsets[0])
-        mins = list(self.offsets[0])
-
-        # go through all offsets
-        for offset in self.offsets:
-            # for each offset, go through all dimensions it has
-            for dim in range(num_dimensions):
-                maxes[dim] = max(maxes[dim], offset[dim])
-                mins[dim] = min(mins[dim], offset[dim])
-
-        self.bb = tuple(zip(mins, maxes))
 
     def bounding_box(self, steps=1):
         """Get the bounding box resulting from step successive reads.
@@ -140,17 +141,63 @@ def MooreNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
                 "MooreNeighbourhood",
                 **kwargs)
 
-def HexagonalNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
-    """This is the Neighbourhood for Hexagonal grids.
-    The cell and all of its 6 neighbours are considered for computation.
+class AlternatingNeighbourhood(Neighbourhood):
+    """This neighbourhood alternates between different neighbourhoods
+    on a per-line or per-column basis."""
 
-    The fields are called lu, ru, l, m, r, ld, and rd for left-up,
-    right-up, left, middle, right, left-down, and right-down
-    respectively."""
+    # TODO how can this be made compatible with beta-async?
 
-    return Base("lu ru l m r ld rd".split(" "),
-                [pos for pos in 
-                    product([-1, 0, 1], [-1, 0, 1])
-                        if pos not in [(-1,-1), (1, 1)]],
-                "HexagonalNeighbourhood",
-                **kwargs)
+    def __init__(self, names, positionsets, alternate_dimension=0, name=""):
+        """Names is simply a list of strings. Positionsets if a list of lists,
+        each of which contains the same number of two-tuples for offsets."""
+        self.names = tuple(names)
+        self.positionsets = tuple(tuple(map(tuple, offsets)) for offsets in positionsets)
+
+        all_offsets = set()
+        for positionset in self.positionsets:
+            all_offsets.update(positionset)
+        self.bb = _calc_bb(list(all_offsets))
+        self.alternate_dimension = alternate_dimension
+
+    def visit(self):
+        """Adds C and python code to get the neighbouring values and stores
+        them in local variables."""
+        count = len(self.positionsets)
+
+        do_else = False
+        for idx, offset_set in enumerate(self.positionsets):
+            if do_else:
+                code = "else "
+            else:
+                code = ""
+                do_else = True
+            code += "if (%s %% %d == %d) {" % (
+                    self.code.loop.get_pos()[self.alternate_dimension],
+                    count,
+                    idx)
+            for name, offset in zip(self.names, offset_set):
+                code += "%s = %s;\n" % (name,
+                         self.code.acc.read_access(
+                             gen_offset_pos(self.code.loop.get_pos(), offset)))
+            code += "}"
+            self.code.add_weave_code("pre_compute", code)
+
+        self.code.add_weave_code("localvars",
+                "int " + ", ".join(self.names) + ";")
+
+        code = "# alternate the neighbourhood depending on dimension %d\n" % self.alternate_dimension
+        do_else = False
+        for idx, offset_set in enumerate(self.positionsets):
+            if do_else:
+                code += "el"
+            else:
+                do_else = True
+            code += "if pos[%d] %% %d == %d:\n    " % (self.alternate_dimension, count, idx)
+            assignments = ["%s = self.acc.read_from(%s)" % (
+                    name, "offset_pos(pos, %s)" % (offset,))
+                    for name, offset in zip(self.names, offset_set)]
+            code += "\n    ".join(assignments) + "\n"
+
+        self.code.add_py_code("pre_compute",
+                code)
+
