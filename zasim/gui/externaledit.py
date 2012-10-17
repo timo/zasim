@@ -42,8 +42,8 @@ class ExternalEditWindow(QDialog):
         self.lay.addWidget(self.fname_disp)
 
         self.btn_box_u = QDialogButtonBox(parent=self)
-        self.btn_box_u.addButton(QDialogButtonBox.Reset)
-        self.btn_box_u.addButton("Update", QDialogButtonBox.AcceptRole)
+        self.btn_box_u.addButton(QDialogButtonBox.Reset).setToolTip("Change the configuration back to what it was before.")
+        self.btn_box_u.addButton("Update", QDialogButtonBox.AcceptRole).setToolTip("Read the file and load the configuration.")
         self.btn_box_u.clicked.connect(self.button_clicked)
 
         self.lay.addWidget(self.btn_box_u)
@@ -60,9 +60,9 @@ class ExternalEditWindow(QDialog):
 
         self.lay.addStretch()
 
-        self.btn_box_l = QDialogButtonBox(QDialogButtonBox.Ok |
-                                        QDialogButtonBox.Cancel,
-                                        parent=self)
+        self.btn_box_l = QDialogButtonBox(parent=self)
+        self.btn_box_l.addButton(QDialogButtonBox.Ok).setToolTip("Close this window and keep all changes.")
+        self.btn_box_l.addButton(QDialogButtonBox.Cancel).setToolTip("Reset all changes and close this window.")
         self.btn_box_l.clicked.connect(self.button_clicked)
         self.lay.addWidget(self.btn_box_l)
 
