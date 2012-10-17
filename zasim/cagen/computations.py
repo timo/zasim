@@ -52,7 +52,7 @@ class ElementaryCellularAutomatonBase(Computation):
         super(ElementaryCellularAutomatonBase, self).visit()
 
         self.neigh = zip(self.code.neigh.offsets, self.code.neigh.names)
-        self.digits = len(self.neigh)
+        self.digits = len(self.code.neigh.names)
 
         self.base = len(self.code.possible_values)
         # the numbers in the possible values list have to start at 0 and go
