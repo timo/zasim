@@ -374,7 +374,15 @@ class SubCellTarget(Target):
         """
         self.possible_values = sets
         self.fields = list(sets.keys())
+        self.strings = strings
+        self.stringy_subcells = [k for k, v in self.possible_values.iteritems() if isinstance(v[0], basestring)]
+
         for key in self.fields:
+            if key in self.stringy_subcells:
+                self.possible_values[key] = [
+                        self.strings.find(value)
+                        for value in self.possible_values[key]]
+
             if key not in configs or configs[key] is None:
                 gen = config.RandomConfigurationFromPalette(self.possible_values[key])
                 theconf = gen.generate(size_hint=size or self.size)
@@ -399,13 +407,7 @@ class SubCellTarget(Target):
                 else:
                     self.size = size
 
-            #nconf_arr = np.zeros(shape, dtype=int)
-            theconf_arr = np.zeros(size, dtype=int)
-            setattr(self, "cconf_%s" % key, theconf_arr)
-            #setattr(self, "nconf_%s" % k, nconf_arr)
-            if key in self.stringy_subcells:
-                val = [index for index, val in enumerate(self.strings) if val == self.sets[key][0]][0]
-                theconf_arr[:] = val
+            setattr(self, "cconf_%s" % key, theconf)
                 #nconf_arr[:] = val
 
 class ZacSimulator(SimulatorInterface):
