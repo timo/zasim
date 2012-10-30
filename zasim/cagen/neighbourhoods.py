@@ -109,6 +109,11 @@ class SimpleNeighbourhood(Neighbourhood):
         neighbourhood."""
         return [map(lambda x:-x, offs) for offs in self.offsets]
 
+    def reverse(self, name_or_offs):
+        if isinstance(name_or_offs, basestring):
+            name_or_offs = self.offsets[self.names.find(name_or_offs)]
+        return self.offsets.find(map(lambda x:-x, name_or_offs))
+
 def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the neighbourhood used by the elementary cellular automatons.
 
