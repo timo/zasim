@@ -18,8 +18,6 @@ from .cagen.stepfunc import StepFunc
 from .cagen.target import Target
 from .. import config
 
-import numpy as np
-
 n2c = lambda name: (int(name[1:name.find("l")]), int(name[name.find("l")+1:]))
 n2c.__doc__ = """Turn a name of a subcell into x/y coords"""
 c2n = lambda x, y: "c%dl%d" % (x, y)
