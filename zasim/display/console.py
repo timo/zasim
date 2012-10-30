@@ -2,6 +2,9 @@ from __future__ import absolute_import
 
 from ..simulator import QObject
 
+import unicodedata
+import itertools
+
 NO_DATA = " "
 PALETTE =       [" ", "#", "-", ";", ",", "^", "+", "Y"]
 HTML_PALETTE = "#000 #fff #f00 #00f #0f0 #ff0 #0ff #f0f".split(" ")
