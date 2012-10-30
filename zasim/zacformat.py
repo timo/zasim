@@ -12,6 +12,8 @@ from .cagen.loops import OneDimCellLoop, TwoDimCellLoop
 from .cagen.utils import gen_offset_pos
 from .cagen.border import BorderSizeEnsurer
 from .cagen.stepfunc import StepFunc
+from .cagen.target import Target
+from .. import config
 
 import numpy as np
 
@@ -348,8 +350,66 @@ class ZacNeighbourhood(SimpleNeighbourhood):
         self.code.add_py_code("pre_compute",
                 "\n".join(assignments))
 
+class SubCellTarget(Target):
+    """The SubCellTarget can act as a target for a`StepFunc` and offers
+    multiple subcells."""
+
+    _reset_size = None
+    """If a generator was passed as config, this holds the size of
+    new configurations to generate when a reset is called."""
+
+    _reset_generators = {}
+    """If a generator was passed as config, this holds that generator."""
+
+    possible_values = {}
+    """What values the cells in subcells can have."""
+
+    def __init__(self, sets={}, size=None, strings=[], configs={}, **kwargs):
+        """:param size: The size of the config to generate. Alternatively the
+                        size of the supplied config.
+           :param sets: A dictionary of field name to possible values.
+           :param strings: What strings exist in the configuration.
+           :param configs: A dictionary of field name to configuration array
+                           or a configuration generator.
+        """
+        self.possible_values = sets
+        self.fields = list(sets.keys())
+        for key in self.fields:
+            if key not in configs or configs[key] is None:
+                gen = config.RandomConfigurationFromPalette(self.possible_values[key])
+                theconf = gen.generate(size_hint=size or self.size)
+                size = self.cconf.shape
+                self.size = size
+
+                self._reset_generators[key] = gen
+                self._reset_size = self.size
+            elif isinstance(configs[key], config.BaseConfiguration):
+                theconf = config.generate(size_hint=size)
+                self._reset_generators[key] = configs[key]
+                self._reset_size = size
+                if size is not None and size != theconf.shape:
+                    raise ValueError("Size mismatch: %s - %s" % size, theconf.shape)
+                else:
+                    self.size = size
+            else:
+                theconf = config.copy()
+                self.size = theconf.shape
+                if size is not None and size != theconf.shape:
+                    raise ValueError("Size mismatch: %s - %s" % size, theconf.shape)
+                else:
+                    self.size = size
+
+            #nconf_arr = np.zeros(shape, dtype=int)
+            theconf_arr = np.zeros(size, dtype=int)
+            setattr(self, "cconf_%s" % key, theconf_arr)
+            #setattr(self, "nconf_%s" % k, nconf_arr)
+            if key in self.stringy_subcells:
+                val = [index for index, val in enumerate(self.strings) if val == self.sets[key][0]][0]
+                theconf_arr[:] = val
+                #nconf_arr[:] = val
+
 class ZacSimulator(SimulatorInterface):
-    def __init__(self, data_or_file, shape):
+    def __init__(self, data_or_file, shape, configs={}):
         super(ZacSimulator, self).__init__()
         if isinstance(data_or_file, file):
             data = yaml.load(data_or_file)
@@ -378,17 +438,9 @@ class ZacSimulator(SimulatorInterface):
         else:
             self.loop = TwoDimCellLoop()
 
-        for k in self.sets.keys():
-            nconf_arr = np.zeros(shape, dtype=int)
-            cconf_arr = np.zeros(shape, dtype=int)
-            setattr(self, "cconf_%s" % k, cconf_arr)
-            setattr(self, "nconf_%s" % k, nconf_arr)
-            if k in self.stringy_subcells:
-                val = [index for index, val in enumerate(self.strings) if val == self.sets[k][0]][0]
-                cconf_arr[:] = val
-                nconf_arr[:] = val
+        self.target = SubCellTarget(self.sets, shape, self.strings, configs)
 
-        self.stepfunc = StepFunc(self, self.loop, self.acc, self.neighbourhood, self.border, visitors=[self.computation])
+        self.stepfunc = StepFunc(self.target, self.loop, self.acc, self.neighbourhood, self.border, visitors=[self.computation])
         self.stepfunc.gen_code()
 
     def get_config(self):
