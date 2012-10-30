@@ -6,46 +6,23 @@ like text_to_cell outputs."""
 
 import yaml
 from .simulator import SimulatorInterface
-from .cagen.neighbourhoods import SimpleNeighbourhood
+from .cagen.neighbourhoods import SubCellNeighbourhood
 from .cagen.accessors import SubcellAccessor
 from .cagen.computations import PasteComputation
 from .cagen.loops import OneDimCellLoop, TwoDimCellLoop
-from .cagen.utils import gen_offset_pos
 from .cagen.border import BorderSizeEnsurer
 from .cagen.stepfunc import StepFunc
 from .cagen.target import SubCellTarget
 
-class ZacNeighbourhood(SimpleNeighbourhood):
+class ZacNeighbourhood(SubCellNeighbourhood):
     def __init__(self, neigh_data, subcells):
         names = []
         offsets = []
         for entry in neigh_data:
             names.append(entry["name"])
             offsets.append((entry["x"], entry["y"]))
-        super(ZacNeighbourhood, self).__init__(names, offsets)
+        super(ZacNeighbourhood, self).__init__(names, offsets, subcells)
 
-        self.subcells = subcells
-
-    def visit(self):
-        """Adds C and python code to get the neighbouring values and stores
-        them in local variables."""
-        for name, offset in zip(self.names, self.offsets):
-            for subcell in self.subcells:
-                self.code.add_weave_code("pre_compute", "%s_%s = %s;" % (name, subcell,
-                         self.code.acc.read_access(
-                             gen_offset_pos(self.code.loop.get_pos(), offset), subcell)))
-
-        for subcell in self.subcells:
-            self.code.add_weave_code("localvars",
-                    "int " + ", ".join(map(lambda n: "%s_%s" % (n, subcell), self.names)) + ";")
-
-        assignments = []
-        for subcell in self.subcells:
-            assignments.extend(["%s_%s = self.acc.read_from(%s, '%s')" % (
-                            name, subcell, "offset_pos(pos, %s)" % (offset,), subcell)
-                            for name, offset in zip(self.names, self.offsets)])
-        self.code.add_py_code("pre_compute",
-                "\n".join(assignments))
 
 class ZacSimulator(SimulatorInterface):
     def __init__(self, data_or_file, shape, configs={}):
