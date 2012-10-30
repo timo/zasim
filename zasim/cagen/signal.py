@@ -9,6 +9,11 @@ the local variables signal and signal_dir are set.
 If there was no signal, both variables will be set to None. If there were
 multiple signals addressed to the cell, an Exception is raised.
 
+TODO To be able to receive signals from multiple cells, an additional field
+has to be introduced, that tells other cells from which of their neighbours
+they will read the next signal. To turn this feature on, set listen_field
+to a string value.
+
 Setting the out_signal and out_signal_dir variables will send a new signal."""
 
 from .bases import Computation
