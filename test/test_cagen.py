@@ -13,7 +13,42 @@ import pytest
 
 MIN_SIZE, MAX_SIZE = 5, 25
 
+class UtilityVisitor(cagen.StepFuncVisitor):
+    def __init__(self, weave_section_data={}, py_section_data={}):
+        self.weave_section_data = dict(weave_section_data)
+        self.py_section_data = dict(py_section_data)
+
+    def visit(self):
+        for section, data in self.weave_section_data.iteritems():
+            for snippet in data if isinstance(data, list) else [data]:
+                self.code.add_weave_code(section, snippet)
+        for section, data in self.py_section_data.iteritems():
+            for snippet in data if isinstance(data, list) else [data]:
+                self.code.add_py_code(section, snippet)
+
+    def multiplicate_config(self):
+        pass
+
 class TestCAGen:
+    def test_reversed_compute(self):
+        data_a = dict(compute=["pass", "#!!!A1", "#!!!A2"], compute_reversed=["#!!!A3", "#!!!A4"])
+        data_b = dict(compute=["#!!!B1", "#!!!B2"], compute_reversed=["#!!!B3", "#!!!B4"])
+        visitor_a = UtilityVisitor(data_a, data_a)
+        visitor_b = UtilityVisitor(data_b, data_b)
+        loop, acc, neigh = [UtilityVisitor() for i in range(3)]
+
+        sf = cagen.StepFunc(cagen.Target(config=np.array([1, 2, 3, 4])), loop, acc, neigh, visitors=[visitor_a, visitor_b])
+        sf.gen_code()
+
+        for code in [sf.code_text, sf.pure_py_code_text]:
+            trimlines = []
+            for line in code.split("\n"):
+                if "!!!" in line:
+                    trimlines.append(line.strip(" #!"))
+            assert trimlines == "A1 A2 B1 B2 B3 B4 A3 A4".split(" ")
+
+
+
     @pytest.mark.skipif("not HAVE_WEAVE")
     def test_gen_weave_only(self, tested_rule_num):
         confs = TESTED_BINRULE_WITHOUT_BORDERS[tested_rule_num]

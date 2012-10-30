@@ -76,8 +76,25 @@ class StepFunc(object):
     Do not set this yourself. This is set from the constructor and taken from
     the `target` object!"""
 
-    sections = "localvars loop_begin pre_compute compute post_compute loop_end after_step".split()
-    pysections = "init pre_compute compute post_compute loop_end after_step finalize".split()
+    sections = "localvars loop_begin pre_compute compute compute_reversed post_compute loop_end after_step".split()
+    pysections = "init pre_compute compute compute_reversed post_compute loop_end after_step finalize".split()
+
+    """compute_reverse is a special section. The code put into these section
+    will be put in in reverse order, separated at borders of visitors.
+
+    This means, that if visitors A and B append a lines each into the compute
+    and compute_reversed section, the result will be
+
+      A compute lines
+      B compute lines
+      B compute_reversed lines
+      A compute_reversed lines
+
+    This is needed for computations like the signal system, which have to do
+    work before other computations and then after other computations, but
+    before all pre_compute steps.
+    """
+
 
     def __init__(self, target,
                  loop, accessor, neighbourhood, border=None, visitors=[],
@@ -114,7 +131,7 @@ class StepFunc(object):
         # prepare the sections for python code
         self.pycode = dict((s, []) for s in self.pysections)
         self.pycode_indent = dict((s, 4) for s in self.pysections)
-        for section in "pre_compute compute post_compute loop_end".split():
+        for section in "pre_compute compute compute_reverse post_compute loop_end".split():
             self.pycode_indent[section] = 8
 
         self.attrs = []
@@ -151,8 +168,21 @@ class StepFunc(object):
         if conflicts or missing:
             raise CompatibilityException(conflicts, missing)
 
+        compute_reversed_snippets_weave = []
+        compute_reversed_snippets_py = []
         for code in self.visitors:
             code.visit()
+            if self.code["compute_reversed"]:
+                compute_reversed_snippets_weave.append(self.code["compute_reversed"])
+                self.code["compute_reversed"] = []
+            if self.pycode["compute_reversed"]:
+                compute_reversed_snippets_py.append(self.pycode["compute_reversed"])
+                self.pycode["compute_reversed"] = []
+
+        for snippet in compute_reversed_snippets_weave[::-1]:
+            self.code["compute_reversed"].extend(snippet)
+        for snippet in compute_reversed_snippets_py[::-1]:
+            self.pycode["compute_reversed"].extend(snippet)
 
         self.set_target(target)
 
@@ -303,6 +333,7 @@ class StepFunc(object):
                 code_bits.append("        print ('        pos = ' + str(pos))")
             append_code("pre_compute")
             append_code("compute")
+            append_code("compute_reversed")
             append_code("post_compute")
             append_code("loop_end")
             append_code("after_step")

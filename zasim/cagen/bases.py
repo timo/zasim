@@ -45,6 +45,10 @@ class StepFuncVisitor(object):
         assert self.target is None, "%r already targets %r" % (self, self.target)
         self.target = target
 
+    def set_size(self, size):
+        """Called even before binding happens. Sets the size of the expecteed
+        configuration."""
+
     def init_once(self):
         """Initialize data on the target.
 
