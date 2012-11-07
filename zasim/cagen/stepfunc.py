@@ -79,10 +79,10 @@ class StepFunc(object):
     sections = "localvars loop_begin pre_compute compute compute_reversed post_compute loop_end after_step".split()
     pysections = "init pre_compute compute compute_reversed post_compute loop_end after_step finalize".split()
 
-    """compute_reverse is a special section. The code put into these section
+    """compute_reverse is a special section. The code put into this section
     will be put in in reverse order, separated at borders of visitors.
 
-    This means, that if visitors A and B append a lines each into the compute
+    This means, that if visitors A and B (in this order) append lines each into the compute
     and compute_reversed section, the result will be
 
       A compute lines
