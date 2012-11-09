@@ -111,7 +111,8 @@ def direction_spread_ca():
         try:
             # the -2 is there to pad the list so that index corresponds to
             # direction immediately
-            origin_dir = [u_value, l_value, -2, r_value, d_value].index(2) # 2 is the root
+            origin_dir = [u_value, l_value, 0, r_value, d_value].index(2) # 2 is the root
+
             result_value = origin_dir
             result_axis = 5 # axis
         except ValueError:
@@ -121,22 +122,21 @@ def direction_spread_ca():
                                  [u_axis,  l_axis,   0, r_axis,  d_axis]))
                 if val >= 0]
             if neigh_vals:
-                #print()
-                #print(len(neigh_vals))
-
-                axis_neighbours = filter(lambda (d, v, a): a == 1, neigh_vals)
+                axis_neighbours = filter(lambda (d, v, a): a == 5, neigh_vals)
                 no_dir_change_neighbours = filter(lambda (d, v, a): d == v, neigh_vals)
-                #print(len(axis_neighbours), len(no_dir_change_neighbours))
-                if axis_neighbours:
-                    axis_neighbours.sort(key=lambda d, v, a: v)
-                    dir, value, axis = axis_neighbours[0]
-                    result_value = dir
-                    result_axis = 0
-                elif no_dir_change_neighbours:
-                    dir, value, axis = no_dir_change_neighbours[0]
-                    result_value = dir
-                    result_axis = axis
-                elif neigh_vals:
+
+                for arr in (axis_neighbours, no_dir_change_neighbours):
+                    if len(arr) == 1:
+                        dir, value, axis = arr[0]
+                        result_value = dir
+                        result_axis = 5 if dir == value and axis != 0 else 0
+                    elif len(arr) == 2:
+                        arr.sort(key=lambda (d, v, a): v)
+                        _, a_v, _ = arr[0]
+                        _, b_v, _ = arr[1]
+                        result_value = a_v if b_v - a_v != 1 else b_v
+                        result_axis = 0
+                if result_value == m_value:
                     dir, value, axis = neigh_vals[0]
                     result_value = dir
                     result_axis = 0
@@ -195,9 +195,13 @@ def direction_spread_ca():
     sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(-2),
                   visitors=[computation])
     sf.gen_code()
-    for i in range(10):
-        print target.cconf_value
+    for i in range(20):
+        vals = str(target.cconf_value.transpose())
+        ax = str(target.cconf_axis.transpose())
+        side_by_side = "\n".join("%s %s" % lines for lines in zip(vals.split("\n"), ax.split("\n")))
+        side_by_side = side_by_side.replace("-2", "  ").replace("-1", " _")
+        print side_by_side
         sf.step()
-        sleep(2)
+        sleep(0.5)
 
 direction_spread_ca()
