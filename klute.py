@@ -1,7 +1,7 @@
 # -*- coding: utf8 -*-
 from zasim.cagen import *
 from zasim.cagen.signal import SignalService
-from zasim.external.qt import QPixmap, QRect
+from zasim.external.qt import QPixmap, QPainter, QRect, QSize, QPoint
 from time import sleep
 
 import numpy as np
@@ -28,12 +28,15 @@ class HasOrigin(StepFuncVisitor):
         super(HasOrigin, self).set_target(target)
         self.target.origin_pos = self.origin_pos.copy()
 
-def render_state_array_multi_tiled(statedict, palettizer, painter=None):
-    if not painter:
+def render_state_array_multi_tiled(statedict, palettizer, palette, rects, opainter=None):
+    if opainter is None:
         tilesize = rects.values()[0].size()
+        w, h = statedict.values()[0].shape
         result = QPixmap(QSize(w * tilesize.width(), h * tilesize.height()))
         painter =  QPainter(result)
         painter.scale(tilesize.width(), tilesize.height())
+    else:
+        painter = opainter
 
     positions = product(xrange(w), xrange(h))
 
@@ -46,7 +49,7 @@ def render_state_array_multi_tiled(statedict, palettizer, painter=None):
     for dest, src in fragments:
         painter.drawPixmap(QRect(dest, QSize(1, 1)), palette, src)
 
-    if not painter:
+    if opainter is None:
         return result
 
 
@@ -146,24 +149,27 @@ def direction_spread_ca():
     """
 
     directions_palette = QPixmap("images/flow/flow.png")
-    images = "lu ru du dl ul rl rd ld ud root white black axis".split(" ")
-    rects = [QRect(x * 64, 0, 64, 64) for x in range(len(images))]
+    images = "lu ru du dl ul rl rd ld ud ur dr lr root white black axis".split(" ")
+    rects = dict(enumerate([QRect(x * 64, 0, 64, 64) for x in range(len(images))]))
 
     def directions_palettizer(states, pos):
         val = states["value"][pos]
         axis = states["axis"][pos]
 
+        def rect_for(name, pos=pos):
+            return [(pos, images.index(name))]
+
         if val == -2:
-            return [rects[images.index("black")]]
+            return rect_for("black")
         elif val == -1:
-            return [rects[images.index("white")]]
+            return rect_for("white")
 
         if val == 2:
-            return [rects[images.index("root")]]
+            return rect_for("root")
         else:
-            result = [rects[images.index("white")]]
+            result = rect_for("white")
             if axis:
-                result.append(rects[images.index("axis")])
+                result.extend(rect_for("axis"))
 
             # make arrows that point from our neighbours to our parent
             target_dir_letter = "ul rd"[val]
@@ -172,7 +178,7 @@ def direction_spread_ca():
                 # if this neighbour points at us...
                 if val == 4 - idx:
                     source_dir_letter = "ul rd"[idx]
-                    result.append(rects[images.index(target_dir_letter + source_dir_letter)])
+                    result.extend(rect_for(source_dir_letter + target_dir_letter))
 
             return result
 
@@ -199,12 +205,16 @@ def direction_spread_ca():
                   visitors=[computation])
     sf.gen_code()
     for i in range(20):
-        vals = str(target.cconf_value.transpose())
-        ax = str(target.cconf_axis.transpose())
-        side_by_side = "\n".join("%s %s" % lines for lines in zip(vals.split("\n"), ax.split("\n")))
-        side_by_side = side_by_side.replace("-2", "  ").replace("-1", " _")
-        print side_by_side
+        #vals = str(target.cconf_value.transpose())
+        #ax = str(target.cconf_axis.transpose())
+        #side_by_side = "\n".join("%s %s" % lines for lines in zip(vals.split("\n"), ax.split("\n")))
+        #side_by_side = side_by_side.replace("-2", "  ").replace("-1", " _")
+        #print side_by_side
         sf.step()
-        sleep(0.5)
+        img = render_state_array_multi_tiled(
+                dict(value=target.cconf_value[1:-1,1:-1], axis=target.cconf_axis[1:-1,1:-1]),
+                directions_palettizer,
+                directions_palette, rects)
+        img.save("klute_%02d.png" % i)
 
 direction_spread_ca()
