@@ -7,9 +7,10 @@
    xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
    xmlns:svg="http://www.w3.org/2000/svg"
    xmlns="http://www.w3.org/2000/svg"
+   xmlns:xlink="http://www.w3.org/1999/xlink"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="768"
+   width="1024"
    height="64"
    id="svg2"
    version="1.1"
@@ -20,18 +21,42 @@
    inkscape:export-ydpi="90">
   <defs
      id="defs4">
+    <linearGradient
+       id="linearGradient4215">
+      <stop
+         style="stop-color:#0000ff;stop-opacity:0;"
+         offset="0"
+         id="stop4217" />
+      <stop
+         id="stop4228"
+         offset="0.25"
+         style="stop-color:#0000ff;stop-opacity:0;" />
+      <stop
+         id="stop4226"
+         offset="0.5"
+         style="stop-color:#0000ff;stop-opacity:1;" />
+      <stop
+         style="stop-color:#0000ff;stop-opacity:0;"
+         offset="0.75"
+         id="stop4230" />
+      <stop
+         style="stop-color:#0000ff;stop-opacity:0;"
+         offset="1"
+         id="stop4219" />
+    </linearGradient>
     <marker
        inkscape:stockid="EmptyTriangleOutM"
        orient="auto"
-       refY="0.0"
-       refX="0.0"
+       refY="0"
+       refX="0"
        id="EmptyTriangleOutM"
        style="overflow:visible">
       <path
          id="path3932"
-         d="M 5.77,0.0 L -2.88,5.0 L -2.88,-5.0 L 5.77,0.0 z "
-         style="fill-rule:evenodd;fill:#FFFFFF;stroke:#000000;stroke-width:1.0pt"
-         transform="scale(0.4) translate(-4.5,0)" />
+         d="m 5.77,0 -8.65,5 0,-10 8.65,5 z"
+         style="fill:#ffffff;fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(0.4,0,0,0.4,-1.8,0)"
+         inkscape:connector-curvature="0" />
     </marker>
     <marker
        inkscape:stockid="StopL"
@@ -215,6 +240,101 @@
          style="fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
          transform="matrix(-0.8,0,0,-0.8,-10,0)" />
     </marker>
+    <marker
+       inkscape:stockid="EmptyTriangleOutM"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="EmptyTriangleOutM-9"
+       style="overflow:visible">
+      <path
+         id="path3932-7"
+         d="m 5.77,0 -8.65,5 0,-10 8.65,5 z"
+         style="fill:#ffffff;fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(0.4,0,0,0.4,-1.8,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <marker
+       inkscape:stockid="EmptyTriangleOutM"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker3321"
+       style="overflow:visible">
+      <path
+         id="path3323"
+         d="m 5.77,0 -8.65,5 0,-10 8.65,5 z"
+         style="fill:#ffffff;fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(0.4,0,0,0.4,-1.8,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <marker
+       inkscape:stockid="EmptyTriangleOutM"
+       orient="auto"
+       refY="0"
+       refX="0"
+       id="marker3325"
+       style="overflow:visible">
+      <path
+         id="path3327"
+         d="m 5.77,0 -8.65,5 0,-10 8.65,5 z"
+         style="fill:#ffffff;fill-rule:evenodd;stroke:#000000;stroke-width:1pt"
+         transform="matrix(0.4,0,0,0.4,-1.8,0)"
+         inkscape:connector-curvature="0" />
+    </marker>
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4215"
+       id="linearGradient4221"
+       x1="960"
+       y1="32"
+       x2="1024"
+       y2="32"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0,988.36218)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient4215-4"
+       id="linearGradient4221-3"
+       x1="960"
+       y1="32"
+       x2="1024"
+       y2="32"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="translate(0,988.36218)" />
+    <linearGradient
+       id="linearGradient4215-4">
+      <stop
+         style="stop-color:#0000ff;stop-opacity:0;"
+         offset="0"
+         id="stop4217-8" />
+      <stop
+         id="stop4228-7"
+         offset="0.25"
+         style="stop-color:#0000ff;stop-opacity:0;" />
+      <stop
+         id="stop4226-3"
+         offset="0.5"
+         style="stop-color:#0000ff;stop-opacity:1;" />
+      <stop
+         style="stop-color:#0000ff;stop-opacity:0;"
+         offset="0.75"
+         id="stop4230-7" />
+      <stop
+         style="stop-color:#0000ff;stop-opacity:0;"
+         offset="1"
+         id="stop4219-6" />
+    </linearGradient>
+    <linearGradient
+       y2="64"
+       x2="992"
+       y1="1.1368684e-13"
+       x1="992"
+       gradientTransform="matrix(-1,0,0,-1,1.7382813e-5,-988.36218)"
+       gradientUnits="userSpaceOnUse"
+       id="linearGradient4250"
+       xlink:href="#linearGradient4215-4"
+       inkscape:collect="always" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -223,9 +343,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0"
      inkscape:pageshadow="2"
-     inkscape:zoom="0.93489583"
-     inkscape:cx="384"
-     inkscape:cy="50.273332"
+     inkscape:zoom="5.2885694"
+     inkscape:cx="952.27305"
+     inkscape:cy="33.558716"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -259,7 +379,7 @@
         <dc:format>image/svg+xml</dc:format>
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
-        <dc:title></dc:title>
+        <dc:title />
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -339,28 +459,65 @@
          y="1021.4917" /></text>
     <text
        xml:space="preserve"
-       style="font-size:65.07595824999999934px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000080;fill-opacity:1;stroke:none;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans"
-       x="587.38257"
+       style="font-size:65.07595825px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000080;fill-opacity:1;stroke:none;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans"
+       x="779.38257"
        y="1046.4276"
        id="text4678"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan4680"
-         x="587.38257"
+         x="779.38257"
          y="1046.4276">√</tspan></text>
     <rect
        style="fill:#ffffff;fill-opacity:1;stroke:none"
        id="rect5132"
        width="64"
        height="64"
-       x="640"
+       x="832"
        y="988.36218" />
     <rect
        style="fill:#000000;fill-opacity:1;stroke:none"
        id="rect5134"
        width="64"
        height="64"
-       x="704"
+       x="896"
        y="988.36218" />
+    <path
+       style="fill:#0000ff;fill-opacity:0;stroke:#0000ff;stroke-width:4;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#EmptyTriangleOutM)"
+       d="m 608,988.36218 c 0,32.00002 -2.2806,32.00002 29.7194,32.00002"
+       id="path2995-9"
+       inkscape:connector-curvature="0"
+       inkscape:transform-center-x="-16.500004"
+       inkscape:transform-center-y="-13.496847"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:#0000ff;fill-opacity:0;stroke:#0000ff;stroke-width:4;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#EmptyTriangleOutM)"
+       d="m 672,1052.3622 c 0,-32 -2.6064,-32 29.3936,-32"
+       id="path2995-6-3"
+       inkscape:connector-curvature="0"
+       inkscape:transform-center-x="-16.500035"
+       inkscape:transform-center-y="13.846608"
+       sodipodi:nodetypes="cc" />
+    <path
+       style="fill:#0000ff;fill-opacity:0;stroke:#0000ff;stroke-width:4;stroke-linecap:butt;stroke-linejoin:bevel;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none;marker-end:url(#EmptyTriangleOutM)"
+       d="m 704,1020.3622 61.39361,0"
+       id="path4419-48"
+       inkscape:connector-curvature="0"
+       sodipodi:nodetypes="cc" />
+    <rect
+       style="fill:url(#linearGradient4221);fill-opacity:1.0;stroke:none"
+       id="rect3355"
+       width="64"
+       height="64"
+       x="960"
+       y="988.36218" />
+    <rect
+       style="fill:url(#linearGradient4250);fill-opacity:1;stroke:none"
+       id="rect3355-4"
+       width="64"
+       height="64"
+       x="-1024"
+       y="-1052.3622"
+       transform="scale(-1,-1)" />
   </g>
 </svg>
