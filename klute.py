@@ -134,7 +134,10 @@ def direction_spread_ca():
                         arr.sort(key=lambda (d, v, a): v)
                         _, a_v, _ = arr[0]
                         _, b_v, _ = arr[1]
-                        result_value = a_v if b_v - a_v != 1 else b_v
+                        if (a_v, b_v) == (0, 3) or (a_v, b_v) == (3, 4):
+                            result_value = a_v
+                        else:
+                            result_value = b_v
                         result_axis = 0
                 if result_value == m_value:
                     dir, value, axis = neigh_vals[0]
