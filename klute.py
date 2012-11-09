@@ -26,6 +26,27 @@ class HasOrigin(StepFuncVisitor):
         super(HasOrigin, self).set_target(target)
         self.target.origin_pos = self.origin_pos.copy()
 
+def render_state_array_multi_tiled(statedict, palettizer, painter=None):
+    if not painter:
+        tilesize = rects.values()[0].size()
+        result = QPixmap(QSize(w * tilesize.width(), h * tilesize.height()))
+        painter =  QPainter(result)
+        painter.scale(tilesize.width(), tilesize.height())
+
+    positions = product(xrange(w), xrange(h))
+
+    values = []
+    for pos in positions:
+        values.extend(palettizer(statedict, pos))
+
+    fragments = [(QPoint(pos[0], pos[1]), rects[value]) for pos, value in values]
+
+    for dest, src in fragments:
+        painter.drawPixmap(QRect(dest, QSize(1, 1)), palette, src)
+
+    if not painter:
+        return result
+
 
 dirs = list("ulrd")
 def unfinished_serialisation_code():
@@ -111,8 +132,39 @@ def direction_spread_ca():
                 result_axis = 0
     """ % dict(m = strings.index("m"))
 
-    computation = PasteComputation(None, py_code)
+    computation = PasteComputation(None, pycode)
     return sets, strings, [computation]
+
+directions_palette = QPixmap("images/flow/flow.png")
+images = "lu ru du dl ul rl rd ld ud root white black axis".split(" ")
+rects = [QRect(x * 64, 0, 64, 64) for x in range(len(images))]
+
+def directions_palettizer(states, pos):
+    val = states["value"][pos]
+    axis = states["axis"][pos]
+
+    if val == -2:
+        return [rects[images.index("black")]]
+    elif val == -1:
+        return [rects[images.index("white")]]
+
+    if val == 2:
+        return [rects[images.index("root")]]
+    else:
+        result = [rects[images.index("white")]]
+        if axis:
+            result.append(rects[images.index("axis")])
+
+        # make arrows that point from our neighbours to our parent
+        target_dir_letter = "ul rd"[val]
+        for idx, offs in enumerate(neigh.offsets):
+            val = states["value"][offset_pos(pos, offs)]
+            # if this neighbour points at us...
+            if val == 4 - idx:
+                source_dir_letter = "ul rd"[idx]
+                result.append(rects[images.index(target_dir_letter + source_dir_letter)])
+
+        return result
 
 neigh = SubCellNeighbourhood("ulmrd", [(0,-1), (-1,0), (0,0), (1,0), (0,1)],
                              subcells)
