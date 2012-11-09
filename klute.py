@@ -1,6 +1,8 @@
 # -*- coding: utf8 -*-
 from zasim.cagen import *
 from zasim.cagen.signal import SignalService
+from zasim.external.qt import QPixmap, QRect
+from time import sleep
 
 import numpy as np
 
@@ -103,34 +105,42 @@ def direction_spread_ca():
     strings = list("ulmrd") + ["axis"]
 
     pycode = """
+    result_value = m_value
+    result_axis = m_axis
     if m_value == -1:
         try:
             # the -2 is there to pad the list so that index corresponds to
             # direction immediately
-            origin_dir = [u_value, l_value, -2, r_value, d_value].index({m})
+            origin_dir = [u_value, l_value, -2, r_value, d_value].index(2) # 2 is the root
             result_value = origin_dir
+            result_axis = 5 # axis
         except ValueError:
             neigh_vals = [
                 (dir, val, axis) for (dir, (val, axis))
                 in enumerate(zip([u_value, l_value, -2, r_value, d_value],
                                  [u_axis,  l_axis,   0, r_axis,  d_axis]))
                 if val >= 0]
-            axis_neighbours = filter(lambda d, v, a: a == 1, neigh_vals)
-            no_dir_change_neighbours = filter(lambda d, v, a: d == v, neigh_vals)
-            if axis_neighbours:
-                axis_neighbours.sort(key=lambda d, v, a: v)
-                dir, value, axis = axis_neighbours[0]
-                result_dir = dir
-                result_axis = 0
-            elif no_dir_change_neighbours:
-                dir, value, axis = no_dir_change_neighbours[0]
-                result_dir = dir
-                result_axis = axis
-            else:
-                dir, value, axis = neigh_vals
-                result_dir = dir
-                result_axis = 0
-    """ % dict(m = strings.index("m"))
+            if neigh_vals:
+                #print()
+                #print(len(neigh_vals))
+
+                axis_neighbours = filter(lambda (d, v, a): a == 1, neigh_vals)
+                no_dir_change_neighbours = filter(lambda (d, v, a): d == v, neigh_vals)
+                #print(len(axis_neighbours), len(no_dir_change_neighbours))
+                if axis_neighbours:
+                    axis_neighbours.sort(key=lambda d, v, a: v)
+                    dir, value, axis = axis_neighbours[0]
+                    result_value = dir
+                    result_axis = 0
+                elif no_dir_change_neighbours:
+                    dir, value, axis = no_dir_change_neighbours[0]
+                    result_value = dir
+                    result_axis = axis
+                elif neigh_vals:
+                    dir, value, axis = neigh_vals[0]
+                    result_value = dir
+                    result_axis = 0
+    """
 
     directions_palette = QPixmap("images/flow/flow.png")
     images = "lu ru du dl ul rl rd ld ud root white black axis".split(" ")
@@ -164,7 +174,7 @@ def direction_spread_ca():
             return result
 
     neigh = SubCellNeighbourhood("ulmrd", [(0,-1), (-1,0), (0,0), (1,0), (0,1)],
-                                 subcells)
+                                 sets.keys())
 
     loop = TwoDimCellLoop()
     acc = SubcellAccessor(sets.keys())
@@ -172,20 +182,22 @@ def direction_spread_ca():
     computation = PasteComputation(None, pycode)
 
     size = (16, 16)
-    axis_conf = np.zeros(size)
-    image_conf = np.zeros((size))
+    axis_conf = np.zeros(size, dtype="int")
+    image_conf = np.zeros(size, dtype="int")
     image_conf[:] = -2
     image_conf[1:-1,1:-1] = -1
     image_conf[5,5] = 2 # root
 
     configs = dict(value=image_conf, axis=axis_conf)
 
-    target = SubcellTarget(sets, (10, 10), strings, configs)
+    target = SubCellTarget(sets, size, strings, configs)
 
     sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(-2),
                   visitors=[computation])
     sf.gen_code()
-    sim = CagenSimulator(sf)
-    sim.step()
+    for i in range(10):
+        print target.cconf_value
+        sf.step()
+        sleep(2)
 
 direction_spread_ca()
