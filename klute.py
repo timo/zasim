@@ -132,46 +132,60 @@ def direction_spread_ca():
                 result_axis = 0
     """ % dict(m = strings.index("m"))
 
+    directions_palette = QPixmap("images/flow/flow.png")
+    images = "lu ru du dl ul rl rd ld ud root white black axis".split(" ")
+    rects = [QRect(x * 64, 0, 64, 64) for x in range(len(images))]
+
+    def directions_palettizer(states, pos):
+        val = states["value"][pos]
+        axis = states["axis"][pos]
+
+        if val == -2:
+            return [rects[images.index("black")]]
+        elif val == -1:
+            return [rects[images.index("white")]]
+
+        if val == 2:
+            return [rects[images.index("root")]]
+        else:
+            result = [rects[images.index("white")]]
+            if axis:
+                result.append(rects[images.index("axis")])
+
+            # make arrows that point from our neighbours to our parent
+            target_dir_letter = "ul rd"[val]
+            for idx, offs in enumerate(neigh.offsets):
+                val = states["value"][offset_pos(pos, offs)]
+                # if this neighbour points at us...
+                if val == 4 - idx:
+                    source_dir_letter = "ul rd"[idx]
+                    result.append(rects[images.index(target_dir_letter + source_dir_letter)])
+
+            return result
+
+    neigh = SubCellNeighbourhood("ulmrd", [(0,-1), (-1,0), (0,0), (1,0), (0,1)],
+                                 subcells)
+
+    loop = TwoDimCellLoop()
+    acc = SubcellAccessor(sets.keys())
+    signals = SignalService()
     computation = PasteComputation(None, pycode)
-    return sets, strings, [computation]
 
-directions_palette = QPixmap("images/flow/flow.png")
-images = "lu ru du dl ul rl rd ld ud root white black axis".split(" ")
-rects = [QRect(x * 64, 0, 64, 64) for x in range(len(images))]
+    size = (16, 16)
+    axis_conf = np.zeros(size)
+    image_conf = np.zeros((size))
+    image_conf[:] = -2
+    image_conf[1:-1,1:-1] = -1
+    image_conf[5,5] = 2 # root
 
-def directions_palettizer(states, pos):
-    val = states["value"][pos]
-    axis = states["axis"][pos]
+    configs = dict(value=image_conf, axis=axis_conf)
 
-    if val == -2:
-        return [rects[images.index("black")]]
-    elif val == -1:
-        return [rects[images.index("white")]]
+    target = SubcellTarget(sets, (10, 10), strings, configs)
 
-    if val == 2:
-        return [rects[images.index("root")]]
-    else:
-        result = [rects[images.index("white")]]
-        if axis:
-            result.append(rects[images.index("axis")])
+    sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(-2),
+                  visitors=[computation])
+    sf.gen_code()
+    sim = CagenSimulator(sf)
+    sim.step()
 
-        # make arrows that point from our neighbours to our parent
-        target_dir_letter = "ul rd"[val]
-        for idx, offs in enumerate(neigh.offsets):
-            val = states["value"][offset_pos(pos, offs)]
-            # if this neighbour points at us...
-            if val == 4 - idx:
-                source_dir_letter = "ul rd"[idx]
-                result.append(rects[images.index(target_dir_letter + source_dir_letter)])
-
-        return result
-
-neigh = SubCellNeighbourhood("ulmrd", [(0,-1), (-1,0), (0,0), (1,0), (0,1)],
-                             subcells)
-
-loop = TwoDimCellLoop()
-acc = SubcellAccessor(sets.keys())
-signals = SignalService()
-
-sf = StepFunc(self.target, loop, acc, neigh, BorderSizeEnsurer(),
-              visitors=[signals, computation])
+direction_spread_ca()
