@@ -103,7 +103,7 @@ class SubCellTarget(Target):
                 else:
                     self.size = size
             else:
-                theconf = config.copy()
+                theconf = configs[key].copy()
                 self.size = theconf.shape
                 if size is not None and size != theconf.shape:
                     raise ValueError("Size mismatch: %s - %s" % size, theconf.shape)
@@ -112,3 +112,4 @@ class SubCellTarget(Target):
 
             setattr(self, "cconf_%s" % key, theconf)
 
+        self.shape = self.size

@@ -18,6 +18,9 @@ class BorderSizeEnsurer(BorderHandler):
     returned by :meth:`Neighbourhood.bounding_box` - the underlying config
     array is big enough, so that getting the neighbourhood from the outermost
     cells will not access outside the bounds of the array."""
+    def new_arr(self, shape, dtype=None):
+        return np.zeros(shape, dtype=dtype)
+
     def resize_array(self, array):
         borders = self.code.acc.border_size
         shape = array.shape
@@ -36,24 +39,24 @@ class BorderSizeEnsurer(BorderHandler):
 #<<<<<<< HEAD
             #if len(shape) == dims:
                 #(left,), (right,) = self.code.acc.border_names
-                #new_conf = np.zeros(shape[0] + borders[left] + borders[right], dtype)
+                #new_conf = np.zeros(shape[0] + borders[left] + borders[right], dtype) # XXX
                 #new_conf[borders[left]:-borders[right]] = self.target.cconf
             #else:
                 ## do we have a subcell dtype?
                 #(left,), (right,) = self.code.acc.border_names
-                #new_conf = np.zeros((shape[0] + borders[left] + borders[right],) + shape[1:], dtype)
+                #new_conf = np.zeros((shape[0] + borders[left] + borders[right],) + shape[1:], dtype) # XXX
                 #new_conf[borders[left]:-borders[right],...] = self.target.cconf
         #elif dims == 2:
             ## TODO figure out how to create slice objects in a general way.
             #if len(shape) == dims:
                 #(left,up), (right,down) = self.code.acc.border_names
-                #new_conf = np.zeros((shape[0] + borders[left] + borders[right],
+                #new_conf = np.zeros((shape[0] + borders[left] + borders[right], # XXX
                                      #shape[1] + borders[up] + borders[down]), dtype)
                 #new_conf[borders[left]:-borders[right],
                          #borders[up]:-borders[down]] = self.target.cconf
             #else:
                 #(left,up), (right,down) = self.code.acc.border_names
-                #new_conf = np.zeros((shape[0] + borders[left] + borders[right],
+                #new_conf = np.zeros((shape[0] + borders[left] + borders[right], # XXX
                                      #shape[1] + borders[up] + borders[down]) + shape[2:], dtype)
                 #new_conf[borders[left]:-borders[right],
                          #borders[up]:-borders[down],...] = self.target.cconf
@@ -61,12 +64,12 @@ class BorderSizeEnsurer(BorderHandler):
         #self.target.cconf = new_conf
 #=======
             (left,), (right,) = self.code.acc.border_names
-            new_conf = np.zeros(shape[0] + borders[left] + borders[right], dtype)
+            new_conf = self.new_arr(shape[0] + borders[left] + borders[right], dtype)
             new_conf[borders[left]:-borders[right]] = array
         elif dims == 2:
             # TODO figure out how to create slice objects in a general way.
             (left,up), (right,down) = self.code.acc.border_names
-            new_conf = np.zeros((shape[0] + borders[left] + borders[right],
+            new_conf = self.new_arr((shape[0] + borders[left] + borders[right],
                                  shape[1] + borders[up] + borders[down]), dtype)
             new_conf[borders[left]:new_conf.shape[0]-borders[right],
                      borders[up]:new_conf.shape[1]-borders[down]] = array
@@ -79,7 +82,7 @@ class BorderSizeEnsurer(BorderHandler):
         try:
             self.target.cconf = self.resize_array(self.target.cconf)
         except AttributeError: # either we have a cconf/nconf or we have a sets variable
-            for k in self.target.sets.keys():
+            for k in self.target.fields:
                 setattr(self.target, "cconf_%s" % k, self.resize_array(getattr(self.target, "cconf_%s" % k)))
 
     def is_position_valid(self, pos):
@@ -324,10 +327,15 @@ class TwoDimSlicingBorderCopier(BaseBorderCopier):
                 pos[1] % (self.target.size[1]))
 
 
-class TwoDimZeroReader(BorderSizeEnsurer):
+class TwoDimConstReader(BorderSizeEnsurer):
     """This BorderHandler makes sure that zeros will always be read when
     peeking over the border."""
-    # there is no extra work at all to be done as compared to the
-    # BorderSizeEnsurer, because it already just embeds the confs into
-    # np.zero and does that for one or two dimensions.
+
+    def __init__(self, const):
+        self.const = const
+
+    def new_arr(self, shape, dtype=None):
+        new_arr = np.zeros(shape, dtype=dtype) 
+        new_arr[:] = self.const
+        return new_arr
 
