@@ -149,7 +149,7 @@ def direction_spread_ca():
     """
 
     directions_palette = QPixmap("images/flow/flow.png")
-    images = "lu ru du dl ul rl rd ld ud ur dr lr root white black axis".split(" ")
+    images = "lu ru du dl ul rl rd ld ud ur dr lr root white black ax_h ax_v".split(" ")
     rects = dict(enumerate([QRect(x * 64, 0, 64, 64) for x in range(len(images))]))
 
     def directions_palettizer(states, pos):
@@ -165,11 +165,11 @@ def direction_spread_ca():
             return rect_for("white")
 
         if val == 2:
-            return rect_for("root")
+            return rect_for("white") + rect_for("root")
         else:
             result = rect_for("white")
             if axis:
-                result.extend(rect_for("axis"))
+                result.extend(rect_for("ax_%s" % ("h" if val in (0, 4) else "v")))
                 print "axis",
 
             target_dir_letter = "lu dr"[val]
