@@ -102,10 +102,10 @@ def direction_spread_ca():
     # -1 is the initial state for cells in the image
     # u, l, r and d are for initialised parents
     # m is for the origin cell
-    sets = dict(value=[-2, -1, "u", "l", "m", "r", "d"],
+    sets = dict(value=[-2, -1, "l", "u", "m", "d", "r"],
                 axis=[0, "axis"]
                 )
-    strings = list("ulmrd") + ["axis"]
+    strings = list("lumdr") + ["axis"]
 
     pycode = """
     result_value = m_value
@@ -114,15 +114,15 @@ def direction_spread_ca():
         try:
             # the -2 is there to pad the list so that index corresponds to
             # direction immediately
-            origin_dir = [u_value, l_value, 0, r_value, d_value].index(2) # 2 is the root
+            origin_dir = [l_value, u_value, 0, d_value, r_value].index(2) # 2 is the root
 
             result_value = origin_dir
             result_axis = 5 # axis
         except ValueError:
             neigh_vals = [
                 (dir, val, axis) for (dir, (val, axis))
-                in enumerate(zip([u_value, l_value, -2, r_value, d_value],
-                                 [u_axis,  l_axis,   0, r_axis,  d_axis]))
+                in enumerate(zip([l_value, u_value, -2, d_value, r_value],
+                                 [l_axis,  u_axis,   0, d_axis,  r_axis]))
                 if val >= 0]
             if neigh_vals:
                 axis_neighbours = filter(lambda (d, v, a): a == 5, neigh_vals)
@@ -137,7 +137,7 @@ def direction_spread_ca():
                         arr.sort(key=lambda (d, v, a): v)
                         _, a_v, _ = arr[0]
                         _, b_v, _ = arr[1]
-                        if (a_v, b_v) == (0, 3) or (a_v, b_v) == (3, 4):
+                        if a_v == 1 or b_v == 1:
                             result_value = a_v
                         else:
                             result_value = b_v
@@ -172,26 +172,27 @@ def direction_spread_ca():
                 result.extend(rect_for("axis"))
                 print "axis",
 
-            target_dir_letter = "ul rd"[val]
-            other_dir_letter = "dr lu"[val]
+            target_dir_letter = "lu dr"[val]
+            other_dir_letter = "rd ul"[val]
 
             result.extend(rect_for(other_dir_letter + target_dir_letter))
 
             print "t:", target_dir_letter,
 
             # make arrows that point from our neighbours to our parent
+            print neigh.offsets, "lu dr"
             for idx, offs in enumerate(neigh.offsets):
                 oval = states["value"][offset_pos(pos, offs)]
                 # if this neighbour points at us...
                 if oval == 4 - idx:
                     print "ov:", oval, "idx", idx,
-                    source_dir_letter = "ul rd"[oval]
+                    source_dir_letter = "lu dr"[idx]
                     result.extend(rect_for(source_dir_letter + target_dir_letter))
 
             print
             return result
 
-    neigh = SubCellNeighbourhood("ulmrd", [(0,-1), (-1,0), (0,0), (1,0), (0,1)],
+    neigh = SubCellNeighbourhood("lumdr", [(-1,0), (0,-1), (0,0), (0,1), (1,0)],
                                  sets.keys())
 
     loop = TwoDimCellLoop()
@@ -204,7 +205,7 @@ def direction_spread_ca():
     image_conf = np.zeros(size, dtype="int")
     image_conf[:] = -2
     image_conf[1:-1,1:-1] = -1
-    image_conf[5,5] = 2 # root
+    image_conf[3,5] = 2 # root
 
     configs = dict(value=image_conf, axis=axis_conf)
 
