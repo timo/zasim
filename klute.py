@@ -170,26 +170,21 @@ def direction_spread_ca():
             result = rect_for("white")
             if axis:
                 result.extend(rect_for("ax_%s" % ("h" if val in (0, 4) else "v")))
-                print "axis",
 
             target_dir_letter = "lu dr"[val]
             other_dir_letter = "rd ul"[val]
 
             result.extend(rect_for(other_dir_letter + target_dir_letter))
 
-            print "t:", target_dir_letter,
 
             # make arrows that point from our neighbours to our parent
-            print neigh.offsets, "lu dr"
             for idx, offs in enumerate(neigh.offsets):
                 oval = states["value"][offset_pos(pos, offs)]
                 # if this neighbour points at us...
                 if oval == 4 - idx:
-                    print "ov:", oval, "idx", idx,
                     source_dir_letter = "lu dr"[idx]
                     result.extend(rect_for(source_dir_letter + target_dir_letter))
 
-            print
             return result
 
     neigh = SubCellNeighbourhood("lumdr", [(-1,0), (0,-1), (0,0), (0,1), (1,0)],
