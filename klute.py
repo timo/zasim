@@ -3,6 +3,7 @@ from zasim.cagen import *
 from zasim.cagen.signal import SignalService
 from zasim.external.qt import QPixmap, QPainter, QRect, QSize, QPoint
 from time import sleep
+import random
 
 import numpy as np
 
@@ -97,7 +98,7 @@ def unfinished_serialisation_code():
 
     return sets, strings, [computation, tape]
 
-def direction_spread_ca():
+def direction_spread_ca(hole_count=0, output_num=0):
     # -2 is for outside
     # -1 is the initial state for cells in the image
     # u, l, r and d are for initialised parents
@@ -200,7 +201,11 @@ def direction_spread_ca():
     image_conf = np.zeros(size, dtype="int")
     image_conf[:] = -2
     image_conf[1:-1,1:-1] = -1
-    image_conf[3,5] = 2 # root
+    image_conf[size[0]/2,size[1]/2] = 2 # root
+
+    for hole in random.sample(list(product(xrange(size[0]), xrange(size[1]))), hole_count):
+        if image_conf[hole] != 2:
+            image_conf[hole] = -2
 
     configs = dict(value=image_conf, axis=axis_conf)
 
@@ -209,7 +214,8 @@ def direction_spread_ca():
     sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(-2),
                   visitors=[computation])
     sf.gen_code()
-    for i in range(20):
+    oldconf = target.cconf_value.copy()
+    while True:
         #vals = str(target.cconf_value.transpose())
         #ax = str(target.cconf_axis.transpose())
         #side_by_side = "\n".join("%s %s" % lines for lines in zip(vals.split("\n"), ax.split("\n")))
@@ -220,6 +226,12 @@ def direction_spread_ca():
                 dict(value=target.cconf_value[1:-1,1:-1], axis=target.cconf_axis[1:-1,1:-1]),
                 directions_palettizer,
                 directions_palette, rects)
-        img.save("klute_%02d.png" % i)
+        if (oldconf != target.cconf_value).any():
+            oldconf = target.cconf_value.copy()
+        else:
+            break
+    img.save("klute_%02d.png" % output_num)
 
-direction_spread_ca()
+for i in range(10):
+    direction_spread_ca(7*i, i)
+
