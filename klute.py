@@ -1,13 +1,20 @@
 # -*- coding: utf8 -*-
+# vi: foldmethod=marker
 from zasim.cagen import *
 from zasim.cagen.signal import SignalService
 from zasim.external.qt import QPixmap, QPainter, QRect, QSize, QPoint
-from time import sleep
 import random
 
 import numpy as np
 
+# those are the offsets to be used by our neighbourhood and
+# referenced in several other places.
+von_neumann_offsets = [(-1,0), (0,-1), (0,0), (0,1), (1,0)]
+
 class Tape(StepFuncVisitor):
+    """The Tape class offers a list that can be read from and written
+    to, much like the one found in a Turing Machine."""
+    # TODO this needs functions like peek, read+advance, write+advance, rewind
     def __init__(self, content):
         self.initial_content = list(content)
 
@@ -19,6 +26,9 @@ class Tape(StepFuncVisitor):
         self.target.tape = self.initial_content.copy()
 
 class HasOrigin(StepFuncVisitor):
+    """This class offers a constant 'origin_pos' and a boolean flag 'is_origin'
+    for automatons where one cell is identified as 'the origin'"""
+    # TODO include a is_origin flag in the local variables
     def __init__(self, origin_pos):
         self.origin_pos = origin_pos
 
@@ -30,6 +40,16 @@ class HasOrigin(StepFuncVisitor):
         self.target.origin_pos = self.origin_pos.copy()
 
 def render_state_array_multi_tiled(statedict, palettizer, palette, rects, opainter=None):
+    """This function renders a configuration using a palettizer function, that
+    can render multiple transparent images in the same cell to make composite
+    cell graphics.
+    
+    The palettizer function gets the configuration and current position
+    and returns a list of (destination_position, source_rectangle) tuples that
+    specify what piece of the palette image to put where.
+
+    The first image in the list will be drawn first and each later image will
+    be alpha-blended on top."""
     if opainter is None:
         tilesize = rects.values()[0].size()
         w, h = statedict.values()[0].shape
@@ -55,7 +75,7 @@ def render_state_array_multi_tiled(statedict, palettizer, palette, rects, opaint
 
 
 dirs = list("ulrd")
-def unfinished_serialisation_code():
+def unfinished_serialisation_code(): # {{{ this is unfinished code.
                       #   0      1      2      3
     sets = dict(signal=["str", "sta", "stl", "tun"], # start, state, state_last, turn
                        # 4 5 6 7 
@@ -97,44 +117,130 @@ def unfinished_serialisation_code():
     tape = Tape([])
 
     return sets, strings, [computation, tape]
+# }}}
 
-def direction_spread_ca(hole_count=0, output_num=0):
+def gen_holes(size=(16,16), hole_count=None):
+    """This function generates a configuration that has a border of
+    "outside configuration" values (-2), a plane of "part of shape" values (-1)
+    and `hole_count` holes of -2 somewhere in between.
+    There's also a root field (2) in the middle."""
+    axis_conf = np.zeros(size, dtype="int")
+    image_conf = np.zeros(size, dtype="int")
+    image_conf[:] = -2
+    image_conf[1:-1,1:-1] = -1
+    image_conf[size[0]/2,size[1]/2] = 2 # root
+
+    if hole_count:
+        for hole in random.sample(list(product(xrange(size[0]), xrange(size[1]))), hole_count):
+            if image_conf[hole] != 2:
+                image_conf[hole] = -2
+
+    return dict(value=image_conf, axis=axis_conf)
+
+def gen_form(size=(16, 16)):
+    """This function generates a configuration that has a root (2) in the
+    middle and many branching paths that originate there, but never unreachable
+    fields."""
+    axis_conf = np.zeros(size, dtype="int")
+    image_conf = np.zeros(size, dtype="int")
+    image_conf[:] = -2
+
+    image_conf[size[0]/2,size[1]/2] = 2 # root
+
+    for round in xrange((size[0] * size[1]) / 8):
+        for pos in product(xrange(1, size[0] - 1), xrange(1, size[1] - 1)):
+            if image_conf[pos] != -2:
+                continue
+            neighs = 0
+            for offs in von_neumann_offsets:
+                if image_conf[offset_pos(pos, offs)] in (-1, 2):
+                    neighs += 1
+
+            if neighs == 1 and random.choice([True, True, False]):
+                image_conf[pos] = -1
+            
+            if neighs == 2 and random.choice([False, False, False, False, True]):
+                image_conf[pos] = -1
+
+    return dict(value=image_conf, axis=axis_conf)
+
+def direction_spread_ca(configuration, output_num):
+    """This CA computes paths from all cells to a root cell. It tries to
+    optimise flow using a concept called "axis", which spreads an axis from
+    the root in all four directions and causes fields to orient themselves
+    towards the axis that's next clockwise."""
     # -2 is for outside
     # -1 is the initial state for cells in the image
     # u, l, r and d are for initialised parents
     # m is for the origin cell
+
+    # TODO there needs to be a field that saves which directions we
+    # will read from.
     sets = dict(value=[-2, -1, "l", "u", "m", "d", "r"],
                 axis=[0, "axis"]
                 )
     strings = list("lumdr") + ["axis"]
 
     pycode = """
+    # if we don't compute anything, just keep the previous values.
     result_value = m_value
     result_axis = m_axis
+
+    # As soon as the value of a field has been set to something, we no longer
+    # care about that field.
     if m_value == -1:
         try:
             # the -2 is there to pad the list so that index corresponds to
             # direction immediately
             origin_dir = [l_value, u_value, 0, d_value, r_value].index(2) # 2 is the root
 
+            # if a 2 is found in the list above, that means one of the
+            # neighbour cells is the root.
+            # That means we can set our value to the direction and our axis
+            # value to "axis"
+
             result_value = origin_dir
             result_axis = 5 # axis
         except ValueError:
+            # The ValueError is thrown by the .index(2) in the try block.
+            # If no neighbour is the root, we see if we can decide on a
+            # direction.
+
+            # this useful list gives us triplets for each of our neighbours,
+            # but only for neighbours that have been initialised to
+            # a direction.
             neigh_vals = [
                 (dir, val, axis) for (dir, (val, axis))
                 in enumerate(zip([l_value, u_value, -2, d_value, r_value],
                                  [l_axis,  u_axis,   0, d_axis,  r_axis]))
                 if val >= 0]
+
             if neigh_vals:
+                # if we have any initialised neighbours, see if we have any
+                # neighbours with the axis 'bit' set:
                 axis_neighbours = filter(lambda (d, v, a): a == 5, neigh_vals)
+
+                # if there's a neighbour that could become our parent without
+                # introducing a corner, we will find it in this list.
+                # For example, the field to our right is set to "right".
                 no_dir_change_neighbours = filter(lambda (d, v, a): d == v, neigh_vals)
 
+                # the same logic for axis_neighbours and no_dir_change_neighbours
+                # applies, but the axis neighbours are prioritised above the
+                # other ones.
                 for arr in (axis_neighbours, no_dir_change_neighbours):
                     if len(arr) == 1:
+                        # if we have only one initialised neighbour, it will be
+                        # our parent.
                         dir, value, axis = arr[0]
                         result_value = dir
+                        # if our only neighbour is an axis and we are also on
+                        # that same axis, we set our own axis bit, too.
                         result_axis = 5 if dir == value and axis != 0 else 0
                     elif len(arr) == 2:
+                        # if there's two initialised neighbours, we have a
+                        # heuristic that causes the 'windmill' pattern to
+                        # emerge.
                         arr.sort(key=lambda (d, v, a): v)
                         _, a_v, _ = arr[0]
                         _, b_v, _ = arr[1]
@@ -143,7 +249,11 @@ def direction_spread_ca(hole_count=0, output_num=0):
                         else:
                             result_value = b_v
                         result_axis = 0
+
+                # if none of the above code changed our value, which can happen
+                # if we have 3 or more initialised neighbours,
                 if result_value == m_value:
+                    # just take the first neighbour we can find.
                     dir, value, axis = neigh_vals[0]
                     result_value = dir
                     result_axis = 0
@@ -167,71 +277,65 @@ def direction_spread_ca(hole_count=0, output_num=0):
 
         if val == 2:
             return rect_for("white") + rect_for("root")
-        else:
-            result = rect_for("white")
-            if axis:
-                result.extend(rect_for("ax_%s" % ("h" if val in (0, 4) else "v")))
 
-            target_dir_letter = "lu dr"[val]
-            other_dir_letter = "rd ul"[val]
+        result = rect_for("white")
+        if axis:
+            # 0 == left, 4 == right
+            result.extend(rect_for("ax_%s" % ("h" if val in (0, 4) else "v")))
 
-            result.extend(rect_for(other_dir_letter + target_dir_letter))
+        target_dir_letter = "lu dr"[val]
+        other_dir_letter = "rd ul"[val]
 
+        result.extend(rect_for(other_dir_letter + target_dir_letter))
 
-            # make arrows that point from our neighbours to our parent
-            for idx, offs in enumerate(neigh.offsets):
-                oval = states["value"][offset_pos(pos, offs)]
-                # if this neighbour points at us...
-                if oval == 4 - idx:
-                    source_dir_letter = "lu dr"[idx]
-                    result.extend(rect_for(source_dir_letter + target_dir_letter))
+        # make arrows that point from our neighbours to our parent
+        for idx, offs in enumerate(neigh.offsets):
+            oval = states["value"][offset_pos(pos, offs)]
+            # if this neighbour points at us...
+            if oval == 4 - idx:
+                source_dir_letter = "lu dr"[idx]
+                result.extend(rect_for(source_dir_letter + target_dir_letter))
 
-            return result
+        return result
 
-    neigh = SubCellNeighbourhood("lumdr", [(-1,0), (0,-1), (0,0), (0,1), (1,0)],
+    neigh = SubCellNeighbourhood("lumdr", von_neumann_offsets,
                                  sets.keys())
 
     loop = TwoDimCellLoop()
     acc = SubcellAccessor(sets.keys())
-    signals = SignalService()
     computation = PasteComputation(None, pycode)
 
     size = (16, 16)
-    axis_conf = np.zeros(size, dtype="int")
-    image_conf = np.zeros(size, dtype="int")
-    image_conf[:] = -2
-    image_conf[1:-1,1:-1] = -1
-    image_conf[size[0]/2,size[1]/2] = 2 # root
 
-    for hole in random.sample(list(product(xrange(size[0]), xrange(size[1]))), hole_count):
-        if image_conf[hole] != 2:
-            image_conf[hole] = -2
-
-    configs = dict(value=image_conf, axis=axis_conf)
-
-    target = SubCellTarget(sets, size, strings, configs)
+    target = SubCellTarget(sets, size, strings, configuration)
 
     sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(-2),
                   visitors=[computation])
     sf.gen_code()
+
     oldconf = target.cconf_value.copy()
     while True:
+        # {{{ old string-based draw code
         #vals = str(target.cconf_value.transpose())
         #ax = str(target.cconf_axis.transpose())
         #side_by_side = "\n".join("%s %s" % lines for lines in zip(vals.split("\n"), ax.split("\n")))
         #side_by_side = side_by_side.replace("-2", "  ").replace("-1", " _")
         #print side_by_side
+        # }}}
         sf.step()
-        img = render_state_array_multi_tiled(
-                dict(value=target.cconf_value[1:-1,1:-1], axis=target.cconf_axis[1:-1,1:-1]),
-                directions_palettizer,
-                directions_palette, rects)
         if (oldconf != target.cconf_value).any():
             oldconf = target.cconf_value.copy()
         else:
             break
+    img = render_state_array_multi_tiled(
+            dict(value=target.cconf_value[1:-1,1:-1], axis=target.cconf_axis[1:-1,1:-1]),
+            directions_palettizer,
+            directions_palette, rects)
     img.save("klute_%02d.png" % output_num)
 
-for i in range(10):
-    direction_spread_ca(7*i, i)
+for i in range(5):
+    direction_spread_ca(gen_holes(hole_count=15*i), i)
+
+for i in range(5):
+    direction_spread_ca(gen_form(), 5 + i)
 
