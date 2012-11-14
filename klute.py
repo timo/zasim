@@ -271,19 +271,18 @@ def direction_spread_ca(configuration, output_num):
         if len(init_neighs) == 5:
             for (dir, val) in init_neighs:
                 # if the neighbour points back at us, consider it one of
-                # our sources.
+                # our sources. if dir == 4 and val == 0, that means the
+                # cell to our right reads from its left (which means us)
                 if val == 4 - dir:
                     # dir == 2 means (0,0), which doesn't make sense here,
                     # so we subtract 1 for values >= 2.
 
-                    # if dir == 4 and val == 0, that means the cell to our
-                    # right reads from its left (which means us)
                     result_sources += 2 ** (dir if dir < 2 else dir - 1)
     """
 
     directions_palette = QPixmap("images/flow/flow.png")
     images = "lu ru du dl ul rl rd ld ud ur dr lr root white black ax_h ax_v".split(" ")
-    rects = dict(enumerate([QRect(x * 64, 0, 64, 64) for x in range(len(images))]))
+    rects = dict(enumerate([QRect(x * 32, 0, 32, 32) for x in range(len(images))]))
 
     def directions_palettizer(states, pos):
         val = states["value"][pos]
