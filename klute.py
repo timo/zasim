@@ -126,6 +126,7 @@ def gen_holes(size=(16,16), hole_count=None):
     There's also a root field (2) in the middle."""
     axis_conf = np.zeros(size, dtype="int")
     image_conf = np.zeros(size, dtype="int")
+    sources_conf = np.zeros(size, dtype="int")
     image_conf[:] = -2
     image_conf[1:-1,1:-1] = -1
     image_conf[size[0]/2,size[1]/2] = 2 # root
@@ -135,7 +136,7 @@ def gen_holes(size=(16,16), hole_count=None):
             if image_conf[hole] != 2:
                 image_conf[hole] = -2
 
-    return dict(value=image_conf, axis=axis_conf)
+    return dict(value=image_conf, axis=axis_conf, sources=sources_conf)
 
 def gen_form(size=(16, 16)):
     """This function generates a configuration that has a root (2) in the
@@ -143,6 +144,7 @@ def gen_form(size=(16, 16)):
     fields."""
     axis_conf = np.zeros(size, dtype="int")
     image_conf = np.zeros(size, dtype="int")
+    sources_conf = np.zeros(size, dtype="int")
     image_conf[:] = -2
 
     image_conf[size[0]/2,size[1]/2] = 2 # root
@@ -158,11 +160,11 @@ def gen_form(size=(16, 16)):
 
             if neighs == 1 and random.choice([True, True, False]):
                 image_conf[pos] = -1
-            
+
             if neighs == 2 and random.choice([False, False, False, False, True]):
                 image_conf[pos] = -1
 
-    return dict(value=image_conf, axis=axis_conf)
+    return dict(value=image_conf, axis=axis_conf, sources=sources_conf)
 
 def direction_spread_ca(configuration, output_num):
     """This CA computes paths from all cells to a root cell. It tries to
@@ -174,10 +176,9 @@ def direction_spread_ca(configuration, output_num):
     # u, l, r and d are for initialised parents
     # m is for the origin cell
 
-    # TODO there needs to be a field that saves which directions we
-    # will read from.
     sets = dict(value=[-2, -1, "l", "u", "m", "d", "r"],
-                axis=[0, "axis"]
+                axis=[0, "axis"],
+                sources=range(0b1111),
                 )
     strings = list("lumdr") + ["axis"]
 
@@ -185,6 +186,7 @@ def direction_spread_ca(configuration, output_num):
     # if we don't compute anything, just keep the previous values.
     result_value = m_value
     result_axis = m_axis
+    result_sources = m_sources
 
     # As soon as the value of a field has been set to something, we no longer
     # care about that field.
@@ -257,6 +259,26 @@ def direction_spread_ca(configuration, output_num):
                     dir, value, axis = neigh_vals[0]
                     result_value = dir
                     result_axis = 0
+    elif m_sources == 0 and m_value != -2:
+        # if we haven't yet set our sources, we should wait for all neighbours
+        # to be set to their final value.
+
+        # all neighbours that have been initialised or are outside-of-shape.
+        # iow. all neighbours that have value set to something != -1
+        init_neighs = [(dir, val) for (dir, val)
+                      in enumerate([l_value, u_value, -2, d_value, r_value])
+                      if val != -1]
+        if len(init_neighs) == 5:
+            for (dir, val) in init_neighs:
+                # if the neighbour points back at us, consider it one of
+                # our sources.
+                if val == 4 - dir:
+                    # dir == 2 means (0,0), which doesn't make sense here,
+                    # so we subtract 1 for values >= 2.
+
+                    # if dir == 4 and val == 0, that means the cell to our
+                    # right reads from its left (which means us)
+                    result_sources += 2 ** (dir if dir < 2 else dir - 1)
     """
 
     directions_palette = QPixmap("images/flow/flow.png")
@@ -266,6 +288,7 @@ def direction_spread_ca(configuration, output_num):
     def directions_palettizer(states, pos):
         val = states["value"][pos]
         axis = states["axis"][pos]
+        sources = states["sources"][pos]
 
         def rect_for(name, pos=pos):
             return [(pos, images.index(name))]
@@ -289,11 +312,10 @@ def direction_spread_ca(configuration, output_num):
         result.extend(rect_for(other_dir_letter + target_dir_letter))
 
         # make arrows that point from our neighbours to our parent
-        for idx, offs in enumerate(neigh.offsets):
-            oval = states["value"][offset_pos(pos, offs)]
-            # if this neighbour points at us...
-            if oval == 4 - idx:
-                source_dir_letter = "lu dr"[idx]
+        for idx in range(4):
+            # if the idx'th bit is set in the sources field, add a curved arrow
+            if sources & 2 ** idx:
+                source_dir_letter = "ludr"[idx]
                 result.extend(rect_for(source_dir_letter + target_dir_letter))
 
         return result
@@ -328,7 +350,9 @@ def direction_spread_ca(configuration, output_num):
         else:
             break
     img = render_state_array_multi_tiled(
-            dict(value=target.cconf_value[1:-1,1:-1], axis=target.cconf_axis[1:-1,1:-1]),
+            dict(value=target.cconf_value[1:-1,1:-1],
+                 axis=target.cconf_axis[1:-1,1:-1],
+                 sources=target.cconf_sources[1:-1,1:-1]),
             directions_palettizer,
             directions_palette, rects)
     img.save("klute_%02d.png" % output_num)
