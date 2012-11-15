@@ -250,7 +250,7 @@ class StepFunc(object):
             if not HAVE_TUPLE_ARRAY_INDEX:
                 line = tuple_array_index_fixup(line)
             newfunc.append(" " * self.pycode_indent[hook] + line)
-            if ZASIM_PY_DEBUG:
+            if ZASIM_EXTREME_PY_DEBUG:
                 indent = len(line) - len(line.lstrip(" "))
                 words = line.strip().split(" ")
                 if len(words) > 1 and words[1] == "=":
