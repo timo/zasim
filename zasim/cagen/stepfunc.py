@@ -131,7 +131,7 @@ class StepFunc(object):
         # prepare the sections for python code
         self.pycode = dict((s, []) for s in self.pysections)
         self.pycode_indent = dict((s, 4) for s in self.pysections)
-        for section in "pre_compute compute compute_reverse post_compute loop_end".split():
+        for section in "pre_compute compute compute_reversed post_compute loop_end".split():
             self.pycode_indent[section] = 8
 
         self.attrs = []
