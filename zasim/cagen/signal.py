@@ -45,14 +45,14 @@ class SignalService(Computation):
                 out_signal = m_{signal_field}
                 out_signal_dir = m_{direction_field}
                 out_signal_read_dir = m_{read_field}
-                {copy_all_payload_fields}
+                {out_payload_field_inits}
 
                 signal_delivery_ok = False""".format(
-                    {"signal_field": self.signal_field,
-                     "direction_field": self.direction_field,
-                     "read_field": self.read_field,
-                     "payload_field_inits": set_all_payload_fields,
-                     "out_payload_field_inits": copy_all_payload_fields}))
+                    signal_field=self.signal_field,
+                    direction_field=self.direction_field,
+                    read_field=self.read_field,
+                    payload_field_inits=set_all_payload_fields,
+                    out_payload_field_inits=copy_all_payload_fields))
 
         #
 
@@ -72,7 +72,7 @@ class SignalService(Computation):
                 ",".join(["(%s)" % ",".join([
                           "%s_%s" % (direction, pf)
                             for pf in self.payload_fields])
-                    for direction in self.neigh.names]),
+                    for direction in self.code.neigh.names]),
                 self.read_field)
 
 
@@ -118,16 +118,16 @@ class SignalService(Computation):
                     {payload_receive_code}
                     signal_received = True
 
-        """.format({
-            "dest_neighbour_read_dir": dest_neighbour(self.read_field),
-            "dest_neighbour_dir": dest_neighbour(self.direction_field),
-            "src_neighbour_signal": src_neighbour(self.signal_field),
-            "src_neighbour_dir": src_neighbour(self.direction_field),
+        """.format(
+                dest_neighbour_read_dir=dest_neighbour(self.read_field),
+                dest_neighbour_dir=dest_neighbour(self.direction_field),
+                src_neighbour_signal=src_neighbour(self.signal_field),
+                src_neighbour_dir=src_neighbour(self.direction_field),
 
-            "payload_receive_code": payload_receive_code,
+                payload_receive_code=payload_receive_code,
 
-            "dir_field":self.direction_field,
-            })
+                dir_field=self.direction_field
+            )
         )
 
         self.code.add_py_code("compute", "# end of signal service")
