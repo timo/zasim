@@ -20,23 +20,39 @@ class SignalService(Computation):
 
     def __init__(self, signal_field="signal",
                        direction_field="sig_dir",
-                       read_field="sig_read_dir"):
+                       read_field="sig_read_dir",
+                       payload_fields=["payload"]):
         self.signal_field = signal_field
         self.direction_field = direction_field
         self.read_field = read_field
+        self.payload_fields = payload_fields
 
     def visit(self):
+        set_all_payload_fields = "\n                ".join(
+                ["%s = None" % payload_field_name for payload_field_name in
+                    self.payload_fields])
+
+        copy_all_payload_fields = "\n                ".join(
+                ["out_{0} = m_{0}" % pf for pf in self.payload_fields])
+
         self.code.add_py_code("compute",
                 """# signal service
                 signal = None
                 signal_dir = None
+                {payload_field_inits}
                 signal_received = False
 
                 out_signal = m_{signal_field}
                 out_signal_dir = m_{direction_field}
                 out_signal_read_dir = m_{read_field}
+                {copy_all_payload_fields}
 
-                signal_delivery_ok = False""".format(self.__dict__))
+                signal_delivery_ok = False""".format(
+                    {"signal_field": self.signal_field,
+                     "direction_field": self.direction_field,
+                     "read_field": self.read_field,
+                     "payload_field_inits": set_all_payload_fields,
+                     "out_payload_field_inits": copy_all_payload_fields}))
 
         #
 
