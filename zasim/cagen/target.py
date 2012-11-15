@@ -83,7 +83,7 @@ class SubCellTarget(Target):
         for key in self.fields:
             if key in self.stringy_subcells:
                 self.possible_values[key] = [
-                        self.strings.find(value)
+                        self.strings.index(value)
                         for value in self.possible_values[key]]
 
             if key not in configs or configs[key] is None:
