@@ -114,6 +114,12 @@ class SimpleNeighbourhood(Neighbourhood):
             name_or_offs = self.offsets[self.names.find(name_or_offs)]
         return self.offsets.find(map(lambda x:-x, name_or_offs))
 
+    def reverse_idx(self, idx):
+        """Given the index of a neighbour, return the index of the opposite
+        neighbour."""
+        return self.offsets.find(map(lambda x:-x, self.offsets[idx]))
+
+
 def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
     """This is the neighbourhood used by the elementary cellular automatons.
 

@@ -38,42 +38,69 @@ class SignalService(Computation):
 
                 signal_delivery_ok = False""".format(self.__dict__))
 
-        # if we have a signal:
-        #   does the neighbour we want to send to read from us?
-        #     delete our signal, it will be copied this step.
-        #     we can now read from our destination somewhere
-        #   does the recipient block us?
-        #     set signal_delivery_ok. keep the signal
-        #     reset read direction, so that we block other senders
-        # if we don't have a signal:
-        #   does someone want to send to us?
-        #     give them the read direction
+        #
 
-        lines = [""]
-        put_else = False
-        for idx, (neigh, revneighidx) in enumerate(zip(
-                self.code.neigh.names,
-                map(self.code.neigh.reverse, self.code.neigh.names))):
-            revneighname = self.code.neigh.names[revneighidx]
-            part = ""
-            if put_else: part = "el"
-            else:    put_else = True
+        find_neighbour_code = (lambda fieldname:
+                lambda remote_field_name:
+                    "[%s][%s]" % (
+                        ", ".join(["%s_%s" % (name, remote_field_name)
+                                   for name in self.code.neigh.names]),
+                        "m_%s" % (fieldname))
+            )
 
-            part += "if %s_%s == %d: # %s" % (
-                        neigh,
-                           self.direction_field,
-                                 revneighidx,
-                                       revneighname)
-            if put_else:
-                part += "    if signal_received: raise Exception('received signal from multiple sides!')"
-            part += "    signal_received = True"
-            part += "    signal = %s_%s" % (neigh, self.signal_field)
-            part += "    signal_dir = %d # %s" % (revneighidx, revneighname)
-
-            lines.append(part)
+        dest_neighbour = find_neighbour_code(self.direction_field)
+        src_neighbour = find_neighbour_code(self.read_field)
 
         self.code.add_py_code("compute",
-                "\n".join(lines))
+        """#
+        if out_signal != 0:
+            # if we have a signal:
+            #   does the neighbour we want to send to read from us?
+            #     delete our signal, it will be copied this step.
+            #     we can now read from our destination somewhere
+            #   does the recipient block us?
+            #     unset signal_delivery_ok. keep the signal
+            #     reset read direction, so that we block other senders
+            #
+            #   does someone send a signal to us?
+            #     read the signal
+            if {dest_neighbour_read_dir} == self.neigh.reverse_idx(m_{dir_field}):
+                signal_delivery_ok = True
+                signal = None
+                signal_dir = None
+                # now we can let the user set a read direction
+            else:
+                signal_delivery_ok = False
+
+            if {src_neighbour_signal} != 0:
+                if {src_neighbour_dir} == self.neigh.reverse_idx(m_{dir_field}):
+                    signal = {src_neighbour_signal}
+                    signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
+                    signal_received = True
+
+        else:
+            # if we don't have a signal:
+            #   Is someone sending to us from our current read direction?
+            #     copy the signal
+            #   is there nothing in our read direction?
+            #     give the read direction to someone else
+            #       we let the user code decide this.
+            if {src_neighbour_signal} != 0:
+                if {src_neighbour_dir} == self.neigh.reverse_idx(m_{dir_field}):
+                    signal = {src_neighbour_signal}
+                    signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
+                    signal_received = True
+
+        """.format({
+            "dest_neighbour_read_dir": dest_neighbour(self.read_field),
+            "dest_neighbour_dir": dest_neighbour(self.direction_field),
+            "src_neighbour_signal": src_neighbour(self.signal_field),
+            "src_neighbour_dir": src_neighbour(self.direction_field),
+
+            "dir_field":self.direction_field,
+            })
+        )
+
         self.code.add_py_code("compute", "# end of signal service")
 
         self.code.add_py_code("compute_reversed",
