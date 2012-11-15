@@ -35,15 +35,18 @@ class HasOrigin(StepFuncVisitor):
     def visit(self):
         self.code.attrs.append("origin_pos")
 
+        self.code.add_py_code("pre_compute",
+                """is_at_origin = pos == self.target.origin_pos""")
+
     def set_target(self, target):
         super(HasOrigin, self).set_target(target)
-        self.target.origin_pos = self.origin_pos.copy()
+        self.target.origin_pos = tuple(self.origin_pos)
 
 def render_state_array_multi_tiled(statedict, palettizer, palette, rects, opainter=None):
     """This function renders a configuration using a palettizer function, that
     can render multiple transparent images in the same cell to make composite
     cell graphics.
-    
+
     The palettizer function gets the configuration and current position
     and returns a list of (destination_position, source_rectangle) tuples that
     specify what piece of the palette image to put where.
@@ -304,59 +307,106 @@ def direction_spread_ca(configuration, output_num):
             oldconf = target.cconf_value.copy()
         else:
             break
-    img = render_state_array_multi_tiled(
-            dict(value=target.cconf_value[1:-1,1:-1],
+    dict_from_target = \
+            lambda target=target: dict(value=target.cconf_value[1:-1,1:-1],
                  axis=target.cconf_axis[1:-1,1:-1],
-                 sources=target.cconf_sources[1:-1,1:-1]),
+                 sources=target.cconf_sources[1:-1,1:-1])
+
+    img = render_state_array_multi_tiled(
+            dict_from_target(),
             directions_palettizer,
             directions_palette, rects)
     img.save("klute_%02d.png" % output_num)
 
-    return target
+    return dict_from_target()
 
 dirs = list("ludr")
-def serialisation_ca():
+def serialisation_ca(oldconfigs):
+    shape = oldconfigs.values()[0].shape
     sets = dict(signal=["str", "sta", "stl", "tun"], # start, state, state_last, turn
                 sig_dir=[0, 1, 2, 3],
                 sig_read_dir=[0, 1, 2, 3], # who do I read from?
                 state=["nml", "rel", "fin", "out"], # normal, relaying, finish, outside
                 read=range(0b1111), # where will i ever receive data from?
-                payload=list("xyzw"),
+                payload=list("xyzw"), # what data is attached to the signal?
+                value=list("xyzw"), # what data does this field store?
                 )
+    # TODO is a field for "is leaf" redundant with the read field?
 
-    strings = sets["signal"] + dirs + sets["payload"] + sets["state"]
+    strings = sets["signal"] + sets["payload"] + sets["state"] + sets["payload"]
 
-    py_code = """
-    is_origin = pos == self.origin_pos
+    for pos in product(xrange(shape[0]), xrange(shape[1])):
+        if oldconfigs["value"][pos] == 2:
+            origin_pos = pos
+            break
 
-    if is_origin:
-        tcmd = self.tape.pop(0)
-        if m_state == {out}:
-            result_payload = tcmd
-            result_state = {nml}
-        elif m_state == {nml}:
-            if tcmd in [{u}, {l}, {r}, {d}]:
-                result_direction = tcmd
-                result_state = {rel}
-            elif tcmd in [{x}, {y}, {z}, {w}]:
-                out_signal = {sta}
-                out_signal_dir = m_direction
+    configuration = {}
 
-    else:
-        if m_state == {nml}:
-            command = out_signal
-            out_signal = self.tape.pop(0)
-            out_signal_dir = m_direction
-    """.format(dict((name, idx) for idx, name in enumerate(strings)))
+    configuration["read"] = oldconfigs["sources"]
 
+    configuration["state"] = np.zeros_like(configuration["read"])
+    configuration["signal"] = np.zeros_like(configuration["read"])
+    configuration["sig_dir"] = np.zeros_like(configuration["read"])
+    configuration["sig_read_dir"] = np.zeros_like(configuration["read"])
+    configuration["payload"] = np.zeros_like(configuration["read"])
+    configuration["value"] = np.zeros_like(configuration["read"])
+
+    configuration["state"][oldconfigs["value"] == -2] = strings.index("out")
+    configuration["state"][oldconfigs["value"] != -2] = strings.index("nml")
+    configuration["state"][oldconfigs["value"] == 2] = strings.index("nml")
+
+    low, high = strings.index(sets["payload"][0]), strings.index(sets["payload"][-1])
+    randvals = np.random.randint(low, high, configuration["read"].shape)
+    configuration["value"] = randvals
+    configuration["value"][configuration["state"] != strings.index("nml")] = 0
+
+    strings_indices = dict((name, idx) for idx, name in enumerate(strings))
+
+    py_code = """# serealisation code
+    result_read = m_read
+    result_state = m_state
+    result_value = m_value
+
+    #if is_at_origin:
+        #tcmd = self.tape.pop(0)
+        #if m_state == {out}:
+            #result_payload = tcmd
+            #result_state = {nml}
+        #elif m_state == {nml}:
+            #if tcmd in [0, 1, 3, 4]:
+                #result_direction = tcmd
+                #result_state = {rel}
+            ##elif tcmd in [{x}, {y}, {z}, {w}]:
+                ##out_signal = {sta}
+                #out_signal_dir = m_direction
+
+    #else:
+        #if m_state == {nml}:
+            #command = out_signal
+            #out_signal = self.tape.pop(0)
+            #out_signal_dir = m_direction
+    """.format(**strings_indices)
+
+
+    neigh = SubCellNeighbourhood("lumdr", von_neumann_offsets,
+                                 sets.keys())
+
+    loop = TwoDimCellLoop()
+    acc = SubcellAccessor(sets.keys())
     computation = PasteComputation(None, py_code)
-    tape = Tape([])
+    signals = SignalService()
 
-    return sets, strings, [computation, tape]
+    origin = HasOrigin(origin_pos)
 
-for i in range(5):
-    direction_spread_ca(gen_holes(hole_count=15*i), i)
+    size = (16, 16)
 
-for i in range(5):
-    direction_spread_ca(gen_form(), 5 + i)
+    target = SubCellTarget(sets, size, strings, configuration)
 
+    sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(0),
+                  visitors=[signals, origin, computation])
+    sf.gen_code()
+
+    sf.step()
+
+result_conf = direction_spread_ca(gen_form(), 1)
+serialisation_ca(result_conf)
