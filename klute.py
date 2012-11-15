@@ -74,7 +74,7 @@ def render_state_array_multi_tiled(statedict, palettizer, palette, rects, opaint
         return result
 
 
-dirs = list("ulrd")
+dirs = list("ludr")
 def unfinished_serialisation_code(): # {{{ this is unfinished code.
                       #   0      1      2      3
     sets = dict(signal=["str", "sta", "stl", "tun"], # start, state, state_last, turn
@@ -158,9 +158,11 @@ def gen_form(size=(16, 16)):
                 if image_conf[offset_pos(pos, offs)] in (-1, 2):
                     neighs += 1
 
+            # attach to a stub with 2/3 probability
             if neighs == 1 and random.choice([True, True, False]):
                 image_conf[pos] = -1
 
+            # close a corner with 1/5 probability
             if neighs == 2 and random.choice([False, False, False, False, True]):
                 image_conf[pos] = -1
 
