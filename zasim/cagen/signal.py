@@ -33,7 +33,7 @@ class SignalService(Computation):
                     self.payload_fields])
 
         copy_all_payload_fields = "\n                ".join(
-                ["out_{0} = m_{0}" % pf for pf in self.payload_fields])
+                ["out_{0} = m_{0}".format(pf) for pf in self.payload_fields])
 
         self.code.add_py_code("compute",
                 """# signal service
@@ -67,6 +67,15 @@ class SignalService(Computation):
         dest_neighbour = find_neighbour_code(self.direction_field)
         src_neighbour = find_neighbour_code(self.read_field)
 
+        payload_receive_code = "(%s) = [%s][m_%s]" % (
+                ",".join(self.payload_fields),
+                ",".join(["(%s)" % ",".join([
+                          "%s_%s" % (direction, pf)
+                            for pf in self.payload_fields])
+                    for direction in self.neigh.names]),
+                self.read_field)
+
+
         self.code.add_py_code("compute",
         """#
         if out_signal != 0:
@@ -92,6 +101,7 @@ class SignalService(Computation):
                 if {src_neighbour_dir} == self.neigh.reverse_idx(m_{dir_field}):
                     signal = {src_neighbour_signal}
                     signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
+                    {payload_receive_code}
                     signal_received = True
 
         else:
@@ -105,6 +115,7 @@ class SignalService(Computation):
                 if {src_neighbour_dir} == self.neigh.reverse_idx(m_{dir_field}):
                     signal = {src_neighbour_signal}
                     signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
+                    {payload_receive_code}
                     signal_received = True
 
         """.format({
@@ -113,15 +124,24 @@ class SignalService(Computation):
             "src_neighbour_signal": src_neighbour(self.signal_field),
             "src_neighbour_dir": src_neighbour(self.direction_field),
 
+            "payload_receive_code": payload_receive_code,
+
             "dir_field":self.direction_field,
             })
         )
 
         self.code.add_py_code("compute", "# end of signal service")
 
+        payload_copy_code = "\n                ".join(
+                ["result_{0} = out_{0}".format(pf) for pf in self.payload_fields])
+
         self.code.add_py_code("compute_reversed",
                 """# signal service
                 result_%s = out_signal
-                result_%s = out_signal_dir""" % (
-                    self.signal_field, self.direction_field))
+                result_%s = out_signal_dir
+                result_%s = out_signal_read_dir
+
+                %s""" % (
+                    self.signal_field, self.direction_field, self.read_field,
+                    payload_copy_code))
 
