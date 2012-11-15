@@ -324,11 +324,11 @@ dirs = list("ludr")
 def serialisation_ca(oldconfigs):
     shape = oldconfigs.values()[0].shape
     sets = dict(signal=["str", "sta", "stl", "tun"], # start, state, state_last, turn
-                sig_dir=[0, 1, 2, 3],
-                sig_read_dir=[0, 1, 2, 3], # who do I read from?
+                sig_dir=[0, 1, 3, 4],
+                sig_read_dir=[0, 1, 3, 4], # who do I read from?
                 state=["nml", "rel", "fin", "out"], # normal, relaying, finish, outside
                 read=range(0b1111), # where will i ever receive data from?
-                payload=list("xyzw"), # what data is attached to the signal?
+                payload=[0, 1, 2, 3] + list("xyzw"), # what data is attached to the signal?
                 value=list("xyzw"), # what data does this field store?
                 )
     # TODO is a field for "is leaf" redundant with the read field?
