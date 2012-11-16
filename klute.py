@@ -3,6 +3,9 @@
 from zasim.cagen import *
 from zasim.cagen.signal import SignalService
 from zasim.external.qt import QPixmap, QPainter, QRect, QSize, QPoint
+from zasim.external.micropng import get_description
+
+import json
 import random
 
 import numpy as np
@@ -240,8 +243,10 @@ def direction_spread_ca(configuration, output_num):
     """
 
     directions_palette = QPixmap("images/flow/flow.png")
-    images = "lu ru du dl ul rl rd ld ud ur dr lr root white black ax_h ax_v".split(" ")
-    rects = dict(enumerate([QRect(x * 32, 0, 32, 32) for x in range(len(images))]))
+    metadata = json.loads(get_description("images/flow/flow.png"))
+    images = metadata["tilenames"][0]
+    tile_w, tile_h = metadata["tilesize"]
+    rects = dict(enumerate([QRect(x * tile_w, 0, tile_w, tile_h) for x in range(len(images))]))
 
     def directions_palettizer(states, pos):
         val = states["value"][pos]
