@@ -103,7 +103,7 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.8284271"
-     inkscape:cx="34.009174"
+     inkscape:cx="72.580968"
      inkscape:cy="69.400459"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
@@ -149,6 +149,16 @@
         <dc:type
            rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
         <dc:title></dc:title>
+        <dc:description>{
+  &quot;tilesize&quot;: [64, 64],
+  &quot;tilenames&quot;: [[
+    &quot;base&quot;,
+    &quot;read_left&quot;, &quot;read_up&quot;, &quot;read_down&quot;, &quot;read_right&quot;,
+    &quot;write_left&quot;, &quot;write_up&quot;, &quot;write_down&quot;, &quot;right&quot;,
+    &quot;relay&quot;,
+    &quot;s_dir&quot;, &quot;s_state&quot;, &quot;s_state_last&quot;, &quot;s_turn&quot;
+    ]]
+}</dc:description>
       </cc:Work>
     </rdf:RDF>
   </metadata>
@@ -387,5 +397,57 @@
          x="608.83752"
          y="60.39603"
          style="font-size:12px">RLAY</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans"
+       x="644.52783"
+       y="20.159378"
+       id="text3043"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3045"
+         x="644.52783"
+         y="20.159378">dir</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans"
+       x="707.10681"
+       y="18.745165"
+       id="text3047"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3049"
+         x="707.10681"
+         y="18.745165"
+         style="font-size:10px">state</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans"
+       x="771.09991"
+       y="12.027652"
+       id="text3051"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3053"
+         x="771.09991"
+         y="12.027652"
+         style="font-size:10px">state</tspan><tspan
+         sodipodi:role="line"
+         x="771.09991"
+         y="24.527651"
+         id="tspan3055"
+         style="font-size:10px">last</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans"
+       x="837.21448"
+       y="18.038059"
+       id="text3057"
+       sodipodi:linespacing="125%"><tspan
+         sodipodi:role="line"
+         id="tspan3059"
+         x="837.21448"
+         y="18.038059"
+         style="font-size:10px">turn</tspan></text>
   </g>
 </svg>

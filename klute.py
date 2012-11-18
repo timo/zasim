@@ -333,7 +333,7 @@ def serialisation_ca(oldconfigs):
                 sig_read_dir=[0, 1, 3, 4], # who do I read from?
                 state=["nml", "rel", "fin", "out"], # normal, relaying, finish, outside
                 read=range(0b1111), # where will i ever receive data from?
-                payload=[0, 1, 2, 3] + list("xyzw"), # what data is attached to the signal?
+                payload=range(0b1111), # the biggest set of payload data is direction data (4bits)
                 value=list("xyzw"), # what data does this field store?
                 )
     # TODO is a field for "is leaf" redundant with the read field?
