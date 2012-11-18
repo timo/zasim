@@ -326,7 +326,7 @@ def direction_spread_ca(configuration, output_num):
     return dict_from_target()
 
 dirs = list("ludr")
-def serialisation_ca(oldconfigs):
+def serialisation_ca(oldconfigs, output_num):
     shape = oldconfigs.values()[0].shape
     sets = dict(signal=["str", "sta", "dir", "stl", "tun"], # start, state, state_last, turn
                 sig_dir=[0, 1, 3, 4],
@@ -339,19 +339,19 @@ def serialisation_ca(oldconfigs):
     # TODO is a field for "is leaf" redundant with the read field?
 
     # 0 and 1 should not be string-values.
-    strings = ["foo", "bar"] + sets["signal"] + sets["payload"] + sets["state"] + sets["payload"]
+    strings = ["foo", "bar"] + sets["signal"] + sets["payload"] + sets["state"] + sets["payload"] + sets["value"]
 
-    serialise_palette = QPixmap("images/serialise_tiles/serialise_tiles.png")
-    metadata = json.loads(get_description("images/serialise_tiles/serialise_tiles.png"))
+    serialise_palette = QPixmap("images/serialise/serialise_tiles.png")
+    metadata = json.loads(get_description("images/serialise/serialise_tiles.png"))
     images = metadata["tilenames"][0]
     tile_w, tile_h = metadata["tilesize"]
     rects = dict(enumerate([QRect(x * tile_w, 0, tile_w, tile_h) for x in range(len(images))]))
 
-    def directions_palettizer(states, pos):
+    def serialise_palettizer(states, pos):
         state = states["state"][pos]
         signal = states["signal"][pos]
         write_dir = states["sig_dir"][pos]
-        read_dir = states["read"][pos]
+        read_dir = states["sig_read_dir"][pos]
 
         def rect_for(name, pos=pos):
             return [(pos, images.index(name))]
@@ -365,7 +365,7 @@ def serialisation_ca(oldconfigs):
             result += rect_for("s_state")
         elif signal == strings.index("dir"):
             result += rect_for("s_dir")
-        elif signal == strings.index("tur"):
+        elif signal == strings.index("tun"):
             result += rect_for("s_turn")
         elif signal == strings.index("stl"):
             result += rect_for("s_state_last")
@@ -377,8 +377,8 @@ def serialisation_ca(oldconfigs):
             result += rect_for("read_" + dir_word[read_dir - (0 if read_dir <= 2 else 1)])
 
         # display where we want to send something with a black line
-        if sig_dir != 0:
-            result += rect_for("write_" + dir_word[sig_dir - (0 if read_dir <= 2 else 1)])
+        if write_dir != 0:
+            result += rect_for("write_" + dir_word[write_dir - (0 if read_dir <= 2 else 1)])
 
         return result
 
@@ -423,7 +423,7 @@ def serialisation_ca(oldconfigs):
             #if tcmd in [0, 1, 3, 4]:
                 #result_direction = tcmd
                 #result_state = {rel}
-            ##elif tcmd in [{x}, {y}, {z}, {w}]:
+            ##elif tcmd in [ x ,  y ,  z ,  w ]:
                 ##out_signal = {sta}
                 #out_signal_dir = m_direction
 
@@ -448,12 +448,23 @@ def serialisation_ca(oldconfigs):
     size = (16, 16)
 
     target = SubCellTarget(sets, size, strings, configuration)
+    dict_from_target = \
+            lambda target=target: dict(
+                 signal=target.cconf_signal[1:-1,1:-1],
+                 sig_dir=target.cconf_sig_dir[1:-1,1:-1],
+                 sig_read_dir=target.cconf_sig_read_dir[1:-1,1:-1],
+                 state=target.cconf_state[1:-1,1:-1])
 
     sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(0),
                   visitors=[signals, origin, computation])
     sf.gen_code()
 
     sf.step()
+    img = render_state_array_multi_tiled(
+            dict_from_target(),
+            serialise_palettizer,
+            serialise_palette, rects)
+    img.save("klute_%02d.png" % output_num)
 
 result_conf = direction_spread_ca(gen_form(), 1)
-serialisation_ca(result_conf)
+serialisation_ca(result_conf, 2)
