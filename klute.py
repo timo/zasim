@@ -328,7 +328,7 @@ def direction_spread_ca(configuration, output_num):
 dirs = list("ludr")
 def serialisation_ca(oldconfigs):
     shape = oldconfigs.values()[0].shape
-    sets = dict(signal=["str", "sta", "stl", "tun"], # start, state, state_last, turn
+    sets = dict(signal=["str", "sta", "dir", "stl", "tun"], # start, state, state_last, turn
                 sig_dir=[0, 1, 3, 4],
                 sig_read_dir=[0, 1, 3, 4], # who do I read from?
                 state=["nml", "rel", "fin", "out"], # normal, relaying, finish, outside
@@ -338,7 +338,49 @@ def serialisation_ca(oldconfigs):
                 )
     # TODO is a field for "is leaf" redundant with the read field?
 
-    strings = sets["signal"] + sets["payload"] + sets["state"] + sets["payload"]
+    # 0 and 1 should not be string-values.
+    strings = ["foo", "bar"] + sets["signal"] + sets["payload"] + sets["state"] + sets["payload"]
+
+    serialise_palette = QPixmap("images/serialise_tiles/serialise_tiles.png")
+    metadata = json.loads(get_description("images/serialise_tiles/serialise_tiles.png"))
+    images = metadata["tilenames"][0]
+    tile_w, tile_h = metadata["tilesize"]
+    rects = dict(enumerate([QRect(x * tile_w, 0, tile_w, tile_h) for x in range(len(images))]))
+
+    def directions_palettizer(states, pos):
+        state = states["state"][pos]
+        signal = states["signal"][pos]
+        write_dir = states["sig_dir"][pos]
+        read_dir = states["read"][pos]
+
+        def rect_for(name, pos=pos):
+            return [(pos, images.index(name))]
+
+        if state == strings.index("out"):
+            return rect_for("black")
+
+        result = rect_for("base")
+
+        if signal == strings.index("sta"):
+            result += rect_for("s_state")
+        elif signal == strings.index("dir"):
+            result += rect_for("s_dir")
+        elif signal == strings.index("tur"):
+            result += rect_for("s_turn")
+        elif signal == strings.index("stl"):
+            result += rect_for("s_state_last")
+
+        dir_word = "left up down right".split(" ")
+
+        # display where we read from as a blue diamond
+        if read_dir != 0:
+            result += rect_for("read_" + dir_word[read_dir - (0 if read_dir <= 2 else 1)])
+
+        # display where we want to send something with a black line
+        if sig_dir != 0:
+            result += rect_for("write_" + dir_word[sig_dir - (0 if read_dir <= 2 else 1)])
+
+        return result
 
     for pos in product(xrange(shape[0]), xrange(shape[1])):
         if oldconfigs["value"][pos] == 2:

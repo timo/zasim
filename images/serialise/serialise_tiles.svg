@@ -14,7 +14,10 @@
    id="svg2"
    version="1.1"
    inkscape:version="0.48.3.1 r9886"
-   sodipodi:docname="serialise_tiles.svg">
+   sodipodi:docname="serialise_tiles.svg"
+   inkscape:export-filename="/home/timo/worsch/zasim/images/serialise/serialise_tiles.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90">
   <defs
      id="defs4">
     <clipPath
@@ -103,14 +106,14 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="2.8284271"
-     inkscape:cx="72.580968"
+     inkscape:cx="937.39491"
      inkscape:cy="69.400459"
      inkscape:document-units="px"
      inkscape:current-layer="layer2"
      showgrid="true"
      inkscape:showpageshadow="true"
      borderlayer="true"
-     inkscape:snap-grids="false"
+     inkscape:snap-grids="true"
      inkscape:window-width="1276"
      inkscape:window-height="761"
      inkscape:window-x="0"
@@ -156,7 +159,8 @@
     &quot;read_left&quot;, &quot;read_up&quot;, &quot;read_down&quot;, &quot;read_right&quot;,
     &quot;write_left&quot;, &quot;write_up&quot;, &quot;write_down&quot;, &quot;right&quot;,
     &quot;relay&quot;,
-    &quot;s_dir&quot;, &quot;s_state&quot;, &quot;s_state_last&quot;, &quot;s_turn&quot;
+    &quot;s_dir&quot;, &quot;s_state&quot;, &quot;s_state_last&quot;, &quot;s_turn&quot;,
+    &quot;black&quot;
     ]]
 }</dc:description>
       </cc:Work>
@@ -449,5 +453,12 @@
          x="837.21448"
          y="18.038059"
          style="font-size:10px">turn</tspan></text>
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:none"
+       id="rect3063"
+       width="64"
+       height="64"
+       x="896"
+       y="0" />
   </g>
 </svg>
