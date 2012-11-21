@@ -352,12 +352,15 @@ def serialisation_ca(oldconfigs, output_num):
         signal = states["signal"][pos]
         write_dir = states["sig_dir"][pos]
         read_dir = states["sig_read_dir"][pos]
+        read = states["read"][pos]
 
         def rect_for(name, pos=pos):
             return [(pos, images.index(name))]
 
-        if state == strings.index("out"):
+        if state == strings.index("otsd"):
             return rect_for("black")
+        elif state == strings.index("noml"):
+            return rect_for("white")
 
         result = rect_for("base")
 
@@ -380,6 +383,11 @@ def serialisation_ca(oldconfigs, output_num):
         if write_dir != 0:
             result += rect_for("write_" + dir_word[write_dir - (0 if read_dir <= 2 else 1)])
 
+        if signal == strings.index("dir") or signal == strings.index("tun"):
+            for bit in range(4):
+                if 2 ** bit & read:
+                    result += rect_for("payload_" + dir_word[bit])
+
         return result
 
     for pos in product(xrange(shape[0]), xrange(shape[1])):
@@ -398,14 +406,14 @@ def serialisation_ca(oldconfigs, output_num):
     configuration["payload"] = np.zeros_like(configuration["read"])
     configuration["value"] = np.zeros_like(configuration["read"])
 
-    configuration["state"][oldconfigs["value"] == -2] = strings.index("out")
-    configuration["state"][oldconfigs["value"] != -2] = strings.index("nml")
-    configuration["state"][oldconfigs["value"] == 2] = strings.index("nml")
+    configuration["state"][oldconfigs["value"] == -2] = strings.index("otsd")
+    configuration["state"][oldconfigs["value"] != -2] = strings.index("noml")
+    configuration["state"][oldconfigs["value"] == 2] = strings.index("noml")
 
     low, high = strings.index(sets["payload"][0]), strings.index(sets["payload"][-1])
     randvals = np.random.randint(low, high, configuration["read"].shape)
     configuration["value"] = randvals
-    configuration["value"][configuration["state"] != strings.index("nml")] = 0
+    configuration["value"][configuration["state"] != strings.index("noml")] = 0
 
     strings_indices = dict((name, idx) for idx, name in enumerate(strings))
 
@@ -451,8 +459,6 @@ def serialisation_ca(oldconfigs, output_num):
     result_state = m_state
     result_value = m_value
 
-    
-
     """.format(**strings_indices)
 
 
@@ -474,6 +480,7 @@ def serialisation_ca(oldconfigs, output_num):
                  signal=target.cconf_signal[1:-1,1:-1],
                  sig_dir=target.cconf_sig_dir[1:-1,1:-1],
                  sig_read_dir=target.cconf_sig_read_dir[1:-1,1:-1],
+                 read=target.cconf_read[1:-1,1:-1],
                  state=target.cconf_state[1:-1,1:-1])
 
     sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(0),
