@@ -328,10 +328,10 @@ def direction_spread_ca(configuration, output_num):
 dirs = list("ludr")
 def serialisation_ca(oldconfigs, output_num):
     shape = oldconfigs.values()[0].shape
-    sets = dict(signal=["str", "sta", "dir", "stl", "tun"], # start, state, state_last, turn
-                sig_dir=[0, 1, 3, 4],
-                sig_read_dir=[0, 1, 3, 4], # who do I read from?
-                state=["nml", "rel", "fin", "out"], # normal, relaying, finish, outside
+    sets = dict(signal=["str", "sta", "dir", "stl", "tun"], # start, state, direction info, state_last, turn
+                sig_dir=[0, 1, 3, 4], # what is the way towards the root?
+                sig_read_dir=[0, 1, 3, 4], # who do I currently read from? important for forks in the path
+                state=["noml", "strt", "stat", "rlay", "turn", "fnsh", "otsd"], # normal, start, do_state, relaying, turned, finish, outside
                 read=range(0b1111), # where will i ever receive data from?
                 payload=range(0b1111), # the biggest set of payload data is direction data (4bits)
                 value=list("xyzw"), # what data does this field store?
@@ -409,29 +409,50 @@ def serialisation_ca(oldconfigs, output_num):
 
     strings_indices = dict((name, idx) for idx, name in enumerate(strings))
 
+    # serialisation signal procedure:
+    #
+    # -- init phase: state in "nrml", "strt", "stat" --
+    # if our parents state is "strt", our state is "nrml":
+    #     set our state to strt
+    # elif our state is "strt":
+    #     send s_dir with our "read" data
+    #     set our state to "stat"
+    # elif our state is "stat":
+    #     send s_state with our state
+    #     set our state to "rlay"
+    #
+    # -- rlay phase: state in "rlay", "turn", "fnsh" --
+    #   -- with just a single child in "read": --
+    #   if we receive a q_state_last:
+    #       pass it on
+    #       set our state to "fnsh"
+    #   else:
+    #       pass it on
+    #
+    #   -- with more than one child in "read": --
+    #   if our state is "rlay":
+    #       if we receive a signal
+    #           send an s_turn
+    #           set our state to "turn"
+    #   elif our state is "turn":
+    #       if we receive a s_state:
+    #           pass the signal on
+    #           set our state to "rlay"
+    #       elif we receive a s_state_last:
+    #           set corresponding bit in "read" to 0
+    #           if there is now only 1 child:
+    #               pass on the s_state_last
+    #           else:
+    #               pass on the data as a s_state
+    #           set our state to "rlay"
+
     py_code = """# serealisation code
     result_read = m_read
     result_state = m_state
     result_value = m_value
 
-    #if is_at_origin:
-        #tcmd = self.tape.pop(0)
-        #if m_state == {out}:
-            #result_payload = tcmd
-            #result_state = {nml}
-        #elif m_state == {nml}:
-            #if tcmd in [0, 1, 3, 4]:
-                #result_direction = tcmd
-                #result_state = {rel}
-            ##elif tcmd in [ x ,  y ,  z ,  w ]:
-                ##out_signal = {sta}
-                #out_signal_dir = m_direction
+    
 
-    #else:
-        #if m_state == {nml}:
-            #command = out_signal
-            #out_signal = self.tape.pop(0)
-            #out_signal_dir = m_direction
     """.format(**strings_indices)
 
 
