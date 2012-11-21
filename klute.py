@@ -328,7 +328,7 @@ def direction_spread_ca(configuration, output_num):
 dirs = list("ludr")
 def serialisation_ca(oldconfigs, output_num):
     shape = oldconfigs.values()[0].shape
-    sets = dict(signal=["str", "sta", "dir", "stl", "tun"], # start, state, direction info, state_last, turn
+    sets = dict(signal=["sta", "dir", "stl", "tun"], # state, direction info, state_last, turn
                 sig_dir=[0, 1, 3, 4], # what is the way towards the root?
                 sig_read_dir=[0, 1, 3, 4], # who do I currently read from? important for forks in the path
                 state=["noml", "strt", "stat", "rlay", "turn", "fnsh", "otsd"], # normal, start, do_state, relaying, turned, finish, outside
