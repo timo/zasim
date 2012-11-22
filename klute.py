@@ -387,8 +387,9 @@ def serialisation_ca(oldconfigs, output_num):
 
         dir_word = "left up down right".split(" ")
 
-        # display where we read from as a blue diamond
-        if read_dir != 2:
+        # display where we potentially read from as a blue diamond
+        # but we only do that if we're in relay state.
+        if read_dir != 2 and state == strings.index("rlay"):
             result += rect_for("read_" + dir_word[read_dir - (0 if read_dir <= 2 else 1)])
 
         # display where we want to send something with a black line
@@ -409,7 +410,7 @@ def serialisation_ca(oldconfigs, output_num):
 
     configuration = {}
 
-    configuration["read"] = oldconfigs["sources"]
+    configuration["read"] = oldconfigs["sources"].copy()
 
     configuration["state"] = np.zeros_like(configuration["read"])
     configuration["signal"] = np.zeros_like(configuration["read"])
@@ -476,17 +477,33 @@ def serialisation_ca(oldconfigs, output_num):
     result_state = m_state
     result_value = m_value
 
-    if m_state == {noml}:
-        to_root_state = [l_state, u_state, -1, d_state, r_state][m_sig_dir]
-        if to_root_state == {strt}:
-            result_state = {strt}
-            if not is_at_origin:
-                out_signal = {dir}
-                result_payload = m_read
-    elif m_state == {strt}:
-        if signal_delivery_ok:
-            out_signal = {stat}
-            result_state = {rlay}
+    if m_state != {otsd}: # otsd
+        if not signal_received and out_signal == 0:
+            if m_read != 0:
+                okay_read_pos = [dir for dir, bit in zip([0,1,3,4], range(4)) if m_read & 2 ** bit]
+                if m_sig_read_dir == 2:
+                    cur_read_pos = 0
+                else:
+                    cur_read_pos = okay_read_pos.index(m_sig_read_dir)
+                next_read_dir = (okay_read_pos * 2)[cur_read_pos + 1]
+                out_signal_read_dir = next_read_dir
+        else:
+            print("receiving a signal:")
+            print("    ", signal)
+            print("    ", payload)
+
+        if m_state == {noml}: # noml
+            to_root_state = [l_state, u_state, -1, d_state, r_state][m_sig_dir]
+            if to_root_state == {strt}: # strt
+                result_state = {strt} # strt
+                if not is_at_origin:
+                    out_signal = {dir} # dir
+                    result_payload = m_read
+        elif m_state == {strt}: # strt
+            if signal_delivery_ok:
+                out_signal = {sta} # sta
+                result_state = {rlay} # rlay
+
 
     """.format(**strings_indices)
 

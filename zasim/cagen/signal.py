@@ -7,10 +7,11 @@ that defines what direction the cell will read from next.
 Before the computation, the signal that is sent to this cell is retrieved and
 the local variables signal and signal_dir are set.
 
-If there was no signal, both variables will be set to None. If there were
-multiple signals addressed to the cell, an Exception is raised.
+If there was no signal, both variables will be set to None.
 
-Setting the out_signal and out_signal_dir variables will send a new signal."""
+Setting the out_signal and out_signal_dir variables will send a new signal, but
+setting a new out signal when signal_receive_ok was not True will cause signal
+loss."""
 
 from .bases import Computation
 from .compatibility import no_weave_code
