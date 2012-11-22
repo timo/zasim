@@ -387,11 +387,11 @@ def serialisation_ca(oldconfigs, output_num):
         dir_word = "left up down right".split(" ")
 
         # display where we read from as a blue diamond
-        if read_dir != 0:
+        if read_dir != 2:
             result += rect_for("read_" + dir_word[read_dir - (0 if read_dir <= 2 else 1)])
 
         # display where we want to send something with a black line
-        if write_dir != 0:
+        if write_dir != 2:
             result += rect_for("write_" + dir_word[write_dir - (0 if read_dir <= 2 else 1)])
 
         if signal == strings.index("dir") or signal == strings.index("tun"):
@@ -412,8 +412,11 @@ def serialisation_ca(oldconfigs, output_num):
 
     configuration["state"] = np.zeros_like(configuration["read"])
     configuration["signal"] = np.zeros_like(configuration["read"])
-    configuration["sig_dir"] = np.zeros_like(configuration["read"])
+    configuration["sig_dir"] = oldconfigs["value"].copy()
+    configuration["sig_dir"][configuration["sig_dir"] < 0] = 2
+    configuration["sig_dir"][configuration["sig_dir"] >= 4] = 2
     configuration["sig_read_dir"] = np.zeros_like(configuration["read"])
+    configuration["sig_read_dir"][:,:] = 2
     configuration["payload"] = np.zeros_like(configuration["read"])
     configuration["value"] = np.zeros_like(configuration["read"])
 
@@ -426,6 +429,9 @@ def serialisation_ca(oldconfigs, output_num):
     configuration["value"] = randvals
     configuration["value"][configuration["state"] != strings.index("noml")] = 0
 
+    # the root cell starts out in start state.
+    configuration["state"][origin_pos] = strings.index("strt")
+
     strings_indices = dict((name, idx) for idx, name in enumerate(strings))
 
     # serialisation signal procedure:
@@ -433,12 +439,11 @@ def serialisation_ca(oldconfigs, output_num):
     # -- init phase: state in "nrml", "strt", "stat" --
     # if our parents state is "strt", our state is "nrml":
     #     set our state to strt
-    # elif our state is "strt":
     #     send s_dir with our "read" data
-    #     set our state to "stat"
-    # elif our state is "stat":
-    #     send s_state with our state
-    #     set our state to "rlay"
+    # elif our state is "strt":
+    #     if the signal has been delivered:
+    #         set our state to "rlay"
+    #         send s_state with our state
     #
     # -- rlay phase: state in "rlay", "turn", "fnsh" --
     #   -- with just a single child in "read": --
@@ -470,6 +475,17 @@ def serialisation_ca(oldconfigs, output_num):
     result_state = m_state
     result_value = m_value
 
+    if m_state == {noml}:
+        to_root_state = [l_state, u_state, -1, d_state, r_state][m_sig_dir]
+        if to_root_state == {strt}:
+            result_state = {strt}
+            out_signal = {dir}
+            result_payload = m_read
+    elif m_state == {strt}:
+        if signal_delivery_ok:
+            out_signal = {stat}
+            result_state = {rlay}
+
     """.format(**strings_indices)
 
 
@@ -498,12 +514,13 @@ def serialisation_ca(oldconfigs, output_num):
                   visitors=[signals, origin, computation])
     sf.gen_code()
 
-    sf.step()
-    img = render_state_array_multi_tiled(
-            dict_from_target(),
-            serialise_palettizer,
-            serialise_palette, rects)
-    img.save("klute_%02d.png" % output_num)
+    for i in range(10):
+        img = render_state_array_multi_tiled(
+                dict_from_target(),
+                serialise_palettizer,
+                serialise_palette, rects)
+        img.save("klute_%02d.png" % (output_num + i))
+        sf.step()
 
 result_conf = direction_spread_ca(gen_form(), 1)
 serialisation_ca(result_conf, 2)
