@@ -193,7 +193,7 @@
   &quot;tilenames&quot;: [[
     &quot;base&quot;,
     &quot;read_left&quot;, &quot;read_up&quot;, &quot;read_down&quot;, &quot;read_right&quot;,
-    &quot;write_left&quot;, &quot;write_up&quot;, &quot;write_down&quot;, &quot;right&quot;,
+    &quot;write_left&quot;, &quot;write_up&quot;, &quot;write_down&quot;, &quot;write_right&quot;,
     &quot;start&quot;, &quot;state&quot;, &quot;relay&quot;, &quot;turn&quot;, &quot;finish&quot;,
     &quot;s_dir&quot;, &quot;s_state&quot;, &quot;s_state_last&quot;, &quot;s_turn&quot;,
     &quot;payload_left&quot;, &quot;payload_up&quot;, &quot;payload_down&quot;, &quot;payload_right&quot;,
