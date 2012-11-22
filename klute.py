@@ -414,7 +414,7 @@ def serialisation_ca(oldconfigs, output_num):
     configuration["signal"] = np.zeros_like(configuration["read"])
     configuration["sig_dir"] = oldconfigs["value"].copy()
     configuration["sig_dir"][configuration["sig_dir"] < 0] = 2
-    configuration["sig_dir"][configuration["sig_dir"] >= 4] = 2
+    configuration["sig_dir"][configuration["sig_dir"] > 4] = 2
     configuration["sig_read_dir"] = np.zeros_like(configuration["read"])
     configuration["sig_read_dir"][:,:] = 2
     configuration["payload"] = np.zeros_like(configuration["read"])
