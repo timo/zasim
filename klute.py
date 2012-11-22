@@ -479,8 +479,9 @@ def serialisation_ca(oldconfigs, output_num):
         to_root_state = [l_state, u_state, -1, d_state, r_state][m_sig_dir]
         if to_root_state == {strt}:
             result_state = {strt}
-            out_signal = {dir}
-            result_payload = m_read
+            if not is_at_origin:
+                out_signal = {dir}
+                result_payload = m_read
     elif m_state == {strt}:
         if signal_delivery_ok:
             out_signal = {stat}
