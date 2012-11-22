@@ -117,7 +117,7 @@ class SimpleNeighbourhood(Neighbourhood):
     def reverse_idx(self, idx):
         """Given the index of a neighbour, return the index of the opposite
         neighbour."""
-        return self.offsets.find(map(lambda x:-x, self.offsets[idx]))
+        return self.offsets.index(tuple(map(lambda x:-x, self.offsets[idx])))
 
 
 def ElementaryFlatNeighbourhood(Base=SimpleNeighbourhood, **kwargs):
