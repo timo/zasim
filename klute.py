@@ -352,6 +352,7 @@ def serialisation_ca(oldconfigs, output_num):
         signal = states["signal"][pos]
         write_dir = states["sig_dir"][pos]
         read_dir = states["sig_read_dir"][pos]
+        payload = states["payload"][pos]
         read = states["read"][pos]
 
         def rect_for(name, pos=pos):
@@ -396,7 +397,7 @@ def serialisation_ca(oldconfigs, output_num):
 
         if signal == strings.index("dir") or signal == strings.index("tun"):
             for bit in range(4):
-                if 2 ** bit & read:
+                if 2 ** bit & payload:
                     result += rect_for("payload_" + dir_word[bit])
 
         return result
@@ -509,7 +510,8 @@ def serialisation_ca(oldconfigs, output_num):
                  sig_dir=target.cconf_sig_dir[1:-1,1:-1],
                  sig_read_dir=target.cconf_sig_read_dir[1:-1,1:-1],
                  read=target.cconf_read[1:-1,1:-1],
-                 state=target.cconf_state[1:-1,1:-1])
+                 state=target.cconf_state[1:-1,1:-1],
+                 payload=target.cconf_payload[1:-1,1:-1])
 
     sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(0),
                   visitors=[signals, origin, computation])
