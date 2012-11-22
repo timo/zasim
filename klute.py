@@ -359,7 +359,7 @@ def serialisation_ca(oldconfigs, output_num):
 
         if state == strings.index("otsd"):
             return rect_for("black")
-        elif state == strings.index("noml"):
+        elif state == strings.index("fnsh"):
             return rect_for("white")
 
         result = rect_for("base")
