@@ -392,7 +392,7 @@ def serialisation_ca(oldconfigs, output_num):
 
         # display where we want to send something with a black line
         if write_dir != 2:
-            result += rect_for("write_" + dir_word[write_dir - (0 if read_dir <= 2 else 1)])
+            result += rect_for("write_" + dir_word[write_dir - (0 if write_dir <= 2 else 1)])
 
         if signal == strings.index("dir") or signal == strings.index("tun"):
             for bit in range(4):
