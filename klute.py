@@ -373,6 +373,17 @@ def serialisation_ca(oldconfigs, output_num):
         elif signal == strings.index("stl"):
             result += rect_for("s_state_last")
 
+        if state == strings.index("strt"):
+            result += rect_for("start")
+        elif state == strings.index("stat"):
+            result += rect_for("state")
+        elif state == strings.index("rlay"):
+            result += rect_for("relay")
+        elif state == strings.index("turn"):
+            result += rect_for("turn")
+        elif state == strings.index("fnsh"):
+            result += rect_for("finish")
+
         dir_word = "left up down right".split(" ")
 
         # display where we read from as a blue diamond
