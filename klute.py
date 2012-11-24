@@ -14,6 +14,8 @@ import numpy as np
 # referenced in several other places.
 von_neumann_offsets = [(-1,0), (0,-1), (0,0), (0,1), (1,0)]
 
+conf_size = (8, 8)
+
 class Tape(StepFuncVisitor):
     """The Tape class offers a list that can be read from and written
     to, much like the one found in a Turing Machine."""
@@ -79,7 +81,7 @@ def render_state_array_multi_tiled(statedict, palettizer, palette, rects, opaint
     if opainter is None:
         return result
 
-def gen_holes(size=(16,16), hole_count=None):
+def gen_holes(size=conf_size, hole_count=None):
     """This function generates a configuration that has a border of
     "outside configuration" values (-2), a plane of "part of shape" values (-1)
     and `hole_count` holes of -2 somewhere in between.
@@ -98,7 +100,7 @@ def gen_holes(size=(16,16), hole_count=None):
 
     return dict(value=image_conf, axis=axis_conf, sources=sources_conf)
 
-def gen_form(size=(16, 16)):
+def gen_form(size=conf_size):
     """This function generates a configuration that has a root (2) in the
     middle and many branching paths that originate there, but never unreachable
     fields."""
@@ -290,7 +292,7 @@ def direction_spread_ca(configuration, output_num):
     acc = SubcellAccessor(sets.keys())
     computation = PasteComputation(None, pycode)
 
-    size = (16, 16)
+    size = conf_size
 
     target = SubCellTarget(sets, size, strings, configuration)
 
@@ -518,7 +520,7 @@ def serialisation_ca(oldconfigs, output_num):
 
     origin = HasOrigin(origin_pos)
 
-    size = (16, 16)
+    size = conf_size
 
     target = SubCellTarget(sets, size, strings, configuration)
     dict_from_target = \
