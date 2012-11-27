@@ -390,7 +390,7 @@ def serialisation_ca(oldconfigs, output_num):
 
         # display where we potentially read from as a blue diamond
         # but we only do that if we're in relay state.
-        if read_dir != 2 and state == strings.index("rlay"):
+        if read_dir != 2 and read_dir >= 0 and state == strings.index("rlay"):
             result += rect_for("read_" + dir_word[read_dir - (0 if read_dir <= 2 else 1)])
 
         # display where we want to send something with a black line
