@@ -332,14 +332,13 @@ def serialisation_ca(oldconfigs, output_num):
     shape = oldconfigs.values()[0].shape
     sets = dict(signal=["sta", "dir", "stl", "tun"], # state, direction info, state_last, turn
                 sig_dir=[0, 1, 3, 4], # what is the way towards the root?
-                sig_read_dir=[0, 1, 3, 4], # who do I currently read from? important for forks in the path
+                sig_read_dir=[-5, -4, -2, -1] + [0, 1, 3, 4], # who do I currently read from? important for forks in the path
+                # set to negarive values whenever we block signals
                 state=["noml", "strt", "stat", "rlay", "turn", "fnsh", "otsd"], # normal, start, do_state, relaying, turned, finish, outside
                 read=range(0b1111), # where will i ever receive data from?
                 payload=range(0b1111), # the biggest set of payload data is direction data (4bits)
                 value=list("xyzw"), # what data does this field store?
                 )
-    # TODO is a field for "is leaf" redundant with the read field?
-
     # 0 and 1 should not be string-values.
     strings = ["foo", "bar"] + sets["signal"] + sets["payload"] + sets["state"] + sets["payload"] + sets["value"]
 
@@ -434,7 +433,7 @@ def serialisation_ca(oldconfigs, output_num):
     configuration["value"][configuration["state"] != strings.index("noml")] = 0
 
     # the root cell starts out in start state.
-    configuration["state"][origin_pos] = strings.index("strt")
+    #configuration["state"][origin_pos] = strings.index("strt")
 
     strings_indices = dict((name, idx) for idx, name in enumerate(strings))
 
@@ -448,6 +447,7 @@ def serialisation_ca(oldconfigs, output_num):
     #     if the signal has been delivered:
     #         set our state to "rlay"
     #         send s_state with our state
+    #         set our sig_read_dir negative until our signal was read
     #
     # -- rlay phase: state in "rlay", "turn", "fnsh" --
     #   -- with just a single child in "read": --
@@ -479,32 +479,41 @@ def serialisation_ca(oldconfigs, output_num):
     result_state = m_state
     result_value = m_value
 
+    import math
+
+    def first_dir(bits):
+        if not bits: return 2
+        res = math.floor(math.log(bits, 2))
+        if res >= 2:
+            res += 1
+        return res
+
     if m_state != {otsd}: # otsd
-        if not signal_received and out_signal == 0:
-            if m_read != 0:
-                okay_read_pos = [dir for dir, bit in zip([0,1,3,4], range(4)) if m_read & 2 ** bit]
-                if m_sig_read_dir == 2:
-                    cur_read_pos = 0
-                else:
-                    cur_read_pos = okay_read_pos.index(m_sig_read_dir)
-                next_read_dir = (okay_read_pos * 2)[cur_read_pos + 1]
-                out_signal_read_dir = next_read_dir
-        else:
-            print("receiving a signal:")
-            print("    ", signal)
-            print("    ", payload)
+        # blocking/unblocking code goes here
 
         if m_state == {noml}: # noml
             to_root_state = [l_state, u_state, -1, d_state, r_state][m_sig_dir]
-            if to_root_state == {strt}: # strt
+            if to_root_state == {strt} or is_at_origin: # strt
                 result_state = {strt} # strt
-                if not is_at_origin:
-                    out_signal = {dir} # dir
-                    result_payload = m_read
+                out_signal = {dir} # dir
+                result_payload = m_read
         elif m_state == {strt}: # strt
-            if signal_delivery_ok:
+            if signal_delivery_ok or is_at_origin:
                 out_signal = {sta} # sta
                 result_state = {rlay} # rlay
+                out_signal_read_dir = first_dir(m_read) - 5
+        elif m_state == {rlay}: # rlay
+            if signal_received:
+                out_signal = signal
+                out_payload = payload
+
+            if out_signal == 0 and out_signal_read_dir < 0:
+                out_signal_read_dir += 5
+
+            if is_at_origin:
+                out_signal = 0
+                if out_signal_read_dir < 0:
+                    out_signal_read_dir += 5
 
 
     """.format(**strings_indices)
@@ -536,7 +545,7 @@ def serialisation_ca(oldconfigs, output_num):
                   visitors=[signals, origin, computation])
     sf.gen_code()
 
-    for i in range(10):
+    for i in range(50):
         img = render_state_array_multi_tiled(
                 dict_from_target(),
                 serialise_palettizer,
