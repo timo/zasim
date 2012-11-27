@@ -488,6 +488,8 @@ def serialisation_ca(oldconfigs, output_num):
             res += 1
         return res
 
+    is_fork = lambda read: read!=(read&-read) # horrible bit mangling
+
     if m_state != {otsd}: # otsd
         # blocking/unblocking code goes here
 
@@ -499,13 +501,30 @@ def serialisation_ca(oldconfigs, output_num):
                 result_payload = m_read
         elif m_state == {strt}: # strt
             if signal_delivery_ok or is_at_origin:
-                out_signal = {sta} # sta
+                if m_read:
+                    out_signal = {sta} # sta
+                else:
+                    out_signal = {stl} # stl
                 result_state = {rlay} # rlay
                 out_signal_read_dir = first_dir(m_read) - 5
         elif m_state == {rlay}: # rlay
             if signal_received:
                 out_signal = signal
                 out_payload = payload
+
+                if out_signal == {stl}: # stl
+                    if is_fork(m_read):
+                        # if we're on a fork in the road, we unset one bit in read
+                        # and change our sig_read_dir
+                        print()
+                        print(pos, out_signal_read_dir)
+                        print("unsetting a bit in", bin(m_read), "according to", out_signal_read_dir)
+                        result_read = m_read & ~(2 ** (out_signal_read_dir - (1 if out_signal_read_dir >= 2 else 0)))
+                        print("result:", bin(result_read))
+                        out_signal_read_dir = first_dir(result_read) - 5
+                        print("out signal read dir:", out_signal_read_dir + 5)
+                        if result_read != 0:
+                            out_signal = {sta} # sta
 
             if out_signal == 0 and out_signal_read_dir < 0:
                 out_signal_read_dir += 5
