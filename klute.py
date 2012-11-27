@@ -62,6 +62,7 @@ def render_state_array_multi_tiled(statedict, palettizer, palette, rects, opaint
         tilesize = rects.values()[0].size()
         w, h = statedict.values()[0].shape
         result = QPixmap(QSize(w * tilesize.width(), h * tilesize.height()))
+        result.fill()
         painter =  QPainter(result)
         painter.scale(tilesize.width(), tilesize.height())
     else:
@@ -323,7 +324,7 @@ def direction_spread_ca(configuration, output_num):
             dict_from_target(),
             directions_palettizer,
             directions_palette, rects)
-    img.save("klute_%02d.png" % output_num)
+    img.save("klute_%03d.png" % output_num)
 
     return dict_from_target()
 
@@ -385,6 +386,7 @@ def serialisation_ca(oldconfigs, output_num):
             result += rect_for("turn")
         elif state == strings.index("fnsh"):
             result += rect_for("finish")
+            return result
 
         dir_word = "left up down right".split(" ")
 
@@ -516,18 +518,18 @@ def serialisation_ca(oldconfigs, output_num):
                     if is_fork(m_read):
                         # if we're on a fork in the road, we unset one bit in read
                         # and change our sig_read_dir
-                        print()
-                        print(pos, out_signal_read_dir)
-                        print("unsetting a bit in", bin(m_read), "according to", out_signal_read_dir)
                         result_read = m_read & ~(2 ** (out_signal_read_dir - (1 if out_signal_read_dir >= 2 else 0)))
-                        print("result:", bin(result_read))
                         out_signal_read_dir = first_dir(result_read) - 5
-                        print("out signal read dir:", out_signal_read_dir + 5)
                         if result_read != 0:
                             out_signal = {sta} # sta
+                    else:
+                        result_read = 0
 
             if out_signal == 0 and out_signal_read_dir < 0:
                 out_signal_read_dir += 5
+
+            if out_signal == 0 and m_read == 0:
+                result_state = {fnsh} # fnsh
 
             if is_at_origin:
                 out_signal = 0
@@ -564,12 +566,12 @@ def serialisation_ca(oldconfigs, output_num):
                   visitors=[signals, origin, computation])
     sf.gen_code()
 
-    for i in range(50):
+    for i in range(100):
         img = render_state_array_multi_tiled(
                 dict_from_target(),
                 serialise_palettizer,
                 serialise_palette, rects)
-        img.save("klute_%02d.png" % (output_num + i))
+        img.save("klute_%03d.png" % (output_num + i))
         sf.step()
 
 result_conf = direction_spread_ca(gen_form(), 1)
