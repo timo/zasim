@@ -88,22 +88,27 @@ class SignalService(Computation):
             #     unset signal_delivery_ok. keep the signal
             #     reset read direction, so that we block other senders
             #
-            #   does someone send a signal to us?
-            #     read the signal
             if {dest_neighbour_read_dir} == self.neigh.reverse_idx(m_{dir_field}):
                 signal_delivery_ok = True
-                signal = None
-                signal_dir = None
+                out_signal = 0
                 # now we can let the user set a read direction
             else:
                 signal_delivery_ok = False
+                out_signal_read_dir -= {sig_block_diff}
+                # XXX is there a problem with the receive code below?
 
-            if {src_neighbour_signal} != 0:
-                if {src_neighbour_dir} == self.neigh.reverse_idx(m_{dir_field}):
-                    signal = {src_neighbour_signal}
-                    signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
-                    {payload_receive_code}
-                    signal_received = True
+        # does someone send a signal to us?
+        #   read the signal
+        if out_signal_read_dir >= 0 and {src_neighbour_signal} != 0:
+            print(pos, "we are reading and our source has something")
+            print("{src_neighbour_dir}", {src_neighbour_dir}, m_{read_field})
+            if {src_neighbour_dir} == self.neigh.reverse_idx(m_{read_field}):
+                print("signal successfully received!")
+                signal = {src_neighbour_signal}
+                signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
+                {payload_receive_code}
+                print(signal, signal_dir)
+                signal_received = True
 
         else:
             # if we don't have a signal:
@@ -112,7 +117,7 @@ class SignalService(Computation):
             #   is there nothing in our read direction?
             #     give the read direction to someone else
             #       we let the user code decide this.
-            if {src_neighbour_signal} != 0:
+            if out_signal_read_dir >= 0 and {src_neighbour_signal} != 0:
                 if {src_neighbour_dir} == self.neigh.reverse_idx(m_{dir_field}):
                     signal = {src_neighbour_signal}
                     signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
@@ -127,7 +132,10 @@ class SignalService(Computation):
 
                 payload_receive_code=payload_receive_code,
 
-                dir_field=self.direction_field
+                dir_field=self.direction_field,
+                read_field=self.read_field,
+
+                sig_block_diff=5 # FIXME this needs to be calculated based on neigh
             )
         )
 
