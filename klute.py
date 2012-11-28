@@ -524,6 +524,7 @@ def serialisation_ca(oldconfigs, output_num):
                         out_signal_read_dir = first_dir(result_read) - 5
                         if result_read != 0:
                             out_signal = {sta} # sta
+                        result_state = {turn} # turn
                     else:
                         result_read = 0
 
@@ -537,7 +538,11 @@ def serialisation_ca(oldconfigs, output_num):
                 out_signal = 0
                 if out_signal_read_dir < 0:
                     out_signal_read_dir += 5
-
+        elif m_state == {turn}: # turn
+            if out_signal_read_dir < 0: out_signal_read_dir += 5
+            out_signal = {tun} # tun
+            out_payload = out_signal_read_dir
+            result_state = {rlay} # rlay
 
     """.format(**strings_indices)
 
