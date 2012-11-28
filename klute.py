@@ -500,7 +500,7 @@ def serialisation_ca(oldconfigs, output_num):
             if to_root_state == {strt} or is_at_origin: # strt
                 result_state = {strt} # strt
                 out_signal = {dir} # dir
-                result_payload = m_read
+                out_payload = m_read
         elif m_state == {strt}: # strt
             if signal_delivery_ok or is_at_origin:
                 if m_read:
