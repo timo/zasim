@@ -1,4 +1,4 @@
-# -*- coding: utf8 -*-
+# -*- coding: utf-8 -*-
 # vi: foldmethod=marker
 from zasim.cagen import *
 from zasim.cagen.signal import SignalService

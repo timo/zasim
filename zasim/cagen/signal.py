@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """This module implements a Computation that handles signal passing between
 cells.
 
@@ -11,7 +12,7 @@ If there was no signal, both variables will be set to None.
 
 Setting the out_signal and out_signal_dir variables will send a new signal, but
 setting a new out signal when signal_receive_ok was not True will cause signal
-loss."""
+loss.""" # XXX this is out of date
 
 from .bases import Computation
 from .compatibility import no_weave_code
@@ -19,10 +20,11 @@ from .compatibility import no_weave_code
 class SignalService(Computation):
     provides_features = [no_weave_code]
 
-    def __init__(self, signal_field="signal",
-                       direction_field="sig_dir",
-                       read_field="sig_read_dir",
+    def __init__(self, signal_field="signal",         # rename:
+                       direction_field="sig_dir",     # send
+                       read_field="sig_read_dir",     # recv
                        payload_fields=["payload"]):
+        # TODO kommentare über die felder + umbenennungen
         self.signal_field = signal_field
         self.direction_field = direction_field
         self.read_field = read_field
@@ -35,6 +37,9 @@ class SignalService(Computation):
 
         copy_all_payload_fields = "\n                ".join(
                 ["out_{0} = m_{0}".format(pf) for pf in self.payload_fields])
+
+        # XXX out_signal etc don't make sense with being able to have multiple signal services
+        #     remove the field names or rename out_signal*?
 
         self.code.add_py_code("compute",
                 """# signal service
@@ -100,14 +105,14 @@ class SignalService(Computation):
         # does someone send a signal to us?
         #   read the signal
         if out_signal_read_dir >= 0 and {src_neighbour_signal} != 0:
-            print(pos, "we are reading and our source has something")
-            print("{src_neighbour_dir}", {src_neighbour_dir}, m_{read_field})
+            #print(pos, "we are reading and our source has something")
+            #print("{src_neighbour_dir}", {src_neighbour_dir}, m_{read_field})
             if {src_neighbour_dir} == self.neigh.reverse_idx(m_{read_field}):
-                print("signal successfully received!")
+                #print("signal successfully received!")
                 signal = {src_neighbour_signal}
                 signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
                 {payload_receive_code}
-                print(signal, signal_dir)
+                #print(signal, signal_dir)
                 signal_received = True
 
         else:
