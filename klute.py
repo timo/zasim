@@ -399,10 +399,12 @@ def serialisation_ca(oldconfigs, output_num):
         if write_dir != 2:
             result += rect_for("write_" + dir_word[write_dir - (0 if write_dir <= 2 else 1)])
 
-        if signal == strings.index("dir") or signal == strings.index("tun"):
+        if signal == strings.index("dir"):
             for bit in range(4):
                 if 2 ** bit & payload:
                     result += rect_for("payload_" + dir_word[bit])
+        elif signal == strings.index("tun"):
+            result += rect_for("payload_" + dir_word[payload - (1 if payload >= 2 else 0)])
 
         return result
 
