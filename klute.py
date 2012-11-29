@@ -356,7 +356,7 @@ def serialisation_ca(oldconfigs, output_num):
         write_dir = states["sig_dir"][pos]
         read_dir = states["sig_read_dir"][pos]
         payload = states["payload"][pos]
-        read = states["read"][pos]
+        value = states["value"][pos]
 
         def rect_for(name, pos=pos):
             return [(pos, images.index(name))]
@@ -389,6 +389,9 @@ def serialisation_ca(oldconfigs, output_num):
             result += rect_for("finish")
             return result
 
+        if state == strings.index("noml") or state == strings.index("strt"):
+            result += rect_for("value_" + sets["value"][value - low])
+
         dir_word = "left up down right".split(" ")
 
         # display where we potentially read from as a blue diamond
@@ -409,6 +412,8 @@ def serialisation_ca(oldconfigs, output_num):
                 result += rect_for("payload_" + dir_word[payload - (1 if payload >= 2 else 0)])
             except:
                 print pos, payload
+        elif signal == strings.index("sta"):
+            result += rect_for("pay_" + sets["value"][payload - low])
 
         return result
 
@@ -435,10 +440,13 @@ def serialisation_ca(oldconfigs, output_num):
     configuration["state"][oldconfigs["value"] == -2] = strings.index("otsd")
     configuration["state"][oldconfigs["value"] != -2] = strings.index("noml")
 
-    low, high = strings.index(sets["payload"][0]), strings.index(sets["payload"][-1])
+    low, high = strings.index(sets["value"][0]), strings.index(sets["value"][-1])
+    print low, high
     randvals = np.random.randint(low, high, configuration["read"].shape)
     configuration["value"] = randvals
     configuration["value"][configuration["state"] != strings.index("noml")] = 0
+
+    print configuration["value"]
 
     # the root cell starts out in start state.
     #configuration["state"][origin_pos] = strings.index("strt")
@@ -584,7 +592,7 @@ def serialisation_ca(oldconfigs, output_num):
 
     size = conf_size
 
-    target = SubCellTarget(sets, size, strings, configuration)
+    target = SubCellTarget(dict(sets), size, strings, configuration)
     dict_from_target = \
             lambda target=target: dict(
                  signal=target.cconf_signal[1:-1,1:-1],
@@ -592,7 +600,8 @@ def serialisation_ca(oldconfigs, output_num):
                  sig_read_dir=target.cconf_sig_read_dir[1:-1,1:-1],
                  read=target.cconf_read[1:-1,1:-1],
                  state=target.cconf_state[1:-1,1:-1],
-                 payload=target.cconf_payload[1:-1,1:-1])
+                 payload=target.cconf_payload[1:-1,1:-1],
+                 value=target.cconf_value[1:-1,1:-1])
 
     sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(0),
                   visitors=[signals, origin, computation, tape])
@@ -612,10 +621,10 @@ def serialisation_ca(oldconfigs, output_num):
             print sstr, bin(payload)[2:]
         elif sstr == "tun":
             dir_arrow = u"←↑ ↓→"[payload]
-            print sstr, dir_arrow, payload
+            print sstr, dir_arrow
         else:
             if payload != 0:
-                print sstr, strings[payload], payload
+                print sstr, strings[payload]
             else:
                 print sstr
 
