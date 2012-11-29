@@ -412,7 +412,7 @@ def serialisation_ca(oldconfigs, output_num):
                 result += rect_for("payload_" + dir_word[payload - (1 if payload >= 2 else 0)])
             except:
                 print pos, payload
-        elif signal == strings.index("sta"):
+        elif signal == strings.index("sta") or signal == strings.index("stl"):
             result += rect_for("pay_" + sets["value"][payload - low])
 
         return result
@@ -432,7 +432,7 @@ def serialisation_ca(oldconfigs, output_num):
     configuration["sig_dir"][configuration["sig_dir"] < 0] = -5
     configuration["sig_dir"][configuration["sig_dir"] > 4] = -5
     configuration["sig_read_dir"] = np.zeros_like(configuration["read"])
-    configuration["sig_read_dir"][:,:] = -5
+    configuration["sig_read_dir"][:,:] = -7
     configuration["payload"] = np.zeros_like(configuration["read"])
     configuration["on_hold"] = np.zeros_like(configuration["read"])
     configuration["value"] = np.zeros_like(configuration["read"])
@@ -532,7 +532,7 @@ def serialisation_ca(oldconfigs, output_num):
                 out_payload = payload
 
                 if out_signal == {stl}: # stl
-                    if is_fork(m_read):
+                    if is_fork(m_read) or is_at_origin:
                         # if we're on a fork in the road, we unset one bit in read
                         # and change our sig_read_dir
                         result_read = m_read & ~(2 ** (out_signal_read_dir - (1 if out_signal_read_dir >= 2 else 0)))
@@ -544,9 +544,9 @@ def serialisation_ca(oldconfigs, output_num):
                     else:
                         result_read = 0
                 elif out_signal == {tun}: # tun
-                    if is_fork(m_read):
+                    if is_fork(m_read) or is_at_origin:
                         result_on_hold = out_payload
-                        out_payload = out_signal_read_dir
+                        out_payload = out_signal_read_dir if out_signal_read_dir >= 0 else out_signal_read_dir + 5
                         out_signal_read_dir = sig_block()
             elif signal_delivery_ok:
                 out_signal = 0
@@ -573,7 +573,7 @@ def serialisation_ca(oldconfigs, output_num):
             else:
                 out_signal_read_dir = sig_block()
                 out_signal = {tun} # tun
-                out_payload = out_signal_read_dir
+                out_payload = out_signal_read_dir if out_signal_read_dir >= 0 else out_signal_read_dir + 5
                 result_state = {rlay} # rlay
 
     """.format(**strings_indices)
