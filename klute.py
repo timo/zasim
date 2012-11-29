@@ -20,7 +20,7 @@ class Tape(StepFuncVisitor):
     """The Tape class offers a list that can be read from and written
     to, much like the one found in a Turing Machine."""
     # TODO this needs functions like peek, read+advance, write+advance, rewind
-    def __init__(self, content):
+    def __init__(self, content=[]):
         self.initial_content = list(content)
 
     def visit(self):
@@ -28,7 +28,7 @@ class Tape(StepFuncVisitor):
 
     def set_target(self, target):
         super(Tape, self).set_target(target)
-        self.target.tape = self.initial_content.copy()
+        self.target.tape = list(self.initial_content)
 
 class HasOrigin(StepFuncVisitor):
     """This class offers a constant 'origin_pos' and a boolean flag 'is_origin'
@@ -554,6 +554,7 @@ def serialisation_ca(oldconfigs, output_num):
     acc = SubcellAccessor(sets.keys())
     computation = PasteComputation(None, py_code)
     signals = SignalService()
+    tape = Tape()
 
     origin = HasOrigin(origin_pos)
 
@@ -570,7 +571,7 @@ def serialisation_ca(oldconfigs, output_num):
                  payload=target.cconf_payload[1:-1,1:-1])
 
     sf = StepFunc(target, loop, acc, neigh, TwoDimConstReader(0),
-                  visitors=[signals, origin, computation])
+                  visitors=[signals, origin, computation, tape])
     sf.gen_code()
 
     for i in range(100):
@@ -580,6 +581,16 @@ def serialisation_ca(oldconfigs, output_num):
                 serialise_palette, rects)
         img.save("klute_%03d.png" % (output_num + i))
         sf.step()
+        
+    for signal, payload in target.tape:
+        sstr = strings[signal]
+        if sstr == "dir":
+            print sstr, bin(payload)[2:]
+        else:
+            if payload != 0:
+                print sstr, payload
+            else:
+                print sstr
 
 result_conf = direction_spread_ca(gen_form(), 1)
 serialisation_ca(result_conf, 2)
