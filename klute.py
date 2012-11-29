@@ -497,7 +497,7 @@ def serialisation_ca(oldconfigs, output_num):
 
     is_fork = lambda read: read!=(read&-read) # horrible bit mangling
 
-    if m_state != {otsd}: # otsd
+    if m_state != {otsd} and m_state != {fnsh}: # otsd / fnsh
         if m_state == {noml}: # noml
             to_root_state = [l_state, u_state, -1, d_state, r_state][m_sig_dir]
             if to_root_state == {strt} or is_at_origin: # strt
@@ -512,6 +512,7 @@ def serialisation_ca(oldconfigs, output_num):
                     out_signal = {sta} # sta
                 else:
                     out_signal = {stl} # stl
+                out_signal_read_dir = first_dir(m_read)
                 result_state = {rlay} # rlay
                 out_signal_read_dir = sig_block()
         elif m_state == {rlay}: # rlay
@@ -524,6 +525,7 @@ def serialisation_ca(oldconfigs, output_num):
                         # if we're on a fork in the road, we unset one bit in read
                         # and change our sig_read_dir
                         result_read = m_read & ~(2 ** (out_signal_read_dir - (1 if out_signal_read_dir >= 2 else 0)))
+                        out_signal_read_dir = first_dir(result_read)
                         out_signal_read_dir = sig_block()
                         if result_read != 0:
                             out_signal = {sta} # sta
