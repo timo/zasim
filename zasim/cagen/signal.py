@@ -99,12 +99,12 @@ class SignalService(Computation):
                 # now we can let the user set a read direction
             else:
                 signal_delivery_ok = False
-                out_signal_read_dir -= {sig_block_diff}
+                out_signal_read_dir = sig_unblock()
                 # XXX is there a problem with the receive code below?
 
         # does someone send a signal to us?
         #   read the signal
-        if out_signal_read_dir >= 0 and {src_neighbour_signal} != 0:
+        if not sig_blocked() and {src_neighbour_signal} != 0:
             #print(pos, "we are reading and our source has something")
             #print("{src_neighbour_dir}", {src_neighbour_dir}, m_{read_field})
             if {src_neighbour_dir} == self.neigh.reverse_idx(m_{read_field}):
@@ -122,7 +122,7 @@ class SignalService(Computation):
             #   is there nothing in our read direction?
             #     give the read direction to someone else
             #       we let the user code decide this.
-            if out_signal_read_dir >= 0 and {src_neighbour_signal} != 0:
+            if not sig_blocked() and {src_neighbour_signal} != 0:
                 if {src_neighbour_dir} == self.neigh.reverse_idx(m_{dir_field}):
                     signal = {src_neighbour_signal}
                     signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
@@ -145,6 +145,11 @@ class SignalService(Computation):
         )
 
         self.code.add_py_code("compute", "# end of signal service")
+
+        self.code.add_py_code("init", """#signal helper functions
+            sig_blocked  = lambda: out_signal_read_dir < 0
+            sig_unblock = lambda: out_signal_read_dir + 5 if sig_blocked() else out_signal_read_dir
+            sig_block   = lambda: out_signal_read_dir     if sig_blocked() else out_signal_read_dir - 5""")
 
         payload_copy_code = "\n                ".join(
                 ["result_{0} = out_{0}".format(pf) for pf in self.payload_fields])
