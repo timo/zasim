@@ -96,10 +96,11 @@ class SignalService(Computation):
             if {dest_neighbour_read_dir} == self.neigh.reverse_idx(m_{dir_field}):
                 signal_delivery_ok = True
                 out_signal = 0
+                out_signal_read_dir = sig_unblock()
                 # now we can let the user set a read direction
             else:
                 signal_delivery_ok = False
-                out_signal_read_dir = sig_unblock()
+                out_signal_read_dir = sig_block()
                 # XXX is there a problem with the receive code below?
 
         # does someone send a signal to us?
@@ -147,7 +148,7 @@ class SignalService(Computation):
         self.code.add_py_code("compute", "# end of signal service")
 
         self.code.add_py_code("init", """#signal helper functions
-            sig_blocked  = lambda: out_signal_read_dir < 0
+            sig_blocked = lambda: out_signal_read_dir < 0
             sig_unblock = lambda: out_signal_read_dir + 5 if sig_blocked() else out_signal_read_dir
             sig_block   = lambda: out_signal_read_dir     if sig_blocked() else out_signal_read_dir - 5""")
 
@@ -159,6 +160,8 @@ class SignalService(Computation):
                 result_%s = out_signal
                 result_%s = out_signal_dir
                 result_%s = out_signal_read_dir
+                if is_at_origin:
+                    print(out_signal_read_dir)
 
                 %s""" % (
                     self.signal_field, self.direction_field, self.read_field,
