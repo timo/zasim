@@ -338,6 +338,7 @@ def serialisation_ca(oldconfigs, output_num):
                 state=["noml", "strt", "stat", "rlay", "turn", "fnsh", "otsd"], # normal, start, do_state, relaying, turned, finish, outside
                 read=range(0b1111), # where will i ever receive data from?
                 payload=range(0b1111), # the biggest set of payload data is direction data (4bits)
+                on_hold=range(5), # when prepending a turn signal to a turn signal, we have to hold the original direction for one turn.
                 value=list("xyzw"), # what data does this field store?
                 )
     # 0 and 1 should not be string-values.
@@ -425,6 +426,7 @@ def serialisation_ca(oldconfigs, output_num):
     configuration["sig_read_dir"] = np.zeros_like(configuration["read"])
     configuration["sig_read_dir"][:,:] = 2
     configuration["payload"] = np.zeros_like(configuration["read"])
+    configuration["on_hold"] = np.zeros_like(configuration["read"])
     configuration["value"] = np.zeros_like(configuration["read"])
 
     configuration["state"][oldconfigs["value"] == -2] = strings.index("otsd")
@@ -482,6 +484,7 @@ def serialisation_ca(oldconfigs, output_num):
     result_read = m_read
     result_state = m_state
     result_value = m_value
+    result_on_hold = m_on_hold
 
     import math
 
@@ -495,8 +498,6 @@ def serialisation_ca(oldconfigs, output_num):
     is_fork = lambda read: read!=(read&-read) # horrible bit mangling
 
     if m_state != {otsd}: # otsd
-        # blocking/unblocking code goes here
-
         if m_state == {noml}: # noml
             to_root_state = [l_state, u_state, -1, d_state, r_state][m_sig_dir]
             if to_root_state == {strt} or is_at_origin: # strt
@@ -510,7 +511,7 @@ def serialisation_ca(oldconfigs, output_num):
                 else:
                     out_signal = {stl} # stl
                 result_state = {rlay} # rlay
-                out_signal_read_dir = first_dir(m_read) - 5
+                out_signal_read_dir = sig_block()
         elif m_state == {rlay}: # rlay
             if signal_received:
                 out_signal = signal
@@ -521,28 +522,40 @@ def serialisation_ca(oldconfigs, output_num):
                         # if we're on a fork in the road, we unset one bit in read
                         # and change our sig_read_dir
                         result_read = m_read & ~(2 ** (out_signal_read_dir - (1 if out_signal_read_dir >= 2 else 0)))
-                        out_signal_read_dir = first_dir(result_read) - 5
+                        out_signal_read_dir = sig_block()
                         if result_read != 0:
                             out_signal = {sta} # sta
                         result_state = {turn} # turn
                     else:
                         result_read = 0
+                elif out_signal == {tun}: # tun
+                    if is_fork(m_read):
+                        result_on_hold = out_payload
+                        out_payload = out_signal_read_dir
+                        out_signal_read_dir = sig_block()
 
-            if out_signal == 0 and out_signal_read_dir < 0:
-                out_signal_read_dir += 5
+            if out_signal == 0:
+                out_signal_read_dir = sig_unblock()
 
             if out_signal == 0 and m_read == 0:
                 result_state = {fnsh} # fnsh
 
             if is_at_origin:
+                if out_signal != 0:
+                    self.target.tape.append((out_signal, out_payload))
                 out_signal = 0
-                if out_signal_read_dir < 0:
-                    out_signal_read_dir += 5
+                out_signal_read_dir = sig_unblock()
+
         elif m_state == {turn}: # turn
-            if out_signal_read_dir < 0: out_signal_read_dir += 5
-            out_signal = {tun} # tun
-            out_payload = out_signal_read_dir
-            result_state = {rlay} # rlay
+            if m_on_hold != 0:
+                out_signal = {tun} # tun
+                out_payload = m_on_hold
+                result_on_hold = 0
+            else:
+                out_signal_read_dir = sig_unblock()
+                out_signal = {tun} # tun
+                out_payload = out_signal_read_dir
+                result_state = {rlay} # rlay
 
     """.format(**strings_indices)
 
