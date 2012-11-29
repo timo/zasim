@@ -9,7 +9,7 @@
    xmlns="http://www.w3.org/2000/svg"
    xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
    xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   width="1536"
+   width="2048"
    height="64"
    id="svg2"
    version="1.1"
@@ -229,17 +229,17 @@
      borderopacity="1"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="7.4642639"
-     inkscape:cx="34.883716"
-     inkscape:cy="24.200222"
+     inkscape:zoom="5"
+     inkscape:cx="2006.6"
+     inkscape:cy="29.559089"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
      inkscape:showpageshadow="true"
      borderlayer="true"
      inkscape:snap-grids="true"
-     inkscape:window-width="1676"
-     inkscape:window-height="1011"
+     inkscape:window-width="1276"
+     inkscape:window-height="761"
      inkscape:window-x="0"
      inkscape:window-y="18"
      inkscape:window-maximized="0">
@@ -285,7 +285,9 @@
     &quot;start&quot;, &quot;state&quot;, &quot;relay&quot;, &quot;turn&quot;, &quot;finish&quot;,
     &quot;s_dir&quot;, &quot;s_state&quot;, &quot;s_state_last&quot;, &quot;s_turn&quot;,
     &quot;payload_left&quot;, &quot;payload_up&quot;, &quot;payload_down&quot;, &quot;payload_right&quot;,
-    &quot;black&quot;, &quot;white&quot;
+    &quot;black&quot;, &quot;white&quot;,
+    &quot;value_x&quot;, &quot;value_y&quot;, &quot;value_z&quot;, &quot;value_w&quot;,
+    &quot;pay_x&quot;, &quot;pay_y&quot;, &quot;pay_z&quot;, &quot;pay_w&quot;
     ]]
 }</dc:description>
       </cc:Work>
@@ -498,7 +500,7 @@
        transform="translate(0,988.36218)"
        clip-path="url(#clipPath4012)" />
     <rect
-       style="fill:none;fill-rule:evenodd;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-opacity:1;stroke-miterlimit:4;stroke-dasharray:none"
+       style="fill:none;stroke:#000000;stroke-width:2;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-opacity:1;stroke-dasharray:none"
        id="rect3195"
        width="64"
        height="64"
@@ -570,6 +572,66 @@
        x="1408"
        y="0"
        transform="translate(0,988.36218)" />
+    <rect
+       style="fill:#ff0000;fill-opacity:1;stroke:none"
+       id="rect3088"
+       width="32"
+       height="16"
+       x="1568"
+       y="32"
+       transform="translate(0,988.36218)" />
+    <rect
+       style="fill:#00ff00;fill-opacity:1;stroke:none"
+       id="rect3864"
+       width="32"
+       height="16"
+       x="1632"
+       y="32"
+       transform="translate(0,988.36218)" />
+    <rect
+       style="fill:#0000ff;fill-opacity:1;stroke:none"
+       id="rect3866"
+       width="32"
+       height="16"
+       x="1696"
+       y="32"
+       transform="translate(0,988.36218)" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:none"
+       id="rect3868"
+       width="32"
+       height="16"
+       x="1760"
+       y="32"
+       transform="translate(0,988.36218)" />
+    <rect
+       style="fill:#ff0000;fill-opacity:1;stroke:none;display:inline"
+       id="rect3088-4"
+       width="16"
+       height="16"
+       x="1800"
+       y="1028.3622" />
+    <rect
+       style="fill:#00ff00;fill-opacity:1;stroke:none;display:inline"
+       id="rect3864-0"
+       width="16"
+       height="16"
+       x="1864"
+       y="1028.3622" />
+    <rect
+       style="fill:#0000ff;fill-opacity:1;stroke:none;display:inline"
+       id="rect3866-4"
+       width="16"
+       height="16"
+       x="1928"
+       y="1028.3622" />
+    <rect
+       style="fill:#000000;fill-opacity:1;stroke:none;display:inline"
+       id="rect3868-1"
+       width="16"
+       height="16"
+       x="1992"
+       y="1028.3622" />
   </g>
   <g
      inkscape:groupmode="layer"
