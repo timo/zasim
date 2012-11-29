@@ -504,6 +504,8 @@ def serialisation_ca(oldconfigs, output_num):
                 result_state = {strt} # strt
                 out_signal = {dir} # dir
                 out_payload = m_read
+                if is_at_origin:
+                    self.target.tape.append((out_signal, out_payload))
         elif m_state == {strt}: # strt
             if signal_delivery_ok or is_at_origin:
                 if m_read:
