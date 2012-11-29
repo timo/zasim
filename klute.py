@@ -405,7 +405,10 @@ def serialisation_ca(oldconfigs, output_num):
                 if 2 ** bit & payload:
                     result += rect_for("payload_" + dir_word[bit])
         elif signal == strings.index("tun"):
-            result += rect_for("payload_" + dir_word[payload - (1 if payload >= 2 else 0)])
+            try:
+                result += rect_for("payload_" + dir_word[payload - (1 if payload >= 2 else 0)])
+            except:
+                print pos, payload
 
         return result
 
@@ -431,7 +434,6 @@ def serialisation_ca(oldconfigs, output_num):
 
     configuration["state"][oldconfigs["value"] == -2] = strings.index("otsd")
     configuration["state"][oldconfigs["value"] != -2] = strings.index("noml")
-    configuration["state"][oldconfigs["value"] == 2] = strings.index("noml")
 
     low, high = strings.index(sets["payload"][0]), strings.index(sets["payload"][-1])
     randvals = np.random.randint(low, high, configuration["read"].shape)
@@ -512,6 +514,7 @@ def serialisation_ca(oldconfigs, output_num):
                     out_signal = {sta} # sta
                 else:
                     out_signal = {stl} # stl
+                out_payload = m_value
                 out_signal_read_dir = first_dir(m_read)
                 result_state = {rlay} # rlay
                 out_signal_read_dir = sig_block()
@@ -537,9 +540,13 @@ def serialisation_ca(oldconfigs, output_num):
                         result_on_hold = out_payload
                         out_payload = out_signal_read_dir
                         out_signal_read_dir = sig_block()
+            elif signal_delivery_ok:
+                out_signal = 0
 
             if out_signal == 0:
                 out_signal_read_dir = sig_unblock()
+            elif not signal_delivery_ok:
+                out_signal_read_dir = sig_block()
 
             if out_signal == 0 and m_read == 0:
                 result_state = {fnsh} # fnsh
@@ -556,7 +563,7 @@ def serialisation_ca(oldconfigs, output_num):
                 out_payload = m_on_hold
                 result_on_hold = 0
             else:
-                out_signal_read_dir = sig_unblock()
+                out_signal_read_dir = sig_block()
                 out_signal = {tun} # tun
                 out_payload = out_signal_read_dir
                 result_state = {rlay} # rlay
@@ -598,14 +605,17 @@ def serialisation_ca(oldconfigs, output_num):
                 serialise_palette, rects)
         img.save("klute_%03d.png" % (output_num + i))
         sf.step()
-        
+
     for signal, payload in target.tape:
         sstr = strings[signal]
         if sstr == "dir":
             print sstr, bin(payload)[2:]
+        elif sstr == "tun":
+            dir_arrow = u"←↑ ↓→"[payload]
+            print sstr, dir_arrow, payload
         else:
             if payload != 0:
-                print sstr, payload
+                print sstr, strings[payload], payload
             else:
                 print sstr
 

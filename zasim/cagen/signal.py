@@ -84,6 +84,33 @@ class SignalService(Computation):
 
         self.code.add_py_code("compute",
         """#
+        # does someone send a signal to us?
+        #   read the signal
+        if not sig_blocked() and {src_neighbour_signal} != 0:
+            #print(pos, "we are reading and our source has something")
+            #print("{src_neighbour_dir}", {src_neighbour_dir}, m_{read_field})
+            if {src_neighbour_dir} == self.neigh.reverse_idx(m_{read_field}):
+                #print(pos, "received")
+                #rb -= 1
+                signal = {src_neighbour_signal}
+                signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
+                {payload_receive_code}
+                #print(signal, signal_dir)
+                signal_received = True
+
+        else:
+            # if we don't have a signal:
+            #   Is someone sending to us from our current read direction?
+            #     copy the signal
+            if not sig_blocked() and {src_neighbour_signal} != 0:
+                if {src_neighbour_dir} == self.neigh.reverse_idx(m_{dir_field}):
+                    signal = {src_neighbour_signal}
+                    signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
+                    {payload_receive_code}
+                    signal_received = True
+                    #print(pos, "received")
+                    #rb -= 1
+
         if out_signal != 0:
             # if we have a signal:
             #   does the neighbour we want to send to read from us?
@@ -97,38 +124,13 @@ class SignalService(Computation):
                 signal_delivery_ok = True
                 out_signal = 0
                 out_signal_read_dir = sig_unblock()
+                #print(pos, "delivered")
+                #rb += 1
                 # now we can let the user set a read direction
             else:
                 signal_delivery_ok = False
                 out_signal_read_dir = sig_block()
                 # XXX is there a problem with the receive code below?
-
-        # does someone send a signal to us?
-        #   read the signal
-        if not sig_blocked() and {src_neighbour_signal} != 0:
-            #print(pos, "we are reading and our source has something")
-            #print("{src_neighbour_dir}", {src_neighbour_dir}, m_{read_field})
-            if {src_neighbour_dir} == self.neigh.reverse_idx(m_{read_field}):
-                #print("signal successfully received!")
-                signal = {src_neighbour_signal}
-                signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
-                {payload_receive_code}
-                #print(signal, signal_dir)
-                signal_received = True
-
-        else:
-            # if we don't have a signal:
-            #   Is someone sending to us from our current read direction?
-            #     copy the signal
-            #   is there nothing in our read direction?
-            #     give the read direction to someone else
-            #       we let the user code decide this.
-            if not sig_blocked() and {src_neighbour_signal} != 0:
-                if {src_neighbour_dir} == self.neigh.reverse_idx(m_{dir_field}):
-                    signal = {src_neighbour_signal}
-                    signal_dir = self.neigh.reverse_idx({src_neighbour_dir})
-                    {payload_receive_code}
-                    signal_received = True
 
         """.format(
                 dest_neighbour_read_dir=dest_neighbour(self.read_field),
@@ -148,6 +150,7 @@ class SignalService(Computation):
         self.code.add_py_code("compute", "# end of signal service")
 
         self.code.add_py_code("init", """#signal helper functions
+            #rb = 0
             sig_blocked = lambda: out_signal_read_dir < 0
             sig_unblock = lambda: out_signal_read_dir + 5 if sig_blocked() else out_signal_read_dir
             sig_block   = lambda: out_signal_read_dir     if sig_blocked() else out_signal_read_dir - 5""")
@@ -160,10 +163,11 @@ class SignalService(Computation):
                 result_%s = out_signal
                 result_%s = out_signal_dir
                 result_%s = out_signal_read_dir
-                if is_at_origin:
-                    print(out_signal_read_dir)
 
                 %s""" % (
                     self.signal_field, self.direction_field, self.read_field,
                     payload_copy_code))
 
+        self.code.add_py_code("after_step",
+                """# signal service
+                #print("rb: ", rb)""")
