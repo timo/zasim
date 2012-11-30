@@ -404,8 +404,9 @@ def serialisation_ca(oldconfigs, output_num):
 
         # display where we potentially read from as a blue diamond
         # but we only do that if we're in relay state.
-        if read_dir != 2 and read_dir >= 0 and state == strings.index("rlay"):
-            result += rect_for("read_" + dir_word[read_dir - (0 if read_dir <= 2 else 1)])
+        if read_dir != 2 and read_dir >= 0 and state == strings.index("rlay") or state == strings.index("turn"):
+            if read_dir >= 0:
+                result += rect_for("read_" + dir_word[read_dir - (0 if read_dir <= 2 else 1)])
 
         # display where we want to send something with a black line
         if write_dir != 2:
@@ -413,7 +414,7 @@ def serialisation_ca(oldconfigs, output_num):
 
         if signal == strings.index("dir"):
             for bit in range(4):
-                if 2 ** bit & payload:
+                if (2 ** bit) & payload:
                     result += rect_for("payload_" + dir_word[bit])
         elif signal == strings.index("tun"):
             try:
