@@ -16,6 +16,10 @@ von_neumann_offsets = [(-1,0), (0,-1), (0,0), (0,1), (1,0)]
 
 conf_size = (8, 8)
 
+random_seed = "foobar"
+
+
+
 class Tape(StepFuncVisitor):
     """The Tape class offers a list that can be read from and written
     to, much like the one found in a Turing Machine."""
@@ -94,6 +98,8 @@ def gen_holes(size=conf_size, hole_count=None):
     image_conf[1:-1,1:-1] = -1
     image_conf[size[0]/2,size[1]/2] = 2 # root
 
+    random.seed(random_seed)
+
     if hole_count:
         for hole in random.sample(list(product(xrange(size[0]), xrange(size[1]))), hole_count):
             if image_conf[hole] != 2:
@@ -109,6 +115,8 @@ def gen_form(size=conf_size):
     image_conf = np.zeros(size, dtype="int")
     sources_conf = np.zeros(size, dtype="int")
     image_conf[:] = -2
+
+    random.seed(random_seed)
 
     image_conf[size[0]/2,size[1]/2] = 2 # root
 
