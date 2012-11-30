@@ -321,7 +321,8 @@ class StepFunc(object):
             code_bits = ["""def step_pure_py(self):"""]
 
             if ZASIM_PY_DEBUG in ("pudb", "pdb"):
-                code_bits.append("    from %s import set_trace; set_trace()" % ZASIM_PY_DEBUG)
+                code_bits.append("    if self.continue_debugging: from %s import set_trace; set_trace(); self.continue_debugging = False" % ZASIM_PY_DEBUG)
+                self.continue_debugging = True
 
             def append_code(section):
                 code_bits.append("# from hook %s" % section)
