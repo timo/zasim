@@ -629,7 +629,13 @@ def serialisation_ca(oldconfigs, output_num):
     for signal, payload in target.tape:
         sstr = strings[signal]
         if sstr == "dir":
-            print sstr, bin(payload)[2:]
+            arrows = ""
+            for bit, arrow in enumerate(u"←↑↓→"):
+                if 2 ** bit & payload:
+                    arrows += arrow
+                else:
+                    arrows += " "
+            print sstr, arrows
         elif sstr == "tun":
             dir_arrow = u"←↑ ↓→"[payload]
             print sstr, dir_arrow
