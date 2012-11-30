@@ -548,6 +548,7 @@ def serialisation_ca(oldconfigs, output_num):
                         result_on_hold = out_payload
                         out_payload = out_signal_read_dir if out_signal_read_dir >= 0 else out_signal_read_dir + 5
                         out_signal_read_dir = sig_block()
+                        result_state = {turn}
             elif signal_delivery_ok:
                 out_signal = 0
 
@@ -576,7 +577,7 @@ def serialisation_ca(oldconfigs, output_num):
                 out_payload = out_signal_read_dir if out_signal_read_dir >= 0 else out_signal_read_dir + 5
                 result_state = {rlay} # rlay
 
-    """.format(**strings_indices)
+    #""".format(**strings_indices)
 
 
     neigh = SubCellNeighbourhood("lumdr", von_neumann_offsets,
