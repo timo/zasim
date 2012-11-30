@@ -221,6 +221,30 @@
          x="0"
          y="2.6171874e-06" />
     </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4271">
+      <rect
+         y="1152"
+         x="-64"
+         height="32"
+         width="32"
+         id="rect4273"
+         style="fill:#0000ff;fill-opacity:0.09132421;stroke:none"
+         transform="matrix(0,-1,1,0,0,0)" />
+    </clipPath>
+    <clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath4652">
+      <rect
+         transform="matrix(0,-1,-1,0,0,0)"
+         style="fill:#0000ff;fill-opacity:0.09132421;stroke:none"
+         id="rect4654"
+         width="32"
+         height="32"
+         x="-64"
+         y="-1376" />
+    </clipPath>
   </defs>
   <sodipodi:namedview
      id="base"
@@ -229,9 +253,9 @@
      borderopacity="1"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="5"
-     inkscape:cx="2006.6"
-     inkscape:cy="29.559089"
+     inkscape:zoom="7.0710678"
+     inkscape:cx="1202.0189"
+     inkscape:cy="17.14719"
      inkscape:document-units="px"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -402,13 +426,6 @@
        transform="translate(0,988.36218)"
        clip-path="url(#clipPath4016)" />
     <path
-       style="fill:#000000;fill-opacity:0.09132421;stroke:none;marker-end:url(#Arrow1Lend)"
-       d="m 1168,48 -16,0"
-       id="path4487"
-       inkscape:connector-curvature="0"
-       transform="translate(0,988.36218)"
-       clip-path="url(#clipPath4671)" />
-    <path
        clip-path="url(#clipPath4483)"
        sodipodi:nodetypes="cc"
        inkscape:connector-curvature="0"
@@ -424,13 +441,6 @@
        inkscape:connector-curvature="0"
        sodipodi:nodetypes="cc"
        clip-path="url(#clipPath4483)" />
-    <path
-       clip-path="url(#clipPath4671)"
-       transform="matrix(-1,0,0,1,2528,988.36218)"
-       inkscape:connector-curvature="0"
-       id="path4677"
-       d="m 1168,48 -16,0"
-       style="fill:#000000;fill-opacity:0.09132421;stroke:none;marker-end:url(#Arrow1Lend)" />
     <text
        xml:space="preserve"
        style="font-size:8px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;line-height:125%;letter-spacing:0px;word-spacing:0px;fill:#000000;fill-opacity:1;stroke:none;display:inline;font-family:DejaVu Sans;-inkscape-font-specification:DejaVu Sans"
@@ -632,6 +642,20 @@
        height="16"
        x="1992"
        y="1028.3622" />
+    <path
+       style="fill:#000000;fill-opacity:1;stroke:none"
+       d="m 1360.2613,42.998929 17.3241,5.020458 -17.5362,5.020458 5.0912,-5.020458 z"
+       id="path4646"
+       inkscape:connector-curvature="0"
+       transform="translate(0,988.36218)"
+       clip-path="url(#clipPath4652)" />
+    <path
+       clip-path="url(#clipPath4652)"
+       transform="matrix(-1,0,0,1,2528.0492,988.36218)"
+       inkscape:connector-curvature="0"
+       id="path4656"
+       d="m 1360.2613,42.998929 17.3241,5.020458 -17.5362,5.020458 5.0912,-5.020458 z"
+       style="fill:#000000;fill-opacity:1;stroke:none" />
   </g>
   <g
      inkscape:groupmode="layer"
