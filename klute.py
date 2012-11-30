@@ -573,7 +573,8 @@ def serialisation_ca(oldconfigs, output_num):
                 if out_signal != 0:
                     self.target.tape.append((out_signal, out_payload))
                 out_signal = 0
-                out_signal_read_dir = sig_unblock()
+                if result_state != {turn}:
+                    out_signal_read_dir = sig_unblock()
 
         elif m_state == {turn}: # turn
             if m_on_hold != 0:
