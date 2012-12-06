@@ -535,28 +535,15 @@ def serialisation_ca(oldconfigs, output_num):
                 out_signal_read_dir = first_dir(m_read)
                 result_state = {rlay} # rlay
                 out_signal_read_dir = sig_block()
-        elif m_state == {rlay} or m_state == {turn}: # rlay / turn
-            handled = False
-            if m_state == {turn}: # turn
-                if m_on_hold != 0 and m_on_hold != -1:
-                    out_signal = {tun} # tun
-                    out_payload = m_on_hold
-                    result_on_hold = -1
-                    handled = True
-                elif m_on_hold == 0:
-                    out_signal_read_dir = sig_block()
-                    out_signal = {tun} # tun
-                    out_payload = (out_signal_read_dir if out_signal_read_dir >= 0
-                                   else out_signal_read_dir + 5)
-                    #result_state = {rlay} # rlay
-                    result_on_hold = -1
-                    handled = True
-                else:
-                    result_on_hold = 0
-                    out_signal_read_dir = sig_unblock()
-                    pass
+        elif m_state == {turn}:
+            if signal_delivery_ok or is_at_origin:
+                out_signal = {tun}
+                out_payload = out_signal_read_dir if out_signal_read_dir >= 0 else out_signal_read_dir + 5
+                result_state = {rlay}
+                out_signal_read_dir = sig_block()
 
-            if signal_received and not handled:
+        elif m_state == {rlay}:
+            if signal_received:
                 if out_signal != 0 and not signal_delivery_ok:
                     print("that wasn't good.")
                 out_signal = signal
@@ -569,10 +556,12 @@ def serialisation_ca(oldconfigs, output_num):
                         result_read = m_read & ~(2 ** (out_signal_read_dir - (1 if out_signal_read_dir >= 2 else 0)))
                         out_signal_read_dir = first_dir(result_read)
                         out_signal_read_dir = sig_block()
+                        # if we are still a fork, we replace the state_last signal
+                        # with a normal state signal
                         if result_read != 0:
                             out_signal = {sta} # sta
-                        if m_state != {turn}: # turn
-                            result_state = {turn} # turn
+                        # now we need to add a turn signal before we send the next signals.
+                        result_state = {turn} # turn
                     else:
                         result_read = 0
                 elif out_signal == {tun}: # tun
@@ -581,8 +570,7 @@ def serialisation_ca(oldconfigs, output_num):
                         out_payload = (out_signal_read_dir if out_signal_read_dir >= 0
                                        else out_signal_read_dir + 5)
                         out_signal_read_dir = sig_block()
-                        if m_state != {turn}: # turn
-                            result_state = {turn}
+                        result_state = {turn}
                 elif out_signal == {sta}: # sta
                     if m_state == {turn}: # turn
                         result_state = {rlay} # rlay
