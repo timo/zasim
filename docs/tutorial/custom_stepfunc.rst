@@ -108,7 +108,7 @@ interface. Those slots are:
    may also need special instances of `CellLoop` or `StateAccessor` to work.
 
 The `StepFunc` works by calling each of the following methods on all
-`StepFuncVisitor`s:
+`StepFuncVisitors`:
 
  * `~zasim.cagen.bases.StepFuncVisitor.bind` with itself as the `code` argument.
    This binds the StepFuncVisitor to the StepFunc. The StepFuncVisitor should

@@ -499,7 +499,7 @@ def serialisation_ca(oldconfigs, output_num):
     #               pass on the data as a s_state
     #           set our state to "rlay"
 
-    py_code = """# serealisation code
+    py_code = """# serialisation code
     result_read = m_read
     result_state = m_state
     result_value = m_value
