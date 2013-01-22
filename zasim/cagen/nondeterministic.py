@@ -86,11 +86,11 @@ class RandomGenerator(StepFuncVisitor):
         code.random = self.random
 
 class NondeterministicCellLoopMixin(StepFuncVisitor):
-    """Deriving from a CellLoop and this Mixin will cause every cell to be
-    skipped with a given probability"""
+    """Deriving from a CellLoop and this Mixin will cause every cell to
+    be computed with a given probability"""
 
     probab = 0.5
-    """The probability with which to execute each cell."""
+    """The probability with which to compute each cell."""
 
     requires_features = [random_generator]
 
