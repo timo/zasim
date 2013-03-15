@@ -32,6 +32,12 @@ if HAVE_WEAVE:
     from scipy import weave
     from scipy.weave import converters
 
+try:
+    import numba
+    HAVE_NUMBA = True
+except ImportError:
+    HAVE_NUMBA = False
+
 ZASIM_PY_DEBUG = os.environ.get("ZASIM_PY_DEBUG", False)
 ZASIM_EXTREME_PY_DEBUG = bool(os.environ.get("ZASIM_PY_DEBUG") == "extreme")
 ZASIM_WEAVE_DEBUG = os.environ.get("ZASIM_WEAVE_DEBUG", False)
@@ -288,7 +294,14 @@ class StepFunc(object):
             for hook in self.pycode.keys():
                 self.pycode[hook] = tuple(self.pycode[hook])
 
-            code_bits = ["""def step_pure_py(self):"""]
+            code_bits = []
+
+            if HAVE_NUMBA:
+                code_bits.extend([
+                    "import numba",
+                    "@numba.autojit"])
+
+            code_bits.append("""def step_pure_py(self):""")
 
             if ZASIM_PY_DEBUG in ("pudb", "pdb"):
                 code_bits.append("    from %s import set_trace; set_trace()" % ZASIM_PY_DEBUG)
