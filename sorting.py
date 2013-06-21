@@ -1,9 +1,10 @@
 from sorting_impl import *
+from numpy import *
 
 gridline = Grid1DEuclidean()
 #gridtree = GridBinaryTree()
 
-gridline.use_von_neumann_neighborhood(radius=1)
+nbh = gridline.use_von_neumann_neighbourhood(radius=1)
 #nbh = grid.von_neumann_neighborhood(radius=1)
 
 #? nbh = Neighborhoods.von_neumann(radius=1)   #nbh = Neighborhoods.moore(radius=1)
@@ -33,7 +34,7 @@ state = { 'L' : int8, 'R' : int8 }
 
 #### Speicher
 #???????? Speicherlayout
-mem = DoubleBufferStorage(grid, state, buffer_names=('cur', 'new'))
+mem = DoubleBufferStorage(gridline, state, buffer_names=('cur', 'new'))
 #mem = SingleBufferStorage(.....)
 
 #### Namen fuer Nachbarn
@@ -42,10 +43,11 @@ nbn = nbh.compass_names()
 #nbn = nbh._names()   # left right
 
 #### lokale Regeln
-delta_py = """ new.L = left.L; new.R = new.L + 1 """ #  ??????? Margolusnachbarschaft
+#delta_py = """ new.L = left.L; new.R = new.L + 1 """ #  ??????? Margolusnachbarschaft
+delta_py = """ """
 
 #### alles zusammenbauen
-za = ZA(grid, mem, nbn, delta_py)
+za = ZA(gridline, mem, gridline.neigh, delta_py)
 
 za.compile_py()
 
@@ -56,6 +58,6 @@ za.compile_py()
 
 #### 
 #conf2?? = za.run(conf?, 42)
-za.run()
+za.run(10)
 
 

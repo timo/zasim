@@ -47,14 +47,14 @@ class ZA(object):
         if isinstance(code, basestring):
             code = PasteComputation(py_code = code)
         size = grid.size
-        target = target_class(size, None)
+        target = Target(size, None)
         size = target.size
         stepfunc = StepFunc(
                 loop=grid.loop,
                 accessor=grid.acc,
                 neighbourhood=nbh,
                 border=grid.border,
-                visitors=[code] + extra_list,
+                visitors=[code] + list(extra_list),
                 target=target)
         self.stepfunc = stepfunc
         self.stepfunc.gen_code()
