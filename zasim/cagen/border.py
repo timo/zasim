@@ -19,6 +19,7 @@ class BorderSizeEnsurer(BorderHandler):
     array is big enough, so that getting the neighbourhood from the outermost
     cells will not access outside the bounds of the array."""
     def resize_array(self, array):
+        print "resizing array for the border size ensurer"
         borders = self.code.acc.border_size
         shape = array.shape
         dtype = array.dtype
@@ -78,8 +79,10 @@ class BorderSizeEnsurer(BorderHandler):
         super(BorderSizeEnsurer, self).new_config()
         try:
             self.target.cconf = self.resize_array(self.target.cconf)
-        except AttributeError: # either we have a cconf/nconf or we have a sets variable
-            for k in self.target.sets.keys():
+        except AttributeError: # either we have a cconf/nconf or we have a cells attribute
+            print "resizing a cell'd target"
+            print self.target.cells
+            for k in self.target.cells:
                 setattr(self.target, "cconf_%s" % k, self.resize_array(getattr(self.target, "cconf_%s" % k)))
 
     def is_position_valid(self, pos):
@@ -175,6 +178,8 @@ class SimpleBorderCopier(BaseBorderCopier):
         dims = len(bbox)
         neighbours = self.code.neigh.offsets
         self.dimension_sizes = [self.code.acc.get_size_of(dim) for dim in range(dims)]
+
+        # TODO implement subcell support here
 
         slices = []
         # get only the values from the borders in a lazy manner

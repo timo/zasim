@@ -141,8 +141,10 @@ class SubcellAccessor(SimpleStateAccessor):
     for each subcell "plane" can be created."""
 
     def __init__(self, cells):
+        """Pass a list of names for the cells argument"""
         super(SubcellAccessor, self).__init__()
         self.cells = cells
+        print "making a subcell accessor with cells: ", self.cells
         cnames = []
         for c in cells:
             cnames.extend(("cconf_%s" % c, "nconf_%s" % c))

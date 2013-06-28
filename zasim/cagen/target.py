@@ -51,3 +51,17 @@ class Target(object):
 
     def pretty_print(self):
         """pretty-print the configuration and such"""
+
+class SubcellTarget(Target):
+    cells = []
+    """The subcells that this target contains"""
+
+    def __init__(self, cells, **kwargs):
+        super(SubcellTarget, self).__init__(**kwargs)
+        config = self.cconf
+        self.cells = cells
+        del self.cconf
+        for cell in cells:
+            self.__setattr__("cconf_" + cell, config.copy())
+
+        self.shape = config.shape

@@ -32,11 +32,13 @@ if HAVE_WEAVE:
     from scipy import weave
     from scipy.weave import converters
 
-try:
-    import numba
-    HAVE_NUMBA = True
-except ImportError:
-    HAVE_NUMBA = False
+#try:
+    #import numba
+    #HAVE_NUMBA = True
+    #pass
+#except ImportError:
+    #HAVE_NUMBA = False
+HAVE_NUMBA = False
 
 ZASIM_PY_DEBUG = os.environ.get("ZASIM_PY_DEBUG", False)
 ZASIM_EXTREME_PY_DEBUG = bool(os.environ.get("ZASIM_PY_DEBUG") == "extreme")
@@ -380,7 +382,7 @@ class StepFunc(object):
             self.step_inline()
             self.step = self.step_inline
         except Exception as e:
-            print(e)
+            print(e, file=sys.stderr)
             print("falling back to pure python step function", file=sys.stderr)
 
             self.step_pure_py()

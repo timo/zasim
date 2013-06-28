@@ -5,14 +5,18 @@
 # This file is part of zasim. zasim is licensed under the BSD 3-clause license.
 # See LICENSE.txt for details.
 
+from __future__ import print_function
+
 from random import randrange
 from .bases import Computation
 from .utils import elementary_digits_and_values, rule_nr_to_multidim_rule_arr
 from .compatibility import no_weave_code, no_python_code
 
 import new
+import re
+import sys
 
-import numpy as np
+#import numpy as np
 
 class ElementaryCellularAutomatonBase(Computation):
     """Infer a 'Gödel numbering' from the used `Neighbourhood` and
@@ -242,6 +246,33 @@ class LifeCellularAutomatonBase(CountBasedComputationBase):
         else:
             parts.append("calculating game of life")
 
+# our subcell syntax looks like this: "SubCell@Neighbour", "SubCell@NeighboursNeighbour@Neighbour", ...
+subcell_syntax = re.compile(r"""
+    (?P<all>                   # if cell and neighbour are not in our dictionaries,
+                               # we have to return the string untouched
+                               # (although: what does a @ do in python/C code?)
+    (?P<cell>[a-zA-Z_]+)       # start with a subcell name
+    \@                         # match a verbatim @
+    (?P<neighbour>
+        [a-zA-Z_]+             # neighbour names are just like cell names.
+    ))""", re.X)
+def fixup_subcell_syntax(code, neighbours, subcells, language="py"):
+    assert language == "py"
+    def replacer(match):
+        print(match.groupdict())
+        print(subcells, " <- cells")
+        print(neighbours, " <- neighbours")
+        if match.group("cell") in subcells:
+            if match.group("neighbour") in neighbours or match.group("neighbour") == "result":
+                return "{neighbour}_{cell}".format(**match.groupdict())
+            else:
+                print("warning: refered to to unknown neighbour {neighbour}".format(**match.groupdict()), file=sys.stderr)
+        else:
+            print("warning: refered to to unknown subcell {cell}".format(**match.groupdict()), file=sys.stderr)
+
+        return match.group("all")
+    return subcell_syntax.sub(replacer, code)
+
 class PasteComputation(Computation):
     def __init__(self, c_code=None, py_code=None, name=None):
         if c_code is None:
@@ -253,6 +284,14 @@ class PasteComputation(Computation):
 
     def visit(self):
         if self.py_code is not None:
+            subcells = None
+            try:
+                subcells = self.code.acc.cells
+            except AttributeError: pass
+            neighbours = self.code.neigh.names
+            if subcells:
+                print(subcells)
+                self.py_code = fixup_subcell_syntax(self.py_code, neighbours, subcells)
             self.code.add_py_code("compute", self.py_code)
         if self.c_code is not None:
             self.code.add_weave_code("compute", self.c_code)
