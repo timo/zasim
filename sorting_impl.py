@@ -82,16 +82,16 @@ class SubcellSimulator(CagenSimulator):
         return res
 
 class ZA(object):
-    def __init__(self, grid, mem, code, extra_list=()):
+    def __init__(self, grid, mem, code, base=2, extra_list=()):
         if isinstance(code, basestring):
             code = PasteComputation(py_code = code)
 
         self.size = grid.size
         self.mem = mem
         if len(self.mem.state) > 1:
-            target = SubcellTarget(cells=self.mem.state.keys(), size=self.size)
+            target = SubcellTarget(cells=self.mem.state.keys(), size=self.size, base=base)
         else:
-            target = Target(self.size, None)
+            target = Target(self.size, None, base=base)
         stepfunc = StepFunc(
                 loop=grid.loop,
                 accessor=grid.acc,

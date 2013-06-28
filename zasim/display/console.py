@@ -114,7 +114,7 @@ class OneDimConsolePainter(BaseConsolePainter):
 
     def draw_conf(self, update_step=True):
         # FIXME: numpypy int32 won't hash to the same as pythons int.
-        newline = "".join(self.palette[int(value)] for value in self._last_conf)
+        newline = "".join(self.palette.get(int(value), "X") for value in self._last_conf)
         if len(self._data) == self._lines and update_step:
             self._data.pop(0)
         elif not update_step:

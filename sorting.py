@@ -44,8 +44,8 @@ mem = DoubleBufferStorage(gridline, state);
 
 #### lokale Regeln
 delta_py = """# sort a bit
-lr = R@left
-rl = L@right
+lr = max(R@left, L@center)
+rl = min(L@right, R@center)
 L@result, R@result = min(lr, rl), max(lr, rl)"""
 #  ??????? Margolusnachbarschaft
 
@@ -57,7 +57,7 @@ L@result, R@result = min(lr, rl), max(lr, rl)"""
 #delta_py = """result = 1"""
 
 #### alles zusammenbauen
-za = ZA(gridline, mem, delta_py)
+za = ZA(gridline, mem, delta_py, base=5)
 
 za.compile_py()
 za.display()
@@ -69,7 +69,15 @@ za.display()
 
 #### 
 #conf2?? = za.run(conf?, 42)
-za.run(30)
+za.sim.t.cconf_L[0] = -128
+za.sim.t.cconf_R[0] = -128
+za.sim.t.cconf_L[-1] = 127
+za.sim.t.cconf_R[-1] = 127
+za.sim.t.nconf_L[0] = -128
+za.sim.t.nconf_R[0] = -128
+za.sim.t.nconf_L[-1] = 127
+za.sim.t.nconf_R[-1] = 127
+za.run(100)
 
 # TODO ausgabe spezifizieren und implementieren
 
