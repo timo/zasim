@@ -21,9 +21,12 @@ gridline.set_extent(100)
 #### Raender
 #gridline.use_cyclic_boundaries_handler()
 gridline.use_constant_boundaries_handler()  # welche Konstante?
+# konstante pro seite?
 
+# definieren, ob randbereiche angezeigt werden sollen oder nicht; wo?
 
 #### Zustandsmenge
+# OrderedDict
 state = { 'L' : int8, 'R' : int8 }
 
 # oh ich brauch noch mehr, ... auch automatisch
@@ -42,6 +45,11 @@ nbh.direction_names() # left, center, right
 mem = DoubleBufferStorage(gridline, state);
 #mem = SingleBufferStorage(.....)
 
+#### initial configuration
+# abhängig von grid & state, also auf mem?
+#mem.init(...??)
+
+
 #### lokale Regeln
 delta_py = """# sort a bit
 lr = max(R@left, L@center)
@@ -57,16 +65,10 @@ L@result, R@result = min(lr, rl), max(lr, rl)"""
 #delta_py = """result = 1"""
 
 #### alles zusammenbauen
-za = ZA(gridline, mem, delta_py, base=5)
+za = ZA(gridline, mem, delta_py, base=10)
 
 za.compile_py()
 za.display()
-
-
-###########################################################
-#### initial configuration
-#conf =????
-
 #### 
 #conf2?? = za.run(conf?, 42)
 za.sim.t.cconf_L[0] = -128
@@ -84,6 +86,8 @@ za.run(100)
 # 1d: nach jedem schritt die ganze konfiguration ausgeben
 #     ascii grafik kästchen, nur ascii charactere
 #     nebeneinander vs untereinander, ...
+
+# 1d animation mit \r in der gleichen zeile
 
 # wie sieht es aus mit datentypen? int8 als zahlen?
 # strings? enums, die zahlen auf irgendwas abbilden?

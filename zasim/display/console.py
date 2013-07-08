@@ -1,3 +1,4 @@
+# -*- coding: utf8 -*-
 from __future__ import absolute_import
 
 from ..simulator import QObject
@@ -7,7 +8,9 @@ import itertools
 import numpy as np
 
 NO_DATA = " "
-PALETTE =       [" ", "#", "-", ";", ",", "^", "+", "Y"]
+PALETTE = [" "] + "░ ▒ ▓ █ ▇ ▆ ▅ ▄ ▃ ▂ ▁".split(" ")
+#PALETTE = "▁ ▂ ▃ ▄ ▅ ▆ ▇ █".split(" ")
+#PALETTE =       [" ", "#", "-", ";", ",", "^", "+", "Y"]
 HTML_PALETTE = "#000 #fff #f00 #00f #0f0 #ff0 #0ff #f0f".split(" ")
 PALETTE = dict(enumerate(PALETTE))
 HTML_PALETTE = dict(enumerate(HTML_PALETTE))
