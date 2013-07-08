@@ -7,6 +7,13 @@ import itertools
 
 import numpy as np
 
+def n2c(name):
+    """Turn a name of a subcell into x/y coords"""
+    return int(name[1:name.find("l")]), int(name[name.find("l")+1:])
+
+def c2n(x, y):
+    return "c%dl%d" % (x, y)
+
 NO_DATA = " "
 PALETTE = [" "] + "░ ▒ ▓ █ ▇ ▆ ▅ ▄ ▃ ▂ ▁".split(" ")
 #PALETTE = "▁ ▂ ▃ ▄ ▅ ▆ ▇ █".split(" ")
@@ -256,12 +263,21 @@ def draw_box_template(boxes, t_w=1, w=None, h=None):
     If you want correct outer borders, you need to wrap box positions for
     y=-1, y=h+1, x=-1 and x=w+1.
 
-    :param boxes: a list of x, y tuples that show which fields are filled.
-    :param w: the width of each of the boxes.
+    :param boxes: a dictionary of x, y tuples mapped to strings that show what
+                  subcells exist in the box and what they are called.
+                  Alternatively, a list may be passed, in which case the names
+                  will be created using the zacformat c2n function.
+    :param t_w: the width of each of the boxes.
+    :param w: How many subcells the box is wide
+    :param h: How many subcells the box is tall
     :returns: a list of strings usable for drawing an ascii box art."""
 
-    w = w or max([t[0] for t in boxes])
-    h = h or max([t[1] for t in boxes])
+    if isinstance(boxes, list):
+        # use the c2n function to create the names for the positions
+        boxes = dict(map(lambda position: (position, c2n(position)), boxes))
+
+    w = w or max([t[0] for t in boxes.keys()])
+    h = h or max([t[1] for t in boxes.keys()])
 
     def corner(x, y):
         a = (x-1, y-1) in boxes
@@ -407,9 +423,11 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
     center for a lattice of box-templates or - if twodim is False - for the
     left and right end and the body of a line of box-templates."""
 
-    # TODO move boxes around manually, so that it doesn't only work with zacformat
+    if isinstance(boxes, list):
+        # use the c2n function to create the names for the positions
+        boxes = dict(map(lambda position: (position, c2n(position)), boxes))
 
-    originalboxes = boxes[:]
+    originalboxes = boxes.copy()
 
     if twodim:
         neighbours = itertools.product([-1,0,1], [-1,0,1])
@@ -418,23 +436,26 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
 
     content_width = w
 
-    w = max([t[0] for t in originalboxes])
-    h = max([t[1] for t in originalboxes])
+    w = max([t[0] for t in originalboxes.keys()])
+    h = max([t[1] for t in originalboxes.keys()])
+
+    def d(x, y):
+        return ((x, y), c2n(x, y))
 
     # determine wether the corners have boxes next to them.
-    luc = [( -1, -1)] if (w,h) in originalboxes else []
-    ruc = [(w+1, -1)] if (0,h) in originalboxes else []
-    ldc = [( -1,h+1)] if (w,0) in originalboxes else []
-    rdc = [(w+1,h+1)] if (0,0) in originalboxes else []
+    luc = d( -1, -1) if (w,h) in originalboxes.keys() else []
+    ruc = d(w+1, -1) if (0,h) in originalboxes.keys() else []
+    ldc = d( -1,h+1) if (w,0) in originalboxes.keys() else []
+    rdc = d(w+1,h+1) if (0,0) in originalboxes.keys() else []
 
     def warp(src,dst,axis):
         res = []
-        for box in originalboxes:
+        for box in originalboxes.keys():
             if box[axis] == src:
                 if axis == 0:
-                    res.append((dst, box[1]))
+                    res.append(d(dst, box[1]))
                 else:
-                    res.append((box[0], dst))
+                    res.append(d(box[0], dst))
         return res
 
     # copy border boxes around
@@ -447,17 +468,122 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
     result_template = {}
     neighbours = list(neighbours)
     for x, y in neighbours:
-        fixed = originalboxes[:]
-        if (x-1, y-1) in neighbours: fixed.extend(ldc)
-        if (x+1, y-1) in neighbours: fixed.extend(rdc)
-        if (x-1, y+1) in neighbours: fixed.extend(luc)
-        if (x+1, y+1) in neighbours: fixed.extend(ruc)
+        fixed = originalboxes.copy()
+        if (x-1, y-1) in neighbours: fixed.update(ldc)
+        if (x+1, y-1) in neighbours: fixed.update(rdc)
+        if (x-1, y+1) in neighbours: fixed.update(luc)
+        if (x+1, y+1) in neighbours: fixed.update(ruc)
 
-        if (x+1, y  ) in neighbours: fixed.extend(lb)
-        if (x-1, y  ) in neighbours: fixed.extend(rb)
-        if (x,   y+1) in neighbours: fixed.extend(ub)
-        if (x,   y-1) in neighbours: fixed.extend(db)
+        if (x+1, y  ) in neighbours: fixed.update(lb)
+        if (x-1, y  ) in neighbours: fixed.update(rb)
+        if (x,   y+1) in neighbours: fixed.update(ub)
+        if (x,   y-1) in neighbours: fixed.update(db)
 
         result_template[(x,y)] = draw_box_template(fixed, content_width, w, h)
 
     return result_template
+
+class SubcellConsoleDisplay(object):
+    def __init__(self, simulator, boxes, palettes, connect=True, auto_output=True):
+        """Create a console displayer for showing cells that are made up of
+        multiple subcells.
+
+        :param boxes: A dictionary of a 2-tuple (the position)
+                      to a string (the name) for each subcell.
+                      Alternatively, a list may be passed, in which case the
+                      names will be generated with zacformat.n2c.
+        :param palettes: A dictionary of a name to a dictionary or list
+                         of strings to be used for displaying.
+        """
+        self._sim = simulator
+        self._data = []
+        self._last_conf = None
+        self._auto_output = auto_output
+
+        if isinstance(boxes, list):
+            # use the n2c function to create the names for the positions
+            boxes = dict(map(lambda position: (n2c(position), position), boxes))
+
+        self.boxes = boxes
+        self.palettes = palettes
+
+        self.data = ""
+
+        self.measure_sets()
+
+        if connect:
+            self.connect_simulator()
+
+    def connect_simulator(self):
+        self._sim.changed.connect(self.conf_changed)
+        self._sim.updated.connect(self.after_step)
+        self._sim.snapshot_restored.connect(self.conf_replaced)
+
+    def after_step(self, update_step=True):
+        self._last_conf = self._sim.get_config().copy()
+        self.draw_conf(update_step)
+        if self._auto_output:
+            print unicode(self)
+            print
+
+    def conf_changed(self):
+        self.after_step(False)
+
+    def conf_replaced(self):
+        self.conf_changed()
+
+    def measure_sets(self):
+        max_w = 1
+        for value in self.palettes.values():
+            if isinstance(value, dict):
+                max_w = max(map(len, value.values()) + [max_w])
+            else:
+                max_w = max(map(len, value) + [max_w])
+
+        #self.stringy_subcells = [k for k, v in self.sets.iteritems() if isinstance(v[0], basestring)]
+
+        if len(self._sim.shape) == 1 or self._sim.shape[1] == 1:
+            self.template = draw_tiled_box_template(self.boxes, max_w, twodim=False)
+        else:
+            self.template = draw_tiled_box_template(self.boxes, max_w)
+        self.template_h = len(self.template[(0,0)])
+
+    def draw_conf(self, update_step=True):
+        size = self._last_conf.values()[0].shape
+        if len(size) == 1:
+            size = (size[0], 1)
+        w, h = size
+        def subpos(x, y):
+            """Are we in a corner, at an edge or in the middle?"""
+            xp = -1 if x == 0 else ( 1 if x == w-1 else 0)
+            yp =  1 if y == 0 else (-1 if y == h-1 else 0)
+            if h == 1:
+                yp = 0
+            return (xp, yp)
+
+        datalines = []
+        for y in range(h):
+            lines = [[] for _ in range(self.template_h)]
+            for x in range(w):
+                val = dict()
+                for k in self._last_conf.keys():
+                    if k in self.palettes:
+                        val[k] = self.palettes[k][self._last_conf[k][x,y]]
+                    else:
+                        val[k] = self._last_conf[k][x,y]
+                sp   = subpos(x,y)
+                box  = [line % val for line in self.template[sp]]
+                for line in lines:
+                    if len(line):
+                        line[-1] = line[-1][:-1]
+                [line.append(boxcontent) for line, boxcontent in zip(lines, box)]
+            datalines = datalines[:-1]
+            datalines.extend("".join(line_c) for line_c in lines)
+        self.data = "\n".join(datalines)
+
+    def __unicode__(self):
+        try:
+            return self.data
+        except:
+            return "error"
+
