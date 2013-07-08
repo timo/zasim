@@ -13,7 +13,7 @@ from ..external.qt import (QDialog, QHBoxLayout, QVBoxLayout,
         QDialogButtonBox,
         QFileSystemWatcher)
 
-from ..config import ImageConfiguration, FileAsciiConfiguration
+from ..config import ImageConfiguration, FileCharConfiguration
 from tempfile import NamedTemporaryFile
 
 from ..display.console import TwoDimConsolePainter
@@ -133,7 +133,7 @@ class ExternalEditWindow(QDialog):
         editor = shlex.split(editor)
 
         self.exporter = TwoDimConsolePainter(self._sim)
-        self.__external_edit(prefix, suffix, FileAsciiConfiguration, editor)
+        self.__external_edit(prefix, suffix, FileCharConfiguration, editor)
 
     def import_(self):
         self._sim.set_config(self.importer.generate())

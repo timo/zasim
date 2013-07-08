@@ -114,7 +114,7 @@ class TestConfig:
 
         with NamedTemporaryFile(prefix="zasim_test_") as tmpfile:
             d.export(tmpfile.name)
-            nconf_imp = config.FileAsciiConfiguration(tmpfile.name)
+            nconf_imp = config.FileCharConfiguration(tmpfile.name)
             assert_arrays_equal(nconf_imp.generate(), s.get_config())
 
     @pytest.mark.skipif("IS_PYPY")
