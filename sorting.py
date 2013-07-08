@@ -26,8 +26,24 @@ gridline.use_constant_boundaries_handler()  # welche Konstante?
 # definieren, ob randbereiche angezeigt werden sollen oder nicht; wo?
 
 #### Zustandsmenge
-# OrderedDict
-state = { 'L' : int8, 'R' : int8 }
+state = State()
+state.cell("L").dtype(int8).default(0).domain((0, 10))
+state.cell("R").dtype(int8).default(0).domain((0, 10))
+
+chars = state.display_ansi("chars")
+chars.boxes(L=(0, 0), R=(1, 0))
+chars.border(subcell="single", cell="double")
+chars.numbers("L", "R")
+
+pretty = state.display_ansi("pretty")
+pretty.border(subcell=None, cell="single")
+
+@pretty.palettize_cell
+def pretty_palette(out, L, R):
+    if L % 2 == 0:
+        out.color("red")
+    out.num(L)
+    out.num(R)
 
 # oh ich brauch noch mehr, ... auch automatisch
 #state['X'] = (-127,-1,0,1,128)
@@ -68,7 +84,6 @@ L@result, R@result = min(lr, rl), max(lr, rl)"""
 za = ZA(gridline, mem, delta_py, base=10)
 
 za.compile_py()
-za.display()
 #### 
 #conf2?? = za.run(conf?, 42)
 za.sim.t.cconf_L[0] = -128
@@ -79,6 +94,7 @@ za.sim.t.nconf_L[0] = -128
 za.sim.t.nconf_R[0] = -128
 za.sim.t.nconf_L[-1] = 127
 za.sim.t.nconf_R[-1] = 127
+za.display("chars")
 za.run(100)
 
 # TODO ausgabe spezifizieren und implementieren

@@ -56,18 +56,193 @@ class Grid1DEuclidean(Grid):
             self.neigh = cls()
         self.neigh.names = self.neigh_names
 
+class Domain(object):
+    def values(self):
+        """Return a list of possible values"""
+        return []
+    def accepts(self, other):
+        """Is the given value in the domain?"""
+        return False
+
+class RangeDomain(Domain):
+    def __init__(self, start, end):
+        self.start = start
+        self.end = end
+
+    def values(self):
+        return range(self.start, self.end)
+
+    def accepts(self, other):
+        return self.start <= other <= self.end
+
+class ValuesDomain(Domain):
+    def __init__(self, *values):
+        self.vals = values
+
+    def values(self): return self.vals[:]
+    def accepts(self, other): return other in self.vals
+
+class CellDescriptor(object):
+    """Gives a nice API to set different cell's attributes on a State instance"""
+    def __init__(self, state, cellname):
+        self.state = state
+        self.name = cellname
+
+    def dtype(self, dtype):
+        self.state.types[self.name] = dtype
+        return self
+
+    def default(self, value):
+        self.state.defaults[self.name] = value
+        return self
+
+    def domain(self, domain):
+        if isinstance(domain, tuple) and len(domain) == 2:
+            self.state.domain[self.name] = RangeDomain(*domain)
+        else:
+            self.state.domain[self.name] = ValuesDomain(*domain)
+        return self
+
+class DisplayDef(object):
+    pass
+
+class AnsiDisplayDef(DisplayDef):
+    """A display definition that supports characters, colors and a few
+    terminal attributes like bold, inverted or underlined - depending on
+    the terminal in use."""
+
+    rendertype = ""
+    """The kind of rendering to do
+
+    - boxes
+        Align all or some of the subcells in a big box.
+        the "renderers" attribute is a dictionary that prescribes a rendering
+        method for each subcell. Those are then composed into boxes using the
+        inner_border and outer_border specifications.
+
+    - box
+        A custom function is used to generate one string representation of a
+        whole cell and that is then wrapped into a box, if outer_border is
+        set.
+        This function is stored in the renderer attribute.
+    """
+
+    # TODO there should be a way to create boxes that derive from multiple subcells
+
+    _boxes = None
+    borders = None
+    renderer = None
+    renderers = None
+    col_widths = None
+    row_heights = None
+    cellspan_def = None
+
+    def __init__(self, state, name):
+        self.state = state
+        self.name = name
+
+        self._boxes = None
+        self.renderers = {}
+
+    def border(self, subcell, cell):
+        self.borders = (subcell, cell)
+        return self
+
+    def boxes(self, **boxes):
+        """Set the positioning of the subcells, if boxes are to be used."""
+        self.rendertype = "boxes"
+        self.boxes = boxes
+        return self
+
+    def span_box(self, cell, width=1, height=1):
+        """Define a box to span columns or rows"""
+        assert (width != 1) != (height != 1), "can only rowspan or colspan" # XXX arbitrary restriction ...
+        cellspan_def[cell] = (width, height)
+        return self
+
+    def numbers(self, *subcells):
+        """Specify that numbers are to be used to render a subcell's contents"""
+        for sc in subcells:
+            self.renderers[sc] = ("numbers",) # XXX create a class or something for these?
+        return self
+
+    def palette(self, **subcell_palettes):
+        """Takes a named argument for each subcell that provides a list or
+        dictionary mapping subcell values to display characters"""
+        for cell, scp in subcell_palettes.iteritems():
+            renderers[cell] = ("palette", scp)
+        return self
+
+    def palettize_cell(self, fun):
+        self.rendertype = "box"
+        self.renderer = fun
+        return fun
+
+    def palettize_subcell(self, subcell):
+        def subcell_palletizer_wrapper(fun):
+            self.renderers[subcell] = ("function", fun)
+            return fun
+        return subcell_palletizer_wrapper
+
+class State(object):
+    names = None
+    """The names of the state's subcells"""
+
+    types = None
+    """A mapping of name to type"""
+
+    defaults = None
+    """A mapping of name to default value"""
+
+    domain = None
+    """A mapping of name to what values are possible.
+
+    Optional."""
+
+    displays = None
+    """A mapping of name to definition"""
+
+    subcell = False
+
+    def __init__(self):
+        self.names = []
+        self.types = {}
+        self.defaults = {}
+        self.domain = {}
+        self.displays = {}
+
+    def cell(self, name):
+        self.names.append(name)
+        if not self.subcell and len(self.names) > 1:
+            self.subcell = True
+        return CellDescriptor(self, name)
+
+    def __getattr__(self, attr):
+        if attr.startswith("display_"):
+            clsname = (attr[len("display_"):]).title() + "DisplayDef"
+            if clsname in globals():
+                def make_the_display_class(name):
+                    instance = globals()[clsname](self, name)
+                    self.displays[name] = instance
+                    return instance
+                return make_the_display_class
+            else:
+                raise AttributeError()
+        else:
+            raise AttributeError()
+
 class DoubleBufferStorage(object):
-    state = {}
+    state = None
 
     def __init__(self, grid, state, buffer_names=('cur', 'new')):
-        self.state = state.copy()
-        if len(state) == 1:
+        self.state = state
+        if state.subcell:
+            print "using a subcell accessor"
+            grid.acc = SubcellAccessor(state.names)
+            grid.make_neigh(SubcellNeighbourhood)
+        else:
             grid.acc = SimpleStateAccessor()
             grid.make_neigh()
-        else:
-            print "using a subcell accessor"
-            grid.acc = SubcellAccessor(state.keys())
-            grid.make_neigh(SubcellNeighbourhood)
 
 class SubcellSimulator(CagenSimulator):
     sets = []
@@ -88,8 +263,8 @@ class ZA(object):
 
         self.size = grid.size
         self.mem = mem
-        if len(self.mem.state) > 1:
-            target = SubcellTarget(cells=self.mem.state.keys(), size=self.size, base=base)
+        if self.mem.state.subcell:
+            target = SubcellTarget(cells=self.mem.state.names, size=self.size, base=base)
         else:
             target = Target(self.size, None, base=base)
         stepfunc = StepFunc(
@@ -101,11 +276,11 @@ class ZA(object):
                 target=target)
         self.stepfunc = stepfunc
         self.stepfunc.gen_code()
-        self.sim = SubcellSimulator(stepfunc, self.mem.state.keys())
+        self.sim = SubcellSimulator(stepfunc, self.mem.state.names)
 
-    def display(self):
+    def display(self, display_to_use):
         assert isinstance(self.size, list) or len(self.size) == 1
-        if len(self.mem.state) > 1:
+        if self.mem.state.subcell:
             class SubcellOneDimConsolePainter(SubcellPainterMixin, OneDimConsolePainter):
                 pass
         self.disp = SubcellOneDimConsolePainter(self.sim, 1)
@@ -115,4 +290,4 @@ class ZA(object):
 
     def run(self, steps):
         for i in range(steps):
-            self.sim.step()
+            self.sim.step_pure_py()
