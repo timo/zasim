@@ -32,7 +32,7 @@ class ZacConsoleDisplay(SubcellConsoleDisplay):
                 for value in values:
                     palette[simulator.strings.index(value)] = value
                 palettes[pos] = palette
-        super(ZacConsoleDisplay, self).__init__(simulator, boxes, palettes, connect=connect, auto_output=auto_output)
+        super(ZacConsoleDisplay, self).__init__(simulator, boxes, simulator.sets, palettes, connect=connect, auto_output=auto_output)
 
 class ZacNeighbourhood(SubcellNeighbourhood):
     def __init__(self, neigh_data):

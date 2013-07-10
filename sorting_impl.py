@@ -103,6 +103,14 @@ class CellDescriptor(object):
             self.state.domain[self.name] = ValuesDomain(*domain)
         return self
 
+class InteractivePalette(dict):
+    def __init__(self, provider):
+        super(InteractivePalette, self).__init__()
+        self.provider = provider
+
+    def __missing__(self, key):
+        return self.provider(key)
+
 class DisplayDef(object):
     pass
 
@@ -129,6 +137,7 @@ class AnsiDisplayDef(DisplayDef):
 
     # TODO there should be a way to create boxes that derive from multiple subcells
 
+    _sets = None
     _boxes = None
     borders = None
     renderer = None
@@ -141,6 +150,7 @@ class AnsiDisplayDef(DisplayDef):
         self.state = state
         self.name = name
 
+        self._sets = None
         self._boxes = None
         self.renderers = {}
 
@@ -151,7 +161,13 @@ class AnsiDisplayDef(DisplayDef):
     def boxes(self, **boxes):
         """Set the positioning of the subcells, if boxes are to be used."""
         self.rendertype = "boxes"
-        self.boxes = boxes
+        fixed_boxes = {}
+        fixed_sets = {}
+        for k, v in boxes.iteritems():
+            fixed_boxes[v] = k
+            fixed_sets[v] = self.state.domain[k].values()
+        self._boxes = fixed_boxes
+        self._sets = fixed_sets
         return self
 
     def span_box(self, cell, width=1, height=1):
@@ -276,14 +292,31 @@ class ZA(object):
                 target=target)
         self.stepfunc = stepfunc
         self.stepfunc.gen_code()
+        self.disp = {}
         self.sim = SubcellSimulator(stepfunc, self.mem.state.names)
 
     def display(self, display_to_use):
         assert isinstance(self.size, list) or len(self.size) == 1
-        if self.mem.state.subcell:
-            class SubcellOneDimConsolePainter(SubcellPainterMixin, OneDimConsolePainter):
-                pass
-        self.disp = SubcellOneDimConsolePainter(self.sim, 1)
+        displaydef = self.mem.state.displays[display_to_use]
+
+        if isinstance(displaydef, AnsiDisplayDef):
+            if displaydef.rendertype == "boxes":
+                palettes = {}
+                for box, render in displaydef.renderers.iteritems():
+                    if render[0] == "palette":
+                        palettes[box] = render[1]
+                    elif render[0] == "numbers":
+                        pass
+                    elif render[0] == "function":
+                        raise NotImplementedError("function renderers not yet implemented")
+            self.disp[display_to_use] = SubcellConsoleDisplay(self.sim, displaydef._boxes, displaydef._sets, palettes)
+        else:
+            raise NotImplementedError("Only AnsiDisplayDef implemented so far")
+
+        #if self.mem.state.subcell:
+            #class SubcellOneDimConsolePainter(SubcellPainterMixin, OneDimConsolePainter):
+                #pass
+        #self.disp = SubcellOneDimConsolePainter(self.sim, 1)
 
     def compile_py(self):
         pass
