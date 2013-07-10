@@ -2,6 +2,8 @@ from zasim.cagen import *
 from zasim.simulator import *
 from zasim.display.console import *
 
+import time
+
 class Grid(object):
     pass
 
@@ -366,6 +368,7 @@ class ZA(object):
     def compile_py(self):
         pass
 
-    def run(self, steps):
+    def run(self, steps, delay=0):
         for i in range(steps):
             self.sim.step_pure_py()
+            time.sleep(delay)
