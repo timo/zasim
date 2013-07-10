@@ -276,8 +276,10 @@ def draw_box_template(boxes, t_w=1, w=None, h=None):
         # use the c2n function to create the names for the positions
         boxes = dict(map(lambda position: (position, c2n(position)), boxes))
 
-    w = w or max([t[0] for t in boxes.keys()])
-    h = h or max([t[1] for t in boxes.keys()])
+    if w is None:
+        w = max([t[0] for t in boxes.keys()])
+    if h is None:
+        h = max([t[1] for t in boxes.keys()])
 
     def corner(x, y):
         a = (x-1, y-1) in boxes
@@ -377,7 +379,7 @@ def draw_box_template(boxes, t_w=1, w=None, h=None):
             up_h = bhs if y != 0 else bhd
             if (x, y) in boxes:
                 template[tpos] += corner(x, y) + up_h * (t_w + 2)
-                template[tpos + 1] += left_v + "%%(%s) %ds " % (c2n(x, y), t_w + 1)
+                template[tpos + 1] += left_v + "%%(%s) %ds " % (boxes[(x, y)], t_w + 1)
             else:
                 if (x, y-1) in boxes or (x - 1, y) in boxes or (x-1,y-1) in boxes:
                     template[tpos] += corner(x, y)
@@ -390,6 +392,8 @@ def draw_box_template(boxes, t_w=1, w=None, h=None):
                 if (x-1,y) in boxes:
                     template[tpos + 1] += left_v
                 else:
+                    template[tpos + 1] += " "
+                if (x, y-1) not in boxes:
                     template[tpos + 1] += " "
                 template[tpos + 1] += "  " + " " * t_w
 
@@ -484,7 +488,7 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
     return result_template
 
 class SubcellConsoleDisplay(object):
-    def __init__(self, simulator, boxes, palettes, connect=True, auto_output=True):
+    def __init__(self, simulator, boxes, sets, palettes, connect=True, auto_output=True):
         """Create a console displayer for showing cells that are made up of
         multiple subcells.
 
@@ -492,6 +496,7 @@ class SubcellConsoleDisplay(object):
                       to a string (the name) for each subcell.
                       Alternatively, a list may be passed, in which case the
                       names will be generated with zacformat.n2c.
+        :param sets: A dictionary of name to a list of allowed (integer) values
         :param palettes: A dictionary of a name to a dictionary or list
                          of strings to be used for displaying.
         """
@@ -505,11 +510,12 @@ class SubcellConsoleDisplay(object):
             boxes = dict(map(lambda position: (n2c(position), position), boxes))
 
         self.boxes = boxes
+        self.sets = sets
         self.palettes = palettes
 
         self.data = ""
 
-        self.measure_sets()
+        self.create_template()
 
         if connect:
             self.connect_simulator()
@@ -532,13 +538,17 @@ class SubcellConsoleDisplay(object):
     def conf_replaced(self):
         self.conf_changed()
 
-    def measure_sets(self):
+    def create_template(self):
         max_w = 1
         for value in self.palettes.values():
             if isinstance(value, dict):
                 max_w = max(map(len, value.values()) + [max_w])
             else:
                 max_w = max(map(len, value) + [max_w])
+
+        for k, vals in self.sets.iteritems():
+            if k not in self.palettes:
+                max_w = max(map(len, map(str, vals)) + [max_w])
 
         #self.stringy_subcells = [k for k, v in self.sets.iteritems() if isinstance(v[0], basestring)]
 
@@ -568,9 +578,15 @@ class SubcellConsoleDisplay(object):
                 val = dict()
                 for k in self._last_conf.keys():
                     if k in self.palettes:
-                        val[k] = self.palettes[k][self._last_conf[k][x,y]]
+                        if h == 1:
+                            val[k] = self.palettes[k][self._last_conf[k][x]]
+                        else:
+                            val[k] = self.palettes[k][self._last_conf[k][x,y]]
                     else:
-                        val[k] = self._last_conf[k][x,y]
+                        if h == 1:
+                            val[k] = self._last_conf[k][x]
+                        else:
+                            val[k] = self._last_conf[k][x,y]
                 sp   = subpos(x,y)
                 box  = [line % val for line in self.template[sp]]
                 for line in lines:
