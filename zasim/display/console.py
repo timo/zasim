@@ -267,7 +267,7 @@ def draw_box_template(boxes, t_w=1, w=None, h=None):
                   subcells exist in the box and what they are called.
                   Alternatively, a list may be passed, in which case the names
                   will be created using the zacformat c2n function.
-    :param t_w: the width of each of the boxes.
+    :param t_w: the width of each of the columns. (may be a number, list or dict)
     :param w: How many subcells the box is wide
     :param h: How many subcells the box is tall
     :returns: a list of strings usable for drawing an ascii box art."""
@@ -280,6 +280,10 @@ def draw_box_template(boxes, t_w=1, w=None, h=None):
         w = max([t[0] for t in boxes.keys()])
     if h is None:
         h = max([t[1] for t in boxes.keys()])
+
+    if isinstance(t_w, int):
+        t_w = [t_w for _ in range(w+1)]
+    print "t_w is: ", t_w
 
     def corner(x, y):
         a = (x-1, y-1) in boxes
@@ -378,24 +382,24 @@ def draw_box_template(boxes, t_w=1, w=None, h=None):
             tpos = y * 2
             up_h = bhs if y != 0 else bhd
             if (x, y) in boxes:
-                template[tpos] += corner(x, y) + up_h * (t_w + 2)
-                template[tpos + 1] += left_v + "%%(%s) %ds " % (boxes[(x, y)], t_w + 1)
+                template[tpos] += corner(x, y) + up_h * (t_w[x] + 2)
+                template[tpos + 1] += left_v + "%%(%s) %ds " % (boxes[(x, y)], t_w[x] + 1)
             else:
                 if (x, y-1) in boxes or (x - 1, y) in boxes or (x-1,y-1) in boxes:
                     template[tpos] += corner(x, y)
                 else:
                     template[tpos] += " "
                 if (x, y-1) in boxes:
-                    template[tpos] += up_h * (t_w + 2)
+                    template[tpos] += up_h * (t_w[x] + 2)
                 else:
-                    template[tpos] += "  " + " " * t_w
+                    template[tpos] += "  " + " " * t_w[x]
                 if (x-1,y) in boxes:
                     template[tpos + 1] += left_v
                 else:
                     template[tpos + 1] += " "
                 if (x, y-1) not in boxes:
                     template[tpos + 1] += " "
-                template[tpos + 1] += "  " + " " * t_w
+                template[tpos + 1] += "  " + " " * t_w[x]
 
     for y in range(h+1):
         tpos = y * 2
@@ -413,9 +417,9 @@ def draw_box_template(boxes, t_w=1, w=None, h=None):
         else:
             template[tpos] += " "
         if (x, h) in boxes:
-            template[tpos] += bhd * (t_w + 2)
+            template[tpos] += bhd * (t_w[x] + 2)
         else:
-            template[tpos] += "  " + " " * t_w
+            template[tpos] += "  " + " " * t_w[x]
 
     if (w, h) in boxes:
         template[h * 2 + 2] += corner(w+1,h+1)
@@ -513,6 +517,8 @@ class SubcellConsoleDisplay(object):
         self.sets = sets
         self.palettes = palettes
 
+        self._name_to_pos = {v:k for k, v in self.boxes.iteritems()}
+
         self.data = ""
 
         self.create_template()
@@ -539,16 +545,18 @@ class SubcellConsoleDisplay(object):
         self.conf_changed()
 
     def create_template(self):
-        max_w = 1
-        for value in self.palettes.values():
+        max_w = {}
+        for k, value in self.palettes.iteritems():
+            x, y = self._name_to_pos[k]
             if isinstance(value, dict):
-                max_w = max(map(len, value.values()) + [max_w])
+                max_w[x] = max(map(len, value.values()) + [max_w.get(x, 1)])
             else:
-                max_w = max(map(len, value) + [max_w])
+                max_w[x] = max(map(len, value) + [max_w.get(x, 1)])
 
         for k, vals in self.sets.iteritems():
+            x, y = k
             if self.boxes[k] not in self.palettes:
-                max_w = max(map(len, map(str, vals)) + [max_w])
+                max_w[x] = max(map(len, map(str, vals)) + [max_w.get(x, 1)])
 
         #self.stringy_subcells = [k for k, v in self.sets.iteritems() if isinstance(v[0], basestring)]
 
