@@ -420,7 +420,7 @@ def draw_box_template(boxes, t_w=1, w=None, h=None):
     if (w, h) in boxes:
         template[h * 2 + 2] += corner(w+1,h+1)
 
-    return template
+    return map(unicode, template)
 
 def draw_tiled_box_template(boxes, w=1, twodim=True):
     """This makes template chunks for either four corners, four sides and a
@@ -547,7 +547,7 @@ class SubcellConsoleDisplay(object):
                 max_w = max(map(len, value) + [max_w])
 
         for k, vals in self.sets.iteritems():
-            if k not in self.palettes:
+            if self.boxes[k] not in self.palettes:
                 max_w = max(map(len, map(str, vals)) + [max_w])
 
         #self.stringy_subcells = [k for k, v in self.sets.iteritems() if isinstance(v[0], basestring)]
