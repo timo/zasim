@@ -186,7 +186,7 @@ class AnsiDisplayDef(DisplayDef):
         """Takes a named argument for each subcell that provides a list or
         dictionary mapping subcell values to display characters"""
         for cell, scp in subcell_palettes.iteritems():
-            renderers[cell] = ("palette", scp)
+            self.renderers[cell] = ("palette", scp)
         return self
 
     def palettize_cell(self, fun):

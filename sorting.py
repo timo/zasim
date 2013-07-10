@@ -27,13 +27,18 @@ gridline.use_constant_boundaries_handler()  # welche Konstante?
 
 #### Zustandsmenge
 state = State()
-state.cell("L").dtype(int8).default(0).domain((0, 10))
-state.cell("R").dtype(int8).default(0).domain((0, 10))
+state.cell("L").dtype(int8).default(0).domain((-128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 127))
+state.cell("R").dtype(int8).default(0).domain((-128, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 127))
 
 chars = state.display_ansi("chars")
 chars.boxes(L=(0, 0), R=(1, 0))
+#chars.boxes(L=(0, 0))
 chars.border(subcell="single", cell="double")
-chars.numbers("L", "R")
+#chars.numbers("L", "R")
+#chars.numbers("L")
+palette = dict(enumerate(list(u" ░▒▓█▇▆▅▄▃▂▁")))
+palette.update({-128: u"«", 127: u"»"})
+chars.palette(L=palette, R=palette)
 
 pretty = state.display_ansi("pretty")
 pretty.border(subcell=None, cell="single")
@@ -81,7 +86,7 @@ L@result, R@result = min(lr, rl), max(lr, rl)"""
 #delta_py = """result = 1"""
 
 #### alles zusammenbauen
-za = ZA(gridline, mem, delta_py, base=10)
+za = ZA(gridline, mem, delta_py, base=11)
 
 za.compile_py()
 #### 
