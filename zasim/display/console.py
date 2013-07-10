@@ -451,10 +451,10 @@ def draw_tiled_box_template(boxes, w=1, twodim=True):
         return ((x, y), c2n(x, y))
 
     # determine wether the corners have boxes next to them.
-    luc = d( -1, -1) if (w,h) in originalboxes.keys() else []
-    ruc = d(w+1, -1) if (0,h) in originalboxes.keys() else []
-    ldc = d( -1,h+1) if (w,0) in originalboxes.keys() else []
-    rdc = d(w+1,h+1) if (0,0) in originalboxes.keys() else []
+    luc = [d( -1, -1)] if (w,h) in originalboxes.keys() else []
+    ruc = [d(w+1, -1)] if (0,h) in originalboxes.keys() else []
+    ldc = [d( -1,h+1)] if (w,0) in originalboxes.keys() else []
+    rdc = [d(w+1,h+1)] if (0,0) in originalboxes.keys() else []
 
     def warp(src,dst,axis):
         res = []

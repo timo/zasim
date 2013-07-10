@@ -64,7 +64,7 @@ class Grid2DEuclidean(Grid):
     neigh_names = ()
 
     def __init__(self):
-        self.loop = OneDimCellLoop()
+        self.loop = TwoDimCellLoop()
 
     def use_von_neumann_neighbourhood(self, radius=1):
         assert radius == 1
@@ -342,7 +342,6 @@ class ZA(object):
         self.sim = SubcellSimulator(stepfunc, self.mem.state.names)
 
     def display(self, display_to_use):
-        assert isinstance(self.size, list) or len(self.size) == 1
         displaydef = self.mem.state.displays[display_to_use]
 
         if isinstance(displaydef, AnsiDisplayDef):
