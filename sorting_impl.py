@@ -73,7 +73,7 @@ class Grid2DEuclidean(Grid):
         class NeighHandle(object):
             def compass_names(foo):
                 print "compass names for ", self
-                self.neigh_names = ("n", "w", "s", "e", "m")
+                self.neigh_names = ("w", "n", "m", "s", "e")
             def direction_names(foo):
                 print "direction names for ", self
                 self.neigh_names = ("up", "left", "down", "right", "middle")
