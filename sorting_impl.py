@@ -20,7 +20,6 @@ class Grid1DEuclidean(Grid):
         assert radius == 1
         self.neighbourhood = "von_neumann"
 
-        # XXX mittlere namen
         class NeighHandle(object):
             def compass_names(foo):
                 print "compass names for ", self
@@ -48,6 +47,53 @@ class Grid1DEuclidean(Grid):
         assert len(self.neigh_names) > 0, "call *_names on the neighbourhood first!"
         if self.neighbourhood == "von_neumann":
             cls = ElementaryFlatNeighbourhood
+        else:
+            raise "Unimplemented neighbourhood " + self.neighbourhood
+        if baseclass:
+            self.neigh = cls(baseclass)
+        else:
+            self.neigh = cls()
+        self.neigh.names = self.neigh_names
+
+class Grid2DEuclidean(Grid):
+    border = None
+    acc = None
+    loop = None
+    size = []
+    neighbourhood = ""
+    neigh_names = ()
+
+    def __init__(self):
+        self.loop = OneDimCellLoop()
+
+    def use_von_neumann_neighbourhood(self, radius=1):
+        assert radius == 1
+        self.neighbourhood = "von_neumann"
+
+        class NeighHandle(object):
+            def compass_names(foo):
+                print "compass names for ", self
+                self.neigh_names = ("n", "w", "s", "e", "m")
+            def direction_names(foo):
+                print "direction names for ", self
+                self.neigh_names = ("up", "left", "down", "right", "middle")
+        return NeighHandle()
+
+    def use_cyclic_boundaries_handler(self):
+        self.border = TwoDimSlicingBorderCopier()
+
+    def use_constant_boundaries_handler(self, constant=0):
+        assert constant == 0
+        self.border = BorderSizeEnsurer()
+
+    def set_extent(self, *size):
+        self.size = size
+
+    def make_neigh(self, baseclass=None):
+        assert self.neighbourhood, "call use_*_neighbourhood on the grid first!"
+        assert len(self.neigh_names) > 0, "call *_names on the neighbourhood first!"
+        if self.neighbourhood == "von_neumann":
+            cls = VonNeumannNeighbourhood
         else:
             raise "Unimplemented neighbourhood " + self.neighbourhood
         if baseclass:
